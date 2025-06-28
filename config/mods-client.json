@@ -114,9 +114,23 @@
     },
     {
       "name": "AutoSwitch",
-      "projectId": "autoswitch",
+      "projectId": "uSdcnlts",
       "fileId": "J4tWnLnz",
       "filename": "autoswitch-7.0.2.jar",
+      "side": "client"
+    },
+    {
+      "name": "Fabric Language Kotlin",
+      "projectId": "Ha28R6CL",
+      "fileId": "mccDBWqV",
+      "filename": "fabric-language-kotlin-1.13.4+kotlin.2.2.0.jar",
+      "side": "both"
+    },
+    {
+      "name": "libIPN",
+      "projectId": "onSQdWhM",
+      "fileId": "Uygzs3iI",
+      "filename": "libIPN-fabric-1.20-4.0.2.jar",
       "side": "client"
     }
   ]

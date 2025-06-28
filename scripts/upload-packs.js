@@ -24,7 +24,7 @@ const uploadConfig = JSON.parse(fs.readFileSync('config/upload-config.json', 'ut
 
 async function uploadVersion(projectId, packType) {
   const fileName = `${packInfo.name.toLowerCase().replace(/\s+/g, '-')}-${packType}-${packInfo.version}.mrpack`;
-  const filePath = path.join(process.cwd(), fileName);
+  const filePath = path.join(process.cwd(), 'build', fileName);
   
   if (!fs.existsSync(filePath)) {
     throw new Error(`Pack file not found: ${fileName}. Run 'npm run build' first.`);

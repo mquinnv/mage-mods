@@ -2,5 +2,5 @@
   "clientProjectId": "L1ET1T4t",
   "serverProjectId": "LHpIsjjB",
   "versionType": "release",
-  "changelog": "Initial release of Minecraft Mage modpacks:\n\n**Client Pack:**\n- Performance mods (Sodium, Iris)\n- UI improvements (EMI, Jade, Mod Menu)\n- Quality of life features\n- AutoSwitch support\n\n**Server Pack:**\n- Server optimization (Lithium, Starlight)\n- Admin tools (LuckPerms, Essential Commands)\n- Monitoring (Spark, BlueMap)\n- Carpet mod for technical features\n- AutoSwitch server support"
+  "changelog": "### Added\n- **Server configuration now works in .mrpack format!**\n  - minecraft.mage.net automatically appears in multiplayer server list\n  - Server connection info and instructions included\n- High-performance JVM arguments for better client performance:\n  - Optimized G1 garbage collector settings\n  - Reduced stuttering and improved FPS\n  - 4GB RAM allocation with smart memory management\n\n### Enhanced\n- Both .mrpack and Prism Launcher formats include server auto-configuration\n- Improved launcher compatibility across all platforms\n- Better mod loading timeouts and error handling\n\n### Technical\n- Added overrides folder with servers.dat, options.txt, and info files\n- Implemented NBT format server list for cross-launcher compatibility"
 }
