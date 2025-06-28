@@ -1,0 +1,37 @@
+# Build output
+build/
+*.mrpack
+
+# Downloaded mods
+src/client/mods/
+src/server/mods/
+
+# Node modules (if we add any dependencies later)
+node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Manual mods directory (for mods that can't be auto-downloaded)
+manual-mods/
+
+# Generated reports
+version-report.json
+VERSION_REPORT.md

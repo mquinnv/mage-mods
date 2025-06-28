@@ -1,0 +1,35 @@
+{
+  "name": "minecraft-mage-modpack-manager",
+  "version": "1.0.0",
+  "description": "Manage Minecraft Mage modpacks for server and client",
+  "main": "scripts/build-packs.js",
+  "scripts": {
+    "build": "node scripts/build-packs.js",
+    "build:client": "node scripts/build-packs.js --client",
+    "build:server": "node scripts/build-packs.js --server",
+    "upload": "node scripts/upload-packs.js",
+    "upload:client": "node scripts/upload-packs.js --client",
+    "upload:server": "node scripts/upload-packs.js --server",
+    "release": "npm run build && npm run upload",
+    "clean": "rm -rf build/*.mrpack",
+    "clean:all": "rm -rf build",
+    "check-versions": "node scripts/check-versions.js",
+    "update-versions": "node scripts/update-mod-versions.js",
+    "update-descriptions": "node scripts/update-descriptions.js",
+    "generate-config": "node scripts/generate-server-config.js",
+    "setup-server": "npm run generate-config && npm run build:server"
+  },
+  "keywords": [
+    "minecraft",
+    "modpack",
+    "modrinth",
+    "fabric"
+  ],
+  "author": "michael",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.10.0",
+    "dotenv": "^17.0.0",
+    "form-data": "^4.0.0"
+  }
+}

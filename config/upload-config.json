@@ -1,0 +1,6 @@
+{
+  "clientProjectId": "L1ET1T4t",
+  "serverProjectId": "LHpIsjjB",
+  "versionType": "release",
+  "changelog": "Initial release of Minecraft Mage modpacks:\n\n**Client Pack:**\n- Performance mods (Sodium, Iris)\n- UI improvements (EMI, Jade, Mod Menu)\n- Quality of life features\n- AutoSwitch support\n\n**Server Pack:**\n- Server optimization (Lithium, Starlight)\n- Admin tools (LuckPerms, Essential Commands)\n- Monitoring (Spark, BlueMap)\n- Carpet mod for technical features\n- AutoSwitch server support"
+}

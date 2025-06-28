@@ -1,0 +1,95 @@
+{
+  "mods": [
+    {
+      "name": "Fabric API",
+      "projectId": "P7dR8mSH",
+      "fileId": "UapVHwiP",
+      "filename": "fabric-api-0.92.6+1.20.1.jar",
+      "side": "both"
+    },
+    {
+      "name": "Lithium",
+      "projectId": "AANobbMI",
+      "fileId": "OihdIimA",
+      "filename": "sodium-fabric-0.5.13+mc1.20.1.jar",
+      "side": "server"
+    },
+    {
+      "name": "Starlight",
+      "projectId": "H8CaAYZC",
+      "fileId": "XGIsoVGT",
+      "filename": "starlight-1.1.2+fabric.dbc156f.jar",
+      "side": "server"
+    },
+    {
+      "name": "FerriteCore",
+      "projectId": "uXXizFIs",
+      "fileId": "unerR5MN",
+      "filename": "ferritecore-6.0.1-fabric.jar",
+      "side": "both"
+    },
+    {
+      "name": "Krypton",
+      "projectId": "1eAoo2KR",
+      "fileId": "dvS5DjUA",
+      "filename": "yet_another_config_lib_v3-3.6.6+1.20.1-fabric.jar",
+      "side": "both"
+    },
+    {
+      "name": "ServerCore",
+      "projectId": "4WWQxlQP",
+      "fileId": "m978FuzE",
+      "filename": "servercore-fabric-1.5.2+1.20.1.jar",
+      "side": "server"
+    },
+    {
+      "name": "Spark",
+      "projectId": "l6YH9Als",
+      "fileId": "XGW2fviP",
+      "filename": "spark-1.10.53-fabric.jar",
+      "side": "server"
+    },
+    {
+      "name": "Carpet",
+      "projectId": "TQTTVgYE",
+      "fileId": "K0Wj117C",
+      "filename": "fabric-carpet-1.20-1.4.112+v230608.jar",
+      "side": "server"
+    },
+    {
+      "name": "Carpet Extra",
+      "projectId": "VX3TgwQh",
+      "fileId": "gPJoJ3mr",
+      "filename": "carpet-extra-1.20-1.4.115.jar",
+      "side": "server"
+    },
+    {
+      "name": "Essential Commands",
+      "projectId": "6VdDUivB",
+      "fileId": "rzMal9h2",
+      "filename": "essential_commands-0.35.3-mc1.20.1.jar",
+      "side": "server"
+    },
+    {
+      "name": "LuckPerms",
+      "projectId": "Vebnzrzj",
+      "fileId": "7PNj6nCm",
+      "filename": "LuckPerms-Fabric-5.4.102.jar",
+      "side": "server"
+    },
+    {
+      "name": "BlueMap",
+      "projectId": "swbUV1cr",
+      "fileId": "lHRktt6S",
+      "filename": "BlueMap-5.3-fabric-1.20.jar",
+      "side": "server"
+    },
+    {
+      "name": "AutoSwitch",
+      "projectId": "autoswitch",
+      "fileId": "J4tWnLnz",
+      "filename": "autoswitch-7.0.2.jar",
+      "side": "both"
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "mods": [
+    {
+      "name": "Fabric API",
+      "projectId": "P7dR8mSH",
+      "fileId": "UapVHwiP",
+      "filename": "fabric-api-0.92.6+1.20.1.jar",
+      "side": "both"
+    },
+    {
+      "name": "Sodium",
+      "projectId": "AANobbMI",
+      "fileId": "OihdIimA",
+      "filename": "sodium-fabric-0.5.13+mc1.20.1.jar",
+      "side": "client"
+    },
+    {
+      "name": "Iris Shaders",
+      "projectId": "YL57xq9U",
+      "fileId": "s5eFLITc",
+      "filename": "iris-1.7.6+mc1.20.1.jar",
+      "side": "client"
+    },
+    {
+      "name": "Indium",
+      "projectId": "mOgUt4GM",
+      "fileId": "lEkperf6",
+      "filename": "modmenu-7.2.2.jar",
+      "side": "client"
+    },
+    {
+      "name": "Entity Culling",
+      "projectId": "NNAgCjsB",
+      "fileId": "JrOhNEba",
+      "filename": "entityculling-fabric-1.8.0-mc1.20.1.jar",
+      "side": "client"
+    },
+    {
+      "name": "FerriteCore",
+      "projectId": "uXXizFIs",
+      "fileId": "unerR5MN",
+      "filename": "ferritecore-6.0.1-fabric.jar",
+      "side": "both"
+    },
+    {
+      "name": "Krypton",
+      "projectId": "1eAoo2KR",
+      "fileId": "dvS5DjUA",
+      "filename": "yet_another_config_lib_v3-3.6.6+1.20.1-fabric.jar",
+      "side": "both"
+    },
+    {
+      "name": "LazyDFU",
+      "projectId": "hvFnDODi",
+      "fileId": "4SHylIO9",
+      "filename": "lazydfu-0.1.3.jar",
+      "side": "both"
+    },
+    {
+      "name": "Memory Leak Fix",
+      "projectId": "NRjRiSSD",
+      "fileId": "5xvCCRjJ",
+      "filename": "memoryleakfix-fabric-1.17+-1.1.5.jar",
+      "side": "both"
+    },
+    {
+      "name": "Jade",
+      "projectId": "nvQzSEkH",
+      "fileId": "drol2x1P",
+      "filename": "Jade-1.20-Fabric-11.13.1.jar",
+      "side": "client"
+    },
+    {
+      "name": "EMI",
+      "projectId": "fRiHVvU7",
+      "fileId": "VvPw7Vi5",
+      "filename": "emi-1.1.22+1.20.1+fabric.jar",
+      "side": "client"
+    },
+    {
+      "name": "AppleSkin",
+      "projectId": "EsAfCjCV",
+      "fileId": "xcauwnEB",
+      "filename": "appleskin-fabric-mc1.20.1-2.5.1.jar",
+      "side": "both"
+    },
+    {
+      "name": "Inventory Profiles Next",
+      "projectId": "O7RBXm3n",
+      "fileId": "zXog2n0B",
+      "filename": "InventoryProfilesNext-fabric-1.20-1.10.12.jar",
+      "side": "client"
+    },
+    {
+      "name": "Continuity",
+      "projectId": "1IjD5062",
+      "fileId": "qGTDcjHM",
+      "filename": "continuity-3.0.0+1.20.1.jar",
+      "side": "client"
+    },
+    {
+      "name": "Mod Menu",
+      "projectId": "mOgUt4GM",
+      "fileId": "lEkperf6",
+      "filename": "modmenu-7.2.2.jar",
+      "side": "client"
+    },
+    {
+      "name": "Cloth Config",
+      "projectId": "9s6osm5g",
+      "fileId": "2xQdCMyG",
+      "filename": "cloth-config-11.1.136-fabric.jar",
+      "side": "client"
+    },
+    {
+      "name": "AutoSwitch",
+      "projectId": "autoswitch",
+      "fileId": "J4tWnLnz",
+      "filename": "autoswitch-7.0.2.jar",
+      "side": "client"
+    }
+  ]
+}
