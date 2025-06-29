@@ -1,5 +1,28 @@
 # Minecraft Mage Modpack Changelog
 
+## v1.0.5 - 2025-06-29
+
+### Fixed
+- **Eliminated duplicate mod versions** that were causing conflicts:
+  - Removed duplicate Indium versions (1.0.27 + 1.0.36)
+  - Removed duplicate Jade versions (11.12.3 + 11.13.1)
+- **Updated mods to latest versions**:
+  - Jade updated to 11.13.1 for improved compatibility
+  - All mods verified to use latest stable releases for 1.20.1
+
+### Improved
+- **Runtime stability and performance**:
+  - Fixed mod loading conflicts that caused warnings
+  - Cleaner startup with fewer error messages
+  - Better mod compatibility across the pack
+
+### Technical
+- Investigated and documented known mod issues:
+  - Missing texture warnings are confirmed mod bugs (cosmetic only)
+  - Missing sound warnings are expected cross-mod compatibility references
+  - Farmer's Delight recipe errors are intentional (using Bountiful Fares instead)
+- All identified issues are either fixed or documented as harmless
+
 ## v1.0.2 - 2025-06-28
 
 ### Added
