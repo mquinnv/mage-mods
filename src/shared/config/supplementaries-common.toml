@@ -1,0 +1,10 @@
+# Supplementaries configuration file
+# This file contains settings for the Supplementaries mod
+
+[particles]
+    # Enable or disable falling ash particles
+    enable_falling_ash = false
+    
+[tweaks]
+    # General performance and compatibility tweaks
+    disable_problematic_entities = true

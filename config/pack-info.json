@@ -1,12 +1,12 @@
 {
   "name": "Minecraft Mage",
-  "version": "1.0.7",
+  "version": "1.0.9",
   "minecraft": "1.20.1",
   "fabric": "0.16.10",
-  "fabricApi": "0.91.0+1.20.1",
+  "fabricApi": "0.92.6+1.20.1",
   "author": "michael",
   "description": {
-    "client": "Client modpack with performance mods, shaders, and autoswitch support",
-    "server": "Server modpack with performance, admin tools, and AutoSwitch support"
+    "client": "Client modpack with performance mods, shaders, Xaero's minimap, and enhanced gameplay features",
+    "server": "Server modpack with performance, admin tools, mapping, and enhanced gameplay features"
   }
 }

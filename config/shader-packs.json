@@ -1,0 +1,22 @@
+{
+  "shaderPacks": [
+    {
+      "name": "BSL Shaders",
+      "projectId": "Q1vvjJYV",
+      "fileId": "",
+      "filename": "",
+      "description": "BSL Shaders is a shaderpack made exclusively for Minecraft: Java Edition. It's bright, colorful, and distinct.",
+      "optional": true,
+      "side": "client"
+    },
+    {
+      "name": "Complementary Shaders - Unbound",
+      "projectId": "HVnmMxH1", 
+      "fileId": "",
+      "filename": "",
+      "description": "The continuation of the legendary SEUS renewed shaderpack, now with PBR support and many more features!",
+      "optional": true,
+      "side": "client"
+    }
+  ]
+}

@@ -7,7 +7,7 @@
     "Latitude": 30.0
   },
   "Sky Settings": {
-    "Inclined Sky": false
+    "Inclined Sky": true
   },
   "Overlays": {
     "Show Constellations": false

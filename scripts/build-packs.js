@@ -22,6 +22,8 @@ if (!MODRINTH_TOKEN) {
 const packInfo = JSON.parse(fs.readFileSync('config/pack-info.json', 'utf8'));
 const clientMods = JSON.parse(fs.readFileSync('config/mods-client.json', 'utf8'));
 const serverMods = JSON.parse(fs.readFileSync('config/mods-server.json', 'utf8'));
+const resourcePacks = JSON.parse(fs.readFileSync('config/resource-packs.json', 'utf8'));
+const shaderPacks = JSON.parse(fs.readFileSync('config/shader-packs.json', 'utf8'));
 
 function cleanupOldAssets() {
   console.log('🧹 Cleaning up old assets...');
@@ -78,7 +80,11 @@ function cleanupOldAssets() {
 }
 
 // Ensure directories exist
-const dirs = ['build/client/mods', 'build/server/mods', 'src/client', 'src/server'];
+const dirs = [
+  'build/client/mods', 'build/server/mods', 
+  'build/client/resourcepacks', 'build/client/shaderpacks',
+  'src/client', 'src/server'
+];
 dirs.forEach(dir => fs.mkdirSync(dir, { recursive: true }));
 
 function calculateSHA1(filePath) {
@@ -140,13 +146,86 @@ async function getModDownloadUrl(projectId, fileId) {
   }
 }
 
-async function downloadMod(mod, destDir) {
-  const destPath = path.join(destDir, mod.filename);
+async function getLatestModVersion(projectId) {
+  const url = `${MODRINTH_API}/project/${projectId}/version?game_versions=["1.20.1"]&loaders=["fabric"]`;
+  const headers = { 'User-Agent': USER_AGENT };
+  if (MODRINTH_TOKEN) {
+    headers['Authorization'] = `Bearer ${MODRINTH_TOKEN}`;
+  }
   
+  try {
+    const response = await axios.get(url, { headers });
+    
+    if (!response.data || response.data.length === 0) {
+      throw new Error('No compatible versions found for Minecraft 1.20.1 Fabric');
+    }
+    
+    const latestVersion = response.data[0];
+    const primaryFile = latestVersion.files.find(f => f.primary) || latestVersion.files[0];
+    
+    return {
+      filename: primaryFile.filename,
+      fileId: latestVersion.id
+    };
+  } catch (error) {
+    if (error.response) {
+      throw new Error(`API Error ${error.response.status}: ${error.response.statusText} for ${projectId}`);
+    } else {
+      throw new Error(`Network error for ${projectId}: ${error.message}`);
+    }
+  }
+}
+
+async function getLatestResourcePackVersion(packId) {
+  const url = `${MODRINTH_API}/project/${packId}/version?game_versions=["1.20.1"]`;
+  const headers = { 'User-Agent': USER_AGENT };
+  if (MODRINTH_TOKEN) {
+    headers['Authorization'] = `Bearer ${MODRINTH_TOKEN}`;
+  }
+  
+  try {
+    const response = await axios.get(url, { headers });
+    
+    if (!response.data || response.data.length === 0) {
+      throw new Error('No compatible versions found for Minecraft 1.20.1');
+    }
+    
+    const latestVersion = response.data[0];
+    const primaryFile = latestVersion.files.find(f => f.primary) || latestVersion.files[0];
+    
+    return {
+      filename: primaryFile.filename,
+      fileId: latestVersion.id
+    };
+  } catch (error) {
+    if (error.response) {
+      throw new Error(`API Error ${error.response.status}: ${error.response.statusText} for ${packId}`);
+    } else {
+      throw new Error(`Network error for ${packId}: ${error.message}`);
+    }
+  }
+}
+
+async function downloadMod(mod, destDir) {
   if (mod.manual) {
     console.log(`⚠️  Manual mod: ${mod.name} - Please add ${mod.filename} to ${destDir}`);
     return null;
   }
+  
+  // If filename is empty, fetch the latest version for this mod
+  if (!mod.filename || mod.filename === '') {
+    try {
+      console.log(`📥 Fetching latest version for ${mod.name}...`);
+      const versionData = await getLatestModVersion(mod.projectId);
+      mod.filename = versionData.filename;
+      mod.fileId = versionData.fileId;
+    } catch (error) {
+      console.error(`❌ Failed to get latest version for ${mod.name}:`, error.message);
+      return null;
+    }
+  }
+  
+  const destPath = path.join(destDir, mod.filename);
   
   if (fs.existsSync(destPath)) {
     console.log(`✓ ${mod.name} already downloaded`);
@@ -161,6 +240,72 @@ async function downloadMod(mod, destDir) {
     return destPath;
   } catch (error) {
     console.error(`❌ Failed to download ${mod.name}:`, error.message);
+    return null;
+  }
+}
+
+async function downloadResourcePack(pack, destDir) {
+  // If filename is empty, fetch the latest version for this resource pack
+  if (!pack.filename || pack.filename === '') {
+    try {
+      console.log(`📥 Fetching latest version for ${pack.name}...`);
+      const versionData = await getLatestResourcePackVersion(pack.projectId);
+      pack.filename = versionData.filename;
+      pack.fileId = versionData.fileId;
+    } catch (error) {
+      console.error(`❌ Failed to get latest version for ${pack.name}:`, error.message);
+      return null;
+    }
+  }
+  
+  const destPath = path.join(destDir, pack.filename);
+  
+  if (fs.existsSync(destPath)) {
+    console.log(`✓ ${pack.name} already downloaded`);
+    return destPath;
+  }
+  
+  console.log(`📥 Downloading resource pack ${pack.name}...`);
+  try {
+    const downloadUrl = await getModDownloadUrl(pack.projectId, pack.fileId);
+    await downloadFile(downloadUrl, destPath);
+    console.log(`✓ Downloaded resource pack ${pack.name}`);
+    return destPath;
+  } catch (error) {
+    console.error(`❌ Failed to download resource pack ${pack.name}:`, error.message);
+    return null;
+  }
+}
+
+async function downloadShaderPack(pack, destDir) {
+  // If filename is empty, fetch the latest version for this shader pack
+  if (!pack.filename || pack.filename === '') {
+    try {
+      console.log(`📥 Fetching latest version for ${pack.name}...`);
+      const versionData = await getLatestResourcePackVersion(pack.projectId);
+      pack.filename = versionData.filename;
+      pack.fileId = versionData.fileId;
+    } catch (error) {
+      console.error(`❌ Failed to get latest version for ${pack.name}:`, error.message);
+      return null;
+    }
+  }
+  
+  const destPath = path.join(destDir, pack.filename);
+  
+  if (fs.existsSync(destPath)) {
+    console.log(`✓ ${pack.name} already downloaded`);
+    return destPath;
+  }
+  
+  console.log(`📥 Downloading shader pack ${pack.name}...`);
+  try {
+    const downloadUrl = await getModDownloadUrl(pack.projectId, pack.fileId);
+    await downloadFile(downloadUrl, destPath);
+    console.log(`✓ Downloaded shader pack ${pack.name}`);
+    return destPath;
+  } catch (error) {
+    console.error(`❌ Failed to download shader pack ${pack.name}:`, error.message);
     return null;
   }
 }
@@ -223,8 +368,9 @@ function calculateSHA512(filePath) {
   return hash.digest('hex');
 }
 
-async function createMrpack(packType, mods, index) {
+async function createMrpack(packType, mods, index, enhanced = false) {
   const buildDir = `build/${packType}`;
+  const suffix = enhanced ? '-enhanced' : '';
   
   // Write modrinth.index.json
   fs.writeFileSync(
@@ -257,8 +403,23 @@ async function createMrpack(packType, mods, index) {
       configFiles.forEach(file => {
         const srcPath = path.join(sharedConfigDir, file);
         const destPath = path.join(overridesConfigDir, file);
-        fs.copyFileSync(srcPath, destPath);
-        console.log(`  Copied config: ${file}`);
+        const stats = fs.statSync(srcPath);
+        
+        if (stats.isDirectory()) {
+          // Copy directory recursively
+          fs.mkdirSync(destPath, { recursive: true });
+          const files = fs.readdirSync(srcPath);
+          files.forEach(subFile => {
+            const subSrcPath = path.join(srcPath, subFile);
+            const subDestPath = path.join(destPath, subFile);
+            fs.copyFileSync(subSrcPath, subDestPath);
+          });
+          console.log(`  Copied config directory: ${file}`);
+        } else {
+          // Copy file
+          fs.copyFileSync(srcPath, destPath);
+          console.log(`  Copied config: ${file}`);
+        }
       });
     }
     
@@ -304,6 +465,70 @@ maxMemory:4096
     ]);
     
     fs.writeFileSync(path.join(overridesDir, 'servers.dat'), serversNbt);
+    
+    // If enhanced mode, copy resource packs and shader packs to overrides
+    if (enhanced && packType === 'client') {
+      // Create resourcepacks and shaderpacks directories in overrides
+      const resourcePacksDir = path.join(overridesDir, 'resourcepacks');
+      const shaderPacksDir = path.join(overridesDir, 'shaderpacks');
+      fs.mkdirSync(resourcePacksDir, { recursive: true });
+      fs.mkdirSync(shaderPacksDir, { recursive: true });
+      
+      // Copy resource packs
+      for (const pack of resourcePacks.resourcePacks) {
+        if (pack.filename) {
+          const sourcePath = path.join('build/client/resourcepacks', pack.filename);
+          if (fs.existsSync(sourcePath)) {
+            fs.copyFileSync(sourcePath, path.join(resourcePacksDir, pack.filename));
+            console.log(`  Copied resource pack: ${pack.name}`);
+          }
+        }
+      }
+      
+      // Copy shader packs  
+      for (const pack of shaderPacks.shaderPacks) {
+        if (pack.filename) {
+          const sourcePath = path.join('build/client/shaderpacks', pack.filename);
+          if (fs.existsSync(sourcePath)) {
+            fs.copyFileSync(sourcePath, path.join(shaderPacksDir, pack.filename));
+            console.log(`  Copied shader pack: ${pack.name}`);
+          }
+        }
+      }
+    }
+    
+    // Create resource pack and shader pack recommendations
+    if (packType === 'client') {
+      const resourcePackInfo = `RECOMMENDED RESOURCE PACKS:
+
+1. Soartex Grove v1.0.4 (64x)
+   - High definition graphics replacement with clean artwork
+   - Download: https://modrinth.com/resourcepack/soartex-grove/version/1.0.4.1
+   - Optional but enhances the visual experience
+
+RECOMMENDED SHADER PACKS:
+
+1. BSL Shaders
+   - Bright, colorful, and distinct lighting
+   - Download: https://modrinth.com/shader/Q1vvjJYV
+   - Good performance on most hardware
+
+2. Complementary Shaders
+   - Continuation of SEUS Renewed with PBR support
+   - Download: https://modrinth.com/shader/EtVJtuTU
+   - High quality with many features
+
+3. Sildur's Enhanced Default
+   - Enhanced default look, performance friendly
+   - Download: https://modrinth.com/shader/EmuGFQyu
+   - Great for lower-end hardware
+
+Installation:
+- Resource packs: Place in .minecraft/resourcepacks/
+- Shader packs: Requires Iris Shaders mod (included), place in .minecraft/shaderpacks/
+`;
+      fs.writeFileSync(path.join(overridesDir, 'RESOURCE_PACKS_AND_SHADERS.txt'), resourcePackInfo);
+    }
   }
   
   // Create README
@@ -313,15 +538,17 @@ maxMemory:4096
     `Version: ${packInfo.version}\n` +
     `Minecraft: ${packInfo.minecraft}\n` +
     `Fabric Loader: ${packInfo.fabric}\n\n` +
-    packInfo.description[packType]
+    packInfo.description[packType] +
+    (packType === 'client' ? '\n\nSee RESOURCE_PACKS_AND_SHADERS.txt for recommended visual enhancements.' : '')
   );
   
   // Create the mrpack
-  const outputFile = `${packInfo.name.toLowerCase().replace(/\s+/g, '-')}-${packType}-${packInfo.version}.mrpack`;
+  const outputFile = `${packInfo.name.toLowerCase().replace(/\s+/g, '-')}-${packType}-${packInfo.version}${suffix}.mrpack`;
   const outputPath = `build/${outputFile}`;
   console.log(`\n📦 Creating ${outputPath}...`);
   
-  execSync(`cd ${buildDir} && zip -r ../${outputFile} *`, { stdio: 'inherit' });
+  // Only include necessary files in mrpack (exclude mods folder since they're referenced by URL)
+  execSync(`cd ${buildDir} && zip -r ../${outputFile} modrinth.index.json icon.png README.txt overrides/ -x mods/`, { stdio: 'inherit' });
   console.log(`✅ Created ${outputPath}`);
 }
 
@@ -453,6 +680,18 @@ async function main() {
     }
   }
   
+  // Download resource packs for client
+  console.log('\n=== Downloading Resource Packs ===');
+  for (const pack of resourcePacks.resourcePacks) {
+    await downloadResourcePack(pack, 'build/client/resourcepacks');
+  }
+  
+  // Download shader packs for client
+  console.log('\n=== Downloading Shader Packs ===');
+  for (const pack of shaderPacks.shaderPacks) {
+    await downloadShaderPack(pack, 'build/client/shaderpacks');
+  }
+  
   // Download server mods
   console.log('\n=== Building Server Pack ===');
   const serverDownloaded = {};
@@ -468,9 +707,13 @@ async function main() {
   const clientIndex = await buildModrinthIndex(clientMods.mods, 'client', clientDownloaded);
   const serverIndex = await buildModrinthIndex(serverMods.mods, 'server', serverDownloaded);
   
-  // Create mrpacks
-  await createMrpack('client', clientMods.mods, clientIndex);
-  await createMrpack('server', serverMods.mods, serverIndex);
+  // Create regular mrpacks
+  await createMrpack('client', clientMods.mods, clientIndex, false);
+  await createMrpack('server', serverMods.mods, serverIndex, false);
+  
+  // Create enhanced mrpacks (with resource packs and shader packs)
+  console.log('\n=== Creating Enhanced Packs ===');
+  await createMrpack('client', clientMods.mods, clientIndex, true);
   
   // Create Prism packs
   console.log('\n=== Generating Prism Packs ===');
