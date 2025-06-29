@@ -71,11 +71,39 @@
       "side": "client"
     },
     {
-      "name": "EMI",
-      "projectId": "fRiHVvU7",
-      "fileId": "VvPw7Vi5",
-      "filename": "emi-1.1.22+1.20.1+fabric.jar",
+      "name": "JEI",
+      "projectId": "u6dRKJwZ",
+      "fileId": "MMnbcAih",
+      "filename": "jei-1.20.1-fabric-15.20.0.112.jar",
+      "side": "both"
+    },
+    {
+      "name": "Just Enough Resources",
+      "projectId": "uEfK2CXF",
+      "fileId": "9HWvOVzO",
+      "filename": "JustEnoughResources-Fabric-1.20.1-1.4.0.247.jar",
       "side": "client"
+    },
+    {
+      "name": "Enchancement",
+      "projectId": "6hN1V6wJ",
+      "fileId": "mGY2pNFa",
+      "filename": "enchancement-1.20-26.jar",
+      "side": "both"
+    },
+    {
+      "name": "ToolTipFix",
+      "projectId": "2RKFTmiB",
+      "fileId": "B2L4LeMV",
+      "filename": "tooltipfix-1.1.1-1.20.jar",
+      "side": "both"
+    },
+    {
+      "name": "Dye Depot",
+      "projectId": "dl88rsIq",
+      "fileId": "SqvSzYPB",
+      "filename": "dye_depot-1.0.3-fabric.jar",
+      "side": "both"
     },
     {
       "name": "AppleSkin",
