@@ -97,6 +97,55 @@
       "fileId": "mccDBWqV",
       "filename": "fabric-language-kotlin-1.13.4+kotlin.2.2.0.jar",
       "side": "both"
+    },
+    {
+      "name": "Spelunkery",
+      "projectId": "krskFMfA",
+      "fileId": "xEa903Qn",
+      "filename": "spelunkery-1.20.1-0.3.16-fabric.jar",
+      "side": "both"
+    },
+    {
+      "name": "Supplementaries",
+      "projectId": "fFEIiSDQ",
+      "fileId": "nnzd0ymm",
+      "filename": "supplementaries-1.20-3.1.31-fabric.jar",
+      "side": "both"
+    },
+    {
+      "name": "Bountiful Fares",
+      "projectId": "YgrSDjlb",
+      "fileId": "H4COb7fF",
+      "filename": "bountifulfares-1.2.1-1.20.1.jar",
+      "side": "both"
+    },
+    {
+      "name": "Create",
+      "projectId": "Xbc0uyRg",
+      "fileId": "7Ub71nPb",
+      "filename": "create-fabric-0.5.1-j-build.1631+mc1.20.1.jar",
+      "side": "both"
+    },
+    {
+      "name": "Moonlight Lib",
+      "projectId": "twkfQtEc",
+      "fileId": "GVVbixH6",
+      "filename": "moonlight-1.20-2.14.11-fabric.jar",
+      "side": "both"
+    },
+    {
+      "name": "Astrocraft",
+      "projectId": "DCWEXia7",
+      "fileId": "IUv21P55",
+      "filename": "astrocraft-1.5.1+1.20.1.jar",
+      "side": "both"
+    },
+    {
+      "name": "Amendments",
+      "projectId": "6iTJugQR",
+      "fileId": "E9PbJYi2",
+      "filename": "amendments-1.20-1.2.19-fabric.jar",
+      "side": "both"
     }
   ]
 }

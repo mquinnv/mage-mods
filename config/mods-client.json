@@ -23,9 +23,9 @@
     },
     {
       "name": "Indium",
-      "projectId": "mOgUt4GM",
-      "fileId": "lEkperf6",
-      "filename": "modmenu-7.2.2.jar",
+      "projectId": "Orvt0mRa",
+      "fileId": "nQHYSjxO",
+      "filename": "indium-1.0.36+mc1.20.1.jar",
       "side": "client"
     },
     {
@@ -66,8 +66,8 @@
     {
       "name": "Jade",
       "projectId": "nvQzSEkH",
-      "fileId": "drol2x1P",
-      "filename": "Jade-1.20-Fabric-11.13.1.jar",
+      "fileId": "oJx1UoWN",
+      "filename": "Jade-1.20-Fabric-11.12.3.jar",
       "side": "client"
     },
     {
@@ -110,7 +110,7 @@
       "projectId": "9s6osm5g",
       "fileId": "2xQdCMyG",
       "filename": "cloth-config-11.1.136-fabric.jar",
-      "side": "client"
+      "side": "both"
     },
     {
       "name": "AutoSwitch",
@@ -132,6 +132,69 @@
       "fileId": "Uygzs3iI",
       "filename": "libIPN-fabric-1.20-4.0.2.jar",
       "side": "client"
+    },
+    {
+      "name": "Spelunkery",
+      "projectId": "krskFMfA",
+      "fileId": "xEa903Qn",
+      "filename": "spelunkery-1.20.1-0.3.16-fabric.jar",
+      "side": "both"
+    },
+    {
+      "name": "Supplementaries",
+      "projectId": "fFEIiSDQ",
+      "fileId": "nnzd0ymm",
+      "filename": "supplementaries-1.20-3.1.31-fabric.jar",
+      "side": "both"
+    },
+    {
+      "name": "Mouse Tweaks",
+      "projectId": "aC3cM3Vq",
+      "fileId": "mjuG4AYd",
+      "filename": "MouseTweaks-fabric-mc1.20-2.26.jar",
+      "side": "client"
+    },
+    {
+      "name": "Bountiful Fares",
+      "projectId": "YgrSDjlb",
+      "fileId": "H4COb7fF",
+      "filename": "bountifulfares-1.2.1-1.20.1.jar",
+      "side": "both"
+    },
+    {
+      "name": "Create",
+      "projectId": "Xbc0uyRg",
+      "fileId": "7Ub71nPb",
+      "filename": "create-fabric-0.5.1-j-build.1631+mc1.20.1.jar",
+      "side": "both"
+    },
+    {
+      "name": "Better Clouds",
+      "projectId": "5srFLIaK",
+      "fileId": "gzccrRVX",
+      "filename": "better-clouds-1.3.32+1.20.1-fabric.jar",
+      "side": "client"
+    },
+    {
+      "name": "Moonlight Lib",
+      "projectId": "twkfQtEc",
+      "fileId": "GVVbixH6",
+      "filename": "moonlight-1.20-2.14.11-fabric.jar",
+      "side": "both"
+    },
+    {
+      "name": "Astrocraft",
+      "projectId": "DCWEXia7",
+      "fileId": "IUv21P55",
+      "filename": "astrocraft-1.5.1+1.20.1.jar",
+      "side": "both"
+    },
+    {
+      "name": "Amendments",
+      "projectId": "6iTJugQR",
+      "fileId": "E9PbJYi2",
+      "filename": "amendments-1.20-1.2.19-fabric.jar",
+      "side": "both"
     }
   ]
 }
