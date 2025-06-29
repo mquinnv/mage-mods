@@ -1,0 +1,9 @@
+open 5843.node.apexhosting.gdn 21
+user michael.ventura@gmail.com.2880484 WBH!rhd3zea@twg@egc
+binary
+passive
+
+# Upload optimized server.properties
+put ../build/server-config/server.properties server.properties
+
+quit

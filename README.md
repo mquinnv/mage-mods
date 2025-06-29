@@ -62,6 +62,64 @@ npm run clean:all         # Remove entire build directory
   - `server-config/` - Generated server configuration files
 - `*.mrpack` - Output modpacks
 
+## Included Mods
+
+### Client Pack (24 mods)
+
+**Performance & Optimization:**
+- [Fabric API](https://modrinth.com/mod/fabric-api) - Essential Fabric mod loader API
+- [Sodium](https://modrinth.com/mod/sodium) - Modern rendering engine for improved FPS
+- [Iris Shaders](https://modrinth.com/mod/iris) - Shader pack support with Sodium compatibility
+- [Entity Culling](https://modrinth.com/mod/entityculling) - Skip rendering entities behind walls
+- [FerriteCore](https://modrinth.com/mod/ferrite-core) - Memory usage optimizations
+- [Krypton](https://modrinth.com/mod/krypton) - Network stack optimizations
+- [LazyDFU](https://modrinth.com/mod/lazydfu) - Faster startup times
+- [Memory Leak Fix](https://modrinth.com/mod/memoryleakfix) - Fixes several memory leaks
+
+**User Interface & Quality of Life:**
+- [Mod Menu](https://modrinth.com/mod/modmenu) - In-game mod configuration menu
+- [Jade](https://modrinth.com/mod/jade) - Advanced tooltips and block information
+- [EMI](https://modrinth.com/mod/emi) - Recipe viewer and item search
+- [AppleSkin](https://modrinth.com/mod/appleskin) - Food/hunger information display
+- [Inventory Profiles Next](https://modrinth.com/mod/inventory-profiles-next) - Inventory sorting and management
+- [Continuity](https://modrinth.com/mod/continuity) - Connected textures support
+- [Cloth Config](https://modrinth.com/mod/cloth-config) - Configuration API for mods
+- [AutoSwitch](https://modrinth.com/mod/autoswitch) - Automatic tool switching
+
+**Content & Features:**
+- [Spelunkery](https://modrinth.com/mod/spelunkery) - Enhanced cave exploration and mining
+- [Supplementaries](https://modrinth.com/mod/supplementaries) - Decorative blocks and utilities
+
+**Dependencies:**
+- [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin) - Kotlin support for Fabric mods
+- [libIPN](https://modrinth.com/mod/libipn) - Inventory Profiles Next library
+
+### Server Pack (14 mods)
+
+**Core & Performance:**
+- [Fabric API](https://modrinth.com/mod/fabric-api) - Essential Fabric mod loader API
+- [Lithium](https://modrinth.com/mod/lithium) - Server-side performance optimizations
+- [Starlight](https://modrinth.com/mod/starlight) - Lighting engine rewrite for better performance
+- [FerriteCore](https://modrinth.com/mod/ferrite-core) - Memory usage optimizations
+- [Krypton](https://modrinth.com/mod/krypton) - Network stack optimizations
+- [ServerCore](https://modrinth.com/mod/servercore) - Server optimization features
+
+**Administration & Monitoring:**
+- [Spark](https://modrinth.com/mod/spark) - Performance profiler
+- [Carpet](https://modrinth.com/mod/carpet) - Technical utilities and debugging
+- [Carpet Extra](https://modrinth.com/mod/carpet-extra) - Additional Carpet features
+- [Essential Commands](https://modrinth.com/mod/essential-commands) - Essential server commands
+- [LuckPerms](https://modrinth.com/mod/luckperms) - Advanced permissions system
+- [BlueMap](https://modrinth.com/mod/bluemap) - 3D web-based world map
+
+**Content & Features:**
+- [AutoSwitch](https://modrinth.com/mod/autoswitch) - Automatic tool switching
+- [Spelunkery](https://modrinth.com/mod/spelunkery) - Enhanced cave exploration and mining
+- [Supplementaries](https://modrinth.com/mod/supplementaries) - Decorative blocks and utilities
+
+**Dependencies:**
+- [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin) - Kotlin support for Fabric mods
+
 ## Managing Mods
 
 Edit mod lists in:

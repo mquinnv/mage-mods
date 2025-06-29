@@ -1,0 +1,15 @@
+{
+  "Performance": {
+    "Magnitude Limit": 4.5
+  },
+  "Time & World": {
+    "Year Length": 365.25,
+    "Latitude": 30.0
+  },
+  "Sky Settings": {
+    "Inclined Sky": false
+  },
+  "Overlays": {
+    "Show Constellations": false
+  }
+}

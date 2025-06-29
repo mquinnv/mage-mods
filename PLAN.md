@@ -130,9 +130,9 @@ Central metadata for both packs:
 - [x] **AutoSwitch integration** - Proper Modrinth project integration (no longer manual)
 - [x] **Axios HTTP client** - Modern async/await API requests with proper authentication
 - [x] **Environment variable support** - `.env` file loading with dotenv
+- [x] **Build script cleanup** - Automatic cleanup of old version assets and removal of unnecessary symlinks
 
 ## 🚧 Future Enhancements
-
 - [ ] **Dependency resolution and validation** - Automatic mod dependency checking
 - [ ] **GitHub Actions for automated releases** - CI/CD pipeline for version updates  
 - [ ] **Multi-version support** - Support for multiple Minecraft versions

@@ -23,6 +23,60 @@ const packInfo = JSON.parse(fs.readFileSync('config/pack-info.json', 'utf8'));
 const clientMods = JSON.parse(fs.readFileSync('config/mods-client.json', 'utf8'));
 const serverMods = JSON.parse(fs.readFileSync('config/mods-server.json', 'utf8'));
 
+function cleanupOldAssets() {
+  console.log('🧹 Cleaning up old assets...');
+  
+  const currentVersion = packInfo.version;
+  const buildDir = 'build';
+  
+  if (!fs.existsSync(buildDir)) {
+    console.log('  No build directory found, skipping cleanup');
+    return;
+  }
+  
+  // Remove old .mrpack and .zip files, keeping only current version
+  const files = fs.readdirSync(buildDir);
+  let cleanedCount = 0;
+  
+  files.forEach(file => {
+    const filePath = path.join(buildDir, file);
+    const stat = fs.lstatSync(filePath);
+    
+    // Remove old symlinks
+    if (stat.isSymbolicLink()) {
+      console.log(`  Removing symlink: ${file}`);
+      fs.unlinkSync(filePath);
+      cleanedCount++;
+    }
+    // Remove old version files
+    else if (file.endsWith('.mrpack') || file.endsWith('.zip')) {
+      // Keep current version and "latest" files
+      if (!file.includes(currentVersion) && !file.includes('latest')) {
+        console.log(`  Removing old version file: ${file}`);
+        fs.unlinkSync(filePath);
+        cleanedCount++;
+      }
+    }
+  });
+  
+  // Clean up old build subdirectories that might be left over
+  const potentialDirs = ['client-prism', 'server-prism'];
+  potentialDirs.forEach(dir => {
+    const dirPath = path.join(buildDir, dir);
+    if (fs.existsSync(dirPath)) {
+      console.log(`  Removing old build directory: ${dir}`);
+      fs.rmSync(dirPath, { recursive: true, force: true });
+      cleanedCount++;
+    }
+  });
+  
+  if (cleanedCount > 0) {
+    console.log(`✅ Cleaned up ${cleanedCount} old assets`);
+  } else {
+    console.log('  No old assets to clean up');
+  }
+}
+
 // Ensure directories exist
 const dirs = ['build/client/mods', 'build/server/mods', 'src/client', 'src/server'];
 dirs.forEach(dir => fs.mkdirSync(dir, { recursive: true }));
@@ -191,6 +245,22 @@ async function createMrpack(packType, mods, index) {
   if (packType === 'client') {
     const overridesDir = path.join(buildDir, 'overrides');
     fs.mkdirSync(overridesDir, { recursive: true });
+    
+    // Copy shared config files to overrides/config
+    const sharedConfigDir = 'src/shared/config';
+    if (fs.existsSync(sharedConfigDir)) {
+      const overridesConfigDir = path.join(overridesDir, 'config');
+      fs.mkdirSync(overridesConfigDir, { recursive: true });
+      
+      // Copy all config files from shared directory
+      const configFiles = fs.readdirSync(sharedConfigDir);
+      configFiles.forEach(file => {
+        const srcPath = path.join(sharedConfigDir, file);
+        const destPath = path.join(overridesConfigDir, file);
+        fs.copyFileSync(srcPath, destPath);
+        console.log(`  Copied config: ${file}`);
+      });
+    }
     
     // Create server info file
     const serverInfo = `Minecraft Mage Server Information:
@@ -369,6 +439,9 @@ JvmArgs=-XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1NewSizePercent=20 -X
 
 async function main() {
   console.log('🚀 Minecraft Mage Pack Builder\n');
+  
+  // Clean up old assets first
+  cleanupOldAssets();
   
   // Download client mods
   console.log('=== Building Client Pack ===');

@@ -6,6 +6,23 @@ const path = require('path');
 // Load pack info
 const packInfo = JSON.parse(fs.readFileSync('config/pack-info.json', 'utf8'));
 
+// Function to copy shared config files
+function copySharedConfigs(destDir) {
+  const sharedConfigDir = 'src/shared/config';
+  if (fs.existsSync(sharedConfigDir)) {
+    const configDir = path.join(destDir, 'config');
+    fs.mkdirSync(configDir, { recursive: true });
+    
+    const configFiles = fs.readdirSync(sharedConfigDir);
+    configFiles.forEach(file => {
+      const srcPath = path.join(sharedConfigDir, file);
+      const destPath = path.join(configDir, file);
+      fs.copyFileSync(srcPath, destPath);
+      console.log(`  ✓ Copied config: ${file}`);
+    });
+  }
+}
+
 // Default server.properties for optimized Fabric server
 const serverProperties = {
   // Basic server settings
@@ -163,10 +180,14 @@ function generateServerProperties() {
   // Generate configuration notes
   fs.writeFileSync(path.join(buildDir, 'APEX_HOSTING_SETUP.md'), modConfigNotes);
   
+  // Copy shared config files
+  copySharedConfigs(buildDir);
+  
   console.log('✅ Server configuration files generated:');
   console.log('   - server.properties (optimized for Apex Hosting)');
   console.log('   - start-server.sh (JVM-optimized startup script)');
   console.log('   - APEX_HOSTING_SETUP.md (configuration guide)');
+  console.log('   - Shared mod config files copied');
 }
 
 if (require.main === module) {

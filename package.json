@@ -17,7 +17,8 @@
     "update-versions": "node scripts/update-mod-versions.js",
     "update-descriptions": "node scripts/update-descriptions.js",
     "generate-config": "node scripts/generate-server-config.js",
-    "setup-server": "npm run generate-config && npm run build:server"
+    "setup-server": "npm run generate-config && npm run build:server",
+    "deploy": "node scripts/deploy-apex.js"
   },
   "keywords": [
     "minecraft",
@@ -29,6 +30,7 @@
   "license": "MIT",
   "dependencies": {
     "axios": "^1.10.0",
+    "basic-ftp": "^5.0.5",
     "dotenv": "^17.0.0",
     "form-data": "^4.0.0"
   }
