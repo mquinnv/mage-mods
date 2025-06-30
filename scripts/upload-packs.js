@@ -22,8 +22,9 @@ if (!MODRINTH_TOKEN) {
 const packInfo = JSON.parse(fs.readFileSync('config/pack-info.json', 'utf8'));
 const uploadConfig = JSON.parse(fs.readFileSync('config/upload-config.json', 'utf8'));
 
-async function uploadVersion(projectId, packType) {
-  const fileName = `${packInfo.name.toLowerCase().replace(/\s+/g, '-')}-${packType}-${packInfo.version}.mrpack`;
+async function uploadVersion(projectId, packType, variant = '') {
+  const variantSuffix = variant ? `-${variant}` : '';
+  const fileName = `${packInfo.name.toLowerCase().replace(/\s+/g, '-')}-${packType}-${packInfo.version}${variantSuffix}.mrpack`;
   const filePath = path.join(process.cwd(), 'build', fileName);
   
   if (!fs.existsSync(filePath)) {
@@ -33,9 +34,10 @@ async function uploadVersion(projectId, packType) {
   console.log(`📤 Uploading ${fileName} to project ${projectId}...`);
   
   // Prepare version data
+  const variantDisplayName = variant ? ` - ${variant.charAt(0).toUpperCase() + variant.slice(1)}` : '';
   const versionData = {
-    name: `${packInfo.version} (${packType})`,
-    version_number: packInfo.version,
+    name: `${packInfo.version} (${packType}${variantDisplayName})`,
+    version_number: variant ? `${packInfo.version}-${variant}` : packInfo.version,
     changelog: uploadConfig.changelog || `Release ${packInfo.version}`,
     dependencies: [],
     game_versions: [packInfo.minecraft],
@@ -104,10 +106,15 @@ async function main() {
   const args = process.argv.slice(2);
   const uploadClient = !args.length || args.includes('--client');
   const uploadServer = !args.length || args.includes('--server');
+  const uploadEnhanced = !args.length || args.includes('--enhanced');
   
   try {
     if (uploadClient) {
       await uploadVersion(uploadConfig.clientProjectId, 'client');
+    }
+    
+    if (uploadEnhanced) {
+      await uploadVersion(uploadConfig.clientProjectId, 'client', 'enhanced');
     }
     
     if (uploadServer) {

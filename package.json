@@ -9,6 +9,7 @@
     "build:server": "node scripts/build-packs.js --server",
     "upload": "node scripts/upload-packs.js",
     "upload:client": "node scripts/upload-packs.js --client",
+    "upload:enhanced": "node scripts/upload-packs.js --enhanced",
     "upload:server": "node scripts/upload-packs.js --server",
     "release": "npm run build && npm run upload",
     "clean": "rm -rf build/*.mrpack",

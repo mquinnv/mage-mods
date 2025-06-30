@@ -108,8 +108,9 @@ This automatically:
 
 **Upload Packs:**
 ```bash
-npm run upload          # Upload both client and server
+npm run upload          # Upload all variants (client, enhanced, server)
 npm run upload:client   # Client only
+npm run upload:enhanced # Enhanced client only
 npm run upload:server   # Server only
 ```
 
@@ -161,8 +162,9 @@ git push origin main --tags
 npm run build           # Build all packs
 npm run build:client    # Build client only  
 npm run build:server    # Build server only
-npm run upload          # Upload to Modrinth
+npm run upload          # Upload all variants to Modrinth
 npm run upload:client   # Upload client to Modrinth
+npm run upload:enhanced # Upload enhanced client to Modrinth
 npm run upload:server   # Upload server to Modrinth
 npm run deploy          # Deploy to Apex hosting
 npm run clean           # Clean build artifacts
@@ -180,7 +182,8 @@ npm run clean:all       # Clean all build directories
 - [ ] Run `npm run deploy` to Apex hosting
 - [ ] Complete manual Apex control panel steps
 - [ ] Test server startup
-- [ ] Run `npm run upload` to publish to Modrinth
+- [ ] Run `npm run upload` to publish all variants to Modrinth
+- [ ] Verify all variants uploaded: client, enhanced, and server
 - [ ] Test client download and connection
 - [ ] Create git commit and tag
 - [ ] Push to repository
