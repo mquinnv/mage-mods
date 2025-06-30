@@ -1,6 +1,6 @@
 {
   "name": "minecraft-mage-modpack-manager",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Manage Minecraft Mage modpacks for server and client",
   "main": "scripts/build-packs.js",
   "scripts": {

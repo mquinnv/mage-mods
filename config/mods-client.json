@@ -223,6 +223,62 @@
       "fileId": "E9PbJYi2",
       "filename": "amendments-1.20-1.2.19-fabric.jar",
       "side": "both"
+    },
+    {
+      "name": "Xaero's Minimap",
+      "projectId": "1bokaNcj",
+      "fileId": "ePRxT2Wj",
+      "filename": "Xaeros_Minimap_25.2.6_Fabric_1.20.jar",
+      "side": "client"
+    },
+    {
+      "name": "Xaero's World Map",
+      "projectId": "NcUtCpym",
+      "fileId": "fQpXYWtL",
+      "filename": "XaerosWorldMap_1.39.9_Fabric_1.20.jar",
+      "side": "client"
+    },
+    {
+      "name": "Oreganized",
+      "projectId": "2FJutzEL",
+      "fileId": "9KLOnNlG",
+      "filename": "Oreganized-2.0.3-fabric.jar",
+      "side": "both"
+    },
+    {
+      "name": "Lithostitched",
+      "projectId": "XaDC71GB",
+      "fileId": "owa0e2tu",
+      "filename": "lithostitched-fabric-1.20.1-1.4.10.jar",
+      "side": "both"
+    },
+    {
+      "name": "Tectonic",
+      "projectId": "lWDHr9jE",
+      "fileId": "sPAY67Vk",
+      "filename": "tectonic-3.0.1-fabric-1.20.1.jar",
+      "side": "both"
+    },
+    {
+      "name": "Dungeons and Taverns",
+      "projectId": "tpehi7ww",
+      "fileId": "d1sY0JqV",
+      "filename": "dungeons-and-taverns-3.0.3.f.jar",
+      "side": "both"
+    },
+    {
+      "name": "Gardens of the Dead",
+      "projectId": "lg1TPRFm",
+      "fileId": "dwXQdKI3",
+      "filename": "gardens-of-the-dead-fabric-4.0.1.jar",
+      "side": "both"
+    },
+    {
+      "name": "Architectury API",
+      "projectId": "lhGA9TYQ",
+      "fileId": "WbL7MStR",
+      "filename": "architectury-9.2.14-fabric.jar",
+      "side": "both"
     }
   ]
 }
