@@ -279,6 +279,13 @@
       "fileId": "WbL7MStR",
       "filename": "architectury-9.2.14-fabric.jar",
       "side": "both"
+    },
+    {
+      "name": "Ad Astra",
+      "projectId": "3ufwT9JF",
+      "fileId": "gZClwdxY",
+      "filename": "ad_astra-fabric-1.20.1-1.15.20.jar",
+      "side": "both"
     }
   ]
 }

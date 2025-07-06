@@ -17,8 +17,23 @@ function copySharedConfigs(destDir) {
     configFiles.forEach(file => {
       const srcPath = path.join(sharedConfigDir, file);
       const destPath = path.join(configDir, file);
-      fs.copyFileSync(srcPath, destPath);
-      console.log(`  ✓ Copied config: ${file}`);
+      const stats = fs.statSync(srcPath);
+      
+      if (stats.isDirectory()) {
+        // Copy directory recursively
+        fs.mkdirSync(destPath, { recursive: true });
+        const files = fs.readdirSync(srcPath);
+        files.forEach(subFile => {
+          const subSrcPath = path.join(srcPath, subFile);
+          const subDestPath = path.join(destPath, subFile);
+          fs.copyFileSync(subSrcPath, subDestPath);
+        });
+        console.log(`  ✓ Copied config directory: ${file}`);
+      } else {
+        // Copy file
+        fs.copyFileSync(srcPath, destPath);
+        console.log(`  ✓ Copied config: ${file}`);
+      }
     });
   }
 }

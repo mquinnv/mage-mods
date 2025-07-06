@@ -164,18 +164,48 @@ async function deployToApex() {
         let configUploadedCount = 0;
         
         for (const configFile of configFiles) {
-          try {
-            console.log(`  Uploading config/${configFile}...`);
-            await client.uploadFrom(
-              path.join(configPath, configFile),
-              `/default/config/${configFile}`
-            );
-            configUploadedCount++;
-          } catch (error) {
-            console.log(`  ❌ Failed to upload ${configFile}: ${error.message}`);
+          const configFilePath = path.join(configPath, configFile);
+          const stats = fs.statSync(configFilePath);
+          
+          if (stats.isDirectory()) {
+            // Handle directory upload
+            try {
+              console.log(`  Uploading config directory ${configFile}...`);
+              await client.ensureDir(`/default/config/${configFile}`);
+              
+              const dirFiles = fs.readdirSync(configFilePath);
+              for (const subFile of dirFiles) {
+                const subFilePath = path.join(configFilePath, subFile);
+                const subStats = fs.statSync(subFilePath);
+                
+                if (subStats.isFile()) {
+                  console.log(`    Uploading ${configFile}/${subFile}...`);
+                  await client.uploadFrom(
+                    subFilePath,
+                    `/default/config/${configFile}/${subFile}`
+                  );
+                  console.log(`    ✅ ${configFile}/${subFile} uploaded successfully`);
+                }
+              }
+              configUploadedCount++;
+            } catch (error) {
+              console.log(`  ❌ Failed to upload directory ${configFile}: ${error.message}`);
+            }
+          } else {
+            // Handle file upload
+            try {
+              console.log(`  Uploading config/${configFile}...`);
+              await client.uploadFrom(
+                configFilePath,
+                `/default/config/${configFile}`
+              );
+              configUploadedCount++;
+            } catch (error) {
+              console.log(`  ❌ Failed to upload ${configFile}: ${error.message}`);
+            }
           }
         }
-        console.log(`✅ Uploaded ${configUploadedCount}/${configFiles.length} config files`);
+        console.log(`✅ Uploaded ${configUploadedCount}/${configFiles.length} config files/directories`);
       } catch (error) {
         console.log(`❌ Config directory upload failed: ${error.message}`);
       }

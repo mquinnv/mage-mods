@@ -1,0 +1,420 @@
+[dotenv@17.0.0] injecting env (5) from .env – 🔐 encrypt with dotenvx: https://dotenvx.com
+Checking latest versions for Minecraft 1.20.1 Fabric mods...
+
+================================================================================
+✅ Current Fabric API
+   ID: P7dR8mSH
+   Current: 0.92.6+1.20.1
+   Latest: 0.92.6+1.20.1
+   File ID: UapVHwiP
+   Filename: fabric-api-0.92.6+1.20.1.jar
+   Published: 5/31/2025
+   Changelog: - Bump version (modmuss50)
+- Fix #4487 for 1.20.1 (#4654) (Dawn, modmuss50)
+...
+
+🆕 UPDATE AVAILABLE Sodium
+   ID: AANobbMI
+   Current: 0.5.13+mc1.20.1
+   Latest: mc1.20.1-0.5.13-fabric
+   File ID: OihdIimA
+   Filename: sodium-fabric-0.5.13+mc1.20.1.jar
+   Published: 3/3/2025
+   Changelog: This is a stable release which back-ports many fixes and improvements from newer versions of Sodium.
+
+For more information about the (many) changes in this release, please see the change-log for [Sodi...
+
+🆕 UPDATE AVAILABLE Iris Shaders
+   ID: YL57xq9U
+   Current: 1.7.6+mc1.20.1
+   Latest: 1.7.6+1.20.1
+   File ID: s5eFLITc
+   Filename: iris-1.7.6+mc1.20.1.jar
+   Published: 3/2/2025
+   Changelog: This backports a few bug fixes from Iris 1.8, as well as adding compatibility for Sodium 0.5.12....
+
+✅ Current Indium
+   ID: Orvt0mRa
+   Current: 1.0.36+mc1.20.1
+   Latest: 1.0.36+mc1.20.1
+   File ID: nQHYSjxO
+   Filename: indium-1.0.36+mc1.20.1.jar
+   Published: 2/25/2025
+   Changelog: - Version bump again (oopsie) (comp500)
+- Update Github actions artifact upload step (comp500)
+- Bump version, allow newer Sodium 0.5.x backports (comp500)
+
+See the full changes on Github: https://git...
+
+🆕 UPDATE AVAILABLE Entity Culling
+   ID: NNAgCjsB
+   Current: 1.8.0-mc1.20.1
+   Latest: 1.8.0
+   File ID: JrOhNEba
+   Filename: entityculling-fabric-1.8.0-mc1.20.1.jar
+   Published: 6/20/2025
+   Changelog: Pretty big update with many optimizations and fixes, perfect to celebrate recently hit download milestones and the new Partnership with Essential.
+
+## What's Changed
+* Update to 1.21.6
+* Add confi...
+
+🆕 UPDATE AVAILABLE FerriteCore
+   ID: uXXizFIs
+   Current: 6.0.1-fabric
+   Latest: 6.0.1
+   File ID: unerR5MN
+   Filename: ferritecore-6.0.1-fabric.jar
+   Published: 10/22/2023
+   Changelog: - Fix performance issue in quad deduplication in some corner cases
+- Slightly improve memory usage for blocks with only one state...
+
+✅ Current Yet Another Config Lib v3
+   ID: 1eAoo2KR
+   Current: 3.6.6+1.20.1-fabric
+   Latest: 3.6.6+1.20.1-fabric
+   File ID: dvS5DjUA
+   Filename: yet_another_config_lib_v3-3.6.6+1.20.1-fabric.jar
+   Published: 3/23/2025
+   Changelog: # YetAnotherConfigLib 3.6.6
+
+This version of YACL has many different version targets.
+Ensure you download the correct version of YACL for your MC version.
+
+- Fabric 1.21.5
+- Fabric 1.21.4
+- Fabric 1.2...
+
+✅ Current LazyDFU
+   ID: hvFnDODi
+   Current: 0.1.3
+   Latest: 0.1.3
+   File ID: 4SHylIO9
+   Filename: lazydfu-0.1.3.jar
+   Published: 6/7/2022
+   Changelog: * Update to Minecraft 1.19
+* Mojang now (by default) does not build datafixer rules on servers. LazyDFU continues to work as usual on the client and ensures that datafixer rules will not be built on t...
+
+🆕 UPDATE AVAILABLE Memory Leak Fix
+   ID: NRjRiSSD
+   Current: 1.1.5
+   Latest: v1.1.5
+   File ID: 5xvCCRjJ
+   Filename: memoryleakfix-fabric-1.17+-1.1.5.jar
+   Published: 1/6/2024
+   Changelog: **Changes:**
+- Removed the custom payload memory leak fix
+
+**Update:**
+Ive been really busy recently. So I don't have much time to maintain my mods, if you want this fix for versions below 1.20.2 ...
+
+🆕 UPDATE AVAILABLE Jade
+   ID: nvQzSEkH
+   Current: 11.13.1
+   Latest: 11.13.1+fabric
+   File ID: drol2x1P
+   Filename: Jade-1.20-Fabric-11.13.1.jar
+   Published: 3/11/2025
+   Changelog: ## 11.13.1
+
+- Merge pull request [#565](https://github.com/Snownee/Jade/issues/565) from SettingDust/1.20-fabric
+- fix: 60022292d828c1773a891c505c5c169ee5bff7e2 changes working on fabric
+- fix: workar...
+
+✅ Current JEI
+   ID: u6dRKJwZ
+   Current: 15.20.0.112
+   Latest: 15.20.0.112
+   File ID: MMnbcAih
+   Filename: jei-1.20.1-fabric-15.20.0.112.jar
+   Published: 5/31/2025
+   Changelog:   * [minor cleanup](https://github.com/mezz/JustEnoughItems/commit/06ef535ecdca268da1c9ee01302387c8f0402dc1) - mezz
+...
+
+✅ Current Just Enough Resources
+   ID: uEfK2CXF
+   Current: 1.4.0.247
+   Latest: 1.4.0.247
+   File ID: 9HWvOVzO
+   Filename: JustEnoughResources-Fabric-1.20.1-1.4.0.247.jar
+   Published: 1/24/2024
+   Changelog: No changelog was specified....
+
+✅ Current Enchancement
+   ID: 6hN1V6wJ
+   Current: 1.20-26
+   Latest: 1.20-26
+   File ID: mGY2pNFa
+   Filename: enchancement-1.20-26.jar
+   Published: 5/18/2024
+   Changelog: - fix https://github.com/MoriyaShiine/enchancement/issues/181...
+
+✅ Current ToolTipFix
+   ID: 2RKFTmiB
+   Current: 1.1.1-1.20
+   Latest: 1.1.1-1.20
+   File ID: B2L4LeMV
+   Filename: tooltipfix-1.1.1-1.20.jar
+   Published: 6/9/2023
+   Changelog: Port to 1.20...
+
+✅ Current Dye Depot
+   ID: dl88rsIq
+   Current: 1.0.3-fabric
+   Latest: 1.0.3-fabric
+   File ID: SqvSzYPB
+   Filename: dye_depot-1.0.3-fabric.jar
+   Published: 4/20/2024
+   Changelog: - Fixed amber dye recipes
+- Added new Dye Basket Blocks
+- Various other improvements
+- Added textures and data for Supplementaries Compat...
+
+🆕 UPDATE AVAILABLE AppleSkin
+   ID: EsAfCjCV
+   Current: 2.5.1
+   Latest: 2.5.1+mc1.20
+   File ID: xcauwnEB
+   Filename: appleskin-fabric-mc1.20.1-2.5.1.jar
+   Published: 9/27/2023
+   Changelog: - Fixed potential crash from unexpectedly large health/absorption values ([#266](https://github.com/squeek502/AppleSkin/issues/266))
+- Made tooltips in the mod config screen translatable and added Chi...
+
+🆕 UPDATE AVAILABLE Inventory Profiles Next
+   ID: O7RBXm3n
+   Current: 1.10.12
+   Latest: fabric-1.20.1-1.10.12
+   File ID: zXog2n0B
+   Filename: InventoryProfilesNext-fabric-1.20-1.10.12.jar
+   Published: 1/16/2025
+   Changelog: ## What's new
+
+### 1.10.12
+
+-   Maintenance release. There are no visible changes in feature set or performance.
+-   updated translations
+-   Some fixes and optimisations.
+
+#### Supported Minecraft ve...
+
+✅ Current Continuity
+   ID: 1IjD5062
+   Current: 3.0.0+1.20.1
+   Latest: 3.0.0+1.20.1
+   File ID: qGTDcjHM
+   Filename: continuity-3.0.0+1.20.1.jar
+   Published: 12/4/2024
+   Changelog: The changes listed below are relative to the last full release, Continuity 2.0.2.
+
+### Fixes
+
+- Fix sprite paths starting with `assets/minecraft/` not being parsed correctly
+- Fix custom block layers ...
+
+✅ Current Mod Menu
+   ID: mOgUt4GM
+   Current: 7.2.2
+   Latest: 7.2.2
+   File ID: lEkperf6
+   Filename: modmenu-7.2.2.jar
+   Published: 9/8/2023
+   Changelog: - Update Tatar translations
+- Update Vietnamese translations
+- Fix child mods hidden via config not being hidden...
+
+🆕 UPDATE AVAILABLE Cloth Config
+   ID: 9s6osm5g
+   Current: 11.1.136-fabric
+   Latest: 11.1.136+fabric
+   File ID: 2xQdCMyG
+   Filename: cloth-config-11.1.136-fabric.jar
+   Published: 9/16/2024
+
+✅ Current AutoSwitch
+   ID: uSdcnlts
+   Current: 7.0.2
+   Latest: 7.0.2
+   File ID: J4tWnLnz
+   Filename: autoswitch-7.0.2.jar
+   Published: 7/25/2023
+   Changelog: This is autopublished from Github Actions. Use at your own risk. See commit history or a release build for changes. Based on commit: cfdef23
+
+<br />This build may work on Minecraft versions not specif...
+
+✅ Current Fabric Language Kotlin
+   ID: Ha28R6CL
+   Current: 1.13.4+kotlin.2.2.0
+   Latest: 1.13.4+kotlin.2.2.0
+   File ID: mccDBWqV
+   Filename: fabric-language-kotlin-1.13.4+kotlin.2.2.0.jar
+   Published: 6/23/2025
+   Changelog: - Bump version (modmuss)
+- Update versions (#167) (github-actions[bot], github-actions)
+- Update readme (github-actions)
+...
+
+🆕 UPDATE AVAILABLE libIPN
+   ID: onSQdWhM
+   Current: 4.0.2
+   Latest: fabric-1.20-4.0.2
+   File ID: Uygzs3iI
+   Filename: libIPN-fabric-1.20-4.0.2.jar
+   Published: 3/24/2024
+   Changelog: ## What's new
+
+### 4.0.2
+
+-   this is just preliminary release for future 1.20.5 compatible version
+...
+
+🆕 UPDATE AVAILABLE Spelunkery
+   ID: krskFMfA
+   Current: 0.3.16
+   Latest: 1.20.1-0.3.16
+   File ID: xEa903Qn
+   Filename: spelunkery-1.20.1-0.3.16-fabric.jar
+   Published: 1/24/2025
+   Changelog: - fixed salt lamps not droping themselves
+- fixed curse of binding being broken
+- fixed spring water appearing yellow on some instances of sodium or its forks
+- dimensional tears use their more readab...
+
+🆕 UPDATE AVAILABLE Supplementaries
+   ID: fFEIiSDQ
+   Current: 3.1.31-fabric
+   Latest: 1.20-3.1.31
+   File ID: nnzd0ymm
+   Filename: supplementaries-1.20-3.1.31-fabric.jar
+   Published: 6/4/2025
+   Changelog: removed a fix for a mc bug, MC-263524...
+
+🆕 UPDATE AVAILABLE Mouse Tweaks
+   ID: aC3cM3Vq
+   Current: 2.26
+   Latest: 1.20-2.26-fabric
+   File ID: mjuG4AYd
+   Filename: MouseTweaks-fabric-mc1.20-2.26.jar
+   Published: 4/2/2024
+   Changelog: - Improved compatibility with slots with custom stack limits (like in the Nether Chested mod)....
+
+🆕 UPDATE AVAILABLE Bountiful Fares
+   ID: YgrSDjlb
+   Current: 1.2.1-1.20.1
+   Latest: 1.2.1
+   File ID: H4COb7fF
+   Filename: bountifulfares-1.2.1-1.20.1.jar
+   Published: 6/1/2024
+   Changelog: - Fixed farmersdelight compat messing with axe mineables
+- Added missing recipes and loot tables for Walnut and Hoary Cabinets (farmersdelight)
+- Added red dye from Tea Berries recipe
+- Increased the ...
+
+✅ Current Create
+   ID: Xbc0uyRg
+   Current: 0.5.1-j-build.1631+mc1.20.1
+   Latest: 0.5.1-j-build.1631+mc1.20.1
+   File ID: 7Ub71nPb
+   Filename: create-fabric-0.5.1-j-build.1631+mc1.20.1.jar
+   Published: 12/11/2024
+   Changelog: - Fix goggles not being equippable in the face slot
+- Fix mixers and presses not processing any items after processing twice
+- Fix spoutputs returning double the amount they should...
+
+🆕 UPDATE AVAILABLE Better Clouds
+   ID: 5srFLIaK
+   Current: 1.3.32+1.20.1-fabric
+   Latest: 1.3.32+1.20.1-fabric-r
+   File ID: gzccrRVX
+   Filename: better-clouds-1.3.32+1.20.1-fabric.jar
+   Published: 6/22/2025
+   Changelog: - Updated to 1.21.6  
+  This was quite a difficult update, and I had to bodge many things, so expect issues.
+- Fixed a rare crash on AMD GPUs
+- Fixed rendering issues with Ars Nouveau (Thanks @justlil...
+
+🆕 UPDATE AVAILABLE Moonlight Lib
+   ID: twkfQtEc
+   Current: 2.14.11-fabric
+   Latest: 1.20-2.14.11-fabric
+   File ID: GVVbixH6
+   Filename: moonlight-1.20-2.14.11-fabric.jar
+   Published: 6/25/2025
+   Changelog: -  Improved the RegEx in BlockTypeResTrnsformer to fix [#968](https://github.com/MehVahdJukaar/WoodGood/issues/968)
+
+---
+
+## v2.14.10
+
+- CompatWoodType: Fixed the crash with "Index 1 out of bounds" fr...
+
+✅ Current Astrocraft
+   ID: DCWEXia7
+   Current: 1.5.1+1.20.1
+   Latest: 1.5.1+1.20.1
+   File ID: IUv21P55
+   Filename: astrocraft-1.5.1+1.20.1.jar
+   Published: 5/9/2025
+   Changelog: ### Lunar Eclipse Shadows
+The shadow of a lunar eclipse gradually engulfs the moon. Previously, the moon would only darken and change color to red.
+![Shadow moving across the moon](https://cdn.modrint...
+
+🆕 UPDATE AVAILABLE Amendments
+   ID: 6iTJugQR
+   Current: 1.2.19-fabric
+   Latest: 1.20-1.2.19
+   File ID: E9PbJYi2
+   Filename: amendments-1.20-1.2.19-fabric.jar
+   Published: 3/3/2025
+   Changelog: removed flywheel integration as its not needed anymore. will be added later when vanillin is released...
+
+🆕 UPDATE AVAILABLE Xaero's Minimap
+   ID: 1bokaNcj
+   Current: missing file info
+   Latest: 25.2.6_Fabric_1.20
+   File ID: ePRxT2Wj
+   Filename: Xaeros_Minimap_25.2.6_Fabric_1.20.jar
+   Published: 5/10/2025
+   Changelog: [Read changelogs](https://chocolateminecraft.com/update.php?mod_id=0)...
+
+🆕 UPDATE AVAILABLE Xaero's World Map
+   ID: NcUtCpym
+   Current: missing file info
+   Latest: 1.39.9_Fabric_1.20
+   File ID: fQpXYWtL
+   Filename: XaerosWorldMap_1.39.9_Fabric_1.20.jar
+   Published: 5/17/2025
+   Changelog: [Read changelogs](https://chocolateminecraft.com/update.php?mod_id=2)...
+
+🆕 UPDATE AVAILABLE Oreganized
+   ID: 2FJutzEL
+   Current: missing file info
+   Latest: 2.0.3-fabric
+   File ID: 9KLOnNlG
+   Filename: Oreganized-2.0.3-fabric.jar
+   Published: 9/22/2024
+   Changelog: Fabric port (formerly Oreganized Refabricated)...
+
+================================================================================
+SUMMARY: 20 updates available out of 35 successfully checked mods
+
+Mods with updates available:
+- Sodium: 0.5.13+mc1.20.1 → mc1.20.1-0.5.13-fabric
+- Iris Shaders: 1.7.6+mc1.20.1 → 1.7.6+1.20.1
+- Entity Culling: 1.8.0-mc1.20.1 → 1.8.0
+- FerriteCore: 6.0.1-fabric → 6.0.1
+- Memory Leak Fix: 1.1.5 → v1.1.5
+- Jade: 11.13.1 → 11.13.1+fabric
+- AppleSkin: 2.5.1 → 2.5.1+mc1.20
+- Inventory Profiles Next: 1.10.12 → fabric-1.20.1-1.10.12
+- Cloth Config: 11.1.136-fabric → 11.1.136+fabric
+- libIPN: 4.0.2 → fabric-1.20-4.0.2
+- Spelunkery: 0.3.16 → 1.20.1-0.3.16
+- Supplementaries: 3.1.31-fabric → 1.20-3.1.31
+- Mouse Tweaks: 2.26 → 1.20-2.26-fabric
+- Bountiful Fares: 1.2.1-1.20.1 → 1.2.1
+- Better Clouds: 1.3.32+1.20.1-fabric → 1.3.32+1.20.1-fabric-r
+- Moonlight Lib: 2.14.11-fabric → 1.20-2.14.11-fabric
+- Amendments: 1.2.19-fabric → 1.20-1.2.19
+- Xaero's Minimap: missing file info → 25.2.6_Fabric_1.20
+- Xaero's World Map: missing file info → 1.39.9_Fabric_1.20
+- Oreganized: missing file info → 2.0.3-fabric
