@@ -2,8 +2,8 @@
 
 ## 📋 Current Sprint/Phase
 - [x] Add Ad Astra mod to both client and server modpacks
-- [x] **Remove Enchantment Descriptions mod from both client and server modpacks**
-- [ ] Add Dungeons and Taverns Stronghold Overhaul mod if available for 1.20.1
+- [x] Remove Enchantment Descriptions mod from both client and server modpacks
+- [x] **Add Dungeons and Taverns Stronghold Overhaul mod if available for 1.20.1**
 - [ ] Add Amplified Nether mod to both client and server modpacks
 - [ ] Add LambDynamicLights mod to client modpack
 - [ ] Add Nature's Spirit mod to both client and server modpacks
