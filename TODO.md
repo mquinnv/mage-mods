@@ -1,15 +1,16 @@
 # Project TODOs
 
 ## 📋 Current Sprint/Phase
+- [ ] Continue maintenance and bug fixes as needed
+
+## ✅ Recently Completed
 - [x] Add Ad Astra mod to both client and server modpacks
 - [x] Remove Enchantment Descriptions mod from both client and server modpacks
 - [x] Add Dungeons and Taverns Stronghold Overhaul mod if available for 1.20.1
 - [x] Add Amplified Nether mod to both client and server modpacks
 - [x] Add LambDynamicLights mod to client modpack
-- [x] **Add Nature's Spirit mod to both client and server modpacks**
-
-## ✅ Recently Completed
-- [x] **Update README.md with current mod lists (38 client, 29 server mods)**
+- [x] Add Nature's Spirit mod to both client and server modpacks
+- [x] Update README.md with current mod lists (38 client, 29 server mods)
 - [x] Create enhanced modpack variants that include resource packs and shader packs directly
 - [x] Check current mod versions against latest available for MC 1.20.1
 - [x] Add autoconnect server 'minecraft.mage.net' for Prism Launcher
