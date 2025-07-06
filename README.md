@@ -64,37 +64,59 @@ npm run clean:all         # Remove entire build directory
 
 ## Included Mods
 
-### Client Pack (24 mods)
+### Client Pack (38 mods)
 
 **Performance & Optimization:**
 - [Fabric API](https://modrinth.com/mod/fabric-api) - Essential Fabric mod loader API
 - [Sodium](https://modrinth.com/mod/sodium) - Modern rendering engine for improved FPS
 - [Iris Shaders](https://modrinth.com/mod/iris) - Shader pack support with Sodium compatibility
+- [Indium](https://modrinth.com/mod/indium) - Sodium addon for Fabric Rendering API support
 - [Entity Culling](https://modrinth.com/mod/entityculling) - Skip rendering entities behind walls
 - [FerriteCore](https://modrinth.com/mod/ferrite-core) - Memory usage optimizations
 - [Krypton](https://modrinth.com/mod/krypton) - Network stack optimizations
 - [LazyDFU](https://modrinth.com/mod/lazydfu) - Faster startup times
 - [Memory Leak Fix](https://modrinth.com/mod/memoryleakfix) - Fixes several memory leaks
+- [Better Clouds](https://modrinth.com/mod/better-clouds) - Improved cloud rendering
 
 **User Interface & Quality of Life:**
 - [Mod Menu](https://modrinth.com/mod/modmenu) - In-game mod configuration menu
 - [Jade](https://modrinth.com/mod/jade) - Advanced tooltips and block information
-- [EMI](https://modrinth.com/mod/emi) - Recipe viewer and item search
+- [JEI](https://modrinth.com/mod/jei) - Recipe viewer and item search
+- [Just Enough Resources](https://modrinth.com/mod/just-enough-resources) - Resource information for JEI
 - [AppleSkin](https://modrinth.com/mod/appleskin) - Food/hunger information display
 - [Inventory Profiles Next](https://modrinth.com/mod/inventory-profiles-next) - Inventory sorting and management
 - [Continuity](https://modrinth.com/mod/continuity) - Connected textures support
 - [Cloth Config](https://modrinth.com/mod/cloth-config) - Configuration API for mods
 - [AutoSwitch](https://modrinth.com/mod/autoswitch) - Automatic tool switching
+- [Mouse Tweaks](https://modrinth.com/mod/mouse-tweaks) - Enhanced mouse controls for inventory
+- [ToolTipFix](https://modrinth.com/mod/tooltipfix) - Fixes tooltip rendering issues
+- [Xaero's Minimap](https://modrinth.com/mod/xaeros-minimap) - In-game minimap
+- [Xaero's World Map](https://modrinth.com/mod/xaeros-world-map) - Full world map
 
 **Content & Features:**
+- [Create](https://modrinth.com/mod/create) - Mechanical contraptions and automation
 - [Spelunkery](https://modrinth.com/mod/spelunkery) - Enhanced cave exploration and mining
 - [Supplementaries](https://modrinth.com/mod/supplementaries) - Decorative blocks and utilities
+- [Bountiful Fares](https://modrinth.com/mod/bountiful-fares) - Enhanced farming and food
+- [Enchancement](https://modrinth.com/mod/enchancement) - Enhanced enchanting mechanics
+- [Dye Depot](https://modrinth.com/mod/dye-depot) - More dyes and colorful blocks
+- [Astrocraft](https://modrinth.com/mod/astrocraft) - Space exploration content
+- [Amendments](https://modrinth.com/mod/amendments) - Supplementaries addon
+- [Oreganized](https://modrinth.com/mod/oreganized) - New ores and mining content
+
+**World Generation:**
+- [Lithostitched](https://modrinth.com/mod/lithostitched) - World generation enhancements
+- [Tectonic](https://modrinth.com/mod/tectonic) - Terrain generation overhaul
+- [Dungeons and Taverns](https://modrinth.com/mod/dungeons-and-taverns) - Structure generation
+- [Gardens of the Dead](https://modrinth.com/mod/gardens-of-the-dead) - Nether biome enhancements
 
 **Dependencies:**
 - [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin) - Kotlin support for Fabric mods
 - [libIPN](https://modrinth.com/mod/libipn) - Inventory Profiles Next library
+- [Moonlight Lib](https://modrinth.com/mod/moonlight-lib) - Library for various mods
+- [Architectury API](https://modrinth.com/mod/architectury-api) - Multi-platform mod library
 
-### Server Pack (14 mods)
+### Server Pack (29 mods)
 
 **Core & Performance:**
 - [Fabric API](https://modrinth.com/mod/fabric-api) - Essential Fabric mod loader API
@@ -113,12 +135,29 @@ npm run clean:all         # Remove entire build directory
 - [BlueMap](https://modrinth.com/mod/bluemap) - 3D web-based world map
 
 **Content & Features:**
+- [Create](https://modrinth.com/mod/create) - Mechanical contraptions and automation
 - [AutoSwitch](https://modrinth.com/mod/autoswitch) - Automatic tool switching
 - [Spelunkery](https://modrinth.com/mod/spelunkery) - Enhanced cave exploration and mining
 - [Supplementaries](https://modrinth.com/mod/supplementaries) - Decorative blocks and utilities
+- [Bountiful Fares](https://modrinth.com/mod/bountiful-fares) - Enhanced farming and food
+- [Enchancement](https://modrinth.com/mod/enchancement) - Enhanced enchanting mechanics
+- [Dye Depot](https://modrinth.com/mod/dye-depot) - More dyes and colorful blocks
+- [Astrocraft](https://modrinth.com/mod/astrocraft) - Space exploration content
+- [Amendments](https://modrinth.com/mod/amendments) - Supplementaries addon
+- [ToolTipFix](https://modrinth.com/mod/tooltipfix) - Fixes tooltip rendering issues
+- [Oreganized](https://modrinth.com/mod/oreganized) - New ores and mining content
+- [Xaero's World Map](https://modrinth.com/mod/xaeros-world-map) - Full world map
+
+**World Generation:**
+- [Lithostitched](https://modrinth.com/mod/lithostitched) - World generation enhancements
+- [Tectonic](https://modrinth.com/mod/tectonic) - Terrain generation overhaul
+- [Dungeons and Taverns](https://modrinth.com/mod/dungeons-and-taverns) - Structure generation
+- [Gardens of the Dead](https://modrinth.com/mod/gardens-of-the-dead) - Nether biome enhancements
 
 **Dependencies:**
 - [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin) - Kotlin support for Fabric mods
+- [Moonlight Lib](https://modrinth.com/mod/moonlight-lib) - Library for various mods
+- [Architectury API](https://modrinth.com/mod/architectury-api) - Multi-platform mod library
 
 ## Managing Mods
 
