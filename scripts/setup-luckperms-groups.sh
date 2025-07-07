@@ -1,0 +1,137 @@
+#!/bin/bash
+
+# LuckPerms Permission Groups Setup Script
+# Run these commands in your Minecraft server console or through RCON
+
+echo "Setting up LuckPerms permission groups..."
+echo "Copy and paste these commands into your Minecraft server console:"
+echo ""
+
+# Create the permission groups
+echo "# Creating permission groups"
+echo "lp creategroup guest"
+echo "lp creategroup member" 
+echo "lp creategroup vip"
+echo "lp creategroup moderator"
+echo "lp creategroup admin"
+echo ""
+
+# Set group inheritance (higher groups inherit from lower groups)
+echo "# Setting up group inheritance"
+echo "lp group member parent add guest"
+echo "lp group vip parent add member"
+echo "lp group moderator parent add vip"
+echo "lp group admin parent add moderator"
+echo ""
+
+# Set group weights (higher number = higher priority)
+echo "# Setting group weights/priorities"
+echo "lp group guest meta setweight 10"
+echo "lp group member meta setweight 20"
+echo "lp group vip meta setweight 30"
+echo "lp group moderator meta setweight 40"
+echo "lp group admin meta setweight 50"
+echo ""
+
+# GUEST permissions (default for new players)
+echo "# Setting GUEST permissions (basic survival)"
+echo "lp group guest permission set minecraft.command.me true"
+echo "lp group guest permission set minecraft.command.tell true"
+echo "lp group guest permission set minecraft.command.msg true"
+echo "lp group guest permission set minecraft.command.w true"
+echo "lp group guest permission set minecraft.command.help true"
+echo "lp group guest permission set minecraft.command.rules true"
+echo "lp group guest permission set minecraft.command.list true"
+echo "lp group guest permission set minecraft.command.tps true"
+echo "lp group guest permission set bukkit.command.version true"
+echo "lp group guest meta setprefix '&7[Guest] '"
+echo ""
+
+# MEMBER permissions (trusted players)
+echo "# Setting MEMBER permissions (trusted players)"
+echo "lp group member permission set minecraft.command.seed true"
+echo "lp group member permission set minecraft.command.time true"
+echo "lp group member permission set minecraft.command.weather true"
+echo "lp group member permission set minecraft.command.locatebiome true"
+echo "lp group member permission set minecraft.command.locate true"
+echo "lp group member permission set minecraft.command.gamerule true"
+echo "lp group member permission set minecraft.command.give false"
+echo "lp group member permission set minecraft.command.gamemode false"
+echo "lp group member meta setprefix '&a[Member] '"
+echo ""
+
+# VIP permissions (your kids and close friends)
+echo "# Setting VIP permissions (kids and close friends)"
+echo "lp group vip permission set minecraft.command.gamemode true"
+echo "lp group vip permission set minecraft.command.gamemode.survival true"
+echo "lp group vip permission set minecraft.command.gamemode.creative true"
+echo "lp group vip permission set minecraft.command.gamemode.spectator true"
+echo "lp group vip permission set minecraft.command.give true"
+echo "lp group vip permission set minecraft.command.tp true"
+echo "lp group vip permission set minecraft.command.teleport true"
+echo "lp group vip permission set minecraft.command.summon true"
+echo "lp group vip permission set minecraft.command.fill true"
+echo "lp group vip permission set minecraft.command.clone true"
+echo "lp group vip permission set minecraft.command.setblock true"
+echo "lp group vip permission set minecraft.command.effect true"
+echo "lp group vip permission set minecraft.command.enchant true"
+echo "lp group vip permission set minecraft.command.clear true"
+echo "lp group vip permission set minecraft.command.kill true"
+echo "lp group vip permission set minecraft.command.difficulty false"
+echo "lp group vip permission set minecraft.command.defaultgamemode false"
+echo "lp group vip permission set minecraft.command.op false"
+echo "lp group vip permission set minecraft.command.deop false"
+echo "lp group vip meta setprefix '&6[VIP] '"
+echo ""
+
+# MODERATOR permissions (server helpers)
+echo "# Setting MODERATOR permissions (server helpers)"
+echo "lp group moderator permission set minecraft.command.ban true"
+echo "lp group moderator permission set minecraft.command.banip true"
+echo "lp group moderator permission set minecraft.command.pardon true"
+echo "lp group moderator permission set minecraft.command.pardon-ip true"
+echo "lp group moderator permission set minecraft.command.kick true"
+echo "lp group moderator permission set minecraft.command.whitelist true"
+echo "lp group moderator permission set minecraft.command.difficulty true"
+echo "lp group moderator permission set minecraft.command.worldborder true"
+echo "lp group moderator permission set minecraft.command.save-all true"
+echo "lp group moderator permission set minecraft.command.save-on true"
+echo "lp group moderator permission set minecraft.command.save-off true"
+echo "lp group moderator permission set minecraft.command.op false"
+echo "lp group moderator permission set minecraft.command.deop false"
+echo "lp group moderator permission set minecraft.command.stop false"
+echo "lp group moderator permission set minecraft.command.reload false"
+echo "lp group moderator meta setprefix '&c[Mod] '"
+echo ""
+
+# ADMIN permissions (full access)
+echo "# Setting ADMIN permissions (full server access)"
+echo "lp group admin permission set '*' true"
+echo "lp group admin meta setprefix '&4[Admin] '"
+echo ""
+
+# Set default group
+echo "# Setting default group for new players"
+echo "lp group guest permission set luckperms.autoop false"
+echo "lp group default parent add guest"
+echo ""
+
+# BlueMap permissions (if you want to restrict map access)
+echo "# BlueMap permissions (optional - uncomment if you want to restrict map viewing)"
+echo "# lp group guest permission set bluemap.web true"
+echo "# lp group member permission set bluemap.web true"
+echo "# lp group vip permission set bluemap.web true"
+echo "# lp group moderator permission set bluemap.web true"
+echo "# lp group admin permission set bluemap.web true"
+echo ""
+
+echo "Setup complete!"
+echo ""
+echo "To add users to groups, use these commands:"
+echo "lp user <username> parent add <group>"
+echo ""
+echo "Examples:"
+echo "lp user kidname1 parent add vip"
+echo "lp user friendname parent add member"
+echo "lp user helpername parent add moderator"
+echo "lp user yourusername parent add admin"

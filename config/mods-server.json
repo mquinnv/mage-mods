@@ -237,6 +237,27 @@
       "fileId": "jkn2P7N5",
       "filename": "naturespirit-2.2.4-1.20.1.jar",
       "side": "both"
+    },
+    {
+      "name": "Resourceful Lib",
+      "projectId": "G1hIVOrD",
+      "fileId": "UOdaYbhh",
+      "filename": "resourcefullib-fabric-1.20.1-2.1.29.jar",
+      "side": "both"
+    },
+    {
+      "name": "Resourceful Config",
+      "projectId": "M1953qlQ",
+      "fileId": "2gStMKhM",
+      "filename": "resourcefulconfig-fabric-1.20.1-2.1.3.jar",
+      "side": "both"
+    },
+    {
+      "name": "Botarium",
+      "projectId": "2u6LRnMa",
+      "fileId": "f3ATcSfq",
+      "filename": "botarium-fabric-1.20.1-2.3.4.jar",
+      "side": "both"
     }
   ]
 }

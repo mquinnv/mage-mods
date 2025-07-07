@@ -1,0 +1,44 @@
+QUICK LUCKPERMS SETUP GUIDE
+
+1. Copy each line below ONE AT A TIME into your server console:
+
+== BASIC SETUP ==
+lp creategroup guest
+lp creategroup member  
+lp creategroup vip
+lp creategroup moderator
+lp creategroup admin
+
+== SET INHERITANCE ==
+lp group member parent add guest
+lp group vip parent add member
+lp group moderator parent add vip
+lp group admin parent add moderator
+
+== SET PREFIXES ==
+lp group guest meta setprefix "&7[Guest] "
+lp group member meta setprefix "&a[Member] "
+lp group vip meta setprefix "&6[VIP] "
+lp group moderator meta setprefix "&c[Mod] "
+lp group admin meta setprefix "&4[Admin] "
+
+== VIP PERMISSIONS (for kids) ==
+lp group vip permission set minecraft.command.gamemode true
+lp group vip permission set minecraft.command.give true
+lp group vip permission set minecraft.command.tp true
+lp group vip permission set minecraft.command.summon true
+lp group vip permission set minecraft.command.fill true
+
+== ADMIN PERMISSIONS ==
+lp group admin permission set "*" true
+
+== SET DEFAULT GROUP ==
+lp group default parent add guest
+
+== ADD USERS (replace names) ==
+lp user KIDNAME1 parent add vip
+lp user KIDNAME2 parent add vip
+lp user FRIENDNAME parent add member
+lp user YOURNAME parent add admin
+
+That's it! Your permission system is ready.

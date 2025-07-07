@@ -48,6 +48,32 @@ npm run generate-config    # Generate server.properties and startup scripts
 npm run setup-server      # Generate config + build server pack
 npm run upload            # Upload both packs to Modrinth
 npm run release           # Build and upload both packs
+npm run deploy            # Deploy to Apex hosting (smart sync)
+```
+
+## Deployment
+
+### Apex Hosting Deployment
+
+For efficient server deployment, use the smart deployment script:
+
+```bash
+# Smart deployment (recommended)
+node scripts/deploy-apex-smart.js
+```
+
+The smart deployment:
+- ✅ Only uploads new/changed files (compares by size)
+- ✅ Only deletes files that shouldn't exist 
+- ✅ Keeps unchanged files untouched
+- ✅ Much faster than full re-upload
+- ✅ Clear reporting of what changed
+
+### Legacy Deployment
+
+```bash
+# Full deployment (slower, uploads everything)
+node scripts/deploy-apex.js
 npm run clean             # Remove generated .mrpack files
 npm run clean:all         # Remove entire build directory
 ```

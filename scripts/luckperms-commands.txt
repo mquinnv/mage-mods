@@ -1,0 +1,84 @@
+// LuckPerms Setup Commands - Copy and paste one line at a time into server console
+// Step 1: Create Groups
+lp creategroup guest
+lp creategroup member
+lp creategroup vip
+lp creategroup moderator
+lp creategroup admin
+
+// Step 2: Set Group Inheritance
+lp group member parent add guest
+lp group vip parent add member
+lp group moderator parent add vip
+lp group admin parent add moderator
+
+// Step 3: Set Group Weights
+lp group guest meta setweight 10
+lp group member meta setweight 20
+lp group vip meta setweight 30
+lp group moderator meta setweight 40
+lp group admin meta setweight 50
+
+// Step 4: Guest Permissions (basic survival)
+lp group guest permission set minecraft.command.me true
+lp group guest permission set minecraft.command.tell true
+lp group guest permission set minecraft.command.msg true
+lp group guest permission set minecraft.command.w true
+lp group guest permission set minecraft.command.help true
+lp group guest permission set minecraft.command.list true
+lp group guest permission set minecraft.command.tps true
+lp group guest meta setprefix "&7[Guest] "
+
+// Step 5: Member Permissions (trusted players)
+lp group member permission set minecraft.command.seed true
+lp group member permission set minecraft.command.time true
+lp group member permission set minecraft.command.weather true
+lp group member permission set minecraft.command.locatebiome true
+lp group member permission set minecraft.command.locate true
+lp group member meta setprefix "&a[Member] "
+
+// Step 6: VIP Permissions (kids & close friends)
+lp group vip permission set minecraft.command.gamemode true
+lp group vip permission set minecraft.command.gamemode.survival true
+lp group vip permission set minecraft.command.gamemode.creative true
+lp group vip permission set minecraft.command.gamemode.spectator true
+lp group vip permission set minecraft.command.give true
+lp group vip permission set minecraft.command.tp true
+lp group vip permission set minecraft.command.teleport true
+lp group vip permission set minecraft.command.summon true
+lp group vip permission set minecraft.command.fill true
+lp group vip permission set minecraft.command.clone true
+lp group vip permission set minecraft.command.setblock true
+lp group vip permission set minecraft.command.effect true
+lp group vip permission set minecraft.command.enchant true
+lp group vip permission set minecraft.command.clear true
+lp group vip permission set minecraft.command.kill true
+lp group vip meta setprefix "&6[VIP] "
+
+// Step 7: Moderator Permissions (server helpers)
+lp group moderator permission set minecraft.command.ban true
+lp group moderator permission set minecraft.command.banip true
+lp group moderator permission set minecraft.command.pardon true
+lp group moderator permission set minecraft.command.pardon-ip true
+lp group moderator permission set minecraft.command.kick true
+lp group moderator permission set minecraft.command.whitelist true
+lp group moderator permission set minecraft.command.difficulty true
+lp group moderator permission set minecraft.command.worldborder true
+lp group moderator permission set minecraft.command.save-all true
+lp group moderator permission set minecraft.command.save-on true
+lp group moderator permission set minecraft.command.save-off true
+lp group moderator meta setprefix "&c[Mod] "
+
+// Step 8: Admin Permissions (full access)
+lp group admin permission set "*" true
+lp group admin meta setprefix "&4[Admin] "
+
+// Step 9: Set Default Group
+lp group default parent add guest
+
+// Step 10: Add Users to Groups (replace usernames with actual names)
+// lp user kidname1 parent add vip
+// lp user kidname2 parent add vip
+// lp user friendname parent add member
+// lp user helpername parent add moderator
+// lp user yourusername parent add admin

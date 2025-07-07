@@ -1,6 +1,11 @@
 {
-  "clientProjectId": "L1ET1T4t",
-  "serverProjectId": "LHpIsjjB",
+  "clientProjectId": "Tnp9M66F",
+  "serverProjectId": "xnQPgl1j",
   "versionType": "release",
-  "changelog": "### New Content - World Generation & Exploration! 🌍\n- **Tectonic**: Enhanced terrain generation with grander, more varied landscapes\n- **Dungeons and Taverns**: New dungeons, taverns, and structures to explore\n- **Gardens of the Dead**: Spooky new biomes in the Nether\n- **Architectury API**: Added as dependency for new content mods\n\n### Configuration Updates\n- **Enchancement Mod**: Increased enchantment limit from 1 to 2 per item\n- **Enhanced Enchanting**: More flexible enchantment combinations for better gear customization\n\n### Features\n- **Expanded World Generation**: Three new mods that significantly enhance terrain and structure variety\n- **Improved Enchanting System**: More strategic enchantment choices with higher limits\n- **1.20.1 Compatibility**: All new mods verified for Minecraft 1.20.1 Fabric\n- **Server Synchronization**: All changes configured for both client and server\n\n### Technical\n- **Smart Version Management**: Latest compatible versions from Modrinth\n- **Optimized Distribution**: Efficient mrpack format with proper overrides structure\n- **Server Integration**: Pre-configured with minecraft.mage.net server connection\n\n### Pack Details\n- Version: 1.1.0\n- Minecraft: 1.20.1\n- New mods: 4 (Tectonic, Dungeons and Taverns, Gardens of the Dead, Architectury API)"
+  "changelog": "Version 1.1.1 addresses Modrinth platform compliance by splitting modpack variants into separate projects. Each variant (base client, enhanced client, server) now has its own dedicated project for better user experience and launcher compatibility. This ensures proper linear versioning and eliminates conflicts between different modpack variants.",
+  "projects": {
+    "client-base": "Tnp9M66F",
+    "client-enhanced": "mbNTw2kH",
+    "server": "xnQPgl1j"
+  }
 }

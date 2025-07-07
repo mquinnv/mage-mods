@@ -1,0 +1,35 @@
+{
+  "projects": {
+    "client-base": {
+      "name": "Mage.net Client Base",
+      "slug": "mage-net-client-base",
+      "description": "Base client modpack for minecraft.mage.net with performance optimizations, essential tools, and quality of life improvements. Includes Xaero's minimap for navigation and selected optimization mods for smooth gameplay.",
+      "packType": "client",
+      "variant": ""
+    },
+    "client-enhanced": {
+      "name": "Mage.net Client Enhanced",
+      "slug": "mage-net-client-enhanced", 
+      "description": "Enhanced client modpack for minecraft.mage.net featuring the base pack plus shader support, resource packs, and additional visual enhancements. Perfect for players wanting the full visual experience.",
+      "packType": "client",
+      "variant": "enhanced"
+    },
+    "server": {
+      "name": "Mage.net Server",
+      "slug": "mage-net-server",
+      "description": "Server modpack for minecraft.mage.net with performance optimizations, admin tools, and enhanced gameplay features. Designed to work seamlessly with the client packs for the best multiplayer experience.",
+      "packType": "server",
+      "variant": ""
+    }
+  },
+  "metadata": {
+    "minecraft": "1.20.1",
+    "fabric": "0.16.10",
+    "fabricApi": "0.92.6+1.20.1",
+    "author": "michael",
+    "license": "MIT",
+    "categories": ["optimization", "multiplayer"],
+    "projectUrl": "https://minecraft.mage.net",
+    "issuesUrl": "https://github.com/michael/minecraft.mage.net/issues"
+  }
+}

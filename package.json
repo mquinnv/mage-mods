@@ -1,6 +1,6 @@
 {
   "name": "minecraft-mage-modpack-manager",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Manage Minecraft Mage modpacks for server and client",
   "main": "scripts/build-packs.js",
   "scripts": {
@@ -11,6 +11,9 @@
     "upload:client": "node scripts/upload-packs.js --client",
     "upload:enhanced": "node scripts/upload-packs.js --enhanced",
     "upload:server": "node scripts/upload-packs.js --server",
+    "upload:client-base": "node scripts/upload-packs.js client-base",
+    "upload:client-enhanced": "node scripts/upload-packs.js client-enhanced",
+    "create-projects": "node scripts/create-modrinth-projects.js",
     "release": "npm run build && npm run upload",
     "clean": "rm -rf build/*.mrpack",
     "clean:all": "rm -rf build",
@@ -19,7 +22,8 @@
     "update-descriptions": "node scripts/update-descriptions.js",
     "generate-config": "node scripts/generate-server-config.js",
     "setup-server": "npm run generate-config && npm run build:server",
-    "deploy": "node scripts/deploy-apex.js"
+    "deploy": "node scripts/deploy-apex-smart.js",
+    "deploy:legacy": "node scripts/deploy-apex.js"
   },
   "keywords": [
     "minecraft",
@@ -33,6 +37,7 @@
     "axios": "^1.10.0",
     "basic-ftp": "^5.0.5",
     "dotenv": "^17.0.0",
-    "form-data": "^4.0.0"
+    "form-data": "^4.0.0",
+    "rcon": "^1.0.3"
   }
 }
