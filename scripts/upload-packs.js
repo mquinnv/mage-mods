@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 // Load environment variables from .env file
 require('dotenv').config();
@@ -137,7 +137,7 @@ async function main() {
   if (projectsToUpload.length === 0) {
     console.error('❌ No valid projects specified');
     console.error('   Available projects:', Object.keys(uploadConfig.projects).join(', '));
-    console.error('   Usage: node scripts/upload-packs.js [--client] [--enhanced] [--server] [project-key]');
+    console.error('   Usage: bun scripts/upload-packs.js [--client] [--enhanced] [--server] [project-key]');
     process.exit(1);
   }
   

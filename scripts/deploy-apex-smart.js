@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 // Smart Apex deployment - only syncs changes instead of re-uploading everything
 require('dotenv').config();

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 // Load environment variables from .env file
 require('dotenv').config();

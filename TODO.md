@@ -1,7 +1,11 @@
 # Project TODOs
 
+## 🔥 Critical (High Priority)
+
 ## 📋 Current Sprint/Phase
+
 - [ ] Continue maintenance and bug fixes as needed
+
 
 ## ✅ Recently Completed
 - [x] **Fix Ad Astra mod dependencies issue**
@@ -45,7 +49,8 @@
 - [x] Add recommended shader packs for 1.20.1
 - [x] Update config files with new mod versions
 
-## 📊 Project Status
+
+## 🚀 📊 Project Status
 **Major improvements completed!** Fixed critical Ad Astra dependency issues that were preventing the mod from working properly in client packs. Created intelligent deployment system that only syncs changes instead of re-uploading everything, making deployments 10x faster.
 
 Successfully removed problematic Enchancement mod from server that was causing connection issues. Set up automated LuckPerms permission system with family-friendly groups including VIP permissions perfect for kids (creative mode, teleporting, item spawning without admin powers).
@@ -54,3 +59,6 @@ All modpack variants are now working correctly with complete dependencies, and t
 
 ---
 *Last updated: 2025-07-07*
+
+---
+*Last updated: 2025-07-08*
