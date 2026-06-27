@@ -622,8 +622,32 @@ The server is compatible with this modpack.
     ]);
     
     fs.writeFileSync(path.join(prismDir, '.minecraft', 'servers.dat'), serversNbt);
+
+    // Bundle resource packs and shader packs into the instance
+    const rpDir = path.join(prismDir, '.minecraft', 'resourcepacks');
+    const spDir = path.join(prismDir, '.minecraft', 'shaderpacks');
+    fs.mkdirSync(rpDir, { recursive: true });
+    fs.mkdirSync(spDir, { recursive: true });
+
+    for (const pack of resourcePacks.resourcePacks) {
+      if (!pack.filename) continue;
+      const sourcePath = path.join('build/client/resourcepacks', pack.filename);
+      if (fs.existsSync(sourcePath)) {
+        fs.copyFileSync(sourcePath, path.join(rpDir, pack.filename));
+        console.log(`  Bundled resource pack: ${pack.name}`);
+      }
+    }
+
+    for (const pack of shaderPacks.shaderPacks) {
+      if (!pack.filename) continue;
+      const sourcePath = path.join('build/client/shaderpacks', pack.filename);
+      if (fs.existsSync(sourcePath)) {
+        fs.copyFileSync(sourcePath, path.join(spDir, pack.filename));
+        console.log(`  Bundled shader pack: ${pack.name}`);
+      }
+    }
   }
-  
+
   // Copy icon to root
   if (fs.existsSync('assets/icon-64.png')) {
     fs.copyFileSync('assets/icon-64.png', path.join(prismDir, 'icon.png'));
