@@ -417,6 +417,14 @@
       "filename": "minihud-fabric-1.20.1-0.27.1.jar",
       "side": "client",
       "category": "building"
+    },
+    {
+      "name": "Distant Horizons",
+      "projectId": "uCdwusMi",
+      "fileId": "4HFx4xGx",
+      "filename": "DistantHorizons-3.1.2-b-1.20.1-fabric-forge.jar",
+      "side": "client",
+      "category": "graphics"
     }
   ]
 }
