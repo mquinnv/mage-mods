@@ -8,6 +8,7 @@
     "build": "bun scripts/build-packs.js",
     "build:client": "bun scripts/build-packs.js --client",
     "build:server": "bun scripts/build-packs.js --server",
+    "build:bte": "bun scripts/build-packs.js --bte",
     "build:phase1": "bun scripts/build-phase1.js",
     "build:phase2": "bun scripts/build-phase2.js",
     "build:phase3": "bun scripts/build-phase3.js",

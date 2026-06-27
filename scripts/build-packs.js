@@ -310,7 +310,15 @@ async function downloadShaderPack(pack, destDir) {
   }
 }
 
-async function buildModrinthIndex(mods, packType, downloadedFiles) {
+// Mods excluded from the BTE (Build The Earth) variant: anything that adds
+// content or alters worldgen, plus in-band exceptions flagged with "bteExclude"
+// (the Litematica auto-printer and Just Enough Resources).
+const BTE_EXCLUDED_CATEGORIES = new Set(['content', 'worldgen']);
+function filterForBte(mods) {
+  return mods.filter(m => !BTE_EXCLUDED_CATEGORIES.has(m.category) && !m.bteExclude);
+}
+
+async function buildModrinthIndex(mods, packType, downloadedFiles, bte = false) {
   const files = [];
   
   for (const mod of mods) {
@@ -350,9 +358,11 @@ async function buildModrinthIndex(mods, packType, downloadedFiles) {
   return {
     formatVersion: 1,
     game: 'minecraft',
-    versionId: `${packInfo.name.toLowerCase().replace(/\s+/g, '-')}-${packInfo.version}-${packType}`,
-    name: `${packInfo.name} ${packType.charAt(0).toUpperCase() + packType.slice(1)}`,
-    summary: packInfo.description[packType],
+    versionId: `${packInfo.name.toLowerCase().replace(/\s+/g, '-')}-${packInfo.version}${bte ? '-bte' : ''}-${packType}`,
+    name: `${packInfo.name}${bte ? ' BTE' : ''} ${packType.charAt(0).toUpperCase() + packType.slice(1)}`,
+    summary: bte
+      ? 'Build The Earth client pack: performance, graphics, QoL, maps, and Litematica building tools only — no content or worldgen mods. Designed for use on BTE servers.'
+      : packInfo.description[packType],
     files,
     dependencies: {
       minecraft: packInfo.minecraft,
@@ -368,9 +378,9 @@ function calculateSHA512(filePath) {
   return hash.digest('hex');
 }
 
-async function createMrpack(packType, mods, index, enhanced = false) {
+async function createMrpack(packType, mods, index, enhanced = false, bte = false) {
   const buildDir = `build/${packType}`;
-  const suffix = enhanced ? '-enhanced' : '';
+  const suffix = `${bte ? '-bte' : ''}${enhanced ? '-enhanced' : ''}`;
   
   // Write modrinth.index.json
   fs.writeFileSync(
@@ -534,7 +544,7 @@ Installation:
   // Create README
   fs.writeFileSync(
     path.join(buildDir, 'README.txt'),
-    `${packInfo.name} - ${packType.charAt(0).toUpperCase() + packType.slice(1)} Pack\n` +
+    `${packInfo.name}${bte ? ' BTE' : ''} - ${packType.charAt(0).toUpperCase() + packType.slice(1)} Pack\n` +
     `Version: ${packInfo.version}\n` +
     `Minecraft: ${packInfo.minecraft}\n` +
     `Fabric Loader: ${packInfo.fabric}\n\n` +
@@ -552,7 +562,7 @@ Installation:
   console.log(`✅ Created ${outputPath}`);
 }
 
-async function createPrismPack(packType, mods, index) {
+async function createPrismPack(packType, mods, index, bte = false) {
   const buildDir = `build/${packType}`;
   const prismDir = `build/${packType}-prism`;
   
@@ -645,7 +655,7 @@ The server is compatible with this modpack.
   
   // Create instance.cfg
   const instanceCfg = `InstanceType=OneSix
-name=${packInfo.name} ${packType.charAt(0).toUpperCase() + packType.slice(1)}
+name=${packInfo.name}${bte ? ' BTE' : ''} ${packType.charAt(0).toUpperCase() + packType.slice(1)}
 iconKey=icon
 JavaVersion=17
 MinMemAlloc=512
@@ -656,7 +666,7 @@ JvmArgs=-XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1NewSizePercent=20 -X
   fs.writeFileSync(path.join(prismDir, 'instance.cfg'), instanceCfg);
   
   // Create the zip
-  const outputFile = `${packInfo.name.toLowerCase().replace(/\s+/g, '-')}-${packType}-${packInfo.version}-prism.zip`;
+  const outputFile = `${packInfo.name.toLowerCase().replace(/\s+/g, '-')}-${packType}-${packInfo.version}${bte ? '-bte' : ''}-prism.zip`;
   const outputPath = `build/${outputFile}`;
   console.log(`\n📦 Creating ${outputPath}...`);
   
@@ -670,10 +680,18 @@ async function main() {
   // Clean up old assets first
   cleanupOldAssets();
   
+  // --bte builds a Build The Earth client variant (client only): performance,
+  // graphics, QoL, maps, and building mods; content + worldgen are filtered out.
+  const bte = process.argv.slice(2).includes('--bte');
+  const activeClientMods = bte ? filterForBte(clientMods.mods) : clientMods.mods;
+  if (bte) {
+    console.log(`[BTE variant] ${activeClientMods.length} client mods kept, ${clientMods.mods.length - activeClientMods.length} content/worldgen mods filtered out\n`);
+  }
+
   // Download client mods
   console.log('=== Building Client Pack ===');
   const clientDownloaded = {};
-  for (const mod of clientMods.mods) {
+  for (const mod of activeClientMods) {
     const filePath = await downloadMod(mod, 'build/client/mods');
     if (filePath) {
       clientDownloaded[mod.filename] = filePath;
@@ -692,40 +710,42 @@ async function main() {
     await downloadShaderPack(pack, 'build/client/shaderpacks');
   }
   
-  // Download server mods
-  console.log('\n=== Building Server Pack ===');
+  // Download server mods (skipped for the BTE client-only variant)
   const serverDownloaded = {};
-  for (const mod of serverMods.mods) {
-    const filePath = await downloadMod(mod, 'build/server/mods');
-    if (filePath) {
-      serverDownloaded[mod.filename] = filePath;
+  if (!bte) {
+    console.log('\n=== Building Server Pack ===');
+    for (const mod of serverMods.mods) {
+      const filePath = await downloadMod(mod, 'build/server/mods');
+      if (filePath) {
+        serverDownloaded[mod.filename] = filePath;
+      }
     }
   }
   
   // Build indexes
   console.log('\n=== Generating Modrinth Indexes ===');
-  const clientIndex = await buildModrinthIndex(clientMods.mods, 'client', clientDownloaded);
-  const serverIndex = await buildModrinthIndex(serverMods.mods, 'server', serverDownloaded);
+  const clientIndex = await buildModrinthIndex(activeClientMods, 'client', clientDownloaded, bte);
+  const serverIndex = bte ? null : await buildModrinthIndex(serverMods.mods, 'server', serverDownloaded);
   
   // Create regular mrpacks
-  await createMrpack('client', clientMods.mods, clientIndex, false);
-  await createMrpack('server', serverMods.mods, serverIndex, false);
+  await createMrpack('client', activeClientMods, clientIndex, false, bte);
+  if (!bte) await createMrpack('server', serverMods.mods, serverIndex, false);
   
   // Create enhanced mrpacks (with resource packs and shader packs)
   console.log('\n=== Creating Enhanced Packs ===');
-  await createMrpack('client', clientMods.mods, clientIndex, true);
+  await createMrpack('client', activeClientMods, clientIndex, true, bte);
   
   // Create Prism packs
   console.log('\n=== Generating Prism Packs ===');
-  await createPrismPack('client', clientMods.mods, clientIndex);
-  await createPrismPack('server', serverMods.mods, serverIndex);
+  await createPrismPack('client', activeClientMods, clientIndex, bte);
+  if (!bte) await createPrismPack('server', serverMods.mods, serverIndex);
   
   console.log('\n✅ Build complete!');
   
   // List manual mods that need to be added
   const manualMods = [
-    ...clientMods.mods.filter(m => m.manual),
-    ...serverMods.mods.filter(m => m.manual)
+    ...activeClientMods.filter(m => m.manual),
+    ...(bte ? [] : serverMods.mods.filter(m => m.manual))
   ];
   
   if (manualMods.length > 0) {

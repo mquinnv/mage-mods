@@ -38,6 +38,11 @@ minecraft.mage.net/
 # Build both client and server packs
 npm run build
 
+# Build the BTE (Build The Earth) client variant — performance/graphics/QoL/
+# maps/building mods only, with all content + worldgen mods filtered out.
+# Client only; artifacts are suffixed "-bte".
+npm run build:bte
+
 # Clean build artifacts
 npm run clean
 
@@ -54,6 +59,8 @@ npm run clean:all
    - `fileId`: Modrinth file/version ID
    - `filename`: Expected jar filename
    - `side`: "client", "server", or "both"
+   - `category`: one of `core`, `performance`, `graphics`, `interface`, `maps`, `building`, `content`, `worldgen`, `admin` — drives the `--bte` filter (`content` + `worldgen` are excluded from the BTE variant)
+   - `bteExclude`: optional `true` to drop an otherwise-kept mod from the BTE variant (e.g. Litematica Printer, Just Enough Resources)
    - `manual`: true for mods not on Modrinth
 
 3. Run `npm run build` to regenerate packs
@@ -101,6 +108,7 @@ Central metadata for both packs:
   "fileId": "modrinth-file-id",
   "filename": "exact-jar-filename.jar",
   "side": "client|server|both",
+  "category": "performance",
   "manual": false
 }
 ```
