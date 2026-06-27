@@ -3,8 +3,8 @@
     {
       "name": "Fabric API",
       "projectId": "P7dR8mSH",
-      "fileId": "UapVHwiP",
-      "filename": "fabric-api-0.92.6+1.20.1.jar",
+      "fileId": "hu6gukgT",
+      "filename": "fabric-api-0.92.9+1.20.1.jar",
       "side": "both"
     },
     {
@@ -94,8 +94,8 @@
     {
       "name": "Fabric Language Kotlin",
       "projectId": "Ha28R6CL",
-      "fileId": "mccDBWqV",
-      "filename": "fabric-language-kotlin-1.13.4+kotlin.2.2.0.jar",
+      "fileId": "Pd0xrHCw",
+      "filename": "fabric-language-kotlin-1.13.12+kotlin.2.4.0.jar",
       "side": "both"
     },
     {
@@ -164,8 +164,8 @@
     {
       "name": "Xaero's World Map",
       "projectId": "NcUtCpym",
-      "fileId": "fQpXYWtL",
-      "filename": "XaerosWorldMap_1.39.9_Fabric_1.20.jar",
+      "fileId": "XBgSFzXh",
+      "filename": "XaerosWorldMap_1.39.12_Fabric_1.20.jar",
       "side": "both"
     },
     {
@@ -178,15 +178,15 @@
     {
       "name": "Lithostitched",
       "projectId": "XaDC71GB",
-      "fileId": "owa0e2tu",
-      "filename": "lithostitched-fabric-1.20.1-1.4.10.jar",
+      "fileId": "9bbVphAR",
+      "filename": "lithostitched-fabric-1.20.1-1.4.11.jar",
       "side": "both"
     },
     {
       "name": "Tectonic",
       "projectId": "lWDHr9jE",
-      "fileId": "sPAY67Vk",
-      "filename": "tectonic-3.0.1-fabric-1.20.1.jar",
+      "fileId": "mz3wlQKd",
+      "filename": "tectonic-3.0.17-fabric-1.20.1.jar",
       "side": "both"
     },
     {
@@ -199,8 +199,8 @@
     {
       "name": "Gardens of the Dead",
       "projectId": "lg1TPRFm",
-      "fileId": "dwXQdKI3",
-      "filename": "gardens-of-the-dead-fabric-4.0.1.jar",
+      "fileId": "aRehdLNh",
+      "filename": "gardens-of-the-dead-fabric-4.0.3.jar",
       "side": "both"
     },
     {
@@ -234,8 +234,8 @@
     {
       "name": "Nature's Spirit",
       "projectId": "WBvnqHfV",
-      "fileId": "jkn2P7N5",
-      "filename": "naturespirit-2.2.4-1.20.1.jar",
+      "fileId": "GW1xcaGA",
+      "filename": "naturespirit-2.2.5-1.20.1.jar",
       "side": "both"
     },
     {
@@ -258,6 +258,13 @@
       "fileId": "f3ATcSfq",
       "filename": "botarium-fabric-1.20.1-2.3.4.jar",
       "side": "both"
+    },
+    {
+      "name": "Servux",
+      "projectId": "zQhsx8KF",
+      "fileId": "I7wfvH49",
+      "filename": "servux-fabric-1.20.0-0.1.0.jar",
+      "side": "server"
     }
   ]
 }
