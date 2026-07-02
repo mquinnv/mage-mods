@@ -6,6 +6,19 @@ Applies to both the standard and BTE client instances.
 > **Design rules:** vanilla movement untouched · `M` stays the World Map ·
 > Litematica rooted on `C` · no two in-world actions share a key.
 
+## 👁️ In-game overlay — this cheatsheet, on screen
+
+No more alt-tabbing. **CustomHud** ships this whole layout as a toggleable, 3-column
+on-screen overlay. It starts hidden; bind a key once and flip it on/off any time.
+
+1. **Options → Controls → Key Binds**, search **`custom hud`**.
+2. Bind **Enable/Disable HUD** (`key.custom_hud.enable`) to a free key — `` ` `` (backtick) recommended.
+3. In world, tap that key to show/hide the overlay.
+
+> The overlay text lives in `config/custom-hud/profile1.txt` — edit it to taste
+> (Minecraft `&`-color codes, `==Section:TopLeft/TopCenter/TopRight==` for columns).
+> Full syntax: <https://customhud.dev/#docs>. `` ` `` isn't used elsewhere in this layout, so it stays free for the toggle.
+
 ## 🗺️ Maps — Xaero's
 
 | Key | Action |
