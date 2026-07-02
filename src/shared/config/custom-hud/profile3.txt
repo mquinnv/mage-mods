@@ -1,0 +1,21 @@
+==scale: 0.6==
+==backgroundColor: 0xC8000000==
+// Profile 3 - debug panel. Left = position/world, right = system/target.
+// Keep flags above at top; no blank line before the first ==Section==.
+==Section: topleft, 0, 165==
+&6&lDEBUG
+&fFPS &e{fps} &8- &fSpeed &e{velocity_xz}
+&fXYZ &e{bx} {by} {bz}
+&fFacing &e{facing} &7{facing_towards_pn_sign} {facing_towards_xz}
+&fBiome &e{biome} &7({dimension})
+&fLight &e{light} &8- &fDifficulty &e{local_difficulty}
+&fEntities &e{entities_rendered} &8- &fParticles &e{particles}
+&fTime &e{hour24}:{minute} &8- Day &e{day}
+==Section: topright==
+&6&lSYSTEM
+&fMem &e{memory_used_percentage}%&7 of {memory_total}
+&fCPU &e{cpu}%
+&f{{tps,"TPS &e{tps}","Ping &e{ping}"}}
+&fPackets &e{tx} {rx}
+{{target_block, "&fLooking at &e{target_block}"}}
+{{target_block, "&7{tbx} {tby} {tbz}"}}

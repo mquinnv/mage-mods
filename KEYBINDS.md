@@ -6,18 +6,27 @@ Applies to both the standard and BTE client instances.
 > **Design rules:** vanilla movement untouched · `M` stays the World Map ·
 > Litematica rooted on `C` · no two in-world actions share a key.
 
-## 👁️ In-game overlay — this cheatsheet, on screen
+## 👁️ In-game overlays — CustomHud
 
-No more alt-tabbing. **CustomHud** ships this whole layout as a toggleable, 3-column
-on-screen overlay. It starts hidden; bind a key once and flip it on/off any time.
+No more alt-tabbing. **CustomHud** renders three on-screen HUD "profiles" you flip
+between with a keypress. They start hidden; the swap keys show a profile (and un-hide),
+`` ` `` toggles the current one off again.
 
-1. **Options → Controls → Key Binds**, search **`custom hud`**.
-2. Bind **Enable/Disable HUD** (`key.custom_hud.enable`) to a free key — `` ` `` (backtick) recommended.
-3. In world, tap that key to show/hide the overlay.
+| Key | Overlay |
+|-----|---------|
+| `` ` `` (backtick) | Show / hide current overlay (`key.custom_hud.enable`) |
+| `F6` | **Profile 1** — this keybind cheatsheet |
+| `F7` | **Profile 2** — slim info (coords · facing · biome · time · FPS) |
+| `F8` | **Profile 3** — debug panel (position/world + system/target) |
 
-> The overlay text lives in `config/custom-hud/profile1.txt` — edit it to taste
-> (Minecraft `&`-color codes, `==Section:TopLeft/TopCenter/TopRight==` for columns).
-> Full syntax: <https://customhud.dev/#docs>. `` ` `` isn't used elsewhere in this layout, so it stays free for the toggle.
+Bindings are pre-set in the bundled `options.txt`; to change them: **Options → Controls
+→ Key Binds**, search **`custom hud`**.
+
+> Overlay text lives in `config/custom-hud/profile1.txt` (+ `profile2`/`profile3`) — edit
+> to taste with Minecraft `&`-color codes and `==Section:TopLeft/TopCenter/TopRight==`.
+> **Gotcha:** keep any `==backgroundColor/scale/textShadow==` flags on the very first
+> lines with no blank line before the first `==Section==`, or CustomHud rejects them.
+> Full syntax: <https://customhud.dev/#docs>.
 
 ## 🗺️ Maps — Xaero's
 
