@@ -1,0 +1,9 @@
+==scale: 0.7==
+==backgroundColor: 0xC0000000==
+// Profile 2 - slim info line (coords / facing / biome / time / fps).
+// Keep flags above at top; no blank line before the first ==Section==.
+==Section: topleft, 0, 165==
+&fXYZ &e{bx} {by} {bz}
+&fFacing &e{facing} &7{facing_towards_xz}
+&fBiome &e{biome} &7({dimension})
+&fDay &e{day} &8- &e{hour24}:{minute} &8- &fFPS &e{fps}
