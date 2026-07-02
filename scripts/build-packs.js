@@ -578,7 +578,16 @@ async function createPrismPack(packType, mods, index, bte = false) {
       fs.copyFileSync(sourcePath, path.join(prismDir, '.minecraft', 'mods', mod.filename));
     }
   }
-  
+
+  // Copy shared mod configs into the instance (mirrors the mrpack overrides/config).
+  // Recursive so nested config dirs (e.g. custom-hud/, bluemap/) are included.
+  const sharedConfigDir = 'src/shared/config';
+  if (fs.existsSync(sharedConfigDir)) {
+    const destConfigDir = path.join(prismDir, '.minecraft', 'config');
+    fs.cpSync(sharedConfigDir, destConfigDir, { recursive: true });
+    console.log('  Bundled shared config into .minecraft/config');
+  }
+
   // Create server info for client packs
   if (packType === 'client') {
     // Create a README with server info

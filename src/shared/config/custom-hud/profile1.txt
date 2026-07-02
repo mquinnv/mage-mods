@@ -1,0 +1,69 @@
+==backgroundColor: 0xF0000000==
+==textShadow: false==
+==scale: 0.6==
+// Minecraft Mage - keybind overlay (CustomHud profile 1).
+// Toggle in-game with key.custom_hud.enable (ships unbound; bind it in Controls).
+// CRITICAL: keep the three ==flag== lines above at the very top and put NO blank
+//   line anywhere before the first ==Section==. CustomHud opens a section on the
+//   first blank line, which turns the global theme flags into errors. Comments
+//   (//) are skipped and safe; blank lines are not.
+// Color/position/section edits hot-reload on save. Changing SCALE reliably needs
+//   a toggle off/on (or a restart) to re-render.
+// centerleft = vertically centered; columns padded to equal length so tops align.
+==Section: centerleft, 100, 0==
+&6&lMAPS &7- Xaero's
+&eM&f World Map
+&eB&f Place waypoint
+&eU&f Waypoints list
+&eY&f Minimap settings
+&e]&f World Map settings
+&eNum+&f Instant waypoint
+&eRShift&f Quick-confirm
+&8
+&6&lBUILDING &7- Tweakeroo / MiniHUD
+&eX,C&f Tweakeroo config
+&eZ,1-6&f Placement modes
+&eH&f MiniHUD toggle
+&eH,C&f MiniHUD config
+&8
+&6&lINVENTORY
+&eR&f AutoSwitch on/off
+&eG&f IPN sort
+==Section: centerleft, 250, 0==
+&6&lLITEMATICA &7- C-rooted
+&eC&f Main menu
+&eC,L&f Material list
+&eC,P&f Placements
+&eC,S&f Selection manager
+&eC,V&f Verifier
+&eC,C&f Settings
+&eC,A&f Add selection box
+&eC,R&f Toggle all render
+&eC,G&f Toggle schematic
+&eC,T&f Toggle tool
+&eC,K&f Printer print
+&eI&f Info overlay
+&ePgUp/Dn&f Layer up / down
+&eNum-&f Placement settings
+&eNum*&f Area settings
+&8
+&8
+==Section: centerleft, 400, 0==
+&6&lDISPLAY
+&eO&f Shader selection
+&eK&f Shaders on/off
+&eJ&f Jade overlay
+&eNum0&f Jade config
+&8
+&6&lJEI &7- hover item in GUI
+&eR&f Show recipe
+&eU&f Show uses
+&eA&f Bookmark
+&eF&f Focus search
+&eO&f Hide / show JEI
+&8
+&6&lMISC
+&e\&f Mod Menu
+&eV&f Quiver
+&eAlt&f Create tool menu
+&eW&f Create ponder
