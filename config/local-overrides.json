@@ -1,0 +1,13 @@
+{
+  "overrides": [
+    { "src": "~/Downloads/physics-mod-pro-v185b-fabric-mc-26.2.jar", "dest": "mods" },
+    { "src": "~/Downloads/Photon v1.3b.zip", "dest": "shaderpacks" },
+    { "src": "~/Downloads/Patrix_26.2_128x_basic.zip", "dest": "resourcepacks" },
+    { "src": "~/Downloads/Patrix_26.2_128x_mobs.zip", "dest": "resourcepacks" },
+    { "src": "~/Downloads/Patrix_26.2_128x_addon.zip", "dest": "resourcepacks" },
+    { "src": "~/Downloads/Patrix_26.2_128x_items.zip", "dest": "resourcepacks" },
+    { "src": "~/Downloads/Patrix 26.2 64x basic.zip", "dest": "resourcepacks" },
+    { "src": "~/Downloads/Patrix_26.2_64x_addon.zip", "dest": "resourcepacks" },
+    { "src": "~/Downloads/Coherence X.zip", "dest": "resourcepacks" }
+  ]
+}

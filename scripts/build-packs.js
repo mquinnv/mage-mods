@@ -349,8 +349,8 @@ async function buildModrinthIndex(mods, packType, downloadedFiles, bte = false) 
         sha512: calculateSHA512(filePath)
       },
       env: {
-        client: mod.side === 'client' || mod.side === 'both' ? 'required' : 'unsupported',
-        server: mod.side === 'server' || mod.side === 'both' ? 'required' : 'unsupported'
+        client: mod.optional ? 'optional' : (mod.side === 'client' || mod.side === 'both' ? 'required' : 'unsupported'),
+        server: 'unsupported'
       },
       downloads: downloadUrl ? [downloadUrl] : [],
       fileSize: getFileSize(filePath)
@@ -436,48 +436,29 @@ async function createMrpack(packType, mods, index, enhanced = false, bte = false
     }
     
     // Create server info file
-    const serverInfo = `Minecraft Mage Server Information:
+    const serverInfo = `Mage Information:
 
-Server Address: minecraft.mage.net
-Server Name: Minecraft Mage Server
+Server Address: play.mage.net
+Server Name: Mage
 
 To connect:
 1. Open Minecraft and go to Multiplayer
 2. Click "Add Server"
-3. Enter "Minecraft Mage Server" as the name
-4. Enter "minecraft.mage.net" as the address
+3. Enter "Mage" as the name
+4. Enter "play.mage.net" as the address
 5. Click Done and join!
 
 The server is compatible with this modpack.
 `;
     fs.writeFileSync(path.join(overridesDir, 'SERVER_INFO.txt'), serverInfo);
-    
+
     // Add lastServer and JVM args to options.txt
-    const optionsContent = `lastServer:minecraft.mage.net
+    const optionsContent = `lastServer:play.mage.net
 javaArgs:-XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:+ParallelRefProcEnabled -Dfml.readTimeout=180 -Dfml.queryResult=confirm
 maxMemory:4096
 `;
     fs.writeFileSync(path.join(overridesDir, 'options.txt'), optionsContent);
-    
-    // Create servers.dat NBT file
-    const serversNbt = Buffer.from([
-      0x0A, 0x00, 0x00, // TAG_Compound (root)
-      0x09, 0x00, 0x07, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // TAG_List "servers"
-      0x0A, // TAG_Compound element type
-      0x00, 0x00, 0x00, 0x01, // 1 element
-      // First server entry
-      0x08, 0x00, 0x04, 0x6E, 0x61, 0x6D, 0x65, // TAG_String "name"
-      0x00, 0x14, 0x4D, 0x69, 0x6E, 0x65, 0x63, 0x72, 0x61, 0x66, 0x74, 0x20, 0x4D, 0x61, 0x67, 0x65, 0x20, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, // "Minecraft Mage Server"
-      0x08, 0x00, 0x02, 0x69, 0x70, // TAG_String "ip"
-      0x00, 0x11, 0x6D, 0x69, 0x6E, 0x65, 0x63, 0x72, 0x61, 0x66, 0x74, 0x2E, 0x6D, 0x61, 0x67, 0x65, 0x2E, 0x6E, 0x65, 0x74, // "minecraft.mage.net"
-      0x08, 0x00, 0x04, 0x69, 0x63, 0x6F, 0x6E, // TAG_String "icon"
-      0x00, 0x00, // empty string
-      0x00, // End of compound
-      0x00 // End of root compound
-    ]);
-    
-    fs.writeFileSync(path.join(overridesDir, 'servers.dat'), serversNbt);
-    
+
     // If enhanced mode, copy resource packs and shader packs to overrides
     if (enhanced && packType === 'client') {
       // Create resourcepacks and shaderpacks directories in overrides
@@ -553,7 +534,21 @@ Installation:
     packInfo.description[packType] +
     (packType === 'client' ? '\n\nSee RESOURCE_PACKS_AND_SHADERS.txt for recommended visual enhancements.' : '')
   );
-  
+
+  // Bundle local override files (paid/private assets that can't come from Modrinth)
+  const lo = 'config/local-overrides.json';
+  if (packType === 'client' && fs.existsSync(lo)) {
+    const { overrides = [] } = JSON.parse(fs.readFileSync(lo, 'utf8'));
+    for (const o of overrides) {
+      const src = o.src.replace(/^~/, require('os').homedir());
+      if (!fs.existsSync(src)) { console.warn(`⚠️  local override missing: ${src}`); continue; }
+      const destDir = path.join(buildDir, 'overrides', o.dest);
+      fs.mkdirSync(destDir, { recursive: true });
+      fs.copyFileSync(src, path.join(destDir, path.basename(src)));
+      console.log(`  Bundled local override: ${path.basename(src)} -> overrides/${o.dest}/`);
+    }
+  }
+
   // Create the mrpack
   const outputFile = `${packInfo.name.toLowerCase().replace(/\s+/g, '-')}-${packType}-${packInfo.version}${suffix}.mrpack`;
   const outputPath = `build/${outputFile}`;
@@ -593,46 +588,26 @@ async function createPrismPack(packType, mods, index, bte = false) {
   // Create server info for client packs
   if (packType === 'client') {
     // Create a README with server info
-    const serverInfo = `Minecraft Mage Server Information:
+    const serverInfo = `Mage Information:
 
-Server Address: minecraft.mage.net
-Server Name: Minecraft Mage Server
+Server Address: play.mage.net
+Server Name: Mage
 
 To connect:
 1. Open Minecraft and go to Multiplayer
 2. Click "Add Server"
-3. Enter "Minecraft Mage Server" as the name
-4. Enter "minecraft.mage.net" as the address
+3. Enter "Mage" as the name
+4. Enter "play.mage.net" as the address
 5. Click Done and join!
 
 The server is compatible with this modpack.
 `;
     fs.writeFileSync(path.join(prismDir, '.minecraft', 'SERVER_INFO.txt'), serverInfo);
-    
+
     // Also add to the options.txt file for direct connect memory
-    const optionsContent = `lastServer:minecraft.mage.net
+    const optionsContent = `lastServer:play.mage.net
 `;
     fs.writeFileSync(path.join(prismDir, '.minecraft', 'options.txt'), optionsContent);
-    
-    // Create a basic servers.dat NBT file
-    // This is a minimal NBT structure for one server
-    const serversNbt = Buffer.from([
-      0x0A, 0x00, 0x00, // TAG_Compound (root)
-      0x09, 0x00, 0x07, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // TAG_List "servers"
-      0x0A, // TAG_Compound element type
-      0x00, 0x00, 0x00, 0x01, // 1 element
-      // First server entry
-      0x08, 0x00, 0x04, 0x6E, 0x61, 0x6D, 0x65, // TAG_String "name"
-      0x00, 0x14, 0x4D, 0x69, 0x6E, 0x65, 0x63, 0x72, 0x61, 0x66, 0x74, 0x20, 0x4D, 0x61, 0x67, 0x65, 0x20, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, // "Minecraft Mage Server"
-      0x08, 0x00, 0x02, 0x69, 0x70, // TAG_String "ip"
-      0x00, 0x11, 0x6D, 0x69, 0x6E, 0x65, 0x63, 0x72, 0x61, 0x66, 0x74, 0x2E, 0x6D, 0x61, 0x67, 0x65, 0x2E, 0x6E, 0x65, 0x74, // "minecraft.mage.net"
-      0x08, 0x00, 0x04, 0x69, 0x63, 0x6F, 0x6E, // TAG_String "icon"
-      0x00, 0x00, // empty string
-      0x00, // End of compound
-      0x00 // End of root compound
-    ]);
-    
-    fs.writeFileSync(path.join(prismDir, '.minecraft', 'servers.dat'), serversNbt);
 
     // Bundle resource packs and shader packs into the instance
     const rpDir = path.join(prismDir, '.minecraft', 'resourcepacks');
