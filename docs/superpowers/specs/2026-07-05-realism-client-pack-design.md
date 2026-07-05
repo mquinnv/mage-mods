@@ -44,14 +44,18 @@ Retarget the `mage-mods` client pack to **Minecraft 26.2** as a **private family
 ### Realism — opt-in (heavy bundled files marked `optional` in the `.mrpack` so weak machines can untick at install; shader/PBR are enabled in-game)
 | Item | Source | 26.2 status | Notes |
 |---|---|---|---|
-| Complementary Reimagined (shader) | Modrinth `complementary-reimagined` | release | **Realism shader (labPBR).** Photon has no 26.2 build yet — swap to Photon when it ships. |
+| **Shaders — ship all 3, pick in-game** | **Photon** (local `~/Downloads/Photon v1.3b.zip`) + **Complementary Reimagined** (Modrinth, release) + **Complementary Unbound** (Modrinth, release) | 26.2 (via Iris) | Photon = owner's original pick; Complementary Reimagined = vanilla-faithful realism; Unbound = stylized/customizable. All labPBR-capable; user selects one in Video Settings. |
 | Distant Horizons (LOD render distance) | Modrinth `distanthorizons` | **beta** | Huge immersion win. |
 | Fresh Animations (mob animations) | Modrinth `fresh-animations` | **beta** (resource pack) | Needs ETF + EMF. |
 | Entity Texture Features (ETF) | Modrinth `entitytexturefeatures` | release | Supports Fresh Animations / emissive. |
 | Entity Model Features (EMF) | Modrinth `entity-model-features` | release | Supports Fresh Animations models. |
 | Continuity (connected textures) | Modrinth `continuity` | release | Fabric CTM for PBR packs. |
 | **Physics Mod Pro** | **local** `~/Downloads/physics-mod-pro-v185b-fabric-mc-26.2.jar` | 26.2 fabric | Bundled override (paid; 139 MB). Ragdolls/debris, client-side, works in MP. |
-| **Patrix 26.2 Basic** (PBR pack) | **local** `~/Downloads/Patrix 26.2 Basic.zip` | 26.2 | Bundled override (free tier; 74 MB). PBR/labPBR textures — pair with the shader. |
+| **Patrix 128× PBR** (ultra) | **local** `Patrix_26.2_128x_{basic,mobs,addon,items}.zip` | 26.2 | Bundled overrides (~735 MB, modular — enable basic→mobs→addon→items). The high-res PBR default. |
+| **Patrix 64× PBR** (lite alt) | **local** `Patrix 26.2 64x basic.zip` + `Patrix_26.2_64x_addon.zip` | 26.2 | Lighter alternative for weaker GPUs (~238 MB). |
+| Coherence X (alt pack) | **local** `Coherence X.zip` | — | Optional clean/high-detail alternative to Patrix (pending owner). |
+
+**Size note:** with 128× Patrix + Physics Pro, the full pack is **~1 GB+**. The heavy bundled files ship as `optional` so weaker machines can untick the 128× set (falling back to 64× or vanilla res) at install.
 
 Ambient mods (Effective / Falling Leaves / Particle Rain) have no 26.2 build yet — omitted for now.
 
