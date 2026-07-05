@@ -1,16 +1,92 @@
 {
   "mods": [
-    { "name": "Fabric API", "projectId": "fabric-api", "fileId": "", "side": "both", "category": "core" },
-    { "name": "Sodium", "projectId": "sodium", "fileId": "", "side": "client", "category": "performance" },
-    { "name": "Iris Shaders", "projectId": "iris", "fileId": "", "side": "client", "category": "graphics" },
-    { "name": "EntityCulling", "projectId": "entityculling", "fileId": "", "side": "client", "category": "performance" },
-    { "name": "Lithium", "projectId": "lithium", "fileId": "", "side": "client", "category": "performance" },
-    { "name": "FerriteCore", "projectId": "ferrite-core", "fileId": "", "side": "client", "category": "performance" },
-    { "name": "Xaero's Minimap", "projectId": "xaeros-minimap", "fileId": "", "side": "client", "category": "map" },
-    { "name": "Xaero's World Map", "projectId": "xaeros-world-map", "fileId": "", "side": "client", "category": "map" },
-    { "name": "Distant Horizons", "projectId": "distanthorizons", "fileId": "", "side": "client", "category": "graphics", "optional": true },
-    { "name": "Entity Texture Features", "projectId": "entitytexturefeatures", "fileId": "", "side": "client", "category": "graphics", "optional": true },
-    { "name": "Entity Model Features", "projectId": "entity-model-features", "fileId": "", "side": "client", "category": "graphics", "optional": true },
-    { "name": "Continuity", "projectId": "continuity", "fileId": "", "side": "client", "category": "graphics", "optional": true }
+    {
+      "name": "Fabric API",
+      "projectId": "fabric-api",
+      "fileId": "",
+      "side": "both",
+      "category": "core"
+    },
+    {
+      "name": "Sodium",
+      "projectId": "sodium",
+      "fileId": "3QgJXuSK",
+      "side": "client",
+      "category": "performance"
+    },
+    {
+      "name": "Iris Shaders",
+      "projectId": "iris",
+      "fileId": "",
+      "side": "client",
+      "category": "graphics"
+    },
+    {
+      "name": "EntityCulling",
+      "projectId": "entityculling",
+      "fileId": "",
+      "side": "client",
+      "category": "performance"
+    },
+    {
+      "name": "Lithium",
+      "projectId": "lithium",
+      "fileId": "",
+      "side": "client",
+      "category": "performance"
+    },
+    {
+      "name": "FerriteCore",
+      "projectId": "ferrite-core",
+      "fileId": "",
+      "side": "client",
+      "category": "performance"
+    },
+    {
+      "name": "Xaero's Minimap",
+      "projectId": "xaeros-minimap",
+      "fileId": "",
+      "side": "client",
+      "category": "map"
+    },
+    {
+      "name": "Xaero's World Map",
+      "projectId": "xaeros-world-map",
+      "fileId": "",
+      "side": "client",
+      "category": "map"
+    },
+    {
+      "name": "Distant Horizons",
+      "projectId": "distanthorizons",
+      "fileId": "",
+      "side": "client",
+      "category": "graphics",
+      "optional": true
+    },
+    {
+      "name": "Entity Texture Features",
+      "projectId": "entitytexturefeatures",
+      "fileId": "",
+      "side": "client",
+      "category": "graphics",
+      "optional": true
+    },
+    {
+      "name": "Entity Model Features",
+      "projectId": "entity-model-features",
+      "fileId": "",
+      "side": "client",
+      "category": "graphics",
+      "optional": true
+    },
+    {
+      "name": "Continuity",
+      "projectId": "continuity",
+      "fileId": "",
+      "side": "client",
+      "category": "graphics",
+      "optional": true
+    }
   ]
 }
