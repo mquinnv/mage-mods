@@ -147,17 +147,18 @@ async function getModDownloadUrl(projectId, fileId) {
 }
 
 async function getLatestModVersion(projectId) {
-  const url = `${MODRINTH_API}/project/${projectId}/version?game_versions=["1.20.1"]&loaders=["fabric"]`;
+  const gv = packInfo.minecraft;
+  const url = `${MODRINTH_API}/project/${projectId}/version?game_versions=["${gv}"]&loaders=["fabric"]`;
   const headers = { 'User-Agent': USER_AGENT };
   if (MODRINTH_TOKEN) {
     headers['Authorization'] = `Bearer ${MODRINTH_TOKEN}`;
   }
-  
+
   try {
     const response = await axios.get(url, { headers });
-    
+
     if (!response.data || response.data.length === 0) {
-      throw new Error('No compatible versions found for Minecraft 1.20.1 Fabric');
+      throw new Error(`No compatible versions found for Minecraft ${gv} Fabric`);
     }
     
     const latestVersion = response.data[0];
@@ -177,17 +178,18 @@ async function getLatestModVersion(projectId) {
 }
 
 async function getLatestResourcePackVersion(packId) {
-  const url = `${MODRINTH_API}/project/${packId}/version?game_versions=["1.20.1"]`;
+  const gv = packInfo.minecraft;
+  const url = `${MODRINTH_API}/project/${packId}/version?game_versions=["${gv}"]`;
   const headers = { 'User-Agent': USER_AGENT };
   if (MODRINTH_TOKEN) {
     headers['Authorization'] = `Bearer ${MODRINTH_TOKEN}`;
   }
-  
+
   try {
     const response = await axios.get(url, { headers });
-    
+
     if (!response.data || response.data.length === 0) {
-      throw new Error('No compatible versions found for Minecraft 1.20.1');
+      throw new Error(`No compatible versions found for Minecraft ${gv}`);
     }
     
     const latestVersion = response.data[0];
