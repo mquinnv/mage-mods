@@ -1,49 +1,6 @@
 {
   "shaderPacks": [
-    {
-      "name": "Complementary Shaders - Reimagined",
-      "projectId": "HVnmMxH1",
-      "fileId": "",
-      "filename": "",
-      "description": "Best all-around pack for survival/building: vanilla-faithful, well-optimized, great settings. Recommended default. Works well on Apple Silicon (keep colored/voxel lighting OFF).",
-      "optional": true,
-      "side": "client"
-    },
-    {
-      "name": "BSL Shaders",
-      "projectId": "Q1vvjJYV",
-      "fileId": "",
-      "filename": "",
-      "description": "Bright, colorful, polished and well-optimized full-feature pack. One of the best Apple-Silicon-compatible options.",
-      "optional": true,
-      "side": "client"
-    },
-    {
-      "name": "MakeUp - Ultra Fast",
-      "projectId": "izsIPI7a",
-      "fileId": "",
-      "filename": "",
-      "description": "The performance/BTE pick: by far the fastest real shader, ideal for high render distance on large terrain. Lighter visuals than BSL/Complementary. Apple-Silicon friendly.",
-      "optional": true,
-      "side": "client"
-    },
-    {
-      "name": "Sildur's Vibrant Shaders",
-      "projectId": "z8EjLYqN",
-      "fileId": "",
-      "filename": "",
-      "description": "The most explicitly Mac-tested pack (ships Apple-specific fixes); bright/vibrant with tiered Lite-to-Extreme presets to dial performance.",
-      "optional": true,
-      "side": "client"
-    },
-    {
-      "name": "Complementary Shaders - Unbound",
-      "projectId": "R6NEzAwj",
-      "fileId": "",
-      "filename": "",
-      "description": "The more stylized Complementary rendering path (alternate to Reimagined). PBR support and many features. Works on Apple Silicon.",
-      "optional": true,
-      "side": "client"
-    }
+    { "name": "Complementary Reimagined", "projectId": "complementary-reimagined", "fileId": "", "optional": true, "side": "client" },
+    { "name": "Complementary Unbound", "projectId": "complementary-unbound", "fileId": "", "optional": true, "side": "client" }
   ]
 }

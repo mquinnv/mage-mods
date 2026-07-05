@@ -1,13 +1,6 @@
 {
   "resourcePacks": [
-    {
-      "name": "Soartex Grove",
-      "projectId": "soartex-grove", 
-      "fileId": "",
-      "filename": "",
-      "description": "High definition 64x graphics replacement for Minecraft with emphasis on clean artwork and minimal detail",
-      "optional": true,
-      "side": "client"
-    }
+    { "name": "Fresh Animations", "projectId": "fresh-animations", "fileId": "", "optional": true, "side": "client" }
   ]
 }
+
