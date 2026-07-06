@@ -1,6 +1,7 @@
 {
   "shaderPacks": [
     { "name": "Complementary Reimagined", "projectId": "complementary-reimagined", "fileId": "", "optional": true, "side": "client" },
-    { "name": "Complementary Unbound", "projectId": "complementary-unbound", "fileId": "", "optional": true, "side": "client" }
+    { "name": "Complementary Unbound", "projectId": "complementary-unbound", "fileId": "", "optional": true, "side": "client" },
+    { "name": "MakeUp - Ultra Fast", "projectId": "makeup-ultra-fast-shaders", "fileId": "", "optional": true, "side": "client" }
   ]
 }
