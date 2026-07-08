@@ -535,9 +535,12 @@ Installation:
     (packType === 'client' ? '\n\nSee RESOURCE_PACKS_AND_SHADERS.txt for recommended visual enhancements.' : '')
   );
 
-  // Bundle local override files (paid/private assets that can't come from Modrinth)
+  // Bundle local override files (paid/private assets that can't come from Modrinth).
+  // Off by default: these must never ship in Modrinth-distributed mrpacks, and they
+  // balloon the pack past 1GB. Pass --bundle-local for a personal full-fat build.
+  const bundleLocal = process.argv.slice(2).includes('--bundle-local');
   const lo = 'config/local-overrides.json';
-  if (packType === 'client' && fs.existsSync(lo)) {
+  if (bundleLocal && packType === 'client' && fs.existsSync(lo)) {
     const { overrides = [] } = JSON.parse(fs.readFileSync(lo, 'utf8'));
     for (const o of overrides) {
       const src = o.src.replace(/^~/, require('os').homedir());

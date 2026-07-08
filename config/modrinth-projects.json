@@ -1,5 +1,12 @@
 {
   "projects": {
+    "client-realism": {
+      "name": "Mage Realism",
+      "slug": "mage-realism",
+      "description": "Ultra-realism client pack for play.mage.net on Minecraft 26.2: shader support, Distant Horizons, performance and quality of life mods. Paid add-ons (Physics Mod Pro, Patrix PBR) are not included; install them manually afterwards.",
+      "packType": "client",
+      "variant": ""
+    },
     "client-base": {
       "name": "Mage.net Client Base",
       "slug": "mage-net-client-base",
