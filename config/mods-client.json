@@ -88,6 +88,78 @@
       "side": "client",
       "category": "graphics",
       "optional": true
+    },
+    {
+      "name": "AutoSwitch",
+      "projectId": "autoswitch",
+      "fileId": "gG5RQy73",
+      "side": "client",
+      "category": "interface",
+      "filename": "autoswitch-fabric-16.0.0.jar"
+    },
+    {
+      "name": "AppleSkin",
+      "projectId": "appleskin",
+      "fileId": "uo5bAN1Y",
+      "side": "client",
+      "category": "interface",
+      "filename": "appleskin-fabric-mc26.2-3.0.10.jar"
+    },
+    {
+      "name": "Mouse Tweaks",
+      "projectId": "mouse-tweaks",
+      "fileId": "jOiTBIaB",
+      "side": "client",
+      "category": "interface",
+      "filename": "MouseTweaks-fabric-mc26.2-2.31.jar"
+    },
+    {
+      "name": "Jade",
+      "projectId": "jade",
+      "fileId": "dnZQ9Fgp",
+      "side": "client",
+      "category": "interface",
+      "filename": "Jade-mc26.2-Fabric-26.2.9.jar"
+    },
+    {
+      "name": "Inventory Profiles Next",
+      "projectId": "inventory-profiles-next",
+      "fileId": "Eg2NTcSJ",
+      "side": "client",
+      "category": "interface",
+      "filename": "InventoryProfilesNext-fabric-26.2-2.3.5.jar"
+    },
+    {
+      "name": "libIPN",
+      "projectId": "libipn",
+      "fileId": "uRP0v1wY",
+      "side": "client",
+      "category": "core",
+      "filename": "libIPN-fabric-26.2-6.8.2.jar"
+    },
+    {
+      "name": "Fabric Language Kotlin",
+      "projectId": "fabric-language-kotlin",
+      "fileId": "Pd0xrHCw",
+      "side": "client",
+      "category": "core",
+      "filename": "fabric-language-kotlin-1.13.12+kotlin.2.4.0.jar"
+    },
+    {
+      "name": "Mod Menu",
+      "projectId": "modmenu",
+      "fileId": "3gAjUrx6",
+      "side": "client",
+      "category": "interface",
+      "filename": "modmenu-20.0.0-beta.4.jar"
+    },
+    {
+      "name": "Text Placeholder API",
+      "projectId": "placeholder-api",
+      "fileId": "NDqH16LT",
+      "side": "client",
+      "category": "core",
+      "filename": "placeholder-api-3.1.0-beta.1+26.2.jar"
     }
   ]
 }
