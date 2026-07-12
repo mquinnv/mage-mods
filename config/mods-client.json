@@ -114,14 +114,6 @@
       "filename": "MouseTweaks-fabric-mc26.2-2.31.jar"
     },
     {
-      "name": "Jade",
-      "projectId": "jade",
-      "fileId": "dnZQ9Fgp",
-      "side": "client",
-      "category": "interface",
-      "filename": "Jade-mc26.2-Fabric-26.2.9.jar"
-    },
-    {
       "name": "Inventory Profiles Next",
       "projectId": "inventory-profiles-next",
       "fileId": "Eg2NTcSJ",
