@@ -380,6 +380,38 @@ function calculateSHA512(filePath) {
   return hash.digest('hex');
 }
 
+// Client mods we build ourselves. These aren't on Modrinth, so they can't be referenced by URL in
+// modrinth.index.json and have to ride along inside overrides/ instead.
+const LOCAL_CLIENT_MODS = ['src/client-mods/hammerharvest'];
+
+// Throws rather than warns when a jar is missing: a client pack without hammerharvest looks
+// completely fine but silently fails to auto-switch to Nova hammers, which is the exact bug this
+// mod exists to fix. Better to stop the build than to ship a pack that quietly doesn't work.
+function resolveLocalClientMods() {
+  return LOCAL_CLIENT_MODS.map(dir => {
+    const libs = path.join(dir, 'build', 'libs');
+    const jar = fs.existsSync(libs)
+      ? fs.readdirSync(libs).filter(f => f.endsWith('.jar') && !f.endsWith('-sources.jar')).sort().pop()
+      : null;
+    if (!jar) {
+      throw new Error(
+        `Local client mod is not built: ${dir}\n` +
+        `   Build it with:  (cd ${dir} && ./gradlew build)\n` +
+        `   Refusing to build a client pack without it.`
+      );
+    }
+    return path.join(libs, jar);
+  });
+}
+
+function bundleLocalClientMods(destModsDir) {
+  fs.mkdirSync(destModsDir, { recursive: true });
+  for (const jar of resolveLocalClientMods()) {
+    fs.copyFileSync(jar, path.join(destModsDir, path.basename(jar)));
+    console.log(`  Bundled local client mod: ${path.basename(jar)}`);
+  }
+}
+
 async function createMrpack(packType, mods, index, enhanced = false, bte = false) {
   const buildDir = `build/${packType}`;
   const suffix = `${bte ? '-bte' : ''}${enhanced ? '-enhanced' : ''}`;
@@ -403,7 +435,9 @@ async function createMrpack(packType, mods, index, enhanced = false, bte = false
   if (packType === 'client') {
     const overridesDir = path.join(buildDir, 'overrides');
     fs.mkdirSync(overridesDir, { recursive: true });
-    
+
+    bundleLocalClientMods(path.join(overridesDir, 'mods'));
+
     // Copy shared config files to overrides/config
     const sharedConfigDir = 'src/shared/config';
     if (fs.existsSync(sharedConfigDir)) {
@@ -577,6 +611,11 @@ async function createPrismPack(packType, mods, index, bte = false) {
     if (fs.existsSync(sourcePath)) {
       fs.copyFileSync(sourcePath, path.join(prismDir, '.minecraft', 'mods', mod.filename));
     }
+  }
+
+  // Mods built in-repo don't come from Modrinth, so the loop above never sees them.
+  if (packType === 'client') {
+    bundleLocalClientMods(path.join(prismDir, '.minecraft', 'mods'));
   }
 
   // Copy shared mod configs into the instance (mirrors the mrpack overrides/config).
