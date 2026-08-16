@@ -4,6 +4,7 @@
   "versionType": "release",
   "changelog": "Version 1.1.1 addresses Modrinth platform compliance by splitting modpack variants into separate projects. Each variant (base client, enhanced client, server) now has its own dedicated project for better user experience and launcher compatibility. This ensures proper linear versioning and eliminates conflicts between different modpack variants.",
   "projects": {
+    "client-realism": "h5Tk971m",
     "client-base": "Tnp9M66F",
     "client-enhanced": "mbNTw2kH",
     "server": "xnQPgl1j"

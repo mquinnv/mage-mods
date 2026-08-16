@@ -2,437 +2,156 @@
   "mods": [
     {
       "name": "Fabric API",
-      "projectId": "P7dR8mSH",
-      "fileId": "hu6gukgT",
-      "filename": "fabric-api-0.92.9+1.20.1.jar",
+      "projectId": "fabric-api",
+      "fileId": "",
       "side": "both",
       "category": "core"
     },
     {
       "name": "Sodium",
-      "projectId": "AANobbMI",
-      "fileId": "OihdIimA",
-      "filename": "sodium-fabric-0.5.13+mc1.20.1.jar",
+      "projectId": "sodium",
+      "fileId": "3QgJXuSK",
       "side": "client",
-      "category": "performance"
+      "category": "performance",
+      "filename": "sodium-fabric-0.9.0+mc26.2.jar"
     },
     {
       "name": "Iris Shaders",
-      "projectId": "YL57xq9U",
-      "fileId": "s5eFLITc",
-      "filename": "iris-1.7.6+mc1.20.1.jar",
+      "projectId": "iris",
+      "fileId": "",
       "side": "client",
       "category": "graphics"
     },
     {
-      "name": "Indium",
-      "projectId": "Orvt0mRa",
-      "fileId": "nQHYSjxO",
-      "filename": "indium-1.0.36+mc1.20.1.jar",
+      "name": "EntityCulling",
+      "projectId": "entityculling",
+      "fileId": "",
       "side": "client",
       "category": "performance"
     },
     {
-      "name": "Entity Culling",
-      "projectId": "NNAgCjsB",
-      "fileId": "3TCgPw5u",
-      "filename": "entityculling-fabric-1.8.2-mc1.20.1.jar",
+      "name": "Lithium",
+      "projectId": "lithium",
+      "fileId": "",
       "side": "client",
       "category": "performance"
     },
     {
       "name": "FerriteCore",
-      "projectId": "uXXizFIs",
-      "fileId": "unerR5MN",
-      "filename": "ferritecore-6.0.1-fabric.jar",
-      "side": "both",
+      "projectId": "ferrite-core",
+      "fileId": "",
+      "side": "client",
       "category": "performance"
-    },
-    {
-      "name": "Krypton",
-      "projectId": "1eAoo2KR",
-      "fileId": "dvS5DjUA",
-      "filename": "yet_another_config_lib_v3-3.6.6+1.20.1-fabric.jar",
-      "side": "both",
-      "category": "core"
-    },
-    {
-      "name": "LazyDFU",
-      "projectId": "hvFnDODi",
-      "fileId": "4SHylIO9",
-      "filename": "lazydfu-0.1.3.jar",
-      "side": "both",
-      "category": "performance"
-    },
-    {
-      "name": "Memory Leak Fix",
-      "projectId": "NRjRiSSD",
-      "fileId": "5xvCCRjJ",
-      "filename": "memoryleakfix-fabric-1.17+-1.1.5.jar",
-      "side": "both",
-      "category": "performance"
-    },
-    {
-      "name": "Jade",
-      "projectId": "nvQzSEkH",
-      "fileId": "drol2x1P",
-      "filename": "Jade-1.20-Fabric-11.13.1.jar",
-      "side": "client",
-      "category": "interface"
-    },
-    {
-      "name": "JEI",
-      "projectId": "u6dRKJwZ",
-      "fileId": "MMnbcAih",
-      "filename": "jei-1.20.1-fabric-15.20.0.112.jar",
-      "side": "both",
-      "category": "interface"
-    },
-    {
-      "name": "Just Enough Resources",
-      "projectId": "uEfK2CXF",
-      "fileId": "9HWvOVzO",
-      "filename": "JustEnoughResources-Fabric-1.20.1-1.4.0.247.jar",
-      "side": "client",
-      "category": "interface",
-      "bteExclude": true
-    },
-    {
-      "name": "ToolTipFix",
-      "projectId": "2RKFTmiB",
-      "fileId": "B2L4LeMV",
-      "filename": "tooltipfix-1.1.1-1.20.jar",
-      "side": "both",
-      "category": "interface"
-    },
-    {
-      "name": "Dye Depot",
-      "projectId": "dl88rsIq",
-      "fileId": "SqvSzYPB",
-      "filename": "dye_depot-1.0.3-fabric.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "AppleSkin",
-      "projectId": "EsAfCjCV",
-      "fileId": "N5XeV21r",
-      "filename": "appleskin-fabric-mc1.20.1-2.5.2.jar",
-      "side": "both",
-      "category": "interface"
-    },
-    {
-      "name": "Inventory Profiles Next",
-      "projectId": "O7RBXm3n",
-      "fileId": "zXog2n0B",
-      "filename": "InventoryProfilesNext-fabric-1.20-1.10.12.jar",
-      "side": "client",
-      "category": "interface"
-    },
-    {
-      "name": "Continuity",
-      "projectId": "1IjD5062",
-      "fileId": "qGTDcjHM",
-      "filename": "continuity-3.0.0+1.20.1.jar",
-      "side": "client",
-      "category": "graphics"
-    },
-    {
-      "name": "Mod Menu",
-      "projectId": "mOgUt4GM",
-      "fileId": "lEkperf6",
-      "filename": "modmenu-7.2.2.jar",
-      "side": "client",
-      "category": "interface"
-    },
-    {
-      "name": "Cloth Config",
-      "projectId": "9s6osm5g",
-      "fileId": "2xQdCMyG",
-      "filename": "cloth-config-11.1.136-fabric.jar",
-      "side": "both",
-      "category": "core"
-    },
-    {
-      "name": "AutoSwitch",
-      "projectId": "uSdcnlts",
-      "fileId": "J4tWnLnz",
-      "filename": "autoswitch-7.0.2.jar",
-      "side": "client",
-      "category": "interface"
-    },
-    {
-      "name": "Fabric Language Kotlin",
-      "projectId": "Ha28R6CL",
-      "fileId": "Pd0xrHCw",
-      "filename": "fabric-language-kotlin-1.13.12+kotlin.2.4.0.jar",
-      "side": "both",
-      "category": "core"
-    },
-    {
-      "name": "libIPN",
-      "projectId": "onSQdWhM",
-      "fileId": "Uygzs3iI",
-      "filename": "libIPN-fabric-1.20-4.0.2.jar",
-      "side": "client",
-      "category": "core"
-    },
-    {
-      "name": "Spelunkery",
-      "projectId": "krskFMfA",
-      "fileId": "xEa903Qn",
-      "filename": "spelunkery-1.20.1-0.3.16-fabric.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Supplementaries",
-      "projectId": "fFEIiSDQ",
-      "fileId": "nnzd0ymm",
-      "filename": "supplementaries-1.20-3.1.31-fabric.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Mouse Tweaks",
-      "projectId": "aC3cM3Vq",
-      "fileId": "mjuG4AYd",
-      "filename": "MouseTweaks-fabric-mc1.20-2.26.jar",
-      "side": "client",
-      "category": "interface"
-    },
-    {
-      "name": "Bountiful Fares",
-      "projectId": "YgrSDjlb",
-      "fileId": "H4COb7fF",
-      "filename": "bountifulfares-1.2.1-1.20.1.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Create",
-      "projectId": "Xbc0uyRg",
-      "fileId": "7Ub71nPb",
-      "filename": "create-fabric-0.5.1-j-build.1631+mc1.20.1.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Better Clouds",
-      "projectId": "5srFLIaK",
-      "fileId": "q5SAbK2s",
-      "filename": "better-clouds-1.3.37+1.20.1-fabric.jar",
-      "side": "client",
-      "category": "graphics"
-    },
-    {
-      "name": "Moonlight Lib",
-      "projectId": "twkfQtEc",
-      "fileId": "GVVbixH6",
-      "filename": "moonlight-1.20-2.14.11-fabric.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Astrocraft",
-      "projectId": "DCWEXia7",
-      "fileId": "IUv21P55",
-      "filename": "astrocraft-1.5.1+1.20.1.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Amendments",
-      "projectId": "6iTJugQR",
-      "fileId": "E9PbJYi2",
-      "filename": "amendments-1.20-1.2.19-fabric.jar",
-      "side": "both",
-      "category": "content"
     },
     {
       "name": "Xaero's Minimap",
-      "projectId": "1bokaNcj",
-      "fileId": "ctcLIczk",
-      "filename": "xaerominimap-fabric-1.20.1-26.1.0.jar",
+      "projectId": "xaeros-minimap",
+      "fileId": "",
       "side": "client",
-      "category": "maps"
+      "category": "map"
     },
     {
       "name": "Xaero's World Map",
-      "projectId": "NcUtCpym",
-      "fileId": "FDp23lAS",
-      "filename": "xaeroworldmap-fabric-1.20.1-1.41.2.jar",
+      "projectId": "xaeros-world-map",
+      "fileId": "",
       "side": "client",
-      "category": "maps"
-    },
-    {
-      "name": "Oreganized",
-      "projectId": "2FJutzEL",
-      "fileId": "9KLOnNlG",
-      "filename": "Oreganized-2.0.3-fabric.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Lithostitched",
-      "projectId": "XaDC71GB",
-      "fileId": "9bbVphAR",
-      "filename": "lithostitched-fabric-1.20.1-1.4.11.jar",
-      "side": "both",
-      "category": "worldgen"
-    },
-    {
-      "name": "Tectonic",
-      "projectId": "lWDHr9jE",
-      "fileId": "mz3wlQKd",
-      "filename": "tectonic-3.0.17-fabric-1.20.1.jar",
-      "side": "both",
-      "category": "worldgen"
-    },
-    {
-      "name": "Dungeons and Taverns",
-      "projectId": "tpehi7ww",
-      "fileId": "d1sY0JqV",
-      "filename": "dungeons-and-taverns-3.0.3.f.jar",
-      "side": "both",
-      "category": "worldgen"
-    },
-    {
-      "name": "Gardens of the Dead",
-      "projectId": "lg1TPRFm",
-      "fileId": "aRehdLNh",
-      "filename": "gardens-of-the-dead-fabric-4.0.3.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Architectury API",
-      "projectId": "lhGA9TYQ",
-      "fileId": "WbL7MStR",
-      "filename": "architectury-9.2.14-fabric.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Ad Astra",
-      "projectId": "3ufwT9JF",
-      "fileId": "gZClwdxY",
-      "filename": "ad_astra-fabric-1.20.1-1.15.20.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Resourceful Lib",
-      "projectId": "G1hIVOrD",
-      "fileId": "UOdaYbhh",
-      "filename": "resourcefullib-fabric-1.20.1-2.1.29.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Resourceful Config",
-      "projectId": "M1953qlQ",
-      "fileId": "2gStMKhM",
-      "filename": "resourcefulconfig-fabric-1.20.1-2.1.3.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Botarium",
-      "projectId": "2u6LRnMa",
-      "fileId": "f3ATcSfq",
-      "filename": "botarium-fabric-1.20.1-2.3.4.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "Dungeons and Taverns Stronghold Overhaul",
-      "projectId": "rYocd2LE",
-      "fileId": "FvrTLmTF",
-      "filename": "DnT Stronghold Overhaul v1.1.zip",
-      "side": "both",
-      "category": "worldgen"
-    },
-    {
-      "name": "Amplified Nether",
-      "projectId": "wXiGiyGX",
-      "fileId": "IeutgnWq",
-      "filename": "Amplified_Nether_1.21_v1.2.11.zip",
-      "side": "both",
-      "category": "worldgen"
-    },
-    {
-      "name": "LambDynamicLights",
-      "projectId": "yBW8D80W",
-      "fileId": "evN5ygtI",
-      "filename": "lambdynamiclights-4.1.4+1.20.1.jar",
-      "side": "client",
-      "category": "graphics"
-    },
-    {
-      "name": "Nature's Spirit",
-      "projectId": "WBvnqHfV",
-      "fileId": "GW1xcaGA",
-      "filename": "naturespirit-2.2.5-1.20.1.jar",
-      "side": "both",
-      "category": "content"
-    },
-    {
-      "name": "MaLiLib",
-      "projectId": "GcWjdA9I",
-      "fileId": "V7yLDtJV",
-      "filename": "malilib-fabric-1.20.1-0.16.3.jar",
-      "side": "client",
-      "category": "building"
-    },
-    {
-      "name": "Litematica",
-      "projectId": "bEpr0Arc",
-      "fileId": "1ZTpW1lr",
-      "filename": "litematica-fabric-1.20.1-0.15.4.jar",
-      "side": "client",
-      "category": "building"
-    },
-    {
-      "name": "Litematica Printer",
-      "projectId": "3llatzyE",
-      "fileId": "5ybtVRWR",
-      "filename": "litematica-printer-1.20.1-3.2.1.jar",
-      "side": "client",
-      "category": "building",
-      "bteExclude": true
-    },
-    {
-      "name": "Tweakeroo",
-      "projectId": "t5wuYk45",
-      "fileId": "mb6K7CK1",
-      "filename": "tweakeroo-fabric-1.20.1-0.17.1.jar",
-      "side": "client",
-      "category": "building"
-    },
-    {
-      "name": "MiniHUD",
-      "projectId": "UMxybHE8",
-      "fileId": "s4CUdPPN",
-      "filename": "minihud-fabric-1.20.1-0.27.1.jar",
-      "side": "client",
-      "category": "building"
+      "category": "map"
     },
     {
       "name": "Distant Horizons",
-      "projectId": "uCdwusMi",
-      "fileId": "4HFx4xGx",
-      "filename": "DistantHorizons-3.1.2-b-1.20.1-fabric-forge.jar",
+      "projectId": "distanthorizons",
+      "fileId": "",
       "side": "client",
-      "category": "graphics"
+      "category": "graphics",
+      "optional": true
     },
     {
-      "name": "CustomHud",
-      "projectId": "6jis0UTI",
-      "fileId": "rrAlAiEk",
-      "filename": "custom_hud-3.1.4+1.20.1.jar",
+      "name": "Entity Texture Features",
+      "projectId": "entitytexturefeatures",
+      "fileId": "",
       "side": "client",
-      "category": "interface"
+      "category": "graphics",
+      "optional": true
+    },
+    {
+      "name": "Entity Model Features",
+      "projectId": "entity-model-features",
+      "fileId": "",
+      "side": "client",
+      "category": "graphics",
+      "optional": true
+    },
+    {
+      "name": "Continuity",
+      "projectId": "continuity",
+      "fileId": "",
+      "side": "client",
+      "category": "graphics",
+      "optional": true
+    },
+    {
+      "name": "AutoSwitch",
+      "projectId": "autoswitch",
+      "fileId": "gG5RQy73",
+      "side": "client",
+      "category": "interface",
+      "filename": "autoswitch-fabric-16.0.0.jar"
+    },
+    {
+      "name": "AppleSkin",
+      "projectId": "appleskin",
+      "fileId": "uo5bAN1Y",
+      "side": "client",
+      "category": "interface",
+      "filename": "appleskin-fabric-mc26.2-3.0.10.jar"
+    },
+    {
+      "name": "Mouse Tweaks",
+      "projectId": "mouse-tweaks",
+      "fileId": "jOiTBIaB",
+      "side": "client",
+      "category": "interface",
+      "filename": "MouseTweaks-fabric-mc26.2-2.31.jar"
+    },
+    {
+      "name": "Inventory Profiles Next",
+      "projectId": "inventory-profiles-next",
+      "fileId": "Eg2NTcSJ",
+      "side": "client",
+      "category": "interface",
+      "filename": "InventoryProfilesNext-fabric-26.2-2.3.5.jar"
+    },
+    {
+      "name": "libIPN",
+      "projectId": "libipn",
+      "fileId": "uRP0v1wY",
+      "side": "client",
+      "category": "core",
+      "filename": "libIPN-fabric-26.2-6.8.2.jar"
+    },
+    {
+      "name": "Fabric Language Kotlin",
+      "projectId": "fabric-language-kotlin",
+      "fileId": "Pd0xrHCw",
+      "side": "client",
+      "category": "core",
+      "filename": "fabric-language-kotlin-1.13.12+kotlin.2.4.0.jar"
+    },
+    {
+      "name": "Mod Menu",
+      "projectId": "modmenu",
+      "fileId": "3gAjUrx6",
+      "side": "client",
+      "category": "interface",
+      "filename": "modmenu-20.0.0-beta.4.jar"
+    },
+    {
+      "name": "Text Placeholder API",
+      "projectId": "placeholder-api",
+      "fileId": "NDqH16LT",
+      "side": "client",
+      "category": "core",
+      "filename": "placeholder-api-3.1.0-beta.1+26.2.jar"
     }
   ]
 }

@@ -1,5 +1,11 @@
 # Minecraft Mage Modpack Changelog
 
+## v2.0.1 - 2026-08-16
+
+### Fixed
+- **Distant Horizons updated to 3.2.0-b** (from 3.1.2-b), picking up its ByteBuffer memory-leak fix, ByteBuffer pooling, and the waiting-chunk-replay fix — addresses intermittent native (SIGSEGV) crashes at server join on macOS
+- Note for anyone hitting join-time hard crashes even after updating: delete your server's folder under `Distant_Horizons_server_data/` in the instance so DH rebuilds its LOD cache — a corrupted cache produces exactly this crash
+
 ## v1.0.5 - 2025-06-29
 
 ### Fixed

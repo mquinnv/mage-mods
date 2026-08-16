@@ -1,0 +1,16 @@
+# gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# fabric loom
+run/
+remappedSrc/
+
+# ide
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/

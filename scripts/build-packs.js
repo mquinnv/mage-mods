@@ -147,17 +147,18 @@ async function getModDownloadUrl(projectId, fileId) {
 }
 
 async function getLatestModVersion(projectId) {
-  const url = `${MODRINTH_API}/project/${projectId}/version?game_versions=["1.20.1"]&loaders=["fabric"]`;
+  const gv = packInfo.minecraft;
+  const url = `${MODRINTH_API}/project/${projectId}/version?game_versions=["${gv}"]&loaders=["fabric"]`;
   const headers = { 'User-Agent': USER_AGENT };
   if (MODRINTH_TOKEN) {
     headers['Authorization'] = `Bearer ${MODRINTH_TOKEN}`;
   }
-  
+
   try {
     const response = await axios.get(url, { headers });
-    
+
     if (!response.data || response.data.length === 0) {
-      throw new Error('No compatible versions found for Minecraft 1.20.1 Fabric');
+      throw new Error(`No compatible versions found for Minecraft ${gv} Fabric`);
     }
     
     const latestVersion = response.data[0];
@@ -177,17 +178,18 @@ async function getLatestModVersion(projectId) {
 }
 
 async function getLatestResourcePackVersion(packId) {
-  const url = `${MODRINTH_API}/project/${packId}/version?game_versions=["1.20.1"]`;
+  const gv = packInfo.minecraft;
+  const url = `${MODRINTH_API}/project/${packId}/version?game_versions=["${gv}"]`;
   const headers = { 'User-Agent': USER_AGENT };
   if (MODRINTH_TOKEN) {
     headers['Authorization'] = `Bearer ${MODRINTH_TOKEN}`;
   }
-  
+
   try {
     const response = await axios.get(url, { headers });
-    
+
     if (!response.data || response.data.length === 0) {
-      throw new Error('No compatible versions found for Minecraft 1.20.1');
+      throw new Error(`No compatible versions found for Minecraft ${gv}`);
     }
     
     const latestVersion = response.data[0];
@@ -347,8 +349,8 @@ async function buildModrinthIndex(mods, packType, downloadedFiles, bte = false) 
         sha512: calculateSHA512(filePath)
       },
       env: {
-        client: mod.side === 'client' || mod.side === 'both' ? 'required' : 'unsupported',
-        server: mod.side === 'server' || mod.side === 'both' ? 'required' : 'unsupported'
+        client: mod.optional ? 'optional' : (mod.side === 'client' || mod.side === 'both' ? 'required' : 'unsupported'),
+        server: 'unsupported'
       },
       downloads: downloadUrl ? [downloadUrl] : [],
       fileSize: getFileSize(filePath)
@@ -378,6 +380,38 @@ function calculateSHA512(filePath) {
   return hash.digest('hex');
 }
 
+// Client mods we build ourselves. These aren't on Modrinth, so they can't be referenced by URL in
+// modrinth.index.json and have to ride along inside overrides/ instead.
+const LOCAL_CLIENT_MODS = ['src/client-mods/hammerharvest'];
+
+// Throws rather than warns when a jar is missing: a client pack without hammerharvest looks
+// completely fine but silently fails to auto-switch to Nova hammers, which is the exact bug this
+// mod exists to fix. Better to stop the build than to ship a pack that quietly doesn't work.
+function resolveLocalClientMods() {
+  return LOCAL_CLIENT_MODS.map(dir => {
+    const libs = path.join(dir, 'build', 'libs');
+    const jar = fs.existsSync(libs)
+      ? fs.readdirSync(libs).filter(f => f.endsWith('.jar') && !f.endsWith('-sources.jar')).sort().pop()
+      : null;
+    if (!jar) {
+      throw new Error(
+        `Local client mod is not built: ${dir}\n` +
+        `   Build it with:  (cd ${dir} && ./gradlew build)\n` +
+        `   Refusing to build a client pack without it.`
+      );
+    }
+    return path.join(libs, jar);
+  });
+}
+
+function bundleLocalClientMods(destModsDir) {
+  fs.mkdirSync(destModsDir, { recursive: true });
+  for (const jar of resolveLocalClientMods()) {
+    fs.copyFileSync(jar, path.join(destModsDir, path.basename(jar)));
+    console.log(`  Bundled local client mod: ${path.basename(jar)}`);
+  }
+}
+
 async function createMrpack(packType, mods, index, enhanced = false, bte = false) {
   const buildDir = `build/${packType}`;
   const suffix = `${bte ? '-bte' : ''}${enhanced ? '-enhanced' : ''}`;
@@ -401,7 +435,9 @@ async function createMrpack(packType, mods, index, enhanced = false, bte = false
   if (packType === 'client') {
     const overridesDir = path.join(buildDir, 'overrides');
     fs.mkdirSync(overridesDir, { recursive: true });
-    
+
+    bundleLocalClientMods(path.join(overridesDir, 'mods'));
+
     // Copy shared config files to overrides/config
     const sharedConfigDir = 'src/shared/config';
     if (fs.existsSync(sharedConfigDir)) {
@@ -434,48 +470,29 @@ async function createMrpack(packType, mods, index, enhanced = false, bte = false
     }
     
     // Create server info file
-    const serverInfo = `Minecraft Mage Server Information:
+    const serverInfo = `Mage Information:
 
-Server Address: minecraft.mage.net
-Server Name: Minecraft Mage Server
+Server Address: play.mage.net
+Server Name: Mage
 
 To connect:
 1. Open Minecraft and go to Multiplayer
 2. Click "Add Server"
-3. Enter "Minecraft Mage Server" as the name
-4. Enter "minecraft.mage.net" as the address
+3. Enter "Mage" as the name
+4. Enter "play.mage.net" as the address
 5. Click Done and join!
 
 The server is compatible with this modpack.
 `;
     fs.writeFileSync(path.join(overridesDir, 'SERVER_INFO.txt'), serverInfo);
-    
+
     // Add lastServer and JVM args to options.txt
-    const optionsContent = `lastServer:minecraft.mage.net
+    const optionsContent = `lastServer:play.mage.net
 javaArgs:-XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:+ParallelRefProcEnabled -Dfml.readTimeout=180 -Dfml.queryResult=confirm
 maxMemory:4096
 `;
     fs.writeFileSync(path.join(overridesDir, 'options.txt'), optionsContent);
-    
-    // Create servers.dat NBT file
-    const serversNbt = Buffer.from([
-      0x0A, 0x00, 0x00, // TAG_Compound (root)
-      0x09, 0x00, 0x07, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // TAG_List "servers"
-      0x0A, // TAG_Compound element type
-      0x00, 0x00, 0x00, 0x01, // 1 element
-      // First server entry
-      0x08, 0x00, 0x04, 0x6E, 0x61, 0x6D, 0x65, // TAG_String "name"
-      0x00, 0x14, 0x4D, 0x69, 0x6E, 0x65, 0x63, 0x72, 0x61, 0x66, 0x74, 0x20, 0x4D, 0x61, 0x67, 0x65, 0x20, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, // "Minecraft Mage Server"
-      0x08, 0x00, 0x02, 0x69, 0x70, // TAG_String "ip"
-      0x00, 0x11, 0x6D, 0x69, 0x6E, 0x65, 0x63, 0x72, 0x61, 0x66, 0x74, 0x2E, 0x6D, 0x61, 0x67, 0x65, 0x2E, 0x6E, 0x65, 0x74, // "minecraft.mage.net"
-      0x08, 0x00, 0x04, 0x69, 0x63, 0x6F, 0x6E, // TAG_String "icon"
-      0x00, 0x00, // empty string
-      0x00, // End of compound
-      0x00 // End of root compound
-    ]);
-    
-    fs.writeFileSync(path.join(overridesDir, 'servers.dat'), serversNbt);
-    
+
     // If enhanced mode, copy resource packs and shader packs to overrides
     if (enhanced && packType === 'client') {
       // Create resourcepacks and shaderpacks directories in overrides
@@ -551,7 +568,24 @@ Installation:
     packInfo.description[packType] +
     (packType === 'client' ? '\n\nSee RESOURCE_PACKS_AND_SHADERS.txt for recommended visual enhancements.' : '')
   );
-  
+
+  // Bundle local override files (paid/private assets that can't come from Modrinth).
+  // Off by default: these must never ship in Modrinth-distributed mrpacks, and they
+  // balloon the pack past 1GB. Pass --bundle-local for a personal full-fat build.
+  const bundleLocal = process.argv.slice(2).includes('--bundle-local');
+  const lo = 'config/local-overrides.json';
+  if (bundleLocal && packType === 'client' && fs.existsSync(lo)) {
+    const { overrides = [] } = JSON.parse(fs.readFileSync(lo, 'utf8'));
+    for (const o of overrides) {
+      const src = o.src.replace(/^~/, require('os').homedir());
+      if (!fs.existsSync(src)) { console.warn(`⚠️  local override missing: ${src}`); continue; }
+      const destDir = path.join(buildDir, 'overrides', o.dest);
+      fs.mkdirSync(destDir, { recursive: true });
+      fs.copyFileSync(src, path.join(destDir, path.basename(src)));
+      console.log(`  Bundled local override: ${path.basename(src)} -> overrides/${o.dest}/`);
+    }
+  }
+
   // Create the mrpack
   const outputFile = `${packInfo.name.toLowerCase().replace(/\s+/g, '-')}-${packType}-${packInfo.version}${suffix}.mrpack`;
   const outputPath = `build/${outputFile}`;
@@ -579,6 +613,11 @@ async function createPrismPack(packType, mods, index, bte = false) {
     }
   }
 
+  // Mods built in-repo don't come from Modrinth, so the loop above never sees them.
+  if (packType === 'client') {
+    bundleLocalClientMods(path.join(prismDir, '.minecraft', 'mods'));
+  }
+
   // Copy shared mod configs into the instance (mirrors the mrpack overrides/config).
   // Recursive so nested config dirs (e.g. custom-hud/, bluemap/) are included.
   const sharedConfigDir = 'src/shared/config';
@@ -591,46 +630,26 @@ async function createPrismPack(packType, mods, index, bte = false) {
   // Create server info for client packs
   if (packType === 'client') {
     // Create a README with server info
-    const serverInfo = `Minecraft Mage Server Information:
+    const serverInfo = `Mage Information:
 
-Server Address: minecraft.mage.net
-Server Name: Minecraft Mage Server
+Server Address: play.mage.net
+Server Name: Mage
 
 To connect:
 1. Open Minecraft and go to Multiplayer
 2. Click "Add Server"
-3. Enter "Minecraft Mage Server" as the name
-4. Enter "minecraft.mage.net" as the address
+3. Enter "Mage" as the name
+4. Enter "play.mage.net" as the address
 5. Click Done and join!
 
 The server is compatible with this modpack.
 `;
     fs.writeFileSync(path.join(prismDir, '.minecraft', 'SERVER_INFO.txt'), serverInfo);
-    
+
     // Also add to the options.txt file for direct connect memory
-    const optionsContent = `lastServer:minecraft.mage.net
+    const optionsContent = `lastServer:play.mage.net
 `;
     fs.writeFileSync(path.join(prismDir, '.minecraft', 'options.txt'), optionsContent);
-    
-    // Create a basic servers.dat NBT file
-    // This is a minimal NBT structure for one server
-    const serversNbt = Buffer.from([
-      0x0A, 0x00, 0x00, // TAG_Compound (root)
-      0x09, 0x00, 0x07, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // TAG_List "servers"
-      0x0A, // TAG_Compound element type
-      0x00, 0x00, 0x00, 0x01, // 1 element
-      // First server entry
-      0x08, 0x00, 0x04, 0x6E, 0x61, 0x6D, 0x65, // TAG_String "name"
-      0x00, 0x14, 0x4D, 0x69, 0x6E, 0x65, 0x63, 0x72, 0x61, 0x66, 0x74, 0x20, 0x4D, 0x61, 0x67, 0x65, 0x20, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, // "Minecraft Mage Server"
-      0x08, 0x00, 0x02, 0x69, 0x70, // TAG_String "ip"
-      0x00, 0x11, 0x6D, 0x69, 0x6E, 0x65, 0x63, 0x72, 0x61, 0x66, 0x74, 0x2E, 0x6D, 0x61, 0x67, 0x65, 0x2E, 0x6E, 0x65, 0x74, // "minecraft.mage.net"
-      0x08, 0x00, 0x04, 0x69, 0x63, 0x6F, 0x6E, // TAG_String "icon"
-      0x00, 0x00, // empty string
-      0x00, // End of compound
-      0x00 // End of root compound
-    ]);
-    
-    fs.writeFileSync(path.join(prismDir, '.minecraft', 'servers.dat'), serversNbt);
 
     // Bundle resource packs and shader packs into the instance
     const rpDir = path.join(prismDir, '.minecraft', 'resourcepacks');

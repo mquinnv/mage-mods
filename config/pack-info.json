@@ -1,12 +1,12 @@
 {
-  "name": "Minecraft Mage",
-  "version": "1.1.1",
-  "minecraft": "1.20.1",
-  "fabric": "0.16.10",
-  "fabricApi": "0.92.6+1.20.1",
+  "name": "Mage Realism",
+  "version": "2.0.1",
+  "minecraft": "26.2",
+  "fabric": "0.19.3",
+  "fabricApi": "0.154.0+26.2",
   "author": "michael",
   "description": {
-    "client": "Client modpack with performance mods, shaders, Xaero's minimap, and enhanced gameplay features",
-    "server": "Server modpack with performance, admin tools, mapping, and enhanced gameplay features"
+    "client": "Private ultra-realism client pack for the Mage 26.2 server: shaders (Photon/Complementary), PBR (Patrix), Physics Mod Pro, Distant Horizons, and performance/QoL. Connects to play.mage.net.",
+    "server": "unused"
   }
 }

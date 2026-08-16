@@ -1,0 +1,23 @@
+{
+	"schemaVersion": 1,
+	"id": "hammerharvest",
+	"version": "${version}",
+	"name": "Hammer Harvest",
+	"description": "Client-side fix that makes Nova 'Vanilla Hammers' items register as correct pickaxes, so tools like AutoSwitch will select them for mining.",
+	"authors": [
+		"Mage Realism"
+	],
+	"license": "MIT",
+	"environment": "client",
+	"mixins": [
+		{
+			"config": "hammerharvest.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=${loader_version}",
+		"minecraft": "~${minecraft_version}",
+		"java": ">=25"
+	}
+}

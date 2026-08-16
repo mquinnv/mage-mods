@@ -1,0 +1,43 @@
+# Distant Horizons configuration override, shipped by the mage-mods pack builder.
+#
+# Distant Horizons' ConfigFileHandler tolerates a partial file: on first load it
+# fills in every key we don't specify with its own defaults, then rewrites this
+# file to the full default set. So this file only needs to contain the one key
+# we actually want to force.
+#
+# Why: on MC 26.1.2+ Distant Horizons defaults renderingEngine to BLAZE_3D, but
+# Iris does not yet support DH's BLAZE_3D rendering engine on MC 26.2. Forcing
+# OPEN_GL here is the documented workaround so DH terrain renders correctly
+# together with Iris shaders for every player using this pack (not a per-user
+# manual settings change).
+#
+# Source (verified against the Distant Horizons Core source, not guessed):
+#   com.seibel.distanthorizons.core.config.Config.Client.Advanced.Graphics.Experimental.renderingEngine
+#   Type: EDhApiRenderingEngine, Options: AUTO | OPEN_GL | BLAZE_3D
+#   Repo: https://gitlab.com/distant-horizons-team/distant-horizons-core
+#     core/src/main/java/com/seibel/distanthorizons/core/config/Config.java
+#
+# Requires a restart to take effect (same as changing it in-game).
+#
+# macOS + DH + shaders note (2026-07-06):
+# macOS caps fragment-shader samplers at 16, so DH + Iris shaders can crash or
+# fail to load there ("Implementation limit of 16 active fragment shader
+# samplers ... exceeded"). The community-proven fix is the "Distantly
+# Optimized" modpack (Modrinth slug distantly-optimized); its shipped DH
+# config is what the Mac fix is built from, so we pulled and diffed it
+# (v7.1, 26.1.2 Fabric build, downloaded 2026-07-06) against our own pack's
+# live-generated DistantHorizons.toml (i.e. DH's actual stock defaults for
+# this exact MC 26.2 / DH version, taken from a played PrismLauncher
+# instance of this pack). Field-by-field comparison found NO deliberate
+# tuning anywhere in Distantly Optimized's config other than forcing the
+# rendering engine to OPEN_GL (their config calls the key `renderingApi`;
+# it's the same setting, renamed between DH schema versions) -- every other
+# key (SSAO, noise texture, generic/cloud/beacon rendering, LOD quality,
+# fog, etc.) in their file is byte-for-byte DH's own default value, not an
+# override. So the OPEN_GL rendering-engine key below IS the complete "DO
+# fix" -- there are no additional sampler-reducing keys to merge in. Not
+# wholesale-copying their file (per pack policy) since the rest is just
+# DH's defaults reproduced.
+
+[client.advanced.graphics.experimental]
+    renderingEngine = "OPEN_GL"

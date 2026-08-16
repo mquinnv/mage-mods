@@ -2,6 +2,9 @@
 build/
 *.mrpack
 
+# Subagent-driven-development scratch (plans/progress/reports)
+.superpowers/
+
 # Downloaded mods
 src/client/mods/
 src/server/mods/
