@@ -5,10 +5,15 @@ Guidance for Claude Code (claude.ai/code) working in this repository.
 
 ## Project
 
-`mage-mods` builds and publishes Fabric **modpacks** for the private Minecraft
-server `play.mage.net`: a client pack ("Mage Realism") and a matching server
-pack. `config/pack-info.json` is the source of truth for pack name, version,
-and the targeted Minecraft/Fabric versions.
+`mage-mods` builds and publishes the Fabric **client modpack** ("Mage Realism")
+for the private Minecraft server. `config/pack-info.json` is the source of truth
+for pack name, version, and the targeted Minecraft/Fabric versions.
+
+> **The Minecraft server lives in the separate `mage-server` repo, not here.**
+> This repo still carries server-pack and deploy machinery (`build:server`,
+> `config/mods-server.json`, `scripts/deploy-apex*`) left over from when it
+> handled both. That machinery is **dead** — see Deployment. It should probably
+> be deleted rather than maintained.
 
 ## Layout
 
@@ -25,7 +30,7 @@ and the targeted Minecraft/Fabric versions.
 
 ## Commands
 
-Every script that talks to Modrinth or Apex Hosting is wrapped in `op run` in
+Every script that talks to an external service is wrapped in `op run` in
 `package.json`. Run them via the package scripts, not by invoking
 `bun scripts/*.js` directly, or the API token will be missing.
 
@@ -34,11 +39,35 @@ bun run build            # build all packs into build/
 bun run build:client     # client pack only
 bun run build:server     # server pack only
 bun run upload           # publish versions to Modrinth
-bun run deploy           # deploy the server pack to Apex Hosting
+bun run deploy           # DEAD - targets retired Apex Hosting. See Deployment.
 bun run check-versions   # ask Modrinth for newer mod versions
 bun run update-versions  # bump pinned fileIds in config/mods-*.json
 bun run clean            # remove built .mrpack files
 ```
+
+## Deployment
+
+**Nothing in this repo deploys the server. Do not run the `deploy` scripts.**
+
+`scripts/deploy-apex.sh`, `deploy-apex.js` and `deploy-apex-smart.js` push over
+plain FTP to Apex Hosting. **The server is no longer hosted on Apex** (confirmed
+by Michael, 2026-08-19), and those scripts have not been touched since
+2025-06-28. `ftp_deploy.txt` is a committed leftover of that dead path -- it is
+generated and deleted by `deploy-apex.sh` at run time, so nothing reads the
+committed copy.
+
+The server now lives in the `mage-server` repo, with this topology (per that
+repo's own README):
+
+    vanilla client -> mc.mage.net -> Oracle A1 doorman (Velocity + PicoLimbo
+    limbo, holds you at "booting...") -> aws.mage.net -> EC2 on-demand Purpur
+
+DNS is Cloudflare on `mage.net`. Credentials there are narrowly scoped by
+design. **Record nothing about that setup here** -- `mage-server` owns it.
+
+Worth noting how this got stale: every one of those deploy scripts exists and
+runs, and every path inside them resolves. What moved was the destination, which
+nothing inside this repo can reveal. In-repo verification cannot catch it.
 
 ## Conventions
 
