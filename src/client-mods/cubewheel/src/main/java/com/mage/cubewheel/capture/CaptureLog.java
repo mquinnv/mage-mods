@@ -98,6 +98,55 @@ public final class CaptureLog {
 		append(o, now);
 	}
 
+	/** The world as local counting resolved it (dimension id, raw sidebar lines, tokens, special). */
+	public void world(String dimension, List<String> sidebar, List<String> tokens, boolean special, long now) {
+		if (!enabled) return;
+		JsonObject o = new JsonObject();
+		o.addProperty("t", now);
+		o.addProperty("kind", "world");
+		o.addProperty("dimension", dimension);
+		o.add("sidebar", array(sidebar));
+		o.add("tokens", array(tokens));
+		o.addProperty("special", special);
+		append(o, now);
+	}
+
+	/**
+	 * A local-counting signal: {@code signal} is break, kill, fish or reject; {@code matched} the tracker
+	 * ids it advanced (or took back), {@code units} per id.
+	 */
+	public void local(String signal, String id, String name, List<String> world, List<String> matched, long units, long now) {
+		if (!enabled) return;
+		JsonObject o = new JsonObject();
+		o.addProperty("t", now);
+		o.addProperty("kind", "local");
+		o.addProperty("signal", signal);
+		o.addProperty("id", id);
+		o.addProperty("name", name);
+		o.add("world", array(world));
+		o.add("matched", array(matched));
+		o.addProperty("units", units);
+		append(o, now);
+	}
+
+	/** A snap-back: {@code counted} units estimated locally vs {@code actual} per the next authoritative read. */
+	public void estimate(String id, long counted, double actual, long now) {
+		if (!enabled) return;
+		JsonObject o = new JsonObject();
+		o.addProperty("t", now);
+		o.addProperty("kind", "estimate");
+		o.addProperty("id", id);
+		o.addProperty("counted", counted);
+		o.addProperty("actual", actual);
+		append(o, now);
+	}
+
+	private static JsonArray array(List<String> values) {
+		JsonArray arr = new JsonArray();
+		if (values != null) values.forEach(arr::add);
+		return arr;
+	}
+
 	/** A regular chat game message; see {@link #chat(String, String, boolean, long)}. */
 	public void chat(String json, String text, long now) {
 		chat(json, text, false, now);

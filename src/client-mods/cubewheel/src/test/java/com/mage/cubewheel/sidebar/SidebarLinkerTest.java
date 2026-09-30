@@ -105,5 +105,9 @@ class SidebarLinkerTest {
 		assertEquals(false, t.shouldSave(5_000));
 		assertEquals(true, t.shouldSave(10_000));
 		assertEquals(false, t.shouldSave(20_000)); // clean again
+		t.markDirty();
+		assertEquals(true, t.consumeDirty());    // flush on disconnect ignores the interval
+		assertEquals(false, t.consumeDirty());
+		assertEquals(false, t.shouldSave(40_000));
 	}
 }

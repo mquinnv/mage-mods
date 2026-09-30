@@ -66,6 +66,13 @@ public final class SidebarLinker {
 			dirty = true;
 		}
 
+		/** True (and clean again) if there are unsaved changes, regardless of the interval (disconnect, shutdown). */
+		public boolean consumeDirty() {
+			boolean was = dirty;
+			dirty = false;
+			return was;
+		}
+
 		/** True (and clean again) when there are unsaved changes and the last save is old enough. */
 		public boolean shouldSave(long now) {
 			if (!dirty || now - lastSave < intervalMs) return false;

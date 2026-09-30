@@ -43,6 +43,33 @@ class CaptureLogTest {
 		assertEquals("1,200/1,500", item.getAsJsonArray("lore").get(0).getAsString());
 	}
 
+	@Test void localCountingKinds() throws Exception {
+		CaptureLog log = new CaptureLog(dir);
+		log.world("minecraft:overworld", List.of("World: Sandara"), List.of("overworld", "sandara"), true, 0);
+		assertFalse(Files.exists(dir.resolve("1970-01-01.jsonl"))); // off: nothing written
+		log.toggle();
+		log.world("minecraft:overworld", List.of("World: Sandara"), List.of("overworld", "sandara"), true, 0);
+		log.local("break", "minecraft:wheat", "Wheat", List.of("overworld"), List.of("pquests:Honest Work"), 1, 0);
+		log.estimate("pquests:Honest Work", 212, 220, 0);
+		List<String> lines = Files.readAllLines(dir.resolve("1970-01-01.jsonl"));
+		assertEquals(3, lines.size());
+		JsonObject world = JsonParser.parseString(lines.get(0)).getAsJsonObject();
+		assertEquals("world", world.get("kind").getAsString());
+		assertEquals("minecraft:overworld", world.get("dimension").getAsString());
+		assertEquals("World: Sandara", world.getAsJsonArray("sidebar").get(0).getAsString());
+		assertTrue(world.get("special").getAsBoolean());
+		JsonObject local = JsonParser.parseString(lines.get(1)).getAsJsonObject();
+		assertEquals("local", local.get("kind").getAsString());
+		assertEquals("break", local.get("signal").getAsString());
+		assertEquals("minecraft:wheat", local.get("id").getAsString());
+		assertEquals("pquests:Honest Work", local.getAsJsonArray("matched").get(0).getAsString());
+		assertEquals(1, local.get("units").getAsLong());
+		JsonObject est = JsonParser.parseString(lines.get(2)).getAsJsonObject();
+		assertEquals("estimate", est.get("kind").getAsString());
+		assertEquals(212, est.get("counted").getAsLong());
+		assertEquals(220, est.get("actual").getAsDouble(), 1e-9);
+	}
+
 	@Test void nonJsonChatPayloadIsStoredAsString() throws Exception {
 		CaptureLog log = new CaptureLog(dir);
 		log.toggle();
