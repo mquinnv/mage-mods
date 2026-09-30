@@ -139,13 +139,17 @@ class TrackerStoreEstimateTest {
 
 	@Test void hudUsesTheEstimatedFraction() {
 		TrackerStore s = store();
-		assertTrue(s.hudRows(0.8, 6, true).isEmpty());
+		assertEquals(List.of(HARVESTER, MINER), ids(s.hudRows(6, true))); // 64% before 33%
 		s.addEstimate(MINER, 150, 10); // 250 / 300 = 83%
-		List<TrackerRow> rows = s.hudRows(0.8, 6, true);
-		assertEquals(1, rows.size());
-		assertTrue(rows.get(0).estimated());
+		List<TrackerRow> rows = s.hudRows(6, true);
+		assertEquals(List.of(MINER, HARVESTER), ids(rows)); // sorted by the estimated fraction
+		assertTrue(rows.get(0).estimated()); // keeps its "~"
 		assertEquals(250, rows.get(0).shownCurrent(), 1e-9);
-		assertTrue(s.hudRows(0.8, 6, false).isEmpty()); // counting off: stored estimates are ignored
+		assertEquals(List.of(HARVESTER, MINER), ids(s.hudRows(6, false))); // counting off: stored estimates are ignored
 		assertFalse(s.rows(false).get(0).estimated());
+	}
+
+	static List<String> ids(List<TrackerRow> rows) {
+		return rows.stream().map(r -> r.item().id()).toList();
 	}
 }

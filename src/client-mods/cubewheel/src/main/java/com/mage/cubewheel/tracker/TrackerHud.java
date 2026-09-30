@@ -14,7 +14,10 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 
-/** Top-right overlay: pinned trackables plus unpinned ones close to completion. */
+/**
+ * Top-right overlay: pinned trackables, then every other incomplete one closest to done first (hidden
+ * ones never), capped at {@code tracker.hudMaxLines}. Entries at or above {@code nearThreshold} are yellow.
+ */
 public final class TrackerHud implements HudElement {
 	private static final int MARGIN = 4;
 	private static final int EFFECTS_HEIGHT = 52; // two rows of vanilla mob-effect icons
@@ -47,7 +50,7 @@ public final class TrackerHud implements HudElement {
 		if (mc.player == null || store == null) return;
 		CubeWheelConfig cfg = CubeWheelClient.config().current();
 		if (!cfg.tracker.hudVisible || !ServerGate.active(cfg)) return;
-		List<TrackerRow> entries = store.hudRows(cfg.tracker.nearThreshold, cfg.tracker.hudMaxLines, cfg.tracker.local.enabled);
+		List<TrackerRow> entries = store.hudRows(cfg.tracker.hudMaxLines, cfg.tracker.local.enabled);
 		if (entries.isEmpty()) return;
 
 		Font font = mc.font;

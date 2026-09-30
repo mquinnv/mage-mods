@@ -13,7 +13,7 @@ public final class CubeWheelConfig {
 
 	public static final class Tracker {
 		public double nearThreshold = 0.8;
-		public int hudMaxLines = 6;
+		public int hudMaxLines = 8;
 		public boolean hudVisible = true;
 		public Map<String, String> sources;
 		/** Sent one at a time by the "Refresh trackers" key; each should open a progress menu. */

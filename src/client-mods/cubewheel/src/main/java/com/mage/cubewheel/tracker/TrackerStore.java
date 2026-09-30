@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tracked progress items and pins, persisted as JSON, plus two side maps keyed by item id: the
+ * Tracked progress items, pins and HUD-hidden ids, persisted as JSON, plus two side maps keyed by item id: the
  * objective text of each item and the local estimate counted since its last authoritative read.
  * Every authoritative read ({@link #update}, {@link #applyLiveValue}) drops that item's estimate.
  * Pure: no Minecraft/Fabric imports.
@@ -38,6 +38,8 @@ public final class TrackerStore {
 	static final class Snapshot {
 		List<Trackable> items = new ArrayList<>();
 		List<String> pins = new ArrayList<>();
+		/** Entries never shown on the HUD (still listed in the picker). */
+		List<String> hidden = new ArrayList<>();
 		Map<String, ObjectiveInfo> objectives = new LinkedHashMap<>();
 		Map<String, Estimate> estimates = new LinkedHashMap<>();
 	}
@@ -55,6 +57,7 @@ public final class TrackerStore {
 	private final Path file;
 	private Map<String, Trackable> items = new LinkedHashMap<>();
 	private Set<String> pins = new LinkedHashSet<>();
+	private Set<String> hidden = new LinkedHashSet<>();
 	private Map<String, ObjectiveInfo> objectives = new LinkedHashMap<>();
 	private Map<String, Estimate> estimates = new LinkedHashMap<>();
 	private final Map<String, Accuracy> accuracy = new HashMap<>();
@@ -242,27 +245,40 @@ public final class TrackerStore {
 		if (!pins.remove(id)) pins.add(id);
 	}
 
-	/** Pinned items first, then incomplete items at or above {@code nearThreshold}; capped at {@code maxLines}. */
-	public List<Trackable> hudEntries(double nearThreshold, int maxLines) {
-		return hudRows(nearThreshold, maxLines, false).stream().map(TrackerRow::item).toList();
+	public boolean isHidden(String id) {
+		return hidden.contains(id);
+	}
+
+	/** Hides {@code id} from the HUD, or shows it again. */
+	public void toggleHidden(String id) {
+		if (id != null && !hidden.remove(id)) hidden.add(id);
 	}
 
 	/**
-	 * Like {@link #hudEntries} but as displayed rows; with {@code withEstimates} the near-threshold test
-	 * and sorting use the estimated fraction, so an entry that crosses the threshold appears live.
+	 * Pinned items first, then every other incomplete item, each group closest to done first; hidden items
+	 * never; complete items only when pinned. Capped at {@code maxLines}.
 	 */
-	public List<TrackerRow> hudRows(double nearThreshold, int maxLines, boolean withEstimates) {
+	public List<Trackable> hudEntries(int maxLines) {
+		return hudRows(maxLines, false).stream().map(TrackerRow::item).toList();
+	}
+
+	/**
+	 * Like {@link #hudEntries} but as displayed rows; with {@code withEstimates} the sorting uses the
+	 * estimated fraction, so an entry moves up live while you work on it.
+	 */
+	public List<TrackerRow> hudRows(int maxLines, boolean withEstimates) {
 		List<TrackerRow> pinned = new ArrayList<>();
-		List<TrackerRow> near = new ArrayList<>();
+		List<TrackerRow> open = new ArrayList<>();
 		for (Trackable t : items.values()) {
+			if (hidden.contains(t.id())) continue;
 			TrackerRow r = row(t, withEstimates);
 			if (pins.contains(t.id())) pinned.add(r);
-			else if (r.fraction() >= nearThreshold && !r.complete()) near.add(r);
+			else if (!r.complete()) open.add(r);
 		}
 		pinned.sort(ROWS_BY_FRACTION_THEN_NAME);
-		near.sort(ROWS_BY_FRACTION_THEN_NAME);
+		open.sort(ROWS_BY_FRACTION_THEN_NAME);
 		List<TrackerRow> out = new ArrayList<>(pinned);
-		out.addAll(near);
+		out.addAll(open);
 		return out.size() > maxLines ? new ArrayList<>(out.subList(0, Math.max(0, maxLines))) : out;
 	}
 
@@ -272,6 +288,7 @@ public final class TrackerStore {
 		items.values().removeIf(t -> !pins.contains(t.id()) && now - t.seenAt() > ageMs);
 		objectives.keySet().retainAll(items.keySet());
 		estimates.keySet().retainAll(items.keySet());
+		hidden.retainAll(items.keySet());
 		rulesDirty = true;
 		return before - items.size();
 	}
@@ -286,6 +303,7 @@ public final class TrackerStore {
 		}
 		Map<String, Trackable> newItems = new LinkedHashMap<>();
 		Set<String> newPins = new LinkedHashSet<>();
+		Set<String> newHidden = new LinkedHashSet<>();
 		Map<String, ObjectiveInfo> newObjectives = new LinkedHashMap<>();
 		Map<String, Estimate> newEstimates = new LinkedHashMap<>();
 		if (snap != null) {
@@ -298,6 +316,11 @@ public final class TrackerStore {
 			if (snap.pins != null) {
 				for (String pin : snap.pins) {
 					if (pin != null) newPins.add(pin);
+				}
+			}
+			if (snap.hidden != null) {
+				for (String id : snap.hidden) {
+					if (id != null && newItems.containsKey(id)) newHidden.add(id);
 				}
 			}
 			if (snap.objectives != null) {
@@ -314,6 +337,7 @@ public final class TrackerStore {
 		}
 		items = newItems;
 		pins = newPins;
+		hidden = newHidden;
 		objectives = newObjectives;
 		estimates = newEstimates;
 		accuracy.clear();
@@ -325,6 +349,7 @@ public final class TrackerStore {
 		Snapshot snap = new Snapshot();
 		snap.items = new ArrayList<>(items.values());
 		snap.pins = new ArrayList<>(pins);
+		snap.hidden = new ArrayList<>(hidden);
 		snap.objectives = new LinkedHashMap<>(objectives);
 		snap.estimates = new LinkedHashMap<>(estimates);
 		try {

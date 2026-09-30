@@ -13,15 +13,20 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
-/** Lists every trackable grouped by source; clicking a row toggles its HUD pin. Local data only. */
+/**
+ * Lists every trackable grouped by source. Left-click a row toggles its HUD pin, right-click hides it
+ * from the HUD (hidden rows stay listed, dimmed). Local data only.
+ */
 public final class TrackerScreen extends Screen {
 	private static final long FORGET_AGE_MS = 7L * 24 * 60 * 60 * 1000;
 	private static final int ROW = 12;
-	private static final int ROWS_TOP = 22;
+	private static final int ROWS_TOP = 30;
+	private static final String LEGEND = "Left-click: pin to HUD   Right-click: hide from HUD";
 	private static final int BOTTOM = 40; // space reserved for the status line and the buttons
 	private static final int WHITE = 0xFFFFFFFF;
 	private static final int GREY = 0xFFAAAAAA;
 	private static final int GOLD = 0xFFFFAA00;
+	private static final int DIM = 0xFF666666;
 
 	/** A header row has a source and no trackable. */
 	private record Row(String header, TrackerRow item) {}
@@ -68,6 +73,7 @@ public final class TrackerScreen extends Screen {
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partial) {
 		super.extractRenderState(g, mouseX, mouseY, partial);
 		g.centeredText(font, title, width / 2, 6, WHITE);
+		g.centeredText(font, LEGEND, width / 2, 17, GREY);
 		// The Refresh button's result: chat is hidden behind this screen, so show it here too.
 		String status = RefreshController.pickerStatus();
 		if (status != null) g.centeredText(font, status, width / 2, height - 36, GOLD);
@@ -92,8 +98,9 @@ public final class TrackerScreen extends Screen {
 			if (scroll + i == hot) g.fill(left, y, left + w, y + ROW, 0x40FFFFFF);
 			String id = row.item().item().id();
 			boolean pinned = store != null && store.isPinned(id);
-			String text = (pinned ? "★ " : "☆ ") + TrackerFormat.pickerLine(row.item(), now);
-			g.text(font, font.plainSubstrByWidth(text, w - 8), left + 6, y + 2, pinned ? WHITE : GREY);
+			boolean hiddenRow = store != null && store.isHidden(id);
+			String text = (pinned ? "★ " : "☆ ") + (hiddenRow ? "(hidden) " : "") + TrackerFormat.pickerLine(row.item(), now);
+			g.text(font, font.plainSubstrByWidth(text, w - 8), left + 6, y + 2, hiddenRow ? DIM : pinned ? WHITE : GREY);
 			if (scroll + i == hot && row.item().estimated()) {
 				List<Component> tip = new ArrayList<>();
 				for (String line : TrackerFormat.estimateTooltip(row.item(), store == null ? null : store.lastAccuracy(id).orElse(null), now)) {
@@ -107,11 +114,14 @@ public final class TrackerScreen extends Screen {
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		try {
-			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+			boolean left = event.button() == InputConstants.MOUSE_BUTTON_LEFT;
+			if (left || event.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
 				int index = rowAt(event.x(), event.y());
 				TrackerStore store = CubeWheelClient.tracker();
 				if (index >= 0 && store != null && rows.get(index).item() != null) {
-					store.togglePin(rows.get(index).item().item().id());
+					String id = rows.get(index).item().item().id();
+					if (left) store.togglePin(id);
+					else store.toggleHidden(id);
 					store.save();
 					return true;
 				}
