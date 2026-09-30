@@ -10,8 +10,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Local counting: reads each action-bar message as it is set (never changes it), so the loot line after
- * a custom-model mob's removal ("+2  Tiger Hide") can name the kill. Optional: if it does not apply,
- * such kills stay unattributed unless a name tag was found.
+ * a custom-model mob's removal ("+2  Tiger Hide") can name the kill. One of three action-bar sources
+ * (with the setActionBarText packet hook and the per-tick Hud poll), deduped by ActionBarFeed. Optional:
+ * if it does not apply, the other two still see the loot lines.
  */
 @Mixin(Hud.class)
 public abstract class LocalCountingHudMixin {

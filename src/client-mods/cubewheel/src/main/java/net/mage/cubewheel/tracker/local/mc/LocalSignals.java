@@ -5,11 +5,14 @@ import net.mage.cubewheel.ServerGate;
 import net.mage.cubewheel.capture.CaptureLog;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.mixin.FishingHookAccessor;
+import net.mage.cubewheel.mixin.HudAccessor;
 import net.mage.cubewheel.sidebar.SidebarLinker;
 import net.mage.cubewheel.tracker.TrackerStore;
+import net.mage.cubewheel.tracker.local.ActionBarFeed;
 import net.mage.cubewheel.tracker.local.FishDetector;
 import net.mage.cubewheel.tracker.local.KillAttribution;
 import net.mage.cubewheel.tracker.local.LocalCounter;
+import net.mage.cubewheel.tracker.local.LootLine;
 import net.mage.cubewheel.tracker.local.LootMatch;
 import net.mage.cubewheel.tracker.local.PendingBreaks;
 import net.mage.cubewheel.tracker.local.PlacedBlocks;
@@ -55,7 +58,7 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public final class LocalSignals {
 	/** Hook kinds that can fail independently. */
-	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, FISH, TICK, LEVEL }
+	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, LOOT_POLL, FISH, TICK, LEVEL }
 
 	private static final int MAX_FAILURES = 10;
 	private static final long SAVE_INTERVAL_MS = 30_000;
@@ -73,6 +76,9 @@ public final class LocalSignals {
 	/** Deaths nobody near us hit are written to capture only within this many blocks. */
 	private static final double CAPTURE_DEATH_RANGE = 32;
 	private static final WorldProbe world = new WorldProbe();
+	private static final ActionBarFeed actionBars = new ActionBarFeed();
+	/** Where the first loot line came from (logged once, proving the path works), else null. */
+	private static ActionBarFeed.Source lootSourceLogged;
 	private static long tick;
 	/** Recomputed every client tick: in ManaCube Survival, counting enabled, a store and a player exist. */
 	private static boolean active;
@@ -299,6 +305,7 @@ public final class LocalSignals {
 					boolean near = entity.distanceTo(mc.player) <= REMOVAL_KILL_RANGE;
 					String why = !recent ? (kills.hitBy(id, mc.player.getId(), tick) ? "local hit, too long ago" : "no recent local hit")
 							: !near ? "local hit, too far to be a kill"
+							: removals.awaitingLoot(id) ? "local hit, pending: waiting for loot line"
 							: removals.settled(id) ? "local hit, already counted or refused"
 							: !survivalMode(mc.player) ? "local hit, not in survival mode" : null;
 					if (why == null && removals.claim(id, true, true)) {
@@ -363,16 +370,52 @@ public final class LocalSignals {
 				r.world(), added);
 	}
 
-	/** Mixin, Hud.setOverlayMessage HEAD: an action-bar message; its loot names removal kills waiting for it. */
+	/** Mixin, Hud.setOverlayMessage HEAD: an action-bar message being shown. */
 	public static void onOverlayMessage(Component message) {
+		onActionBarEvent(ActionBarFeed.Source.HUD, message);
+	}
+
+	/** Mixin, ClientPacketListener.setActionBarText (client thread): an action-bar packet's text. */
+	public static void onActionBarPacket(Component message) {
+		onActionBarEvent(ActionBarFeed.Source.PACKET, message);
+	}
+
+	private static void onActionBarEvent(ActionBarFeed.Source source, Component message) {
 		try {
 			if (message == null || !enabled(Hook.LOOT) || !local().kills) return;
 			String text = message.getString();
-			if (text.indexOf('+') < 0) return;
-			for (RemovalKills.Resolved r : removals.onActionBar(text, System.currentTimeMillis())) creditLoot(r.removed(), r.loot());
+			long now = System.currentTimeMillis();
+			if (actionBars.event(source, text, now)) onActionBar(source, text, now);
 		} catch (Throwable t) {
 			fail(Hook.LOOT, t);
 		}
+	}
+
+	/**
+	 * Each client tick while counting kills: the Hud's current action-bar text and remaining display ticks,
+	 * so loot lines are seen even when neither hook fires (see {@link ActionBarFeed}).
+	 */
+	private static void pollActionBar(Minecraft mc) {
+		if (!enabled(Hook.LOOT_POLL) || !local().kills) return;
+		try {
+			HudAccessor hud = (HudAccessor) mc.gui.hud;
+			Component message = hud.cubewheel$getOverlayMessage();
+			String text = message == null ? null : message.getString();
+			long now = System.currentTimeMillis();
+			if (actionBars.poll(text, hud.cubewheel$getOverlayMessageTime(), now)) onActionBar(ActionBarFeed.Source.POLL, text, now);
+		} catch (Throwable t) {
+			fail(Hook.LOOT_POLL, t);
+		}
+	}
+
+	/** An action-bar message, once: its loot names removal kills waiting for it (or the next removal). */
+	private static void onActionBar(ActionBarFeed.Source source, String text, long now) {
+		if (text.indexOf('+') < 0) return;
+		if (lootSourceLogged == null && !LootLine.items(text).isEmpty()) {
+			lootSourceLogged = source;
+			CubeWheelClient.LOG.info("[cubewheel] loot lines: {}", source.label);
+		}
+		for (RemovalKills.Resolved r : removals.onActionBar(text, now)) creditLoot(r.removed(), r.loot());
 	}
 
 	/** Once per hit mob: remembers what names it and, while capturing, writes what is around it. */
@@ -425,6 +468,7 @@ public final class LocalSignals {
 			pending.expire(tick);
 			kills.expire(tick);
 			stacks.retainRoots(kills::tracks);
+			if (active) pollActionBar(mc); // before expiry: a line that just arrived still names a waiting removal
 			if (removals.awaitingLoot()) {
 				for (RemovalKills.Removed r : removals.expire(System.currentTimeMillis())) {
 					Optional<String> bottle = removals.fallback(r.entityId());

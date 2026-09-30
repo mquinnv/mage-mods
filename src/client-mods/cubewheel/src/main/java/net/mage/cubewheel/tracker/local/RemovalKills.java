@@ -191,6 +191,14 @@ public final class RemovalKills {
 		return !pending.isEmpty();
 	}
 
+	/** Is the claimed removal of entity {@code id} still waiting for a loot line? */
+	public boolean awaitingLoot(int id) {
+		for (Pending p : pending) {
+			if (p.removed().entityId() == id) return true;
+		}
+		return false;
+	}
+
 	public void clear() {
 		hints.clear();
 		settled.clear();

@@ -551,10 +551,14 @@ Each line is JSON with a kind:
   with a `detail`: `attack` (each own hit: type id, raw name, custom name or not, passengers), `stack`
   (a hit mob's name changed, `old -> new (killed n, local hit)`), `death` (a death not credited to you:
   `other_player`, `expired`, or `no_hit` within 32 blocks), `removed` (a mob you hit vanished
-  without a death event and did not count, with the reason) and `nearby` (once per mob you hit: the
+  without a death event and did not count, with the reason; `pending: waiting for loot line` when it
+  is a repeat removal of a kill still waiting to be named) and `nearby` (once per mob you hit: the
   entities within 4 blocks with type, custom name, text-display text, vehicle and passengers). A kill
   counted from a removal has `detail` `removal, method a|b|c|d (...)`: a = the mob's own name, b = a
-  name tag riding it or near it, c = the loot line, d = unattributed (not counted).
+  name tag riding it or near it, c = the loot line, d = unattributed (not counted). Loot lines are read
+  from the action-bar packet, from Hud.setOverlayMessage and from a per-tick poll of the Hud's action-bar
+  text (whichever works; each message once); the game log names the first source that saw one:
+  `[cubewheel] loot lines: <source>`.
 - `estimate`: an estimate replaced by a real read: `counted` (local) vs `actual` (from the menu).
 
 Container lines also carry `afterCommand` (the last command you or CubeWheel sent before the menu was

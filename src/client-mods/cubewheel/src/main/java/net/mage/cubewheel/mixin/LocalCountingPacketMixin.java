@@ -6,6 +6,7 @@ import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundDamageEventPacket;
 import net.minecraft.network.protocol.game.ClientboundEntityEventPacket;
 import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Local counting: reads damage and death packets (never changes or cancels them). Injected right after
+ * Local counting: reads damage, death, removal and action-bar packets (never changes or cancels them). Injected right after
  * PacketUtils.ensureRunningOnSameThread, so it runs once, on the client thread: at HEAD the handler is
  * first entered on the network thread and re-queued. Optional: if it does not apply, kills are not counted.
  */
@@ -80,6 +81,22 @@ public abstract class LocalCountingPacketMixin {
 		} catch (Throwable t) {
 			try {
 				LocalSignals.fail(LocalSignals.Hook.DEATH, t);
+			} catch (Throwable ignored) {
+				// LocalSignals itself is unusable: stay silent rather than break packet handling
+			}
+		}
+	}
+
+	/** An action-bar packet (loot lines "+1  Sad Firefly"), read before the Hud shows it. */
+	@Inject(method = "setActionBarText", at = @At(value = "INVOKE", target = ENSURE, shift = At.Shift.AFTER))
+	private void cubewheel$actionBar(ClientboundSetActionBarTextPacket packet, CallbackInfo ci) {
+		try {
+			LocalSignals.onActionBarPacket(packet.text());
+		} catch (VirtualMachineError e) {
+			throw e;
+		} catch (Throwable t) {
+			try {
+				LocalSignals.fail(LocalSignals.Hook.LOOT, t);
 			} catch (Throwable ignored) {
 				// LocalSignals itself is unusable: stay silent rather than break packet handling
 			}

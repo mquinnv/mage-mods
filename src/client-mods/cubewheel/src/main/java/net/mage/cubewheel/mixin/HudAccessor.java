@@ -10,4 +10,8 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface HudAccessor {
 	@Accessor("overlayMessageString")
 	Component cubewheel$getOverlayMessage();
+
+	/** Ticks the action-bar text stays shown; set to 60 by every setOverlayMessage, so a re-set shows as a rise. */
+	@Accessor("overlayMessageTime")
+	int cubewheel$getOverlayMessageTime();
 }
