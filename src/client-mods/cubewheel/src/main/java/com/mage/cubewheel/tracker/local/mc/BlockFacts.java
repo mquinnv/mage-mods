@@ -5,7 +5,9 @@ import com.mage.cubewheel.tracker.local.WorldInfo;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.AttachedStemBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.CocoaBlock;
@@ -21,7 +23,7 @@ import net.minecraft.world.level.block.state.properties.Property;
 final class BlockFacts {
 	private BlockFacts() {}
 
-	static Signal.BlockBroken of(BlockState state, WorldInfo world) {
+	static Signal.BlockBroken of(BlockState state, BlockGetter level, BlockPos pos, WorldInfo world) {
 		Block block = state.getBlock();
 		String id = state.typeHolder().getRegisteredName();
 		String path = id.substring(id.indexOf(':') + 1);
@@ -34,7 +36,8 @@ final class BlockFacts {
 		if (crop) groups.add("crop");
 		if (path.endsWith("_ore") || path.equals("ancient_debris")) groups.add("ore");
 		if (state.is(BlockTags.LOGS)) groups.add("logs");
-		return new Signal.BlockBroken(id, block.getName().getString(), groups, crop, mature, world);
+		boolean trivial = state.canBeReplaced() || state.getDestroySpeed(level, pos) == 0.0f;
+		return new Signal.BlockBroken(id, block.getName().getString(), groups, crop, mature, trivial, world);
 	}
 
 	/** True if the state's "age" property is at its highest value (or it has none). */

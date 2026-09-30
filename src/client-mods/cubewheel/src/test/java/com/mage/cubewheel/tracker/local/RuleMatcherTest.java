@@ -80,6 +80,32 @@ class RuleMatcherTest {
 		assertFalse(RuleMatcher.matches(rule(Kind.KILL, new Any(), new AnyWorld()), player));
 	}
 
+	@Test void anyTargetsIgnoreInstabreakVegetation() {
+		CounterRule resources = rule(Kind.BREAK, new Any(), new AnyWorld());
+		// trivial = replaceable or instabreak (destroy speed 0): grass, flowers, ferns...
+		Signal.BlockBroken grass = new Signal.BlockBroken("minecraft:short_grass", "Short Grass", Set.of(), false, false, true, OVERWORLD);
+		Signal.BlockBroken poppy = new Signal.BlockBroken("minecraft:poppy", "Poppy", Set.of(), false, false, true, OVERWORLD);
+		assertFalse(RuleMatcher.matches(resources, grass));
+		assertFalse(RuleMatcher.matches(resources, poppy));
+		// ...but a mature crop is instabreak too and still counts; so does a named target.
+		Signal.BlockBroken ripeWheat = new Signal.BlockBroken("minecraft:wheat", "Wheat", Set.of("crop"), true, true, true, OVERWORLD);
+		assertTrue(RuleMatcher.matches(resources, ripeWheat));
+		assertTrue(RuleMatcher.matches(rule(Kind.BREAK, new Named("short grass"), new AnyWorld()), grass));
+		Signal.BlockBroken stone = new Signal.BlockBroken("minecraft:stone", "Stone", Set.of(), false, false, false, OVERWORLD);
+		assertTrue(RuleMatcher.matches(resources, stone));
+	}
+
+	@Test void cropIdAliases() {
+		Signal.BlockBroken bush = new Signal.BlockBroken("minecraft:sweet_berry_bush", "Sweet Berry Bush", Set.of("crop"), true, true, OVERWORLD);
+		Signal.BlockBroken cocoa = new Signal.BlockBroken("minecraft:cocoa", "Cocoa", Set.of("crop"), true, true, OVERWORLD);
+		CounterRule berries = ObjectiveParserTest.parse("Harvest 50 Sweet Berries").orElseThrow();
+		CounterRule beans = ObjectiveParserTest.parse("Harvest 50 Cocoa Beans").orElseThrow();
+		assertTrue(RuleMatcher.matches(berries, bush));
+		assertTrue(RuleMatcher.matches(beans, cocoa));
+		assertFalse(RuleMatcher.matches(berries, cocoa));
+		assertFalse(RuleMatcher.matches(beans, bush));
+	}
+
 	@Test void fish() {
 		assertTrue(RuleMatcher.matches(rule(Kind.FISH, new Any(), new AnyWorld()), new Signal.FishCaught(UNKNOWN)));
 		assertFalse(RuleMatcher.matches(rule(Kind.FISH, new Any(), new Special()), new Signal.FishCaught(OVERWORLD)));

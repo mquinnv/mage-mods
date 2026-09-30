@@ -102,7 +102,7 @@ public final class LocalSignals {
 			Pos p = new Pos(pos.getX(), pos.getY(), pos.getZ());
 			int stateId = Block.getId(state);
 			if (placed.consumeIfPlaced(p, stateId)) return; // plugins ignore blocks you placed
-			Signal.BlockBroken signal = BlockFacts.of(state, world());
+			Signal.BlockBroken signal = BlockFacts.of(state, level, pos, world());
 			List<LocalCounter.Contribution> added = count(signal);
 			if (added.isEmpty()) return;
 			pending.record(p, stateId, added, tick);

@@ -9,6 +9,11 @@ import com.mage.cubewheel.tracker.local.CounterRule.Special;
 
 /** Does a signal advance a rule? Kind, target and world must all fit. Pure: no Minecraft/Fabric imports. */
 public final class RuleMatcher {
+	/** Objective nouns whose block id is a different word: "Sweet Berries" grow on sweet_berry_bush. */
+	private static final java.util.Map<String, String> ID_ALIASES = java.util.Map.of(
+			"sweet berry", "sweet berry bush",
+			"cocoa bean", "cocoa");
+
 	private RuleMatcher() {}
 
 	public static boolean matches(CounterRule rule, Signal signal) {
@@ -25,6 +30,8 @@ public final class RuleMatcher {
 		if (rule.kind() != CounterRule.Kind.BREAK && rule.kind() != CounterRule.Kind.HARVEST) return false;
 		if (b.crop() && !b.mature()) return false; // unripe crops never count
 		if (rule.kind() == CounterRule.Kind.HARVEST && !b.crop()) return false;
+		// "Resources"/"Blocks": instabreak vegetation is not a resource (plugins count real blocks).
+		if (rule.what() instanceof Any && b.trivial() && !b.crop()) return false;
 		return targetMatches(rule.what(), b.id(), b.name(), b.groups());
 	}
 
@@ -50,7 +57,8 @@ public final class RuleMatcher {
 				String path = id == null ? "" : id.substring(id.indexOf(':') + 1);
 				String fromId = Singular.phrase(path);
 				String fromName = Singular.phrase(name);
-				yield fromId.equals(want) || fromName.equals(want) || fromName.endsWith(" " + want);
+				yield fromId.equals(want) || fromId.equals(ID_ALIASES.get(want))
+						|| fromName.equals(want) || fromName.endsWith(" " + want);
 			}
 		};
 	}
