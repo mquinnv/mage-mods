@@ -116,6 +116,15 @@ public final class CaptureLog {
 	 * ids it advanced (or took back), {@code units} per id.
 	 */
 	public void local(String signal, String id, String name, List<String> world, List<String> matched, long units, long now) {
+		local(signal, id, name, null, world, matched, units, now);
+	}
+
+	/**
+	 * As above, with a free-text {@code detail} explaining the signal (kill attribution verdict, an
+	 * attacked entity's passengers, a stack name change "5x Tiger -> 4x Tiger"); omitted when null.
+	 */
+	public void local(String signal, String id, String name, String detail, List<String> world, List<String> matched,
+			long units, long now) {
 		if (!enabled) return;
 		JsonObject o = new JsonObject();
 		o.addProperty("t", now);
@@ -126,6 +135,7 @@ public final class CaptureLog {
 		o.add("world", array(world));
 		o.add("matched", array(matched));
 		o.addProperty("units", units);
+		if (detail != null) o.addProperty("detail", detail);
 		append(o, now);
 	}
 

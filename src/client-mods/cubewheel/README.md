@@ -303,7 +303,7 @@ What is counted, per objective text read from the menu (only objectives with a s
 | Harvest N Crops / Harvest N Wheat (carrots, potatoes, ...) | break a **fully grown** crop (melons and pumpkins count; stems do not) |
 | Mine / Break / Chop / Dig N Stone, Cobblestone, Logs, Ores, Resources | break a matching block yourself; "Resources"/"Blocks" = any block except instant-break plants (grass, flowers, ferns); ripe crops still count |
 | Harvest N Sweet Berries / Cocoa Beans | pick a ripe sweet berry bush / cocoa pod |
-| Kill / Slay N Mobs / Monsters / Zombies / Mana Wolves | kill it: you were the last player to damage it within 5 s (arrows and tridents count) |
+| Kill / Slay N Mobs / Monsters / Zombies / Mana Wolves, "Slay 16/64 Tigers in Tangleroots" | kill it: you were the last player to damage it within 5 s (arrows and tridents count). Names match the mob type or its name tag, ignoring stack counts, health (`Dart Frog 20⺛`, `❤ 20`), levels and small caps. A **stacked** mob you hit whose count drops (`5x Tiger` -> `4x Tiger`) counts the drop |
 | Catch N Fish | reel in while the bobber is biting |
 | ... "Wolfhaven Resources", "Sandara Monsters", "in <world>" | only while you are in that world (names match with or without spaces/underscores: "Burning Lands" = `burning_lands` = `burninglands`) |
 | Job listings: "Harvest 3,127/4,773 Cherry Logs" | as "Harvest 4,773 Cherry Logs" |
@@ -326,7 +326,8 @@ causes:
 
 - *Under-count:* attribution gaps (a mob that dies to fire, fall damage or a pet more than 5 s after
   your last hit; a kill whose damage packet the client never saw); area tools (3x3 hoes, hammers) only
-  count the block you broke yourself; stacked mobs count as one kill; party members' work; a world
+  count the block you broke yourself; a stacker whose name tag shows no count, or a whole stack dying at
+  once (counts one); party members' work; a world
   that cannot be told for world-scoped objectives.
 - *Over-count:* hits and breaks the server ignores for the objective (plugin rules we cannot see, e.g.
   spawner mobs, custom drops, anti-farm limits, a player-placed block the client did not see you
@@ -467,7 +468,11 @@ Each line is JSON with a kind:
 - `sidebar`: the scoreboard sidebar title and lines as drawn, when they change.
 - `world`: the world local counting resolved (dimension, sidebar lines, tokens, special), when it changes.
 - `local`: a counted signal (`break`, `kill`, `fish`, or `reject` for a break the server undid) with
-  the block/mob id and name, the world and the tracker entries it moved.
+  the block/mob id and name, the world and the tracker entries it moved. Kill diagnostics also land here,
+  with a `detail`: `attack` (each own hit: type id, raw name, custom name or not, passengers), `stack`
+  (a hit mob's name changed, `old -> new (killed n, local hit)`), `death` (a death not credited to you:
+  `other_player`, `expired`, or `no_hit` within 32 blocks) and `removed` (a mob you hit vanished
+  without a death event).
 - `estimate`: an estimate replaced by a real read: `counted` (local) vs `actual` (from the menu).
 
 Container lines also carry `afterCommand` (the last command you or CubeWheel sent before the menu was

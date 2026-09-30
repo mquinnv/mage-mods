@@ -56,10 +56,41 @@ public final class RuleMatcher {
 				String want = n.singular();
 				String path = id == null ? "" : id.substring(id.indexOf(':') + 1);
 				String fromId = Singular.phrase(path);
-				String fromName = Singular.phrase(name);
+				String fromName = displayName(name);
+				String compactWant = want.replace(" ", "");
 				yield fromId.equals(want) || fromId.equals(ID_ALIASES.get(want))
-						|| fromName.equals(want) || fromName.endsWith(" " + want);
+						|| fromName.equals(want) || fromName.endsWith(" " + want)
+						// "Rattle Snakes" vs a "Rattlesnake" mob or a "rattlesnake" id
+						|| (want.indexOf(' ') > 0 && (fromName.replace(" ", "").equals(compactWant)
+								|| fromId.replace(" ", "").equals(compactWant)));
 			}
 		};
+	}
+
+	private static final String SMALL_CAPS = "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ";
+	private static final java.util.regex.Pattern BRACKETS = java.util.regex.Pattern.compile("\\[[^\\]]*]|\\([^)]*\\)");
+	private static final java.util.regex.Pattern LEVEL = java.util.regex.Pattern.compile("(?i)\\b(?:lv|lvl|level)\\.?\\s*\\d+\\b");
+	private static final java.util.regex.Pattern NOT_WORD = java.util.regex.Pattern.compile("[^\\p{L}\\p{N}]+");
+	private static final java.util.regex.Pattern TRAILING_NUMBER = java.util.regex.Pattern.compile("(?:\\s\\d+)+$");
+
+	/**
+	 * A mob display name reduced to comparable words: small caps folded ("ᴛɪɢᴇʀ"), stack and health
+	 * decorations, "[..]"/"(..)" tags, "Lv. 5" and stray glyphs dropped, then singularised: "Tiger Lvl 12",
+	 * "✦ Tiger ✦" and "Dart Frog 20⺛" read as "tiger" and "dart frog".
+	 */
+	static String displayName(String name) {
+		if (name == null) return "";
+		StringBuilder b = new StringBuilder(name.length());
+		for (int i = 0; i < name.length(); i++) {
+			char c = name.charAt(i);
+			int k = SMALL_CAPS.indexOf(c);
+			b.append(k >= 0 ? (char) ('a' + k) : c);
+		}
+		String s = StackName.parse(b.toString()).map(StackName.Parsed::name).orElse("");
+		s = BRACKETS.matcher(s).replaceAll(" ");
+		s = LEVEL.matcher(s).replaceAll(" ");
+		s = NOT_WORD.matcher(s).replaceAll(" ").trim();
+		s = TRAILING_NUMBER.matcher(s).replaceAll("");
+		return Singular.phrase(s);
 	}
 }

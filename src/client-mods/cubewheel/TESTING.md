@@ -129,6 +129,7 @@ Open `/pquests`, `/prestige` (rank objectives) and `/challenges` once so the obj
 - [ ] Place a stone and break it again: no count. Break a crop you planted once it is grown: counts.
 - [ ] Break a block inside another player's claim (the block comes back): the count goes up and back down within a second (capture: `"signal":"reject"`).
 - [ ] Kill a mob with a sword and one with a bow: "Kill N Mobs" +1 each. A mob another player finished off (they hit it last) does not count.
+- [ ] In Tangleroots with the job "Slay N Tigers in Tangleroots" tracked, capture on: kill tigers. Each hit writes `"signal":"attack"` (raw name, passengers); a kill writes `"signal":"kill"` with `matched` = the job and `detail` `death, local hit` or `stack: 5x Tiger -> 4x Tiger (killed 1, local hit)`. If nothing counts, the `stack` / `death` / `removed` lines say why. The HUD entry shows a `~` estimate.
 - [ ] Kill a monster in the overworld: an objective scoped to Sandara or to "special worlds" does not move; in Sandara (or another Mana world) it does. Capture: the `"kind":"world"` line shows the dimension and `tokens` (note whether the dimension is named after the world and whether the sidebar has a `World:` line).
 - [ ] Catch a fish: "Catch N Fish" +1. Reeling in without a bite adds nothing.
 - [ ] Push an estimate to its target: `~300 / 300 (99%) ✓?` in yellow, never green, until a menu read.

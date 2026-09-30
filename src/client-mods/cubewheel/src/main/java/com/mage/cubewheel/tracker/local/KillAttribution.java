@@ -29,10 +29,31 @@ public final class KillAttribution {
 		}
 	}
 
+	/** Why a death was or was not credited to the local player (also written to capture). */
+	public enum Verdict { LOCAL, OTHER_PLAYER, EXPIRED, NO_HIT }
+
 	/** {@code entityId} died: true if the local player gets the kill. The entry is consumed either way. */
 	public boolean onDeath(int entityId, int localId, long tick) {
+		return onDeathVerdict(entityId, localId, tick) == Verdict.LOCAL;
+	}
+
+	/** {@code entityId} died: who gets it. The entry is consumed either way. */
+	public Verdict onDeathVerdict(int entityId, int localId, long tick) {
 		Hit hit = lastHit.remove(entityId);
-		return hit != null && hit.playerId() == localId && tick - hit.tick() <= MEMORY_TICKS;
+		if (hit == null) return Verdict.NO_HIT;
+		if (hit.playerId() != localId) return Verdict.OTHER_PLAYER;
+		return tick - hit.tick() <= MEMORY_TICKS ? Verdict.LOCAL : Verdict.EXPIRED;
+	}
+
+	/** Was {@code playerId} the last player to hit {@code entityId}, within {@link #MEMORY_TICKS}? Not consumed. */
+	public boolean hitBy(int entityId, int playerId, long tick) {
+		Hit hit = lastHit.get(entityId);
+		return hit != null && hit.playerId() == playerId && tick - hit.tick() <= MEMORY_TICKS;
+	}
+
+	/** Is any recent hit on {@code entityId} remembered? */
+	public boolean tracks(int entityId) {
+		return lastHit.containsKey(entityId);
 	}
 
 	public void expire(long tick) {

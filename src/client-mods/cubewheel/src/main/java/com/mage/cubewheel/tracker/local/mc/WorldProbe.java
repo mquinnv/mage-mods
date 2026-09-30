@@ -31,9 +31,10 @@ final class WorldProbe {
 		List<String> sidebar = CubeWheelClient.sidebar().lines();
 		cached = WorldResolver.resolve(dimension, sidebar, specialWorlds);
 		if (!cached.equals(lastCaptured)) {
-			lastCaptured = cached;
 			CaptureLog capture = CubeWheelClient.capture();
+			// Only remembered once written: switching capture on later still records the current world.
 			if (capture != null && capture.enabled()) {
+				lastCaptured = cached;
 				capture.world(dimension, sidebar, new ArrayList<>(cached.tokens()), cached.special(), System.currentTimeMillis());
 			}
 		}
