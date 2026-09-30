@@ -72,9 +72,31 @@ public final class ConfigStore {
 			return "cubewheel.json: " + e.getMessage();
 		}
 		if (parsed == null) parsed = DefaultConfig.create();
+		boolean migrated = migrate(parsed);
 		normalize(parsed);
 		current = parsed;
+		if (migrated) {
+			// Write the upgrade back so it happens once: a value the user sets afterwards is kept.
+			try {
+				save();
+			} catch (IOException | RuntimeException e) {
+				// Not fatal: the upgrade is applied in memory and simply repeats on the next load.
+			}
+		}
 		return null;
+	}
+
+	/**
+	 * One-time upgrades of files older than {@link DefaultConfig#CONFIG_VERSION}; returns true if the file
+	 * should be written back. Version 2: an untouched old HUD default (6, later 8) becomes 10.
+	 */
+	private static boolean migrate(CubeWheelConfig c) {
+		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
+		if (c.tracker != null && (c.tracker.hudMaxLines == 6 || c.tracker.hudMaxLines == 8)) {
+			c.tracker.hudMaxLines = DefaultConfig.HUD_MAX_LINES;
+		}
+		c.configVersion = DefaultConfig.CONFIG_VERSION;
+		return true;
 	}
 
 	public void save() throws IOException {

@@ -103,6 +103,27 @@ class ConfigStoreTest {
 		assertEquals(java.util.Map.of("Skills", "(?i)reach [\\d,]+ skill level"), s.current().tracker.sidebarLinks);
 	}
 
+	@Test void oldHudMaxLinesDefaultsAreUpgradedOnce() throws Exception {
+		assertEquals(10, DefaultConfig.create().tracker.hudMaxLines);
+		Path f = dir.resolve("cubewheel.json");
+		for (int old : new int[] {6, 8}) {
+			Files.writeString(f, "{ \"tracker\": { \"hudMaxLines\": " + old + " } }");
+			ConfigStore s = new ConfigStore(f);
+			assertNull(s.reload());
+			assertEquals(10, s.current().tracker.hudMaxLines, "from " + old);
+			assertTrue(Files.readString(f).contains("\"hudMaxLines\": 10"), "upgrade written back");
+			// Once: a 6 the user writes afterwards is kept.
+			Files.writeString(f, Files.readString(f).replace("\"hudMaxLines\": 10", "\"hudMaxLines\": 6"));
+			assertNull(s.reload());
+			assertEquals(6, s.current().tracker.hudMaxLines);
+		}
+		// Any other value is the user's choice.
+		Files.writeString(f, "{ \"tracker\": { \"hudMaxLines\": 7 } }");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(7, s.current().tracker.hudMaxLines);
+	}
+
 	@Test void survivalSidebarPatternDefaultsAndStaysEditable() throws Exception {
 		assertEquals("(?i)survival", DefaultConfig.create().tracker.survivalSidebarPattern);
 		Path f = dir.resolve("cubewheel.json");

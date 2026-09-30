@@ -4,6 +4,11 @@ import java.util.List;
 import java.util.Map;
 
 public final class CubeWheelConfig {
+	/**
+	 * Format version of this file; 0 (absent) = written before versioning. Loading migrates older files
+	 * once and writes them back, see ConfigStore.
+	 */
+	public int configVersion;
 	public boolean enabled = true;
 	public List<String> serverHosts;
 	public int vaultCount = 3;
@@ -13,7 +18,7 @@ public final class CubeWheelConfig {
 
 	public static final class Tracker {
 		public double nearThreshold = 0.8;
-		public int hudMaxLines = 8;
+		public int hudMaxLines = DefaultConfig.HUD_MAX_LINES;
 		public boolean hudVisible = true;
 		public Map<String, String> sources;
 		/** Sent one at a time by the "Refresh trackers" key; each should open a progress menu. */

@@ -12,6 +12,11 @@ import java.util.Map;
 public final class DefaultConfig {
 	private DefaultConfig() {}
 
+	/** Current config format; see ConfigStore.migrate. */
+	public static final int CONFIG_VERSION = 2;
+	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
+	public static final int HUD_MAX_LINES = 10;
+
 	public static List<String> serverHosts() {
 		return new ArrayList<>(List.of("manacube.com", "manacube.net"));
 	}
@@ -106,6 +111,7 @@ public final class DefaultConfig {
 
 	public static CubeWheelConfig create() {
 		CubeWheelConfig c = new CubeWheelConfig();
+		c.configVersion = CONFIG_VERSION;
 		c.serverHosts = serverHosts();
 		c.tracker.sources = trackerSources();
 		c.tracker.refreshCommands = refreshCommands();
