@@ -1,0 +1,14 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "com.mage.cubewheel.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"BossHealthOverlayAccessor",
+		"HudAccessor",
+		"LerpingBossEventAccessor"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

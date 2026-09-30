@@ -58,6 +58,69 @@ class CaptureLogTest {
 		assertTrue(Files.exists(dir.resolve("1970-01-02.jsonl")));
 	}
 
+	private List<JsonObject> lines(Path file) throws Exception {
+		return Files.readAllLines(file, StandardCharsets.UTF_8).stream()
+			.map(l -> JsonParser.parseString(l).getAsJsonObject()).toList();
+	}
+
+	@Test void overlayChatIsFlaggedAndRepeatsSkipped() throws Exception {
+		CaptureLog log = new CaptureLog(dir);
+		log.toggle();
+		log.chat("{}", "plain", false, 0);
+		log.chat("{}", "+5 Farmer", true, 0);
+		log.chat("{}", "+5 Farmer", true, 0);   // same as previous overlay: skipped
+		log.chat("{}", "plain", false, 0);      // chat lines are never deduped
+		log.chat("{}", "+5 Farmer", true, 0);   // previous overlay was still "+5 Farmer": skipped
+		log.chat("{}", "+6 Farmer", true, 0);
+		List<JsonObject> out = lines(dir.resolve("1970-01-01.jsonl"));
+		assertEquals(4, out.size());
+		assertFalse(out.get(0).has("overlay"));
+		assertTrue(out.get(1).get("overlay").getAsBoolean());
+		assertEquals("chat", out.get(1).get("kind").getAsString());
+		assertEquals("+6 Farmer", out.get(3).get("text").getAsString());
+	}
+
+	@Test void actionBarWritesOnlyChangesAndSkipsNull() throws Exception {
+		CaptureLog log = new CaptureLog(dir);
+		log.actionBar("x", 0);                 // disabled: nothing
+		log.toggle();
+		log.actionBar(null, 0);
+		log.actionBar("Farmer 1,200/1,500", 0);
+		log.actionBar("Farmer 1,200/1,500", 50);
+		log.actionBar("Farmer 1,210/1,500", 100);
+		List<JsonObject> out = lines(dir.resolve("1970-01-01.jsonl"));
+		assertEquals(2, out.size());
+		assertEquals("actionbar", out.get(0).get("kind").getAsString());
+		assertEquals("Farmer 1,200/1,500", out.get(0).get("text").getAsString());
+		assertEquals(100, out.get(1).get("t").getAsLong());
+	}
+
+	@Test void bossBarsWriteOnlyChanges() throws Exception {
+		CaptureLog log = new CaptureLog(dir);
+		log.toggle();
+		log.bossBars(List.of(), 0);            // nothing shown initially: no line
+		log.bossBars(List.of(new CaptureLog.BossBar("Quest 3/10", 0.3f)), 0);
+		log.bossBars(List.of(new CaptureLog.BossBar("Quest 3/10", 0.3f)), 50);
+		log.bossBars(List.of(), 100);          // bars gone: recorded
+		List<JsonObject> out = lines(dir.resolve("1970-01-01.jsonl"));
+		assertEquals(2, out.size());
+		assertEquals("bossbars", out.get(0).get("kind").getAsString());
+		JsonObject bar = out.get(0).getAsJsonArray("bars").get(0).getAsJsonObject();
+		assertEquals("Quest 3/10", bar.get("name").getAsString());
+		assertEquals(0.3f, bar.get("progress").getAsFloat(), 1e-6);
+		assertEquals(0, out.get(1).getAsJsonArray("bars").size());
+	}
+
+	@Test void reEnablingRecordsCurrentStateAgain() throws Exception {
+		CaptureLog log = new CaptureLog(dir);
+		log.toggle();
+		log.actionBar("a", 0);
+		log.toggle();
+		log.toggle();
+		log.actionBar("a", 0);
+		assertEquals(2, lines(dir.resolve("1970-01-01.jsonl")).size());
+	}
+
 	@Test void disabledLogWritesNothing() {
 		Path captures = dir.resolve("cubewheel-captures");
 		CaptureLog log = new CaptureLog(captures);

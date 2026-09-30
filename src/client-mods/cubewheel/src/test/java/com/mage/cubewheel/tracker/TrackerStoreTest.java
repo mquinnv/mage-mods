@@ -64,6 +64,22 @@ class TrackerStoreTest {
 		s.load();
 		assertTrue(s.all().isEmpty());
 	}
+	@Test void updateReportsOnlyRealChanges() {
+		TrackerStore s = new TrackerStore(dir.resolve("t.json"));
+		assertTrue(s.update("jobs", "A", p(1, 10), 0));        // new
+		assertFalse(s.update("jobs", "A", p(1, 10), 1_000));   // same values, seen again shortly after
+		assertEquals(0, s.all().get(0).seenAt());              // unchanged entry keeps its timestamp
+		assertTrue(s.update("jobs", "A", p(2, 10), 2_000));    // value changed
+		assertTrue(s.update("jobs", "A", p(2, 10), 2_000 + TrackerStore.SEEN_REFRESH_MS)); // age worth persisting
+		assertEquals(2_000 + TrackerStore.SEEN_REFRESH_MS, s.all().get(0).seenAt());
+	}
+	@Test void saveFailureReturnsFalse() throws Exception {
+		Files.writeString(dir.resolve("file"), "x");
+		TrackerStore s = new TrackerStore(dir.resolve("file").resolve("t.json"));
+		s.update("jobs", "A", p(1, 10), 0);
+		assertFalse(s.save());
+		assertTrue(new TrackerStore(dir.resolve("ok.json")).save());
+	}
 	@Test void togglePinTwiceUnpins() {
 		TrackerStore s = new TrackerStore(dir.resolve("t.json"));
 		s.togglePin("a:b");

@@ -7,6 +7,9 @@ import com.mage.cubewheel.config.CubeWheelConfig;
 import com.mage.cubewheel.config.WheelNode;
 import com.mage.cubewheel.homes.HomesCache;
 import com.mage.cubewheel.homes.HomesFetcher;
+import com.mage.cubewheel.mixin.BossHealthOverlayAccessor;
+import com.mage.cubewheel.mixin.HudAccessor;
+import com.mage.cubewheel.mixin.LerpingBossEventAccessor;
 import com.mage.cubewheel.tracker.ContainerHook;
 import com.mage.cubewheel.tracker.TrackerHud;
 import com.mage.cubewheel.tracker.TrackerScreen;
@@ -16,6 +19,8 @@ import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
@@ -24,6 +29,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.LerpingBossEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import org.slf4j.Logger;
@@ -101,6 +107,11 @@ public final class CubeWheelClient implements ClientModInitializer {
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] capture key handler failed", e);
 		}
+		try {
+			pollHudCapture(mc);
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] action-bar/boss-bar capture failed", e);
+		}
 	}
 
 	/** True once per tick if the key was pressed; queued extra presses are dropped. */
@@ -145,13 +156,29 @@ public final class CubeWheelClient implements ClientModInitializer {
 	/** ALLOW_GAME listener registered before the homes one; never hides anything. */
 	private static boolean captureChat(Component message, boolean overlay) {
 		try {
-			if (overlay || message == null || !capture.enabled()) return true;
+			if (message == null || !capture.enabled()) return true;
 			if (!ServerGate.active(config.current())) return true;
-			capture.chat(componentJson(message), message.getString(), System.currentTimeMillis());
+			capture.chat(componentJson(message), message.getString(), overlay, System.currentTimeMillis());
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] chat capture failed", e);
 		}
 		return true;
+	}
+
+	/**
+	 * While capturing, records the HUD's action-bar text and the boss bars each tick (CaptureLog writes
+	 * only changes). Read-only: the SetActionBarText packet and boss events never reach ALLOW_GAME.
+	 */
+	private static void pollHudCapture(Minecraft mc) {
+		if (!capture.enabled() || mc.player == null || !ServerGate.active(config.current())) return;
+		long now = System.currentTimeMillis();
+		Component actionBar = ((HudAccessor) mc.gui.hud).cubewheel$getOverlayMessage();
+		capture.actionBar(actionBar == null ? null : actionBar.getString(), now);
+		List<CaptureLog.BossBar> bars = new ArrayList<>();
+		for (LerpingBossEvent e : ((BossHealthOverlayAccessor) mc.gui.hud.getBossOverlay()).cubewheel$getEvents().values()) {
+			bars.add(new CaptureLog.BossBar(e.getName().getString(), ((LerpingBossEventAccessor) e).cubewheel$getTargetPercent()));
+		}
+		capture.bossBars(bars, now);
 	}
 
 	/** The component's JSON form (registry-aware when in a world); falls back to toString(). */

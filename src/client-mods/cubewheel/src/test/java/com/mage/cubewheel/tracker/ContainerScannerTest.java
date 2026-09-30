@@ -39,6 +39,15 @@ class ContainerScannerTest {
 		assertEquals(10, t.max());
 	}
 
+	@Test void rescanOfUnchangedItemsReportsNoChange() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		List<ItemView> items = List.of(new ItemView(0, "minecraft:carrot", "Carrot Grind", List.of("1,200/1,500")));
+		assertEquals(1, ContainerScanner.scan("jobs", items, store, 0));
+		assertEquals(0, ContainerScanner.scan("jobs", items, store, 750));
+		List<ItemView> progressed = List.of(new ItemView(0, "minecraft:carrot", "Carrot Grind", List.of("1,300/1,500")));
+		assertEquals(1, ContainerScanner.scan("jobs", progressed, store, 1_500));
+	}
+
 	@Test void nullOrEmptyInputUpdatesNothing() {
 		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
 		assertEquals(0, ContainerScanner.scan("jobs", null, store, 0));

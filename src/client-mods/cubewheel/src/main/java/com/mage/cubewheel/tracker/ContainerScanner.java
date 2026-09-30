@@ -11,7 +11,10 @@ public final class ContainerScanner {
 
 	private ContainerScanner() {}
 
-	/** Updates {@code store} with every named item whose lore holds progress; returns how many were updated. */
+	/**
+	 * Updates {@code store} with every named item whose lore holds progress; returns how many entries
+	 * actually changed (see {@link TrackerStore#update}), so 0 means there is nothing new to save.
+	 */
 	public static int scan(String source, List<ItemView> items, TrackerStore store, long now) {
 		if (source == null || items == null || store == null) return 0;
 		int updated = 0;
@@ -23,8 +26,7 @@ public final class ContainerScanner {
 			for (String line : item.lore()) lore.add(strip(line));
 			Optional<ProgressExtractor.Progress> p = ProgressExtractor.extract(lore);
 			if (p.isEmpty()) continue;
-			store.update(source, name, p.get(), now);
-			updated++;
+			if (store.update(source, name, p.get(), now)) updated++;
 		}
 		return updated;
 	}

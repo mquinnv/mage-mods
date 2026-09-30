@@ -61,5 +61,7 @@ Bind "Toggle tracker HUD", "Open tracker picker" and "Toggle capture mode" under
 - [ ] On a non-ManaCube server the HUD is not drawn and opening menus records nothing; the picker still opens (local data).
 - [ ] "Forget entries older than 7 days" removes unpinned entries not seen for a week (edit `seenAt` in `config/cubewheel-tracker.json` to test); pinned ones stay.
 - [ ] Capture key: action bar "Capture ON → config/cubewheel-captures". Run `/homes` (also via the wheel, whose reply is hidden), then open `/jobs`, `/pquests`, `/prestige`, `/challenges`: `config/cubewheel-captures/<UTC date>.jsonl` gets one `"kind":"chat"` line per chat message and one `"kind":"container"` line per menu (another only if the contents change while it is open).
+- [ ] While capture is on, action-bar text (e.g. job XP popups while farming) adds `"kind":"actionbar"` lines, and boss bars (quest/event bars) add `"kind":"bossbars"` lines with `name` and `progress`; each is written only when the value changes (standing still with an unchanged bar writes nothing). Action-bar game messages also appear as `"kind":"chat"` lines with `"overlay":true`, with consecutive repeats skipped.
+- [ ] The game log shows no mixin errors for `cubewheel.mixins.json` at startup.
 - [ ] Capture key again: "Capture OFF"; no further lines are written. Capture is off again after a restart.
 - [ ] Send the capture file back so the progress and homes parsers can be tuned.

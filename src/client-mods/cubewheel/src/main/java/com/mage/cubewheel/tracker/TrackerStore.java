@@ -13,6 +13,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Tracked progress items and pins, persisted as JSON. Pure: no Minecraft/Fabric imports. */
 public final class TrackerStore {
@@ -21,6 +23,10 @@ public final class TrackerStore {
 		List<String> pins = new ArrayList<>();
 	}
 
+	/** Minimum last-seen advance that counts as a change on its own (TrackerFormat.age shows "now" below this). */
+	public static final long SEEN_REFRESH_MS = 60_000;
+
+	private static final Logger LOG = LoggerFactory.getLogger("cubewheel");
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Comparator<Trackable> BY_FRACTION_THEN_NAME =
 		Comparator.comparingDouble(Trackable::fraction).reversed().thenComparing(Trackable::name);
@@ -33,9 +39,20 @@ public final class TrackerStore {
 		this.file = file;
 	}
 
-	public void update(String source, String name, ProgressExtractor.Progress p, long now) {
+	/**
+	 * Records progress; returns true if something worth persisting changed: a new item, a different
+	 * current/max, or a last-seen time at least {@link #SEEN_REFRESH_MS} newer (the age display's
+	 * granularity). Otherwise the stored entry, including its timestamp, is left untouched.
+	 */
+	public boolean update(String source, String name, ProgressExtractor.Progress p, long now) {
 		String id = Trackable.idOf(source, name);
+		Trackable old = items.get(id);
+		if (old != null && old.current() == p.current() && old.max() == p.max()
+				&& now - old.seenAt() < SEEN_REFRESH_MS) {
+			return false;
+		}
 		items.put(id, new Trackable(id, source, name, p.current(), p.max(), now));
+		return true;
 	}
 
 	/** Sorted by fraction descending, then name. */
@@ -102,7 +119,8 @@ public final class TrackerStore {
 		pins = newPins;
 	}
 
-	public void save() {
+	/** Best effort (the tracker is re-scannable): returns false and logs a warning if the file could not be written. */
+	public boolean save() {
 		Snapshot snap = new Snapshot();
 		snap.items = new ArrayList<>(items.values());
 		snap.pins = new ArrayList<>(pins);
@@ -110,8 +128,10 @@ public final class TrackerStore {
 			Path parent = file.getParent();
 			if (parent != null) Files.createDirectories(parent);
 			Files.writeString(file, GSON.toJson(snap), StandardCharsets.UTF_8);
-		} catch (IOException ignored) {
-			// best effort; the tracker is re-scannable
+			return true;
+		} catch (IOException e) {
+			LOG.warn("[cubewheel] could not save tracker to {}: {}", file, e.toString());
+			return false;
 		}
 	}
 }

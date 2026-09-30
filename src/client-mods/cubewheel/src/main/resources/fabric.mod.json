@@ -8,6 +8,7 @@
   "license": "MIT",
   "environment": "client",
   "entrypoints": { "client": ["com.mage.cubewheel.CubeWheelClient"] },
+  "mixins": [{ "config": "cubewheel.mixins.json", "environment": "client" }],
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric-api": "*",
