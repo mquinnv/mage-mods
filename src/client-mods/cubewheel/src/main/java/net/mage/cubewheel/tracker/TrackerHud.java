@@ -27,6 +27,7 @@ public final class TrackerHud implements HudElement {
 	private static final int BACKDROP_SOLID = 0xFF1A1A1A;
 	private static final int DIVIDER = 0x60FFFFFF;
 	private static final int DIVIDER_TEXT = 0xFF8C8C8C;
+	private static final String DETAIL_INDENT = "  ↳ ";
 	private static final int GOLD = 0xFFFFAA00;
 	private static final int GREEN = 0xFF55FF55;
 	private static final int YELLOW = 0xFFFFFF55;
@@ -85,9 +86,16 @@ public final class TrackerHud implements HudElement {
 				header.add(true);
 			}
 			for (TrackerRow r : s.rows()) {
+				// Say what to do: "Jungle Pursuit · Mine 15,000 Tangleroots Resources", or one detail line per objective.
+				EntryLabel label = EntryLabel.of(r.item().name(), store.objective(r.item().id()).orElse(null));
 				entries.add(r);
-				lines.add(TrackerFormat.line(r, now));
+				lines.add(TrackerFormat.line(r, label.title(), now));
 				header.add(false);
+				for (String detail : label.details()) {
+					entries.add(null);
+					lines.add(DETAIL_INDENT + detail);
+					header.add(false);
+				}
 			}
 		}
 		// Every entry starts with its source's marker (⚒ jobs, ✦ prestige, ⚑ party quests …) in a fixed-width column.
@@ -117,6 +125,10 @@ public final class TrackerHud implements HudElement {
 				continue;
 			}
 			TrackerRow row = entries.get(i);
+			if (row == null) { // an objective detail line under its quest
+				g.text(font, lines.get(i), x + textX, ly, DIVIDER_TEXT);
+				continue;
+			}
 			SourceTag tag = SourceTag.of(row.item().source());
 			g.text(font, tag.glyph(), x, ly, tag.argb());
 			g.text(font, lines.get(i), x + textX, ly, color(row, cfg.tracker.nearThreshold));

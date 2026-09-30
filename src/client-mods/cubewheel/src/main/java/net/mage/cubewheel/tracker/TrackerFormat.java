@@ -19,10 +19,15 @@ public final class TrackerFormat {
 	 * authoritative read.
 	 */
 	public static String line(TrackerRow row, long now) {
+		return line(row, row.item().name(), now);
+	}
+
+	/** As {@link #line(TrackerRow, long)} with {@code title} in place of the entry's name (see {@link EntryLabel}). */
+	public static String line(TrackerRow row, String title, long now) {
 		long pct = Math.round(row.fraction() * 100);
 		if (!row.complete()) pct = Math.min(pct, 99);
 		Trackable t = row.item();
-		return t.name() + "  " + (row.estimated() ? "~" : "") + fmt(row.shownCurrent()) + " / " + fmt(row.shownMax())
+		return title + "  " + (row.estimated() ? "~" : "") + fmt(row.shownCurrent()) + " / " + fmt(row.shownMax())
 			+ " (" + pct + "%)" + (row.atCap() ? " ✓?" : "") + " · " + age(now - t.seenAt());
 	}
 
