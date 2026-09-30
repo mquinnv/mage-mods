@@ -127,6 +127,13 @@ public final class ContainerHook {
 					CubeWheelClient.sidebar().reapply(now);
 					store.save();
 				}
+				Minecraft mc = Minecraft.getInstance();
+				for (String done : store.drainCompletions()) {
+					if (mc.player != null) {
+						mc.player.sendSystemMessage(Component.literal("[CubeWheel] ✔ " + done + " completed")
+								.withStyle(net.minecraft.ChatFormatting.GREEN));
+					}
+				}
 			} catch (RuntimeException e) {
 				CubeWheelClient.LOG.error("[cubewheel] container scan failed", e);
 			}

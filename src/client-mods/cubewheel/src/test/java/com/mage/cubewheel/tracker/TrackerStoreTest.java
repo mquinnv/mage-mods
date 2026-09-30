@@ -32,14 +32,46 @@ class TrackerStoreTest {
 
 	@Test void hudShowsPinnedThenEveryIncompleteClosestFirst() {
 		TrackerStore s = hudStore();
-		// Pinned first (a pinned complete entry still shows), then all incomplete by fraction; "Done" never.
-		assertEquals(List.of("Pinned done", "Pinned", "Near", "Mid", "Low"), names(s.hudEntries(8)));
+		// Pinned first, then all incomplete by fraction; complete entries ("Done", "Pinned done") never.
+		assertEquals(List.of("Pinned", "Near", "Mid", "Low"), names(s.hudEntries(8)));
+	}
+
+	@Test void pinnedEntryUnpinsItselfWhenAMenuReadShowsItComplete() {
+		TrackerStore s = new TrackerStore(dir.resolve("t.json"));
+		String id = Trackable.idOf("pquests", "Haven Harvester");
+		s.update("pquests", "Haven Harvester", p(67, 100), 0);
+		s.togglePin(id);
+		assertEquals(List.of(), s.drainCompletions());
+		s.update("pquests", "Haven Harvester", p(100, 100), 1_000);
+		assertFalse(s.isPinned(id));
+		assertEquals(List.of("Haven Harvester"), s.drainCompletions());
+		assertEquals(List.of(), s.drainCompletions(), "announced once");
+		assertEquals(List.of(), names(s.hudEntries(8)), "completed and unpinned: gone from the HUD");
+	}
+
+	@Test void alreadyCompletePinnedEntryIsUnpinnedOnTheNextReadWithoutAnnouncement() {
+		TrackerStore s = new TrackerStore(dir.resolve("t.json"));
+		String id = Trackable.idOf("pquests", "Haven Harvester");
+		s.update("pquests", "Haven Harvester", p(100, 100), 0);
+		s.togglePin(id); // e.g. pinned before this rule existed
+		s.update("pquests", "Haven Harvester", p(100, 100), 120_000);
+		assertFalse(s.isPinned(id));
+		assertEquals(List.of(), s.drainCompletions());
+	}
+
+	@Test void incompletePinStays() {
+		TrackerStore s = new TrackerStore(dir.resolve("t.json"));
+		String id = Trackable.idOf("jobs", "A");
+		s.update("jobs", "A", p(1, 10), 0);
+		s.togglePin(id);
+		s.update("jobs", "A", p(5, 10), 120_000);
+		assertTrue(s.isPinned(id));
 	}
 
 	@Test void hudIsCappedAtMaxLines() {
 		TrackerStore s = hudStore();
-		assertEquals(List.of("Pinned done", "Pinned", "Near"), names(s.hudEntries(3)));
-		assertEquals(List.of("Pinned done"), names(s.hudEntries(1)));
+		assertEquals(List.of("Pinned", "Near", "Mid"), names(s.hudEntries(3)));
+		assertEquals(List.of("Pinned"), names(s.hudEntries(1)));
 	}
 
 	@Test void hiddenEntriesNeverShowOnTheHudButStayListed() {
@@ -47,11 +79,11 @@ class TrackerStoreTest {
 		s.toggleHidden("jobs:Near");
 		s.toggleHidden("pquests:Pinned"); // hidden wins over pinned
 		assertTrue(s.isHidden("jobs:Near"));
-		assertEquals(List.of("Pinned done", "Mid", "Low"), names(s.hudEntries(8)));
+		assertEquals(List.of("Mid", "Low"), names(s.hudEntries(8)));
 		assertEquals(6, s.all().size()); // still in the picker
 		s.toggleHidden("jobs:Near");
 		assertFalse(s.isHidden("jobs:Near"));
-		assertEquals(List.of("Pinned done", "Near", "Mid", "Low"), names(s.hudEntries(8)));
+		assertEquals(List.of("Near", "Mid", "Low"), names(s.hudEntries(8)));
 	}
 
 	@Test void hiddenIsPersistedAndLoadedTolerantly() throws Exception {

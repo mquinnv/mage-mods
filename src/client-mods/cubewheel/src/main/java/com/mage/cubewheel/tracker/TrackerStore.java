@@ -58,6 +58,8 @@ public final class TrackerStore {
 	private final Path file;
 	private Map<String, Trackable> items = new LinkedHashMap<>();
 	private Set<String> pins = new LinkedHashSet<>();
+	/** Not persisted: pending "completed" notices, drained by the adapter. */
+	private final List<String> completions = new ArrayList<>();
 	private Set<String> hidden = new LinkedHashSet<>();
 	private Map<String, ObjectiveInfo> objectives = new LinkedHashMap<>();
 	private Map<String, Estimate> estimates = new LinkedHashMap<>();
@@ -89,13 +91,23 @@ public final class TrackerStore {
 		String id = Trackable.idOf(source, name);
 		Trackable old = items.get(id);
 		boolean snapped = snapBack(id, p.current());
+		// A true reading that says "done" releases the pin: a finished quest shouldn't sit on the HUD.
+		boolean unpinned = new Trackable(id, source, name, p.current(), p.max(), now).complete() && pins.remove(id);
+		if (unpinned && (old == null || !old.complete())) completions.add(name);
 		if (old != null && old.current() == p.current() && old.max() == p.max()
 				&& now - old.seenAt() < SEEN_REFRESH_MS) {
-			return snapped;
+			return snapped || unpinned;
 		}
 		items.put(id, new Trackable(id, source, name, p.current(), p.max(), now));
 		rulesDirty = true;
 		return true;
+	}
+
+	/** Names of pinned entries a menu read just confirmed complete (each reported once), for a chat notice. */
+	public List<String> drainCompletions() {
+		List<String> out = List.copyOf(completions);
+		completions.clear();
+		return out;
 	}
 
 	/**
@@ -272,8 +284,9 @@ public final class TrackerStore {
 		for (Trackable t : items.values()) {
 			if (hidden.contains(t.id())) continue;
 			TrackerRow r = row(t, withEstimates);
+			if (r.complete()) continue; // finished work never takes HUD space, pinned or not
 			if (pins.contains(t.id())) pinned.add(r);
-			else if (!r.complete()) open.add(r);
+			else open.add(r);
 		}
 		pinned.sort(ROWS_BY_FRACTION_THEN_NAME);
 		open.sort(ROWS_BY_FRACTION_THEN_NAME);
