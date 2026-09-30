@@ -34,11 +34,17 @@ public final class RadialScreen extends Screen {
 	private static final int HUB = 0xB0202028;
 	/** Soft highlight behind the hovered slice (icon + label). */
 	private static final int HOVER = 0x50FFFFFF;
-	/** Band extent around the slice radius: icons sit centred, labels hang below. */
-	private static final int RING_INSIDE = 16;
-	private static final int RING_OUTSIDE = 24;
-	private static final int HOVER_RADIUS = 15;
+	/** A slice's icon (16) + gap (2) + label line (9), centred on the slice point. */
+	private static final int BLOCK_HEIGHT = 27;
+	/** Space between a slice block and the band's edges. */
+	private static final int BAND_PADDING = 5;
+	private static final int HOVER_RADIUS = 17;
 	private static final double HUB_FRACTION = 0.45;
+	private static final int MIN_HUB_RADIUS = 22;
+	private static final int HUB_GAP = 4;
+
+	/** Radius used by the last frame, so clicks hit-test against what was drawn. */
+	private double renderedRadius;
 
 	/**
 	 * Resolves a ring/dynamic node's children. {@code userInitiated} is true only for a direct user
@@ -122,21 +128,30 @@ public final class RadialScreen extends Screen {
 		super.extractRenderState(g, mouseX, mouseY, partial);
 		int cx = width / 2;
 		int cy = height / 2;
-		double r = radius();
+		// The band must hold each icon+label block wherever it sits on the ring: at 3 and 9 o'clock a
+		// label spans the band's thickness horizontally, so the widest label sets the thickness.
+		int maxLabel = 0;
+		for (WheelNode node : entries) maxLabel = Math.max(maxLabel, font.width(label(node)));
+		int half = Math.max(BLOCK_HEIGHT / 2, maxLabel / 2) + BAND_PADDING;
+		double r = Math.max(radius(), half + MIN_HUB_RADIUS + HUB_GAP);
+		renderedRadius = r;
 		int ri = (int) Math.round(r);
+		int hub = Math.min((int) Math.round(r * HUB_FRACTION), ri - half - HUB_GAP);
 		hovered = RadialMath.sliceAt(mouseX - cx, mouseY - cy, entries.size(), r * 0.25);
-		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + RING_OUTSIDE, ri - RING_INSIDE, RING);
-		fillRing(g, cx, cy, (int) Math.round(r * HUB_FRACTION), 0, HUB);
+		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + half, ri - half, RING);
+		fillRing(g, cx, cy, hub, 0, HUB);
 		for (int i = 0; i < entries.size(); i++) {
 			WheelNode node = entries.get(i);
 			double[] o = RadialMath.offset(RadialMath.sliceCenterDegrees(i, entries.size()), r);
 			int x = cx + (int) Math.round(o[0]);
 			int y = cy + (int) Math.round(o[1]);
 			boolean hot = i == hovered;
-			if (hot) fillRing(g, x, y + 4, HOVER_RADIUS, 0, HOVER);
+			if (hot) fillRing(g, x, y, HOVER_RADIUS, 0, HOVER);
+			// Icon and label are stacked as one block centred on the slice point.
+			int top = y - BLOCK_HEIGHT / 2;
 			ItemStack icon = Icons.stack(node.icon);
-			if (!icon.isEmpty()) g.item(icon, x - 8, y - 8);
-			g.centeredText(font, node.label == null ? "" : node.label, x, y + 12, hot ? WHITE : GREY);
+			if (!icon.isEmpty()) g.item(icon, x - 8, top);
+			g.centeredText(font, label(node), x, top + 18, hot ? WHITE : GREY);
 		}
 		WheelNode current = path.peekLast();
 		g.centeredText(font, current.label == null ? "" : current.label, cx, cy - font.lineHeight / 2, WHITE);
@@ -174,7 +189,7 @@ public final class RadialScreen extends Screen {
 			int cy = height / 2;
 			double dx = event.x() - cx;
 			double dy = event.y() - cy;
-			double dead = radius() * 0.25;
+			double dead = (renderedRadius > 0 ? renderedRadius : radius()) * 0.25;
 			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 				int slice = RadialMath.sliceAt(dx, dy, entries.size(), dead);
 				if (slice >= 0) activate(entries.get(slice));
@@ -254,6 +269,10 @@ public final class RadialScreen extends Screen {
 
 	private double radius() {
 		return Math.max(48, Math.min(100, Math.min(width, height) * 0.22));
+	}
+
+	private static String label(WheelNode node) {
+		return node.label == null ? "" : node.label;
 	}
 
 	/** Fills a ring (or a disc when {@code inner} is 0) as one-unit-tall strips. */
