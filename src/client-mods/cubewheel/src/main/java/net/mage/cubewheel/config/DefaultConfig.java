@@ -64,7 +64,7 @@ public final class DefaultConfig {
 		List<WheelNode> w = new ArrayList<>();
 		w.add(ring("Travel", "minecraft:compass",
 			leaf("Spawn", "minecraft:red_bed", "/spawn"),
-			leaf("Random TP", "minecraft:grass_block", "/rtp"),
+			leaf("Random TP (Overworld)", "minecraft:grass_block", "/rtp"),
 			leaf("Teleporter", "minecraft:ender_pearl", "/teleporter"),
 			leaf("Warps menu", "minecraft:oak_sign", "/warp"),
 			leaf("Party home", "minecraft:white_banner", "/p home"),
