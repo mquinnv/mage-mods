@@ -26,6 +26,8 @@ import org.lwjgl.glfw.GLFW;
 public final class RadialScreen extends Screen {
 	private static final int WHITE = 0xFFFFFFFF;
 	private static final int GREY = 0xFFAAAAAA;
+	private static final int FLY_ON = 0xFF55FF55;
+	private static final int FLY_OFF = 0xFFFF7777;
 	/** Light dim over the world, so it stays visible behind the wheel. */
 	private static final int BACKDROP = 0x33000000;
 	/** Translucent charcoal band the slices sit on. */
@@ -160,7 +162,9 @@ public final class RadialScreen extends Screen {
 			int top = y - BLOCK_HEIGHT / 2;
 			ItemStack icon = Icons.stack(node.icon);
 			if (!icon.isEmpty()) g.item(icon, x - 8, top);
-			g.centeredText(font, label(node), x, top + 18, hot ? WHITE : GREY);
+			Boolean fly = flyState(node);
+			int colour = fly != null ? (fly ? FLY_ON : FLY_OFF) : hot ? WHITE : GREY;
+			g.centeredText(font, label(node), x, top + 18, colour);
 		}
 		WheelNode current = path.peekLast();
 		g.centeredText(font, current.label == null ? "" : current.label, cx, cy - font.lineHeight / 2, WHITE);
@@ -286,8 +290,16 @@ public final class RadialScreen extends Screen {
 		return Math.max(48, Math.min(100, Math.min(width, height) * 0.22));
 	}
 
-	private static String label(WheelNode node) {
-		return node.label == null ? "" : node.label;
+	private String label(WheelNode node) {
+		String base = node.label == null ? "" : node.label;
+		Boolean fly = flyState(node);
+		return fly == null ? base : base + (fly ? ": on" : ": off");
+	}
+
+	/** For a "/fly" toggle: whether flight is currently allowed (the server sets it); null for other nodes. */
+	private Boolean flyState(WheelNode node) {
+		if (node == null || node.command == null || !node.command.trim().equalsIgnoreCase("/fly")) return null;
+		return minecraft != null && minecraft.player != null && minecraft.player.getAbilities().mayfly;
 	}
 
 	/** Fills a ring (or a disc when {@code inner} is 0) as one-unit-tall strips. */
