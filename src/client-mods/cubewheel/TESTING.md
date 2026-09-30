@@ -98,3 +98,25 @@ Bind "Refresh trackers" under Options > Controls > Key Binds > CubeWheel first.
 - [ ] On a non-ManaCube server the key only shows "CubeWheel is only active on ManaCube" and sends nothing.
 - [ ] Disconnect during a run: no error; the next run on reconnect works after the cooldown.
 - [ ] Capture on, then run a refresh and also open a menu via a typed command: each `"kind":"container"` line has `afterCommand` naming the command (e.g. `"/prestige"`) and `afterCommandMs`. Use this to find the command that opens the "Rank [✪n]" objectives menu, then add it to `tracker.refreshCommands`.
+
+## Live estimates (local counting)
+
+Open `/pquests`, `/prestige` (rank objectives) and `/challenges` once so the objectives are known, and pin the entries below. Turn capture on to see `local`/`world`/`estimate` lines while testing.
+
+- [ ] With an open "Mine 300 Stone"-style quest (or any "Mine/Harvest or Mine ... Resources" objective), break 10 stone: the entry shows `~` and grows by 10 (percentage quests: the shown value is in objective units, e.g. `~6,437 / 10,000`); the age suffix does not change.
+- [ ] Reopen `/pquests` (or press the refresh key): the `~` disappears and the menu's value is shown; the log has "[cubewheel] estimate for ...: counted N, actual M" (capture: a `"kind":"estimate"` line).
+- [ ] Break fully grown wheat: "Harvest N Crops"/"Harvest N Wheat" go up by 1 each; breaking unripe wheat or a melon/pumpkin stem adds nothing. A melon block counts.
+- [ ] Place a stone and break it again: no count. Break a crop you planted once it is grown: counts.
+- [ ] Break a block inside another player's claim (the block comes back): the count goes up and back down within a second (capture: `"signal":"reject"`).
+- [ ] Kill a mob with a sword and one with a bow: "Kill N Mobs" +1 each. A mob another player finished off (they hit it last) does not count.
+- [ ] Kill a monster in the overworld: an objective scoped to Sandara or to "special worlds" does not move; in Sandara (or another Mana world) it does. Capture: the `"kind":"world"` line shows the dimension and `tokens` (note whether the dimension is named after the world and whether the sidebar has a `World:` line).
+- [ ] Catch a fish: "Catch N Fish" +1. Reeling in without a bite adds nothing.
+- [ ] Push an estimate to its target: `~300 / 300 (99%) ✓?` in yellow, never green, until a menu read.
+- [ ] Picker: estimated rows end with `+N~`; hovering one shows "Estimated from what you did since this menu was last read (…)" and, after a snap-back, "Last check: counted …, actual …".
+- [ ] Linked sidebar values (e.g. Skills) replace estimates too.
+- [ ] Quit and restart: estimates are still shown (`~`) until the next read. `config/cubewheel-tracker.json` has `objectives` and `estimates` and is rewritten at most every ~30 s while counting.
+- [ ] `"tracker.local": {"enabled": false}` + reload: nothing counts and the `~` values disappear; set it back: the stored estimates reappear.
+- [ ] Nothing is ever sent: counting produces no chat commands and opens no menu (watch the log and chat).
+- [ ] On a non-ManaCube server nothing is counted.
+- [ ] The game log shows no mixin errors for `LocalCounting*Mixin`/`FishingHookAccessor`. (Optional: if one fails to apply, only that kind of counting stops; a hook that throws is logged once and switched off after 10 failures.)
+- [ ] No FPS change while mining, fighting or fishing.

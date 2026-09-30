@@ -100,6 +100,10 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `tracker.sources` | Source id -> regex matched against the menu title | see below |
 | `tracker.refreshCommands` | Commands the "Refresh trackers" key sends, one at a time (max 8) | `["/pquests", "/prestige", "/jobs"]` |
 | `tracker.sidebarLinks` | Sidebar key -> regex on tracked names that follow that live value | `{"Skills": "(?i)skill level"}` |
+| `tracker.local.enabled` | Live `~` estimates between menu reads (see [Live estimates](#live-estimates-local-counting)) | `true` |
+| `tracker.local.blocks` / `kills` / `fish` | Count own block breaks / kills / catches | `true` each |
+| `tracker.local.worlds` | World names recognised in objectives ("Wolfhaven Resources") | the six Mana worlds |
+| `tracker.local.specialWorlds` | Worlds that count as "special worlds (/worlds)" | the six Mana worlds |
 | `wheel` | The root ring: a list of nodes | see `DefaultConfig.java` |
 
 `tracker.sources` defaults: `jobs` = `(?i)jobs`, `pquests` = `(?i)quest`, `prestige` = `(?i)prestige`,
@@ -163,6 +167,8 @@ manually press it. Automating presses is."* CubeWheel is built around that:
   "Refresh trackers" key (or the picker's Refresh button): one press sends the configured commands one
   after another, waits for each menu, reads it and closes it the way Esc does, at most once per
   60 seconds. Nothing starts a refresh except that press; there is no timer.
+- Live estimates only observe what already happens on your screen (your own breaks, damage and
+  death updates the server sends anyway, your own reel-ins). They send nothing and never touch a menu.
 
 Please check the current server rules yourself; you are responsible for how you use any client mod.
 
@@ -223,6 +229,46 @@ command is not known yet. CubeWheel never clicks, so it cannot reach that menu. 
 captured menu records the command sent just before it opened (`afterCommand`). Once the command that
 opens the rank-objectives menu is known, put it in `tracker.refreshCommands` (and reload the config).
 
+### Live estimates (local counting)
+
+Between menu reads CubeWheel estimates progress from what it sees you do, so the HUD moves while you
+play. It only watches; it never sends a command, opens a menu or clicks anything.
+
+- An estimated entry is shown with a `~`: `Haven Harvester  ~6,437 / 10,000 (64%) · 5m`. The age is still
+  that of the last real read. Percentage quests are shown in objective units (64% of 10,000 plus what
+  was counted since).
+- An estimate never turns an entry green. When it reaches the target it shows `✓?` in yellow until a
+  menu read confirms it.
+- Every real reading replaces the estimate ("snaps back"): opening the menu, a refresh run, or a
+  linked sidebar value. The picker shows `+N~` (units counted since the last read); hover the row for
+  when that was and how the previous estimate compared ("Last check: counted 212, actual 220").
+- Estimates are saved with the tracker (at most every 30 s, and on disconnect/quit), so they survive a
+  restart until the next read.
+- `tracker.local.enabled: false` stops counting and hides stored estimates (they are not deleted).
+
+What is counted, per objective text read from the menu (only objectives with a single line):
+
+| Objective | Counted when you... |
+|---|---|
+| Harvest N Crops / Harvest N Wheat (carrots, potatoes, ...) | break a **fully grown** crop (melons and pumpkins count; stems do not) |
+| Mine / Break / Chop / Dig N Stone, Cobblestone, Logs, Ores, Resources | break a matching block yourself; "Resources"/"Blocks" = any block |
+| Kill / Slay N Mobs / Monsters / Zombies / Mana Wolves | kill it: you were the last player to damage it within 5 s (arrows and tridents count) |
+| Catch N Fish | reel in while the bobber is biting |
+| ... "Wolfhaven Resources", "Sandara Monsters", "in <world>" | only while you are in that world |
+| ... with "special worlds (/worlds)" in the lore | only in one of `tracker.local.specialWorlds` |
+
+The world comes from the dimension name and the sidebar's `World:` line, if the server shows one. If
+it cannot be told, world-scoped objectives are not counted (under-count, never over-count).
+
+Not counted (the next read fixes the number): skill levels, "Complete N Jobs", boss kills and
+participation, discovery, dungeons, party/island levels, hand-in jobs ("Harvest and hand in ..."),
+specific fish ("Catch 5 Angelfish"), quests with several objectives, and blocks broken by area tools
+(3x3 hoes, hammers) beyond the one you broke yourself. Blocks you placed yourself do not count when
+broken again, and a break the server undoes (claims, protection) is taken back.
+
+Party quests count the whole party's work; the estimate only counts yours, so it runs low until the
+next read.
+
 Progress recognised in lore: `N / M`, `N/M`, `N of M`, `k`/`m` suffixes (`1.5k / 2k`) and percentages.
 Glued words and three-part dates are rejected. Known limitation: a two-part date such as `12/25`
 can be mistaken for progress. Chat and action-bar progress is not parsed; menus that show no numbers
@@ -251,6 +297,10 @@ Each line is JSON with a kind:
 - `actionbar`: action-bar text, when it changes.
 - `bossbars`: boss bar names and progress, when they change.
 - `sidebar`: the scoreboard sidebar title and lines as drawn, when they change.
+- `world`: the world local counting resolved (dimension, sidebar lines, tokens, special), when it changes.
+- `local`: a counted signal (`break`, `kill`, `fish`, or `reject` for a break the server undid) with
+  the block/mob id and name, the world and the tracker entries it moved.
+- `estimate`: an estimate replaced by a real read: `counted` (local) vs `actual` (from the menu).
 
 Container lines also carry `afterCommand` (the last command you or CubeWheel sent before the menu was
 read) and `afterCommandMs` (how long before), so it is clear which command opens which menu. Open a
@@ -265,6 +315,9 @@ Captures contain chat text, including other players' messages; review the file b
   if the server says unknown warp.
 - The `/homes` reply format (see above).
 - Lore formats of the progress menus; extraction is generic until real captures exist.
+- Local counting: whether ManaCube's world dimensions are named after the world, whether its Survival
+  sidebar has a `World:` line, and how "Resources" is counted; `local`/`world`/`estimate` capture lines
+  answer these.
 - The command that opens the prestige rank-objectives menu ("Rank [✪n]" items); see
   [Refresh key](#refresh-key).
 
