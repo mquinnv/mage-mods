@@ -44,3 +44,22 @@ Bind "Reload CubeWheel config" to a free key under Options > Controls > Key Bind
 - [ ] With no homes set, `/homes` replies "none" (or similar): the ring shows only "↻ Refresh" (plus any configured extras); the reply is hidden, and reopening within 5 min sends no `/homes`.
 - [ ] A Homes ring grown past `listThreshold` opens as a list once the homes arrive.
 - [ ] Config reload and other "[CubeWheel] …" chat lines still show normally.
+
+## Tracker & capture
+
+Bind "Toggle tracker HUD", "Open tracker picker" and "Toggle capture mode" under Options > Controls > Key Binds > CubeWheel first.
+
+- [ ] Before opening any menu, the picker shows "Open /jobs, /pquests, /prestige or /challenges to start tracking."
+- [ ] Open `/jobs`, wait a second, close it: the picker lists the jobs that show progress (e.g. `1,200 / 1,500`) under a "jobs" header, sorted by percentage; decorative items without progress are absent.
+- [ ] The mod never clicks in, opens or closes a menu itself, and sends no command while tracking.
+- [ ] Items from your own inventory (bottom half of the menu) never appear in the picker.
+- [ ] Click an entry in the picker: its ☆ becomes ★ and the top-right HUD shows it with an age suffix ("now", later "5m"). Click again to unpin.
+- [ ] Unpinned entries at ≥80% (and not complete) show on the HUD without a pin, in yellow; complete pinned entries show green; at most 6 lines.
+- [ ] With a potion effect active, the HUD sits below the effect icons.
+- [ ] The toggle-HUD key hides/shows the HUD ("Tracker HUD OFF/ON" on the action bar) and the setting survives a restart (`tracker.hudVisible` in `config/cubewheel.json`).
+- [ ] F1 hides the HUD together with the vanilla HUD.
+- [ ] On a non-ManaCube server the HUD is not drawn and opening menus records nothing; the picker still opens (local data).
+- [ ] "Forget entries older than 7 days" removes unpinned entries not seen for a week (edit `seenAt` in `config/cubewheel-tracker.json` to test); pinned ones stay.
+- [ ] Capture key: action bar "Capture ON → config/cubewheel-captures". Run `/homes` (also via the wheel, whose reply is hidden), then open `/jobs`, `/pquests`, `/prestige`, `/challenges`: `config/cubewheel-captures/<UTC date>.jsonl` gets one `"kind":"chat"` line per chat message and one `"kind":"container"` line per menu (another only if the contents change while it is open).
+- [ ] Capture key again: "Capture OFF"; no further lines are written. Capture is off again after a restart.
+- [ ] Send the capture file back so the progress and homes parsers can be tuned.
