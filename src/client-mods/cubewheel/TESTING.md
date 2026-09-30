@@ -143,6 +143,21 @@ Open `/pquests`, `/prestige` (rank objectives) and `/challenges` once so the obj
 - [ ] The game log shows no mixin errors for `LocalCounting*Mixin`/`FishingHookAccessor`. (Optional: if one fails to apply, only that kind of counting stops; a hook that throws is logged once and switched off after 10 failures.)
 - [ ] No FPS change while mining, fighting or fishing.
 
+## Event timer
+
+Bind "Toggle event HUD" under Options > Controls > Key Binds > CubeWheel first.
+
+- [ ] In Survival, an "Events" panel is at the top left with 3 lines like `Golden Knight · 14:02`, soonest first, counting down each second; lines within 5 minutes are yellow.
+- [ ] Compare with `/events`: each listed event's next start matches (note any differences, and whether KOTH also runs at 8:30 and the boss at 11:30).
+- [ ] When an event is 5 minutes away, a gold chat line "[CubeWheel] <event> starts in 5 min (HH:MM)" appears once (local time). Nothing is sent to the server (chat input stays empty, no command in the log).
+- [ ] Join (or reload) 2 minutes before a start: the alert appears once ("starts in 2 min"); reloading again does not repeat it.
+- [ ] When the countdown reaches 0 the event moves to its next start and the list re-sorts.
+- [ ] Press "Toggle event HUD": the panel hides ("Event HUD OFF"), survives a restart (`events.hudVisible`), alerts still come. Hold the key: toggles once.
+- [ ] `"show": 5` + reload: five lines. `"alertMinutes": 0`: no alerts.
+- [ ] Put `{"name": "Test", "when": "at <a time 6 minutes from now, New York time>"}` first in `events.schedule`, reload: it shows, alerts at 5 min. Add `{"name": "Bad", "when": "sometimes"}`: reload shows a yellow "events.schedule "Bad" ignored: ..." line and the rest keeps working.
+- [ ] With boosters active too, the Boosters panel sits below the Events panel (no overlap).
+- [ ] On the hub, another gamemode or a non-ManaCube server: no panel, no alerts.
+
 ## Boosters
 
 - [ ] Capture on, activate a booster you own (e.g. a Sell booster from a crate or the Magic Pond): the capture file has a `"kind":"chat"` line with its message. Compare it with "You have received a 2x Sell Boost for 30m"; if it differs, note the real wording (and the "extended" wording when you activate a second one) and send the line.

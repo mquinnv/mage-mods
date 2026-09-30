@@ -16,6 +16,8 @@ public final class CubeWheelConfig {
 	public Tracker tracker = new Tracker();
 	/** Booster countdowns parsed from chat. */
 	public Boosters boosters = new Boosters();
+	/** Scheduled Survival events with countdowns and "starts soon" alerts. */
+	public Events events = new Events();
 	public List<WheelNode> wheel;
 
 	/**
@@ -33,6 +35,38 @@ public final class CubeWheelConfig {
 			this.corner = corner;
 			this.x = x;
 			this.y = y;
+		}
+	}
+
+	public static final class Events {
+		/** Master switch for the panel and the alerts. */
+		public boolean enabled = true;
+		/** Panel on/off (saved by the "Toggle event HUD" key); alerts do not depend on it. */
+		public boolean hudVisible = true;
+		/** How many upcoming events the panel lists, 1-10. */
+		public int show = 3;
+		/** Chat alert this many minutes before a start, 0-60; 0 = no alerts. */
+		public int alertMinutes = 5;
+		/** Time zone for entries without their own; the wiki's "EST" times are New York wall-clock times. */
+		public String timezone = DefaultConfig.EVENTS_TIMEZONE;
+		/** The schedule; null = the defaults from ManaCube's wiki. */
+		public List<EventDef> schedule;
+		public Position position = DefaultConfig.eventsPosition();
+	}
+
+	/** One scheduled event: {@code when} is "at 08:00, 13:00" or "every 3h from 00:15" (see EventSchedule). */
+	public static final class EventDef {
+		public String name;
+		public String when;
+		/** Optional; falls back to {@code events.timezone}. */
+		public String timezone;
+		public boolean enabled = true;
+
+		public EventDef() {}
+
+		public EventDef(String name, String when) {
+			this.name = name;
+			this.when = when;
 		}
 	}
 

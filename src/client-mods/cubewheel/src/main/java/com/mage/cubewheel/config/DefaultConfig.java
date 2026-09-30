@@ -114,6 +114,32 @@ public final class DefaultConfig {
 		return new CubeWheelConfig.Position("top_left", 4, 4);
 	}
 
+	public static CubeWheelConfig.Position eventsPosition() {
+		return new CubeWheelConfig.Position("top_left", 4, 4);
+	}
+
+	/**
+	 * ManaCube's wiki (Survival > Survival Events) gives its times in "EST"; captures show they follow New York
+	 * wall-clock time (KOTH began 12:30 EDT and LPS was announced for 13:00 EDT on 2026-09-30).
+	 */
+	public static final String EVENTS_TIMEZONE = "America/New_York";
+
+	/**
+	 * Only what the wiki page states. KOTH: the page says "every two hours" but lists 12:30, 2:30, 4:30, 6:30,
+	 * 10:30 AM/PM (no 8:30), so the listed times are used. Boss: 1:30 ... 9:30 AM/PM as listed (no 11:30). Magic
+	 * Pond, Morender Dragon and Shadow Sorcerer have no times on the page.
+	 */
+	public static List<CubeWheelConfig.EventDef> events() {
+		List<CubeWheelConfig.EventDef> l = new ArrayList<>();
+		l.add(new CubeWheelConfig.EventDef("LPS", "at 08:00, 13:00, 17:00"));
+		l.add(new CubeWheelConfig.EventDef("KOTH", "at 00:30, 02:30, 04:30, 06:30, 10:30, 12:30, 14:30, 16:30, 18:30, 22:30"));
+		l.add(new CubeWheelConfig.EventDef("Boss", "at 01:30, 03:30, 05:30, 07:30, 09:30, 13:30, 15:30, 17:30, 19:30, 21:30"));
+		l.add(new CubeWheelConfig.EventDef("Golden Knight", "every 3h from 00:15"));
+		l.add(new CubeWheelConfig.EventDef("Cursed Witch", "every 3h from 01:15"));
+		l.add(new CubeWheelConfig.EventDef("Desert Golem", "every 3h from 02:15"));
+		return l;
+	}
+
 	public static CubeWheelConfig create() {
 		CubeWheelConfig c = new CubeWheelConfig();
 		c.configVersion = CONFIG_VERSION;
@@ -122,6 +148,7 @@ public final class DefaultConfig {
 		c.tracker.refreshCommands = refreshCommands();
 		c.tracker.sidebarLinks = sidebarLinks();
 		c.tracker.local = local();
+		c.events.schedule = events();
 		c.wheel = wheel();
 		return c;
 	}

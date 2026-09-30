@@ -196,4 +196,42 @@ class ConfigStoreTest {
 		assertNull(s.reload());
 		assertEquals(4, s.current().boosters.position.y);
 	}
+
+	@Test void eventsDefaultToTheWikiSchedule() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload()); // missing file: defaults written
+		CubeWheelConfig.Events e = s.current().events;
+		assertTrue(e.enabled);
+		assertTrue(e.hudVisible);
+		assertEquals(3, e.show);
+		assertEquals(5, e.alertMinutes);
+		assertEquals("America/New_York", e.timezone);
+		assertEquals(List.of("LPS", "KOTH", "Boss", "Golden Knight", "Cursed Witch", "Desert Golem"),
+				e.schedule.stream().map(d -> d.name).toList());
+		for (CubeWheelConfig.EventDef d : e.schedule) com.mage.cubewheel.events.EventSchedule.parse(d.when);
+		Files.writeString(f, "{\"events\": {}}");
+		assertNull(s.reload());
+		assertEquals(6, s.current().events.schedule.size());
+		assertTrue(s.warnings().isEmpty());
+	}
+
+	@Test void badEventEntriesAreDroppedWithWarnings() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{\"events\": {\"show\": 99, \"alertMinutes\": -3, \"timezone\": \"Mars/Base\", \"schedule\": ["
+				+ "{\"name\": \" KOTH \", \"when\": \"every 2h from 00:30\"},"
+				+ "{\"name\": \"Broken\", \"when\": \"sometimes\"},"
+				+ "{\"name\": \"Elsewhere\", \"when\": \"at 10:00\", \"timezone\": \"Nowhere/City\"},"
+				+ "{\"when\": \"at 10:00\"},"
+				+ "{\"name\": \"UTC thing\", \"when\": \"at 10:00\", \"timezone\": \"UTC\"}]}}");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		CubeWheelConfig.Events e = s.current().events;
+		assertEquals(10, e.show);
+		assertEquals(0, e.alertMinutes);
+		assertEquals("America/New_York", e.timezone);
+		assertEquals(List.of("KOTH", "UTC thing"), e.schedule.stream().map(d -> d.name).toList());
+		assertEquals(4, s.warnings().size(), s.warnings().toString());
+		assertTrue(s.warnings().stream().anyMatch(w -> w.contains("Broken")));
+	}
 }

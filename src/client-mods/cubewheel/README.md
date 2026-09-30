@@ -39,6 +39,7 @@ Options > Controls > Key Binds > **CubeWheel**.
 | Open tracker picker | unbound |
 | Toggle capture mode | unbound |
 | Refresh trackers | unbound |
+| Toggle event HUD | unbound |
 
 Any key or mouse button can be used for the wheel. Each press does its action once: holding a key
 (so the system repeats it) does not toggle capture or the HUD back and forth.
@@ -107,6 +108,13 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `tracker.local.blocks` / `kills` / `fish` | Count own block breaks / kills / catches | `true` each |
 | `tracker.local.worlds` | World names recognised in objectives ("Wolfhaven Resources") | the six Mana worlds |
 | `tracker.local.specialWorlds` | Worlds that count as "special worlds (/worlds)" | the six Mana worlds |
+| `events.enabled` | Event panel and alerts (see [Event timer](#event-timer)) | `true` |
+| `events.hudVisible` | Event panel on/off (saved by the "Toggle event HUD" key) | `true` |
+| `events.show` | Upcoming events listed, 1–10 | `3` |
+| `events.alertMinutes` | Chat alert this many minutes before a start, 0–60 (0 = off) | `5` |
+| `events.timezone` | Time zone of the schedule's times (entries may set their own `timezone`) | `"America/New_York"` |
+| `events.schedule` | List of `{"name", "when"}` (optional `timezone`, `enabled`) | from ManaCube's wiki, see below |
+| `events.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `boosters.enabled` | Booster countdowns from chat (see [Boosters](#boosters)) | `true` |
 | `boosters.position` | Panel corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) and `x`/`y` offset in GUI pixels | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `wheel` | The root ring: a list of nodes | see `DefaultConfig.java` |
@@ -330,13 +338,53 @@ are ignored.
 
 ## HUD panels
 
-Besides the tracker (top right), CubeWheel draws small panels: boosters, and more below. Each has a
+Besides the tracker (top right), CubeWheel draws small panels: events, boosters, and more below. Each has a
 `position` in the config: a corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) and an `x`/`y`
 offset from it in GUI pixels. Panels in the same corner stack instead of overlapping (in a top corner, the
 first one is `y` pixels from the top and the next one goes below it); a panel in the top-right corner goes
 below the tracker HUD and the potion icons. All default to the top left, which vanilla leaves empty. F1 hides
 them. They are shown only in ManaCube Survival (host and sidebar gate, see [Server gate](#server-gate)).
 All of them are passive: they read chat, the clock and your own clicks, and never send or click anything.
+
+### Event timer
+
+An **Events** panel lists the next `events.show` (3) Survival events with a countdown, soonest first:
+`Golden Knight · 14:02` (yellow within 5 minutes). Each event appears once, with its next start. When a start is
+`events.alertMinutes` (5) minutes away, a gold chat line (only you see it) says `[CubeWheel] KOTH starts in 5
+min (12:30)` in your computer's local time; once per start, also if you join inside the window. Bind "Toggle
+event HUD" to hide or show the panel (saved like the tracker HUD toggle; alerts do not depend on it).
+
+The default schedule is taken from ManaCube's wiki page *Survival > Survival Events* (times in "EST", which
+ManaCube uses as New York wall-clock time: on 2026-09-30, during daylight saving, KOTH began at 12:30 EDT and
+LPS was announced for 13:00 EDT):
+
+| Event | `when` |
+|---|---|
+| LPS | `at 08:00, 13:00, 17:00` |
+| KOTH | `at 00:30, 02:30, 04:30, 06:30, 10:30, 12:30, 14:30, 16:30, 18:30, 22:30` |
+| Boss | `at 01:30, 03:30, 05:30, 07:30, 09:30, 13:30, 15:30, 17:30, 19:30, 21:30` |
+| Golden Knight | `every 3h from 00:15` |
+| Cursed Witch | `every 3h from 01:15` |
+| Desert Golem | `every 3h from 02:15` |
+
+Only what the page states is included. It says KOTH "runs every two hours" but lists no 8:30, and the boss list
+has no 11:30; the listed times are used. Magic Pond, Morender Dragon and Shadow Sorcerer have no times (the
+last two are triggered by player progress). **In-game `/events` is authoritative**: if it disagrees, edit
+`events.schedule` and reload. `when` is either `at HH:MM, HH:MM, ...` (24-hour, or `8:00AM`/`1:00 PM`) or
+`every Nh from HH:MM` / `every Nh at :MM` (from that time until midnight, every day). Example:
+
+```json
+"events": {
+  "schedule": [
+    { "name": "KOTH", "when": "every 2h from 00:30" },
+    { "name": "My thing", "when": "at 20:00", "timezone": "Europe/London", "enabled": true }
+  ]
+}
+```
+
+An entry with a bad `when` or time zone is ignored; the reload key shows why in a yellow chat line.
+`"schedule": []` shows nothing; deleting the key restores the defaults. `events.enabled: false` turns the panel and
+alerts off.
 
 ### Boosters
 
@@ -404,6 +452,7 @@ Captures contain chat text, including other players' messages; review the file b
 - Whether the Survival sidebar title is plain text "SURVIVAL" (it may be drawn with a custom font);
   `sidebar` capture lines record the title. If tracking stops in Survival, set
   `tracker.survivalSidebarPattern` to match the captured title, or to `""`.
+- Whether the wiki's event times are current (see [Event timer](#event-timer)); compare with `/events`.
 - The exact booster chat wording on Survival (see [Boosters](#boosters)).
 - The command that opens the prestige rank-objectives menu ("Rank [✪n]" items); see
   [Refresh key](#refresh-key).

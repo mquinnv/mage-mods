@@ -6,6 +6,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
+import com.mage.cubewheel.events.EventSchedule;
 import com.mage.cubewheel.hud.HudLayout;
 import java.io.IOException;
 import java.io.Reader;
@@ -13,6 +14,8 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.DateTimeException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +30,7 @@ public final class ConfigStore {
 	private final Path file;
 	private CubeWheelConfig current;
 	private boolean lastLoadOk = true;
+	private List<String> warnings = List.of();
 
 	public ConfigStore(Path file) {
 		this.file = file;
@@ -43,6 +47,11 @@ public final class ConfigStore {
 	 */
 	public boolean lastLoadOk() {
 		return lastLoadOk;
+	}
+
+	/** Non-fatal problems of the last successful load (e.g. an event entry that was ignored). */
+	public List<String> warnings() {
+		return warnings;
 	}
 
 	/** Returns null on success, otherwise an error message (previous config is kept). */
@@ -74,7 +83,9 @@ public final class ConfigStore {
 		}
 		if (parsed == null) parsed = DefaultConfig.create();
 		boolean migrated = migrate(parsed);
-		normalize(parsed);
+		List<String> problems = new ArrayList<>();
+		normalize(parsed, problems);
+		warnings = List.copyOf(problems);
 		current = parsed;
 		if (migrated) {
 			// Write the upgrade back so it happens once: a value the user sets afterwards is kept.
@@ -108,7 +119,7 @@ public final class ConfigStore {
 		}
 	}
 
-	private static void normalize(CubeWheelConfig c) {
+	private static void normalize(CubeWheelConfig c, List<String> warnings) {
 		if (c.serverHosts == null) c.serverHosts = DefaultConfig.serverHosts();
 		if (c.tracker == null) c.tracker = new CubeWheelConfig.Tracker();
 		if (c.tracker.sources == null) c.tracker.sources = DefaultConfig.trackerSources();
@@ -125,11 +136,63 @@ public final class ConfigStore {
 				? DefaultConfig.manaWorlds() : normalizeWords(c.tracker.local.specialWorlds);
 		if (c.boosters == null) c.boosters = new CubeWheelConfig.Boosters();
 		c.boosters.position = normalizePosition(c.boosters.position, DefaultConfig.boostersPosition());
+		normalizeEvents(c, warnings);
 		c.wheel = c.wheel == null ? DefaultConfig.wheel() : normalizeNodes(c.wheel);
 		c.vaultCount = Math.max(0, Math.min(54, c.vaultCount));
 		c.listThreshold = Math.max(3, Math.min(16, c.listThreshold));
 		c.tracker.nearThreshold = Math.max(0.0, Math.min(1.0, c.tracker.nearThreshold));
 		c.tracker.hudMaxLines = Math.max(1, Math.min(20, c.tracker.hudMaxLines));
+	}
+
+	private static void normalizeEvents(CubeWheelConfig c, List<String> warnings) {
+		if (c.events == null) c.events = new CubeWheelConfig.Events();
+		CubeWheelConfig.Events e = c.events;
+		e.position = normalizePosition(e.position, DefaultConfig.eventsPosition());
+		e.show = Math.max(1, Math.min(10, e.show));
+		e.alertMinutes = Math.max(0, Math.min(60, e.alertMinutes));
+		if (e.timezone == null || e.timezone.isBlank() || zone(e.timezone) == null) {
+			if (e.timezone != null && !e.timezone.isBlank()) {
+				warnings.add("events.timezone \"" + e.timezone + "\" is not a time zone, using " + DefaultConfig.EVENTS_TIMEZONE);
+			}
+			e.timezone = DefaultConfig.EVENTS_TIMEZONE;
+		}
+		if (e.schedule == null) {
+			e.schedule = DefaultConfig.events();
+			return;
+		}
+		List<CubeWheelConfig.EventDef> out = new ArrayList<>();
+		for (CubeWheelConfig.EventDef d : e.schedule) {
+			if (d == null) continue;
+			String name = d.name == null ? "" : d.name.trim();
+			if (name.isEmpty()) {
+				warnings.add("events.schedule: an entry without a name was ignored");
+				continue;
+			}
+			try {
+				EventSchedule.parse(d.when);
+			} catch (IllegalArgumentException ex) {
+				warnings.add("events.schedule \"" + name + "\" ignored: " + ex.getMessage());
+				continue;
+			}
+			if (d.timezone != null && !d.timezone.isBlank() && zone(d.timezone) == null) {
+				warnings.add("events.schedule \"" + name + "\" ignored: unknown time zone \"" + d.timezone + "\"");
+				continue;
+			}
+			d.name = name;
+			d.when = d.when.trim();
+			out.add(d);
+		}
+		e.schedule = out;
+	}
+
+	/** The zone, or null if the id is null or unknown. */
+	public static ZoneId zone(String id) {
+		if (id == null) return null;
+		try {
+			return ZoneId.of(id.trim());
+		} catch (DateTimeException ex) {
+			return null;
+		}
 	}
 
 	/** Missing position -> the default; unknown corner -> "top_left"; offsets clamped to 0..4000. */

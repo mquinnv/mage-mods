@@ -6,6 +6,7 @@ import com.mage.cubewheel.capture.CaptureLog;
 import com.mage.cubewheel.config.ConfigStore;
 import com.mage.cubewheel.config.CubeWheelConfig;
 import com.mage.cubewheel.config.WheelNode;
+import com.mage.cubewheel.events.EventHud;
 import com.mage.cubewheel.homes.HomesCache;
 import com.mage.cubewheel.homes.HomesFetcher;
 import com.mage.cubewheel.hud.PanelsHud;
@@ -76,6 +77,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		config = new ConfigStore(configDir.resolve("cubewheel.json"));
 		String err = config.reload();
 		if (err != null) LOG.error("[cubewheel] config load failed, using defaults/previous: {}", err);
+		for (String w : config.warnings()) LOG.warn("[cubewheel] config: {}", w);
 		homes = new HomesCache(configDir.resolve("cubewheel-homes.json"));
 		homes.load();
 		homesFetcher = new HomesFetcher(homes);
@@ -94,6 +96,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ContainerHook.register();
 		LocalSignals.register(); // after tracker and capture exist
 		TrackerHud.register();
+		PanelsHud.add(EventHud::panel);
 		PanelsHud.add(BoosterWatcher::panel);
 		PanelsHud.register();
 		Keybinds.register();
@@ -127,6 +130,12 @@ public final class CubeWheelClient implements ClientModInitializer {
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] tracker HUD key handler failed", e);
 		}
+		try {
+			handleEventsHudKey(mc);
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] event HUD key handler failed", e);
+		}
+		EventHud.tick(mc); // catches and logs its own failures
 		try {
 			handleTrackerPickerKey(mc);
 		} catch (RuntimeException e) {
@@ -178,6 +187,18 @@ public final class CubeWheelClient implements ClientModInitializer {
 		if (!pressed(Keybinds.trackerHud)) return;
 		CubeWheelConfig cfg = config.current();
 		cfg.tracker.hudVisible = !cfg.tracker.hudVisible;
+		saveToggle(mc, cfg.tracker.hudVisible ? "Tracker HUD ON" : "Tracker HUD OFF");
+	}
+
+	private static void handleEventsHudKey(Minecraft mc) {
+		if (!pressed(Keybinds.eventsHud)) return;
+		CubeWheelConfig cfg = config.current();
+		cfg.events.hudVisible = !cfg.events.hudVisible;
+		saveToggle(mc, cfg.events.hudVisible ? "Event HUD ON" : "Event HUD OFF");
+	}
+
+	/** Saves a toggled HUD setting and confirms it on the action bar. */
+	private static void saveToggle(Minecraft mc, String confirmation) {
 		// After a failed load the in-memory config is not the file on disk: saving would overwrite
 		// the user's (broken) cubewheel.json with defaults/the previous config. Toggle in memory only.
 		boolean saved = config.lastLoadOk();
@@ -185,12 +206,12 @@ public final class CubeWheelClient implements ClientModInitializer {
 			try {
 				config.save();
 			} catch (IOException e) {
-				LOG.warn("[cubewheel] could not save tracker HUD setting: {}", e.toString());
+				LOG.warn("[cubewheel] could not save HUD setting: {}", e.toString());
 			}
 		}
 		if (mc.player != null) {
 			mc.player.sendOverlayMessage(Component.literal(saved
-					? (cfg.tracker.hudVisible ? "Tracker HUD ON" : "Tracker HUD OFF")
+					? confirmation
 					: "CubeWheel: HUD toggled for this session (config has errors, not saved)"));
 		}
 	}
@@ -287,5 +308,10 @@ public final class CubeWheelClient implements ClientModInitializer {
 				? Component.literal("[CubeWheel] " + err).withStyle(ChatFormatting.RED)
 				: Component.literal("[CubeWheel] config reloaded").withStyle(ChatFormatting.GREEN);
 		mc.player.sendSystemMessage(msg);
+		if (err == null) {
+			for (String w : config.warnings()) {
+				mc.player.sendSystemMessage(Component.literal("[CubeWheel] " + w).withStyle(ChatFormatting.YELLOW));
+			}
+		}
 	}
 }
