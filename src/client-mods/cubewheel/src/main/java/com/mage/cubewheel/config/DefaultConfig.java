@@ -34,6 +34,9 @@ public final class DefaultConfig {
 	/** Only prestige objectives such as "Rank [✪4] · Reach 2,500 Skill Level". */
 	public static final String SKILLS_LINK = "(?i)reach [\\d,]+ skill level";
 
+	/** ManaCube Survival's sidebar title is "SURVIVAL"; the hub and other gamemodes show other titles. */
+	public static final String SURVIVAL_SIDEBAR = "(?i)survival";
+
 	public static Map<String, String> sidebarLinks() {
 		Map<String, String> m = new LinkedHashMap<>();
 		m.put("Skills", SKILLS_LINK);

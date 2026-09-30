@@ -94,6 +94,11 @@ public final class RefreshController {
 			if (fromPicker) setStatus("Refresh only works on ManaCube");
 			return;
 		}
+		if (!ServerGate.survival(cfg)) {
+			mc.player.sendOverlayMessage(Component.literal("Tracker refresh only works in ManaCube Survival"));
+			if (fromPicker) setStatus("Refresh only works in ManaCube Survival");
+			return;
+		}
 		if (mc.gui.screen() != null && !fromPicker) return;
 		long now = Util.getMillis();
 		RefreshPolicy.Start start = POLICY.start(now, cfg.tracker.refreshCommands);
@@ -127,9 +132,9 @@ public final class RefreshController {
 		tickNo++;
 		if (!POLICY.running()) return;
 		try {
-			if (mc.player == null || !ServerGate.active(CubeWheelClient.config().current())) {
+			if (mc.player == null || !ServerGate.survival(CubeWheelClient.config().current())) {
 				POLICY.abort();
-				CubeWheelClient.LOG.info("[cubewheel] tracker refresh stopped: left the server");
+				CubeWheelClient.LOG.info("[cubewheel] tracker refresh stopped: left the server or Survival");
 				return;
 			}
 			Screen screen = mc.gui.screen();

@@ -59,6 +59,11 @@ public final class SidebarWatcher {
 		return last.lines();
 	}
 
+	/** The sidebar title as last read (plain text); null when no sidebar is shown or off ManaCube. */
+	public String title() {
+		return last.title();
+	}
+
 	/**
 	 * Re-applies the current sidebar values after a menu scan changed the store, so an entry the menu
 	 * just (re)wrote, e.g. a new prestige objective, follows the live value straight away. Never throws.

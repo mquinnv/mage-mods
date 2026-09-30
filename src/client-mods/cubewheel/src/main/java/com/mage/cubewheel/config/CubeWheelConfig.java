@@ -20,6 +20,11 @@ public final class CubeWheelConfig {
 		public List<String> refreshCommands;
 		/** Sidebar key ("Skills") -> regex on trackable names whose current value follows it live. */
 		public Map<String, String> sidebarLinks;
+		/**
+		 * Regex on the sidebar title: menu scanning, refresh runs and local counting only run while it
+		 * matches (ManaCube hosts other gamemodes on the same address). "" switches this check off.
+		 */
+		public String survivalSidebarPattern = DefaultConfig.SURVIVAL_SIDEBAR;
 		/** Local counting: live "~" estimates between menu reads. */
 		public Local local = new Local();
 	}

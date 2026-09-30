@@ -95,6 +95,7 @@ public final class ConfigStore {
 		else if (DefaultConfig.OLD_SKILLS_LINK.equals(c.tracker.sidebarLinks.get("Skills"))) {
 			c.tracker.sidebarLinks.put("Skills", DefaultConfig.SKILLS_LINK);
 		}
+		if (c.tracker.survivalSidebarPattern == null) c.tracker.survivalSidebarPattern = DefaultConfig.SURVIVAL_SIDEBAR;
 		if (c.tracker.local == null) c.tracker.local = DefaultConfig.local();
 		c.tracker.local.worlds = c.tracker.local.worlds == null ? DefaultConfig.manaWorlds() : normalizeWords(c.tracker.local.worlds);
 		c.tracker.local.specialWorlds = c.tracker.local.specialWorlds == null

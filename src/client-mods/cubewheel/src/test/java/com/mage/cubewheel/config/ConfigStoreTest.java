@@ -103,6 +103,18 @@ class ConfigStoreTest {
 		assertEquals(java.util.Map.of("Skills", "(?i)reach [\\d,]+ skill level"), s.current().tracker.sidebarLinks);
 	}
 
+	@Test void survivalSidebarPatternDefaultsAndStaysEditable() throws Exception {
+		assertEquals("(?i)survival", DefaultConfig.create().tracker.survivalSidebarPattern);
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{ \"tracker\": { \"hudMaxLines\": 4 } }");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals("(?i)survival", s.current().tracker.survivalSidebarPattern); // older file: default
+		Files.writeString(f, "{ \"tracker\": { \"survivalSidebarPattern\": \"\" } }");
+		assertNull(s.reload());
+		assertEquals("", s.current().tracker.survivalSidebarPattern); // explicit "" switches the gate off
+	}
+
 	@Test void oldBroadSkillsLinkIsUpgraded() throws Exception {
 		Path f = dir.resolve("cubewheel.json");
 		Files.writeString(f, "{\"tracker\": {\"sidebarLinks\": {\"Skills\": \"(?i)skill level\", \"Mana\": \"(?i)mana\"}}}");

@@ -42,7 +42,8 @@ import net.minecraft.world.level.block.state.BlockState;
  * Minecraft adapter for local counting: the static facade that Fabric callbacks and the optional mixins
  * call. Purely passive: it only observes (own block breaks, damage/death packets, reeling in a biting
  * bobber) and never sends, opens or clicks anything; its only write is the local tracker file. Active
- * only on ManaCube with {@code tracker.local.enabled}. Every entry point is guarded: a failing hook is
+ * only in ManaCube Survival (host gate plus sidebar title, see {@link ServerGate#survival}), in
+ * survival/adventure game mode, with {@code tracker.local.enabled}. Every entry point is guarded: a failing hook is
  * logged once and switched off for the session after {@link #MAX_FAILURES} failures.
  */
 public final class LocalSignals {
@@ -60,7 +61,7 @@ public final class LocalSignals {
 	private static final KillAttribution kills = new KillAttribution();
 	private static final WorldProbe world = new WorldProbe();
 	private static long tick;
-	/** Recomputed every client tick: on ManaCube, counting enabled, a store and a player exist. */
+	/** Recomputed every client tick: in ManaCube Survival, counting enabled, a store and a player exist. */
 	private static boolean active;
 
 	private LocalSignals() {}
@@ -89,6 +90,7 @@ public final class LocalSignals {
 	private static void afterBlockBreak(ClientLevel level, Player player, BlockPos pos, BlockState state) {
 		if (!enabled(Hook.BREAK) || !local().blocks) return;
 		try {
+			if (!survivalMode(player)) return;
 			Pos p = new Pos(pos.getX(), pos.getY(), pos.getZ());
 			int stateId = Block.getId(state);
 			if (placed.consumeIfPlaced(p, stateId)) return; // plugins ignore blocks you placed
@@ -133,7 +135,7 @@ public final class LocalSignals {
 		if (!clientSide || !enabled(Hook.ATTACK) || !local().kills) return;
 		try {
 			Minecraft mc = Minecraft.getInstance();
-			if (player != mc.player || target instanceof Player) return;
+			if (player != mc.player || !survivalMode(player) || target instanceof Player) return;
 			kills.onDamage(target.getId(), player.getId(), tick);
 		} catch (Throwable t) {
 			fail(Hook.ATTACK, t);
@@ -158,7 +160,7 @@ public final class LocalSignals {
 		if (eventId != DEATH_EVENT || entity == null || !enabled(Hook.DEATH) || !local().kills) return;
 		try {
 			Minecraft mc = Minecraft.getInstance();
-			if (mc.player == null || !(entity instanceof LivingEntity) || entity instanceof Player) return;
+			if (!survivalMode(mc.player) || !(entity instanceof LivingEntity) || entity instanceof Player) return;
 			if (!kills.onDeath(entity.getId(), mc.player.getId(), tick)) return;
 			Signal.MobKilled signal = EntityFacts.of(entity, world());
 			List<LocalCounter.Contribution> added = count(signal);
@@ -172,7 +174,7 @@ public final class LocalSignals {
 	private static void onUseItem(Player player, boolean clientSide, boolean holdingRod) {
 		if (!clientSide || !holdingRod || !enabled(Hook.FISH) || !local().fish) return;
 		try {
-			if (player != Minecraft.getInstance().player) return;
+			if (player != Minecraft.getInstance().player || !survivalMode(player)) return;
 			boolean hasHook = player.fishing != null;
 			boolean biting = hasHook && ((FishingHookAccessor) player.fishing).cubewheel$isBiting();
 			if (!FishDetector.onRodUse(hasHook, biting)) return;
@@ -195,7 +197,7 @@ public final class LocalSignals {
 			tick++;
 			CubeWheelConfig cfg = CubeWheelClient.config().current();
 			TrackerStore store = CubeWheelClient.tracker();
-			active = cfg.tracker.local.enabled && store != null && mc.player != null && mc.level != null && ServerGate.active(cfg);
+			active = cfg.tracker.local.enabled && store != null && mc.player != null && mc.level != null && ServerGate.survival(cfg);
 			pending.expire(tick);
 			kills.expire(tick);
 			if (store != null && saveThrottle.shouldSave(System.currentTimeMillis())) store.save();
@@ -230,6 +232,11 @@ public final class LocalSignals {
 
 	private static WorldInfo world() {
 		return world.current(Minecraft.getInstance(), local().specialWorlds, tick);
+	}
+
+	/** Creative and spectator actions never advance ManaCube objectives. */
+	private static boolean survivalMode(Player player) {
+		return player != null && !player.isCreative() && !player.isSpectator();
 	}
 
 	private static CubeWheelConfig.Local local() {

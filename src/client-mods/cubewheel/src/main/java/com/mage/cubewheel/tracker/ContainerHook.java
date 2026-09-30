@@ -116,6 +116,8 @@ public final class ContainerHook {
 					capture.container(title, items, now);
 					lastCaptured = items;
 				}
+				// Other ManaCube gamemodes (SkyBlock, Parkour, hub) have look-alike menus: Survival only.
+				if (!ServerGate.survival(cfg)) return;
 				Optional<String> source = MenuClassifier.classify(title, items, cfg.tracker.sources);
 				TrackerStore store = CubeWheelClient.tracker();
 				if (source.isEmpty() || store == null) return;

@@ -1,6 +1,7 @@
 package com.mage.cubewheel;
 
 import com.mage.cubewheel.config.CubeWheelConfig;
+import com.mage.cubewheel.sidebar.SidebarGate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -44,5 +45,15 @@ public final class ServerGate {
 	public static boolean active(CubeWheelConfig cfg) {
 		if (cfg == null || !cfg.enabled) return false;
 		return currentHost().map(h -> matches(h, cfg.serverHosts)).orElse(false);
+	}
+
+	/**
+	 * {@link #active} and in ManaCube Survival: the live sidebar title matches
+	 * {@code tracker.survivalSidebarPattern}. Menu scanning, refresh runs and local counting use this, so
+	 * SkyBlock, Parkour or the hub on the same host never feed the trackers.
+	 */
+	public static boolean survival(CubeWheelConfig cfg) {
+		if (!active(cfg) || cfg.tracker == null) return false;
+		return SidebarGate.matches(CubeWheelClient.sidebar().title(), cfg.tracker.survivalSidebarPattern);
 	}
 }
