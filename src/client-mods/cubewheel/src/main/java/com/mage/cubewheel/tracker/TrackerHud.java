@@ -20,6 +20,7 @@ import net.minecraft.resources.Identifier;
  */
 public final class TrackerHud implements HudElement {
 	private static final int MARGIN = 4;
+	private static final int TAG_GAP = 3;
 	private static final int EFFECTS_HEIGHT = 52; // two rows of vanilla mob-effect icons
 	private static final int BACKDROP = 0x80000000;
 	private static final int GOLD = 0xFFFFAA00;
@@ -67,11 +68,15 @@ public final class TrackerHud implements HudElement {
 		Font font = mc.font;
 		long now = System.currentTimeMillis();
 		List<String> lines = new ArrayList<>(entries.size());
+		// Every line starts with its source's marker (⚒ jobs, ✦ prestige, ⚑ party quests …) in a fixed-width column.
+		int tagW = 0;
+		for (TrackerRow r : entries) tagW = Math.max(tagW, font.width(SourceTag.of(r.item().source()).glyph()));
+		int textX = tagW + TAG_GAP;
 		int w = font.width("Tracker");
 		for (TrackerRow r : entries) {
 			String line = TrackerFormat.line(r, now);
 			lines.add(line);
-			w = Math.max(w, font.width(line));
+			w = Math.max(w, textX + font.width(line));
 		}
 		int lh = font.lineHeight + 1;
 		int x = g.guiWidth() - MARGIN - w;
@@ -80,7 +85,10 @@ public final class TrackerHud implements HudElement {
 		lastBottom = y + lh * (lines.size() + 1);
 		g.text(font, "Tracker", x, y, GOLD);
 		for (int i = 0; i < lines.size(); i++) {
-			g.text(font, lines.get(i), x, y + lh * (i + 1), color(entries.get(i), cfg.tracker.nearThreshold));
+			int ly = y + lh * (i + 1);
+			SourceTag tag = SourceTag.of(entries.get(i).item().source());
+			g.text(font, tag.glyph(), x, ly, tag.argb());
+			g.text(font, lines.get(i), x + textX, ly, color(entries.get(i), cfg.tracker.nearThreshold));
 		}
 	}
 
