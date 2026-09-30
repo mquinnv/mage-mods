@@ -31,3 +31,14 @@ Bind "Reload CubeWheel config" to a free key under Options > Controls > Key Bind
 - [ ] Mouse wheel scrolls when the list is taller than the screen (shrink the window to check).
 - [ ] Click a row: the screen closes and the command is sent.
 - [ ] Esc or right-click returns to the wheel it was opened from; the wheel stays open in click mode (releasing `G` earlier does not close it).
+
+## Homes
+
+- [ ] Delete `config/cubewheel-homes.json`, open the wheel and go to Homes: it first shows "Loading…" (clock icon; clicking it does nothing), then your homes appear within ~1 s.
+- [ ] The `/homes` reply triggered by the wheel is not shown in chat; the log shows one "[cubewheel] fetching /homes for …" line.
+- [ ] Typing `/homes` yourself shows the reply in chat normally (and still updates the cached list).
+- [ ] `/sethome test`: reopen the wheel, "test" is in the Homes ring immediately (no new `/homes` in the log).
+- [ ] `/delhome test`: reopen the wheel, "test" is gone.
+- [ ] Reopening Homes within 5 minutes sends no `/homes` (no new "fetching /homes" log line); after 5 minutes one is sent again.
+- [ ] A Homes ring grown past `listThreshold` opens as a list once the homes arrive.
+- [ ] Config reload and other "[CubeWheel] …" chat lines still show normally.

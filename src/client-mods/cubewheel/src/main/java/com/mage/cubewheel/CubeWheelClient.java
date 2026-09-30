@@ -4,10 +4,14 @@ import com.mage.cubewheel.config.ConfigStore;
 import com.mage.cubewheel.config.CubeWheelConfig;
 import com.mage.cubewheel.config.WheelNode;
 import com.mage.cubewheel.homes.HomesCache;
+import com.mage.cubewheel.homes.HomesFetcher;
 import com.mage.cubewheel.tracker.TrackerStore;
 import com.mage.cubewheel.wheel.RadialScreen;
+import java.nio.file.Path;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -20,12 +24,13 @@ public final class CubeWheelClient implements ClientModInitializer {
 	public static final Logger LOG = LoggerFactory.getLogger(MOD_ID);
 
 	private static ConfigStore config;
-	private static HomesCache homes; // initialised in Task 7
+	private static HomesCache homes;
+	private static HomesFetcher homesFetcher;
 	private static TrackerStore tracker; // initialised in Task 8
 
 	public static ConfigStore config() { return config; }
 
-	/** Null until the homes feature is wired; callers treat null as "no homes". */
+	/** Per-server homes cache; null only before onInitializeClient (callers treat null as "no homes"). */
 	public static HomesCache homes() { return homes; }
 
 	/** Null until the tracker feature is wired. */
@@ -33,9 +38,16 @@ public final class CubeWheelClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-		config = new ConfigStore(FabricLoader.getInstance().getConfigDir().resolve("cubewheel.json"));
+		Path configDir = FabricLoader.getInstance().getConfigDir();
+		config = new ConfigStore(configDir.resolve("cubewheel.json"));
 		String err = config.reload();
 		if (err != null) LOG.error("[cubewheel] config load failed, using defaults/previous: {}", err);
+		homes = new HomesCache(configDir.resolve("cubewheel-homes.json"));
+		homes.load();
+		homesFetcher = new HomesFetcher(homes);
+		RadialScreen.childrenProvider = homesFetcher::childrenFor;
+		ClientReceiveMessageEvents.ALLOW_GAME.register(homesFetcher::onGameMessage);
+		ClientSendMessageEvents.COMMAND.register(homesFetcher::onCommand);
 		Keybinds.register();
 		ClientTickEvents.END_CLIENT_TICK.register(CubeWheelClient::onEndTick);
 		LOG.info("[cubewheel] initialised");
