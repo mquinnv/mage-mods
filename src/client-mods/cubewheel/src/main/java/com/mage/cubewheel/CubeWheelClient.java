@@ -50,6 +50,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 	private static TrackerStore tracker;
 	private static CaptureLog capture;
 	private static final SidebarWatcher sidebar = new SidebarWatcher();
+	private static final java.util.Map<KeyMapping, PressGate> PRESS_GATES = new java.util.IdentityHashMap<>();
 	/** Set once if the optional HUD accessor mixins are unusable; action-bar/boss-bar capture then stays off. */
 	private static boolean hudCaptureDisabled;
 
@@ -157,13 +158,14 @@ public final class CubeWheelClient implements ClientModInitializer {
 		}
 	}
 
-	/** True once per tick if the key was pressed; queued extra presses are dropped. */
+	/**
+	 * True once per physical press: queued clicks are drained, and key-repeat clicks while the key stays
+	 * held are ignored (see {@link PressGate}). Call once per tick per key.
+	 */
 	private static boolean pressed(KeyMapping key) {
-		if (!key.consumeClick()) return false;
-		while (key.consumeClick()) {
-			// drain
-		}
-		return true;
+		boolean clicked = false;
+		while (key.consumeClick()) clicked = true;
+		return PRESS_GATES.computeIfAbsent(key, k -> new PressGate()).fire(clicked, key.isDown());
 	}
 
 	private static void handleTrackerHudKey(Minecraft mc) {
