@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Consumer;
 import com.mage.cubewheel.tracker.local.ObjectiveExtractor;
 
 /** Turns the items of a server GUI into tracker updates. Pure: no Minecraft/Fabric imports. */
@@ -18,6 +19,14 @@ public final class ContainerScanner {
 	 * actually changed (see {@link TrackerStore#update}), so 0 means there is nothing new to save.
 	 */
 	public static int scan(String source, List<ItemView> items, TrackerStore store, long now) {
+		return scan(source, items, store, now, null);
+	}
+
+	/**
+	 * Like {@link #scan(String, List, TrackerStore, long)}; {@code seen} (optional) receives the id of every
+	 * entry this menu showed, changed or not (a refresh run counts what it confirmed).
+	 */
+	public static int scan(String source, List<ItemView> items, TrackerStore store, long now, Consumer<String> seen) {
 		if (source == null || items == null || store == null) return 0;
 		int updated = 0;
 		for (ItemView item : items) {
@@ -36,6 +45,7 @@ public final class ContainerScanner {
 			// The objective text feeds local counting (tracker.local); a read is authoritative, so any
 			// estimate for this entry was just dropped by update().
 			changed |= store.setObjective(Trackable.idOf(source, display), ObjectiveExtractor.extract(name, lore));
+			if (seen != null) seen.accept(Trackable.idOf(source, display));
 			if (changed) updated++;
 		}
 		return updated;

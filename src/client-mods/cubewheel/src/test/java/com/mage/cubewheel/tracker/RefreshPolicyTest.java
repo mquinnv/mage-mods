@@ -61,7 +61,9 @@ class RefreshPolicyTest {
 		assertEquals(SEND, next.kind());
 		assertEquals("/b", next.command());
 		assertEquals(NONE, p.step(TIMEOUT + GAP + TIMEOUT, View.NONE).kind());
-		assertEquals(FINISHED, p.step(TIMEOUT + GAP + TIMEOUT + 1, View.NONE).kind());
+		// The last command timed out: a late menu may still arrive during one more gap.
+		assertEquals(NONE, p.step(TIMEOUT + GAP + TIMEOUT + GAP - 1, View.NONE).kind());
+		assertEquals(FINISHED, p.step(TIMEOUT + GAP + TIMEOUT + GAP, View.NONE).kind());
 		assertEquals(0, p.handled());
 		assertEquals(2, p.timedOut());
 	}
@@ -139,13 +141,126 @@ class RefreshPolicyTest {
 		assertEquals(ABORTED, p.step(100, View.OTHER).kind());
 	}
 
-	@Test void anUnexpectedMenuBetweenCommandsAborts() {
+	@Test void anUnrecognisedMenuBetweenCommandsAborts() {
 		RefreshPolicy p = new RefreshPolicy();
 		p.start(0, List.of("/a", "/b"));
 		p.step(0, View.NONE);
 		p.step(10, View.MENU_READY);
 		assertEquals(CLOSE_MENU, p.step(10 + SETTLE, View.MENU_READY).kind());
-		assertEquals(ABORTED, p.step(10 + SETTLE + 50, View.MENU_READY).kind());
+		assertEquals(ABORTED, p.step(10 + SETTLE + 50, View.OTHER).kind());
+		assertFalse(p.running());
+	}
+
+	// --- late menus (a menu that arrives after its command timed out, or in the gap) ---
+
+	@Test void aLateRecognisedMenuInTheGapIsClosedAndTheRunGoesOn() {
+		RefreshPolicy p = new RefreshPolicy();
+		p.start(0, List.of("/a", "/b"));
+		assertEquals("/a", p.step(0, View.NONE).command());
+		assertEquals(NONE, p.step(TIMEOUT, View.NONE).kind()); // /a timed out
+		long t = TIMEOUT + 10;
+		assertEquals(NONE, p.step(t, View.MENU_LOADING).kind()); // /a's menu shows up late
+		assertEquals(NONE, p.step(t + 10, View.MENU_READY).kind());
+		assertEquals(CLOSE_MENU, p.step(t + 10 + SETTLE, View.MENU_READY).kind());
+		t = t + 10 + SETTLE;
+		assertEquals(NONE, p.step(t + GAP - 1, View.NONE).kind());
+		Action next = p.step(t + GAP, View.NONE);
+		assertEquals(SEND, next.kind());
+		assertEquals("/b", next.command());
+		assertEquals(1, p.timedOut());
+	}
+
+	@Test void aLateMenuAfterTheLastCommandTimedOutIsClosedToo() {
+		RefreshPolicy p = new RefreshPolicy();
+		p.start(0, List.of("/a"));
+		p.step(0, View.NONE);
+		assertEquals(NONE, p.step(TIMEOUT, View.NONE).kind());
+		assertEquals(NONE, p.step(TIMEOUT + 20, View.MENU_READY).kind());
+		assertEquals(CLOSE_MENU, p.step(TIMEOUT + 20 + SETTLE, View.MENU_READY).kind());
+		assertEquals(FINISHED, p.step(TIMEOUT + 20 + SETTLE + 1, View.NONE).kind());
+	}
+
+	@Test void aLateUnrecognisedMenuAbortsAndIsLeftAlone() {
+		RefreshPolicy p = new RefreshPolicy();
+		p.start(0, List.of("/a", "/b"));
+		p.step(0, View.NONE);
+		p.step(TIMEOUT, View.NONE);
+		assertEquals(ABORTED, p.step(TIMEOUT + 10, View.OTHER).kind());
+		assertFalse(p.running());
+		assertEquals(NONE, p.step(TIMEOUT + GAP, View.OTHER).kind()); // never closed, nothing sent
+	}
+
+	@Test void aLateMenuThatStaysEmptyAbortsInsteadOfBeingClosed() {
+		RefreshPolicy p = new RefreshPolicy();
+		p.start(0, List.of("/a", "/b"));
+		p.step(0, View.NONE);
+		p.step(TIMEOUT, View.NONE);
+		assertEquals(NONE, p.step(TIMEOUT + 10, View.MENU_LOADING).kind());
+		Action a = p.step(TIMEOUT + 10 + TIMEOUT, View.MENU_LOADING);
+		assertEquals(ABORTED, a.kind()); // never recognised: left open for the user
+		assertFalse(p.running());
+	}
+
+	// --- the user's own actions ---
+
+	@Test void useOrAttackWhileWaitingAborts() {
+		RefreshPolicy p = new RefreshPolicy();
+		p.start(0, CMDS);
+		assertEquals(SEND, p.step(0, View.NONE, false).kind());
+		Action a = p.step(50, View.NONE, true); // right-click on a chest/NPC, or attack
+		assertEquals(ABORTED, a.kind());
+		assertFalse(p.running());
+		// The menu the user opened is never touched.
+		assertEquals(NONE, p.step(100, View.MENU_READY, false).kind());
+	}
+
+	@Test void useOrAttackDuringTheGapAborts() {
+		RefreshPolicy p = new RefreshPolicy();
+		p.start(0, CMDS);
+		p.step(0, View.NONE);
+		p.step(10, View.MENU_READY);
+		assertEquals(CLOSE_MENU, p.step(10 + SETTLE, View.MENU_READY).kind());
+		assertEquals(ABORTED, p.step(10 + SETTLE + 20, View.NONE, true).kind());
+		assertEquals(NONE, p.step(10 + SETTLE + GAP, View.NONE, false).kind()); // /prestige is never sent
+	}
+
+	@Test void useOrAttackBeforeTheFirstCommandAbortsWithoutSending() {
+		RefreshPolicy p = new RefreshPolicy();
+		p.start(0, CMDS);
+		assertEquals(ABORTED, p.step(0, View.NONE, true).kind());
+		assertFalse(p.running());
+	}
+
+	@Test void heldInputWhileOurMenuIsOpenDoesNotAbort() {
+		RefreshPolicy p = new RefreshPolicy();
+		p.start(0, List.of("/a"));
+		p.step(0, View.NONE);
+		assertEquals(NONE, p.step(10, View.MENU_READY, false).kind());
+		// Once our menu is open (hidden, input blocked) a stuck key state does not matter.
+		assertEquals(NONE, p.step(20, View.MENU_READY, true).kind());
+		assertEquals(CLOSE_MENU, p.step(10 + SETTLE, View.MENU_READY, true).kind());
+	}
+
+	// --- which menus the run may hide and close ---
+
+	@Test void onlyRecognisedMenusCountAsTheRunsMenu() {
+		String glyph = ManaCubeMenusTest.GLYPH_TITLE;
+		java.util.Map<String, String> sources = ManaCubeMenusTest.TITLE_SOURCES;
+		assertEquals(View.MENU_LOADING, RefreshPolicy.menuView(glyph, List.of(), sources));
+		assertEquals(View.MENU_READY, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.JOBS_MAIN, sources));
+		assertEquals(View.MENU_READY, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.PRESTIGE_RANKS, sources));
+		assertEquals(View.MENU_READY, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.PARTY_QUESTS, sources));
+		// A menu the user opened (warps, a chest) is not the run's: reported as OTHER, so the run aborts
+		// and the menu stays visible and usable.
+		assertEquals(View.OTHER, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.WARPS, sources));
+		assertEquals(View.OTHER, RefreshPolicy.menuView("Chest",
+				List.of(ManaCubeMenusTest.item(0, "Diamond", "A shiny gem")), sources));
+	}
+
+	@Test void finishedMessage() {
+		assertEquals("Refreshed 1 tracker", RefreshPolicy.finishedMessage(1, 0));
+		assertEquals("Refreshed 7 trackers (1 menu did not load)", RefreshPolicy.finishedMessage(7, 1));
+		assertEquals("Refreshed 0 trackers (2 menus did not load)", RefreshPolicy.finishedMessage(0, 2));
 	}
 
 	@Test void aScreenAlreadyOpenAtStartAborts() {

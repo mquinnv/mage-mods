@@ -213,15 +213,6 @@ public final class TrackerStore {
 		return Optional.ofNullable(accuracy.get(id));
 	}
 
-	/** How many items were last seen at or after {@code since}. */
-	public int countSeenSince(long since) {
-		int n = 0;
-		for (Trackable t : items.values()) {
-			if (t.seenAt() >= since) n++;
-		}
-		return n;
-	}
-
 	/** Sorted by fraction descending, then name. */
 	public List<Trackable> all() {
 		List<Trackable> out = new ArrayList<>(items.values());

@@ -36,14 +36,6 @@ class TrackerStoreTest {
 		assertEquals(5, t.all().get(0).current(), 1e-9);
 		assertTrue(t.isPinned("jobs:A"));
 	}
-	@Test void countSeenSinceCountsFreshEntries() {
-		TrackerStore s = new TrackerStore(dir.resolve("t.json"));
-		s.update("jobs", "Old", p(1, 10), 0);
-		s.update("jobs", "New", p(1, 10), 5_000);
-		s.update("pquests", "Newer", p(1, 10), 9_000);
-		assertEquals(2, s.countSeenSince(5_000));
-		assertEquals(0, s.countSeenSince(10_000));
-	}
 	@Test void forgetKeepsPinned() {
 		TrackerStore s = new TrackerStore(dir.resolve("t.json"));
 		s.update("jobs", "Old", p(1, 10), 0);

@@ -119,7 +119,9 @@ public final class ContainerHook {
 				Optional<String> source = MenuClassifier.classify(title, items, cfg.tracker.sources);
 				TrackerStore store = CubeWheelClient.tracker();
 				if (source.isEmpty() || store == null) return;
-				if (ContainerScanner.scan(source.get(), items, store, now) > 0) {
+				// During a refresh run, every entry its menus show counts towards "Refreshed N".
+				java.util.function.Consumer<String> seen = RefreshController.running() ? RefreshController::noteSeen : null;
+				if (ContainerScanner.scan(source.get(), items, store, now, seen) > 0) {
 					CubeWheelClient.sidebar().reapply(now);
 					store.save();
 				}

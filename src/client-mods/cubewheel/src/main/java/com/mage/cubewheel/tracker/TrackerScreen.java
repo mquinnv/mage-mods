@@ -18,7 +18,7 @@ public final class TrackerScreen extends Screen {
 	private static final long FORGET_AGE_MS = 7L * 24 * 60 * 60 * 1000;
 	private static final int ROW = 12;
 	private static final int ROWS_TOP = 22;
-	private static final int BOTTOM = 30; // space reserved for the forget button
+	private static final int BOTTOM = 40; // space reserved for the status line and the buttons
 	private static final int WHITE = 0xFFFFFFFF;
 	private static final int GREY = 0xFFAAAAAA;
 	private static final int GOLD = 0xFFFFAA00;
@@ -68,6 +68,9 @@ public final class TrackerScreen extends Screen {
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partial) {
 		super.extractRenderState(g, mouseX, mouseY, partial);
 		g.centeredText(font, title, width / 2, 6, WHITE);
+		// The Refresh button's result: chat is hidden behind this screen, so show it here too.
+		String status = RefreshController.pickerStatus();
+		if (status != null) g.centeredText(font, status, width / 2, height - 36, GOLD);
 		if (rows.isEmpty()) {
 			g.centeredText(font, "Open /jobs, /pquests, /prestige or /challenges to start tracking.",
 					width / 2, ROWS_TOP + 6, GREY);

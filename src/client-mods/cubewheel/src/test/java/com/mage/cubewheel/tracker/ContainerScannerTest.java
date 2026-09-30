@@ -48,6 +48,18 @@ class ContainerScannerTest {
 		assertEquals(1, ContainerScanner.scan("jobs", progressed, store, 1_500));
 	}
 
+	@Test void everyReadEntryIsReportedEvenWhenUnchanged() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		List<ItemView> items = List.of(
+			new ItemView(0, "minecraft:carrot", "Carrot Grind", List.of("1,200/1,500")),
+			new ItemView(1, "minecraft:wheat", "Wheat Grind", List.of("5/10")),
+			new ItemView(2, "minecraft:paper", "Deco", List.of("Nothing here")));
+		ContainerScanner.scan("jobs", items, store, 0);
+		java.util.Set<String> seen = new java.util.LinkedHashSet<>();
+		assertEquals(0, ContainerScanner.scan("jobs", items, store, 750, seen::add)); // nothing changed...
+		assertEquals(java.util.Set.of("jobs:Carrot Grind", "jobs:Wheat Grind"), seen); // ...but both were confirmed
+	}
+
 	@Test void nullOrEmptyInputUpdatesNothing() {
 		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
 		assertEquals(0, ContainerScanner.scan("jobs", null, store, 0));

@@ -90,6 +90,13 @@ public final class CubeWheelClient implements ClientModInitializer {
 		LocalSignals.register(); // after tracker and capture exist
 		TrackerHud.register();
 		Keybinds.register();
+		ClientTickEvents.START_CLIENT_TICK.register(mc -> {
+			try {
+				RefreshController.sampleInput(mc);
+			} catch (RuntimeException e) {
+				LOG.error("[cubewheel] refresh input sample failed", e);
+			}
+		});
 		ClientTickEvents.END_CLIENT_TICK.register(CubeWheelClient::onEndTick);
 		// Sidebar-driven changes are saved at most every 10 s; write the rest when leaving or quitting.
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, mc) -> sidebar.flush());
