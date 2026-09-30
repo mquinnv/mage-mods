@@ -29,6 +29,7 @@ public final class HomesFetchPolicy {
 	}
 
 	public Decision onMessage(long now, Optional<List<String>> parsed) {
+		if (!isArmed(now)) armed = false;
 		if (parsed.isEmpty()) return Decision.IGNORE;
 		if (isArmed(now)) {
 			armed = false;

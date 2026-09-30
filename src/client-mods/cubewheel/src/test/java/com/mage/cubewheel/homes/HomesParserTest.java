@@ -12,7 +12,7 @@ class HomesParserTest {
 		assertEquals(Optional.of(List.of("base", "farm_2")), HomesParser.parse(r("Homes: base, farm_2", "/home base", "/home farm_2")));
 	}
 	@Test void clickEventsDedupAndIgnoreOthers() {
-		assertEquals(Optional.of(List.of("base")), HomesParser.parse(r("x", "/home base", "/home base", "/spawn", "/home")));
+		assertEquals(Optional.of(List.of("base")), HomesParser.parse(r("Homes: base", "/home base", "/home base", "/spawn", "/home")));
 	}
 	@Test void textFallback() {
 		assertEquals(Optional.of(List.of("base", "farm", "nether")), HomesParser.parse(r("Homes: base, farm, nether")));
@@ -25,6 +25,22 @@ class HomesParserTest {
 	}
 	@Test void rejectsSentenceWithSpaces() { assertEquals(Optional.empty(), HomesParser.parse(r("Home: you have no homes set"))); }
 	@Test void rejectsUnrelated() { assertEquals(Optional.empty(), HomesParser.parse(r("<Steve> hello: world"))); }
+	@Test void rejectsChatAndPlaceholders() {
+		for (String t : new String[] {"Steve: home", "Bob: nice-home", "[Home] Steve: hi", "Home: none"})
+			assertEquals(Optional.empty(), HomesParser.parse(r(t)), t);
+	}
+	@Test void singleClickWithoutHeaderRejected() {
+		assertEquals(Optional.empty(), HomesParser.parse(r("Home 'farm' set! Click to teleport", "/home farm")));
+	}
+	@Test void twoClicksWithoutHeader() {
+		assertEquals(Optional.of(List.of("a", "b")), HomesParser.parse(r("click one", "/home a", "/home b")));
+	}
+	@Test void invalidClickRejectsWholeReply() {
+		assertEquals(Optional.empty(), HomesParser.parse(r("Homes: a, b", "/home a", "/home bad.name")));
+	}
+	@Test void headerPlusOneClick() {
+		assertEquals(Optional.of(List.of("farm")), HomesParser.parse(r("Homes: farm", "/home farm")));
+	}
 	@Test void outgoing() {
 		assertEquals(Optional.of(new HomesParser.Edit(true, "farm")), HomesParser.parseOutgoing("sethome farm"));
 		assertEquals(Optional.of(new HomesParser.Edit(true, "home")), HomesParser.parseOutgoing("sethome"));

@@ -87,6 +87,7 @@ public final class HomesCache {
 				if (me.getKey() == null || me.getValue() == null) continue;
 				Entry e = me.getValue();
 				if (e.homes == null) e.homes = new ArrayList<>();
+				e.homes.removeIf(java.util.Objects::isNull);
 				clean.put(key(me.getKey()), e);
 			}
 		}
