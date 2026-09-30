@@ -10,7 +10,9 @@ import com.mage.cubewheel.homes.HomesFetcher;
 import com.mage.cubewheel.mixin.BossHealthOverlayAccessor;
 import com.mage.cubewheel.mixin.HudAccessor;
 import com.mage.cubewheel.mixin.LerpingBossEventAccessor;
+import com.mage.cubewheel.sidebar.SidebarWatcher;
 import com.mage.cubewheel.tracker.ContainerHook;
+import com.mage.cubewheel.tracker.RefreshController;
 import com.mage.cubewheel.tracker.TrackerHud;
 import com.mage.cubewheel.tracker.TrackerScreen;
 import com.mage.cubewheel.tracker.TrackerStore;
@@ -44,6 +46,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 	private static HomesFetcher homesFetcher;
 	private static TrackerStore tracker;
 	private static CaptureLog capture;
+	private static final SidebarWatcher sidebar = new SidebarWatcher();
 	/** Set once if the optional HUD accessor mixins are unusable; action-bar/boss-bar capture then stays off. */
 	private static boolean hudCaptureDisabled;
 
@@ -57,6 +60,9 @@ public final class CubeWheelClient implements ClientModInitializer {
 
 	/** Capture-mode log (off by default); null only before onInitializeClient. */
 	public static CaptureLog capture() { return capture; }
+
+	/** Live scoreboard-sidebar reader. */
+	public static SidebarWatcher sidebar() { return sidebar; }
 
 	@Override
 	public void onInitializeClient() {
@@ -76,6 +82,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ClientReceiveMessageEvents.ALLOW_GAME.register(CubeWheelClient::captureChat);
 		ClientReceiveMessageEvents.ALLOW_GAME.register(homesFetcher::onGameMessage);
 		ClientSendMessageEvents.COMMAND.register(homesFetcher::onCommand);
+		ClientSendMessageEvents.COMMAND.register(CubeWheelClient::noteCommand);
 		ContainerHook.register();
 		TrackerHud.register();
 		Keybinds.register();
@@ -113,6 +120,26 @@ public final class CubeWheelClient implements ClientModInitializer {
 			pollHudCapture(mc);
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] action-bar/boss-bar capture failed", e);
+		}
+		try {
+			if (pressed(Keybinds.refresh)) RefreshController.request(mc, false);
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] refresh key handler failed", e);
+		}
+		try {
+			RefreshController.tick(mc);
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] tracker refresh tick failed", e);
+		}
+		sidebar.tick(mc); // catches and logs its own failures
+	}
+
+	/** COMMAND listener: remembers the last command so captured menus can say what opened them. */
+	private static void noteCommand(String command) {
+		try {
+			capture.noteCommand(command, System.currentTimeMillis());
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] command note failed", e);
 		}
 	}
 

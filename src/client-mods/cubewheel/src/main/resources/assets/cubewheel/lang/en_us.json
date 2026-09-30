@@ -4,5 +4,6 @@
   "key.cubewheel.reload": "Reload CubeWheel config",
   "key.cubewheel.tracker_hud": "Toggle tracker HUD",
   "key.cubewheel.tracker_picker": "Open tracker picker",
-  "key.cubewheel.capture": "Toggle capture mode"
+  "key.cubewheel.capture": "Toggle capture mode",
+  "key.cubewheel.refresh": "Refresh trackers"
 }

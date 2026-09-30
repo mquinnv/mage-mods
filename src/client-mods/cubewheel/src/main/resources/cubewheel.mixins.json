@@ -6,7 +6,8 @@
 	"client": [
 		"BossHealthOverlayAccessor",
 		"HudAccessor",
-		"LerpingBossEventAccessor"
+		"LerpingBossEventAccessor",
+		"ScreenHideMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

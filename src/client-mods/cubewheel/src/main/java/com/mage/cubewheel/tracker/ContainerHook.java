@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -22,13 +24,23 @@ import net.minecraft.world.item.component.ItemLore;
 /**
  * Minecraft adapter for the tracker: reads the top-container slots of server GUIs a few ticks after
  * they open (servers fill slots after the screen appears) and once more when they close. Purely
- * passive: never clicks, never sends anything.
+ * passive: never clicks, never sends anything. While a tracker refresh runs, the menus it opens take no
+ * mouse input and no keys but Esc, so nothing can be clicked in a menu the player cannot see.
  */
 public final class ContainerHook {
 	private static final int FIRST_SCAN_TICK = 5;
 	private static final int SECOND_SCAN_TICK = 20;
 
+	/** The session of the most recently opened server menu (client thread only). */
+	private static Session current;
+
 	private ContainerHook() {}
+
+	/** Scans {@code screen} now if it is the open server menu (the refresh calls this right before closing it). */
+	static void scanNow(AbstractContainerScreen<?> screen) {
+		Session s = current;
+		if (s != null && s.screen == screen) s.scan();
+	}
 
 	public static void register() {
 		ScreenEvents.AFTER_INIT.register(ContainerHook::afterInit);
@@ -40,10 +52,27 @@ public final class ContainerHook {
 			if (mc.player != null && cs.getMenu() == mc.player.inventoryMenu) return; // own inventory
 			// Fabric resets per-screen events on every (re)init, so a resize starts a fresh session.
 			Session session = new Session(cs);
+			current = session;
 			ScreenEvents.afterTick(screen).register(s -> session.tick());
-			ScreenEvents.remove(screen).register(s -> session.scan());
+			ScreenEvents.remove(screen).register(s -> {
+				session.scan();
+				if (current == session) current = null;
+			});
+			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> !hiddenByRefresh(s));
+			ScreenMouseEvents.allowMouseRelease(screen).register((s, e) -> !hiddenByRefresh(s));
+			ScreenMouseEvents.allowMouseDrag(screen).register((s, e, dx, dy) -> !hiddenByRefresh(s));
+			ScreenMouseEvents.allowMouseScroll(screen).register((s, x, y, h, v) -> !hiddenByRefresh(s));
+			ScreenKeyboardEvents.allowKeyPress(screen).register((s, key) -> key.isEscape() || !hiddenByRefresh(s));
 		} catch (RuntimeException e) {
 			CubeWheelClient.LOG.error("[cubewheel] container hook failed", e);
+		}
+	}
+
+	private static boolean hiddenByRefresh(Screen screen) {
+		try {
+			return RefreshController.shouldHide(screen);
+		} catch (RuntimeException e) {
+			return false;
 		}
 	}
 
@@ -90,7 +119,10 @@ public final class ContainerHook {
 				Optional<String> source = MenuClassifier.classify(title, items, cfg.tracker.sources);
 				TrackerStore store = CubeWheelClient.tracker();
 				if (source.isEmpty() || store == null) return;
-				if (ContainerScanner.scan(source.get(), items, store, now) > 0) store.save();
+				if (ContainerScanner.scan(source.get(), items, store, now) > 0) {
+					CubeWheelClient.sidebar().reapply(now);
+					store.save();
+				}
 			} catch (RuntimeException e) {
 				CubeWheelClient.LOG.error("[cubewheel] container scan failed", e);
 			}

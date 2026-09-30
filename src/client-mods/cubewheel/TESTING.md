@@ -70,3 +70,31 @@ Bind "Toggle tracker HUD", "Open tracker picker" and "Toggle capture mode" under
 - [ ] The game log shows no mixin errors for `cubewheel.mixins.json` at startup. (The mixins are optional: if one fails to apply the game still starts, and with capture on the log shows a single "action-bar/boss-bar capture disabled for this session" warning instead of per-tick errors.)
 - [ ] Capture key again: "Capture OFF"; no further lines are written. Capture is off again after a restart.
 - [ ] Send the capture file back so the progress and homes parsers can be tuned.
+
+## Live sidebar
+
+- [ ] On ManaCube with the Survival sidebar showing `Skills: Lvl …`: open the prestige rank menu once so "Rank [✪n] · Reach N Skill Level" is tracked, pin it. Gain a skill level: within a second the HUD entry's current value becomes the new level and its age shows "now", without opening any menu.
+- [ ] The value never goes down: after re-opening the prestige rank menu, the entry shows the higher of the menu's and the sidebar's value.
+- [ ] Complete (green) entries are not changed by the sidebar.
+- [ ] Add `"Mana": "(?i)mana"` to `tracker.sidebarLinks`, reload: an entry whose name contains "mana" follows the sidebar's Mana value. `"sidebarLinks": {}` switches linking off.
+- [ ] `config/cubewheel-tracker.json` is rewritten at most every ~10 s while linked values change (watch its modification time).
+- [ ] Capture on: `"kind":"sidebar"` lines with `title` and `lines` appear when the sidebar changes (not every tick); lines read like `Money: $2.89M`, `Skills: Lvl 1851` (icon glyphs may show as odd characters).
+- [ ] No lag: with the sidebar changing constantly (money ticking), FPS is unchanged.
+- [ ] On a non-ManaCube server the sidebar is ignored (no captures, no tracker changes).
+
+## Refresh key
+
+Bind "Refresh trackers" under Options > Controls > Key Binds > CubeWheel first.
+
+- [ ] Press it once with no screen open: `/pquests`, `/prestige`, `/jobs` are sent one after another (log: "[cubewheel] tracker refresh: …"); each menu opens and closes by itself within about a second, the next command only after the previous menu closed. Chat ends with a grey `[CubeWheel] Refreshed N trackers`.
+- [ ] Hiding: during the run the menus are not drawn (only the mouse cursor briefly appears). If the log shows "hiding refresh menus disabled for this session" or mixin errors for `ScreenHideMixin`, the menus flash instead; the run still works.
+- [ ] Nothing in a menu is ever clicked: move the mouse and click during a run; no item is taken or moved and no click reaches the menu (keys other than Esc are ignored too).
+- [ ] Press it again within 60 s: `[CubeWheel] refresh skipped: wait Ns` and nothing is sent. After 60 s it runs again.
+- [ ] Press Esc during a run: the current menu closes, `[CubeWheel] refresh stopped: the menu was closed`, nothing more is sent.
+- [ ] Open chat (T) or the inventory (E) right after pressing: `[CubeWheel] refresh stopped: another screen was opened`, no further commands.
+- [ ] Put a harmless command that opens no menu (e.g. `"/list"`; not one that teleports) first in `tracker.refreshCommands`, reload, press: after ~3 s the next command is sent; the final line says "(1 menu did not load)".
+- [ ] `"refreshCommands": []`: pressing says `refresh skipped: tracker.refreshCommands is empty`.
+- [ ] Picker: click **Refresh**: the picker closes, the run happens, the picker reopens with fresh ages. Within 60 s the button only prints the "wait" line and the picker stays open.
+- [ ] On a non-ManaCube server the key only shows "CubeWheel is only active on ManaCube" and sends nothing.
+- [ ] Disconnect during a run: no error; the next run on reconnect works after the cooldown.
+- [ ] Capture on, then run a refresh and also open a menu via a typed command: each `"kind":"container"` line has `afterCommand` naming the command (e.g. `"/prestige"`) and `afterCommandMs`. Use this to find the command that opens the "Rank [✪n]" objectives menu, then add it to `tracker.refreshCommands`.

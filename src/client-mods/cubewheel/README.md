@@ -38,6 +38,7 @@ Options > Controls > Key Binds > **CubeWheel**.
 | Toggle tracker HUD | unbound |
 | Open tracker picker | unbound |
 | Toggle capture mode | unbound |
+| Refresh trackers | unbound |
 
 Any key or mouse button can be used for the wheel.
 
@@ -97,6 +98,8 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `tracker.hudMaxLines` | Max HUD lines, 1–20 | `6` |
 | `tracker.hudVisible` | HUD on/off (saved when you toggle it, see below) | `true` |
 | `tracker.sources` | Source id -> regex matched against the menu title | see below |
+| `tracker.refreshCommands` | Commands the "Refresh trackers" key sends, one at a time (max 8) | `["/pquests", "/prestige", "/jobs"]` |
+| `tracker.sidebarLinks` | Sidebar key -> regex on tracked names that follow that live value | `{"Skills": "(?i)skill level"}` |
 | `wheel` | The root ring: a list of nodes | see `DefaultConfig.java` |
 
 `tracker.sources` defaults: `jobs` = `(?i)jobs`, `pquests` = `(?i)quest`, `prestige` = `(?i)prestige`,
@@ -156,7 +159,10 @@ manually press it. Automating presses is."* CubeWheel is built around that:
   older than 5 minutes) or click Refresh, which is still a direct result of your action, at most
   once per 30 seconds. Nothing else ever sends it: not going back, not a timeout, not an incoming
   chat message.
-- The tracker never opens, clicks or closes menus itself.
+- The tracker never clicks anything in a menu. The only time it opens or closes menus is the
+  "Refresh trackers" key (or the picker's Refresh button): one press sends the configured commands one
+  after another, waits for each menu, reads it and closes it the way Esc does, at most once per
+  60 seconds. Nothing starts a refresh except that press; there is no timer.
 
 Please check the current server rules yourself; you are responsible for how you use any client mod.
 
@@ -170,17 +176,52 @@ tracker picker still work there, on locally stored data.
 
 ## Progress tracker
 
-The tracker is passive. When you open a menu whose title matches a `tracker.sources` regex (defaults:
+The tracker reads what you open. When you open a menu whose title matches a `tracker.sources` regex (defaults:
 `/jobs`, `/pquests`, `/prestige`, `/challenges`), the mod reads item names and lore in the top
 container (never your inventory) and records the entries that show progress. Consequences:
 
-- **Data is only as fresh as the last time you opened that menu.** The HUD shows an age suffix
-  ("now", "5m", ...).
+- **Data is only as fresh as the last time you opened that menu** (or pressed the refresh key, or
+  a linked sidebar value changed, see below). The HUD shows an age suffix ("now", "5m", ...).
 - **HUD** (top right, below potion icons): pinned entries plus unpinned incomplete entries at or
   above `nearThreshold`, at most `hudMaxLines`. Complete entries are green. F1 hides it.
 - **Picker** (bind "Open tracker picker"): all known entries grouped by source, sorted by
   percentage. Click to pin/unpin. A button forgets unpinned entries not seen for 7 days.
 - Stored in `config/cubewheel-tracker.json`.
+
+### Live sidebar values
+
+ManaCube's sidebar shows lines such as `Money: $2.89M`, `Souls: 18,975`, `Skills: Lvl 1851`. CubeWheel
+reads the sidebar exactly as it is drawn (twice a second, only acting when it changed) and turns every
+`Key: value` line into a number (`$`, `,`, `Lvl` and `k`/`M`/`B` suffixes understood; icon glyphs
+ignored).
+
+`tracker.sidebarLinks` connects a sidebar key to tracked entries: whenever that value changes, every
+incomplete entry whose name matches the regex gets it as its current value (it is never lowered) and
+counts as seen "now". The default links `Skills` to entries containing "skill level", so the prestige
+objective "Rank [✪4] · Reach 2,500 Skill Level" moves live with your skill level once you have opened
+the prestige rank menu once. Add more links (e.g. `"Mana": "(?i)mana"`) as needed; `{}` turns linking
+off. Linked changes are saved at most every 10 seconds.
+
+### Refresh key
+
+Bind "Refresh trackers" (or click **Refresh** in the picker). One press = one run:
+
+1. Sends the first `tracker.refreshCommands` entry.
+2. Waits up to 3 s for the server's menu; once its items are shown it is read (as if you had opened it)
+   and closed with the normal close packet. A menu that does not open or stays empty is skipped.
+3. Only then sends the next command, and so on.
+4. Chat shows a grey `[CubeWheel] Refreshed N trackers` (N = entries seen during the run).
+
+While a run is active the menus it opens are not drawn and ignore clicks and keys (except Esc), so the
+screen does not flash and nothing can be clicked by accident. Opening any other screen (chat,
+inventory, pause menu) or pressing Esc stops the run. A second press within 60 s of the last start is
+refused: `[CubeWheel] refresh skipped: wait Ns`.
+
+**Which commands?** `/prestige` opens the list of prestige levels ("Prestige N - Not Completed"); the
+rank objectives with the real progress ("Rank [✪n]" items) are in a menu reached by clicking, whose
+command is not known yet. CubeWheel never clicks, so it cannot reach that menu. Use capture mode: each
+captured menu records the command sent just before it opened (`afterCommand`). Once the command that
+opens the rank-objectives menu is known, put it in `tracker.refreshCommands` (and reload the config).
 
 Progress recognised in lore: `N / M`, `N/M`, `N of M`, `k`/`m` suffixes (`1.5k / 2k`) and percentages.
 Glued words and three-part dates are rejected. Known limitation: a two-part date such as `12/25`
@@ -193,7 +234,9 @@ Capture mode records raw samples so the parsers can be tuned to ManaCube's real 
 
 1. Bind "Toggle capture mode" and press it: the action bar shows "Capture ON".
 2. Run `/homes`, then open `/jobs`, `/pquests`, `/prestige` and `/challenges`; optionally play a
-   little so action-bar and boss-bar text is seen.
+   little so action-bar and boss-bar text is seen. To find the prestige rank-objectives command, try
+   candidate commands (e.g. `/ranks`, `/rankup`, `/prestige ranks`) and note which one's container line
+   has the "Rank [✪n]" items.
 3. Press the key again ("Capture OFF"). It is also off after every restart.
 
 If a Minecraft update breaks the (optional) HUD accessors, the game still starts; action-bar and
@@ -207,6 +250,12 @@ Each line is JSON with a kind:
 - `container`: menu title, and per slot the item id, name and lore.
 - `actionbar`: action-bar text, when it changes.
 - `bossbars`: boss bar names and progress, when they change.
+- `sidebar`: the scoreboard sidebar title and lines as drawn, when they change.
+
+Container lines also carry `afterCommand` (the last command you or CubeWheel sent before the menu was
+read) and `afterCommandMs` (how long before), so it is clear which command opens which menu. Open a
+menu by clicking inside another one and `afterCommand` still names the command that opened the first
+menu; the order of lines shows the rest.
 
 Captures contain chat text, including other players' messages; review the file before sharing it.
 
@@ -216,6 +265,8 @@ Captures contain chat text, including other players' messages; review the file b
   if the server says unknown warp.
 - The `/homes` reply format (see above).
 - Lore formats of the progress menus; extraction is generic until real captures exist.
+- The command that opens the prestige rank-objectives menu ("Rank [✪n]" items); see
+  [Refresh key](#refresh-key).
 
 ## License
 

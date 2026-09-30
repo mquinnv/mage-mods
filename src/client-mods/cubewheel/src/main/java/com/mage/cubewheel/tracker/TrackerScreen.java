@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -34,9 +35,13 @@ public final class TrackerScreen extends Screen {
 
 	@Override
 	protected void init() {
-		int w = Math.min(220, width - 20);
+		int refreshW = 70;
+		int w = Math.min(220, width - 24 - refreshW);
+		int x = (width - w - refreshW - 4) / 2;
+		addRenderableWidget(Button.builder(Component.literal("Refresh"), b -> refresh())
+				.bounds(x, height - 24, refreshW, 20).build());
 		addRenderableWidget(Button.builder(Component.literal("Forget entries older than 7 days"), b -> forgetStale())
-				.bounds((width - w) / 2, height - 24, w, 20).build());
+				.bounds(x + refreshW + 4, height - 24, w, 20).build());
 		rebuild();
 	}
 
@@ -114,6 +119,15 @@ public final class TrackerScreen extends Screen {
 	@Override
 	public boolean isPauseScreen() {
 		return false;
+	}
+
+	/** Starts one refresh run (a direct click); the picker closes during it and reopens afterwards. */
+	private void refresh() {
+		try {
+			RefreshController.request(Minecraft.getInstance(), true);
+		} catch (RuntimeException e) {
+			CubeWheelClient.LOG.error("[cubewheel] tracker refresh button failed", e);
+		}
 	}
 
 	private void forgetStale() {

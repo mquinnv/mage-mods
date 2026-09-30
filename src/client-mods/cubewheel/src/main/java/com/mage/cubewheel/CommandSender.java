@@ -22,6 +22,9 @@ public final class CommandSender {
 			return false;
 		}
 		connection.sendCommand(cmd);
+		// Fabric's COMMAND event normally records this too; noting it here keeps capture's afterCommand
+		// right even if that event ever stops covering commands sent by mods.
+		if (CubeWheelClient.capture() != null) CubeWheelClient.capture().noteCommand(cmd, System.currentTimeMillis());
 		return true;
 	}
 }
