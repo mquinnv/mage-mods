@@ -83,7 +83,10 @@ public final class DefaultConfig {
 			leaf("Auction house", "minecraft:gold_block", "/ah"),
 			leaf("Forge", "minecraft:anvil", "/forge"),
 			leaf("Fish shop", "minecraft:cod", "/fish")));
-		w.add(leaf("Sell", "minecraft:gold_ingot", "/sell"));
+		w.add(ring("Sell", "minecraft:gold_ingot",
+			leaf("Sell menu", "minecraft:gold_ingot", "/sell"),
+			leaf("Sell hand", "minecraft:gold_nugget", "/sell hand"),
+			leaf("Sell all", "minecraft:gold_block", "/sell all")));
 		w.add(ring("Warps", "minecraft:oak_sign",
 			leaf("Crops", "minecraft:wheat", "/warp crops"),
 			leaf("Spawners", "minecraft:spawner", "/warp spawners")));
