@@ -48,7 +48,7 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public final class LocalSignals {
 	/** Hook kinds that can fail independently. */
-	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, FISH, TICK }
+	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, FISH, TICK, LEVEL }
 
 	private static final int MAX_FAILURES = 10;
 	private static final long SAVE_INTERVAL_MS = 30_000;
@@ -69,11 +69,19 @@ public final class LocalSignals {
 	public static void register() {
 		ClientPlayerBlockBreakEvents.AFTER.register(LocalSignals::afterBlockBreak);
 		AttackEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
-			onAttack(player, level.isClientSide(), entity);
+			try {
+				onAttack(player, level.isClientSide(), entity);
+			} catch (Throwable t) {
+				fail(Hook.ATTACK, t);
+			}
 			return InteractionResult.PASS;
 		});
 		UseItemCallback.EVENT.register((player, level, hand) -> {
-			onUseItem(player, level.isClientSide(), player.getItemInHand(hand).getItem() instanceof FishingRodItem);
+			try {
+				onUseItem(player, level.isClientSide(), player.getItemInHand(hand).getItem() instanceof FishingRodItem);
+			} catch (Throwable t) {
+				fail(Hook.FISH, t);
+			}
 			return InteractionResult.PASS;
 		});
 		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((mc, level) -> onLevelChange());
@@ -88,8 +96,8 @@ public final class LocalSignals {
 
 	/** ClientPlayerBlockBreakEvents.AFTER: {@code state} is the state before the break. */
 	private static void afterBlockBreak(ClientLevel level, Player player, BlockPos pos, BlockState state) {
-		if (!enabled(Hook.BREAK) || !local().blocks) return;
 		try {
+			if (!enabled(Hook.BREAK) || !local().blocks) return;
 			if (!survivalMode(player)) return;
 			Pos p = new Pos(pos.getX(), pos.getY(), pos.getZ());
 			int stateId = Block.getId(state);
@@ -106,8 +114,8 @@ public final class LocalSignals {
 
 	/** Mixin, ClientLevel.syncBlockState HEAD: the server's verdict on a predicted block change. */
 	public static void onSyncBlockState(BlockPos pos, BlockState serverState) {
-		if (pending.isEmpty() || !enabled(Hook.SYNC)) return;
 		try {
+			if (pending.isEmpty() || !enabled(Hook.SYNC)) return;
 			Optional<List<LocalCounter.Contribution>> rejected =
 					pending.onSync(new Pos(pos.getX(), pos.getY(), pos.getZ()), Block.getId(serverState));
 			if (rejected.isEmpty()) return;
@@ -122,8 +130,8 @@ public final class LocalSignals {
 
 	/** Mixin, BlockItem.place RETURN (client side, successful): remember the placed block. */
 	public static void onPlaced(ClientLevel level, BlockPos pos) {
-		if (!enabled(Hook.PLACE) || !local().blocks) return;
 		try {
+			if (!enabled(Hook.PLACE) || !local().blocks) return;
 			placed.placed(new Pos(pos.getX(), pos.getY(), pos.getZ()), Block.getId(level.getBlockState(pos)));
 		} catch (Throwable t) {
 			fail(Hook.PLACE, t);
@@ -132,8 +140,8 @@ public final class LocalSignals {
 
 	/** AttackEntityCallback (client side): an own melee hit counts as damage by the local player. */
 	private static void onAttack(Player player, boolean clientSide, Entity target) {
-		if (!clientSide || !enabled(Hook.ATTACK) || !local().kills) return;
 		try {
+			if (!clientSide || !enabled(Hook.ATTACK) || !local().kills) return;
 			Minecraft mc = Minecraft.getInstance();
 			if (player != mc.player || !survivalMode(player) || target instanceof Player) return;
 			kills.onDamage(target.getId(), player.getId(), tick);
@@ -144,8 +152,8 @@ public final class LocalSignals {
 
 	/** Mixin, ClientPacketListener.handleDamageEvent (main thread): remember the last player to hurt it. */
 	public static void onDamageEvent(int entityId, int causeId) {
-		if (!enabled(Hook.DAMAGE) || !local().kills) return;
 		try {
+			if (!enabled(Hook.DAMAGE) || !local().kills) return;
 			Minecraft mc = Minecraft.getInstance();
 			if (mc.level == null || mc.player == null || causeId < 0) return;
 			boolean playerCause = causeId == mc.player.getId() || mc.level.getEntity(causeId) instanceof Player;
@@ -157,8 +165,8 @@ public final class LocalSignals {
 
 	/** Mixin, ClientPacketListener.handleEntityEvent (main thread), before the client applies the event. */
 	public static void onEntityEvent(Entity entity, byte eventId) {
-		if (eventId != DEATH_EVENT || entity == null || !enabled(Hook.DEATH) || !local().kills) return;
 		try {
+			if (eventId != DEATH_EVENT || entity == null || !enabled(Hook.DEATH) || !local().kills) return;
 			Minecraft mc = Minecraft.getInstance();
 			if (!survivalMode(mc.player) || !(entity instanceof LivingEntity) || entity instanceof Player) return;
 			if (!kills.onDeath(entity.getId(), mc.player.getId(), tick)) return;
@@ -172,8 +180,8 @@ public final class LocalSignals {
 
 	/** UseItemCallback (client side): reeling in while the bobber is biting is a catch. */
 	private static void onUseItem(Player player, boolean clientSide, boolean holdingRod) {
-		if (!clientSide || !holdingRod || !enabled(Hook.FISH) || !local().fish) return;
 		try {
+			if (!clientSide || !holdingRod || !enabled(Hook.FISH) || !local().fish) return;
 			if (player != Minecraft.getInstance().player || !survivalMode(player)) return;
 			boolean hasHook = player.fishing != null;
 			boolean biting = hasHook && ((FishingHookAccessor) player.fishing).cubewheel$isBiting();
@@ -186,10 +194,14 @@ public final class LocalSignals {
 	}
 
 	private static void onLevelChange() {
-		pending.clear();
-		placed.clear();
-		kills.clear();
-		world.invalidate();
+		try {
+			pending.clear();
+			placed.clear();
+			kills.clear();
+			world.invalidate();
+		} catch (Throwable t) {
+			fail(Hook.LEVEL, t);
+		}
 	}
 
 	private static void onEndTick(Minecraft mc) {
@@ -210,15 +222,23 @@ public final class LocalSignals {
 		try {
 			TrackerStore store = CubeWheelClient.tracker();
 			if (store != null && saveThrottle.consumeDirty()) store.save();
-		} catch (RuntimeException e) {
+		} catch (VirtualMachineError e) {
+			throw e;
+		} catch (Throwable e) {
 			CubeWheelClient.LOG.warn("[cubewheel] saving local estimates failed: {}", e.toString());
 		}
 	}
 
 	private static void onSnapBack(String id, com.mage.cubewheel.tracker.local.Accuracy acc) {
-		CubeWheelClient.LOG.info("[cubewheel] estimate for {}: counted {}, actual {}", id, acc.counted(), acc.actual());
-		CaptureLog capture = CubeWheelClient.capture();
-		if (capture != null && capture.enabled()) capture.estimate(id, acc.counted(), acc.actual(), System.currentTimeMillis());
+		try {
+			CubeWheelClient.LOG.info("[cubewheel] estimate for {}: counted {}, actual {}", id, acc.counted(), acc.actual());
+			CaptureLog capture = CubeWheelClient.capture();
+			if (capture != null && capture.enabled()) capture.estimate(id, acc.counted(), acc.actual(), System.currentTimeMillis());
+		} catch (VirtualMachineError e) {
+			throw e;
+		} catch (Throwable t) {
+			CubeWheelClient.LOG.warn("[cubewheel] logging an estimate snap-back failed: {}", t.toString());
+		}
 	}
 
 	// ---- helpers ----
