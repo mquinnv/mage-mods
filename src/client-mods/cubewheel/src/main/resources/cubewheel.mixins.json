@@ -5,8 +5,12 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"BossHealthOverlayAccessor",
+		"FishingHookAccessor",
 		"HudAccessor",
 		"LerpingBossEventAccessor",
+		"LocalCountingBlockItemMixin",
+		"LocalCountingLevelMixin",
+		"LocalCountingPacketMixin",
 		"ScreenHideMixin"
 	],
 	"injectors": {

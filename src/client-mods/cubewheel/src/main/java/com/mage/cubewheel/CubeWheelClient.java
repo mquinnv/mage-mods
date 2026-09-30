@@ -16,6 +16,7 @@ import com.mage.cubewheel.tracker.RefreshController;
 import com.mage.cubewheel.tracker.TrackerHud;
 import com.mage.cubewheel.tracker.TrackerScreen;
 import com.mage.cubewheel.tracker.TrackerStore;
+import com.mage.cubewheel.tracker.local.mc.LocalSignals;
 import com.mage.cubewheel.wheel.RadialScreen;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
@@ -84,6 +85,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ClientSendMessageEvents.COMMAND.register(homesFetcher::onCommand);
 		ClientSendMessageEvents.COMMAND.register(CubeWheelClient::noteCommand);
 		ContainerHook.register();
+		LocalSignals.register(); // after tracker and capture exist
 		TrackerHud.register();
 		Keybinds.register();
 		ClientTickEvents.END_CLIENT_TICK.register(CubeWheelClient::onEndTick);

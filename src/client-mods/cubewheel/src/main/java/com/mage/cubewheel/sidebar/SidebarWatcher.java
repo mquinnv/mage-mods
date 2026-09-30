@@ -51,6 +51,15 @@ public final class SidebarWatcher {
 	}
 
 	/**
+	 * The sidebar lines as last read (plain text, at most every {@link #INTERVAL_TICKS} ticks); empty when
+	 * no sidebar is shown or off ManaCube. Local counting reads its "World: X" line from here instead of
+	 * reading the scoreboard a second time.
+	 */
+	public List<String> lines() {
+		return last.lines();
+	}
+
+	/**
 	 * Re-applies the current sidebar values after a menu scan changed the store, so an entry the menu
 	 * just (re)wrote, e.g. a new prestige objective, follows the live value straight away. Never throws.
 	 */
