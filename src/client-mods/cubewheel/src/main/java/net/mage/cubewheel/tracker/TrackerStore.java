@@ -293,33 +293,54 @@ public final class TrackerStore {
 	 */
 	public List<TrackerRow> hudRows(int maxLines, boolean withEstimates, WorldInfo at, Collection<String> worldNames,
 			WorldScope.Mode mode) {
+		List<TrackerRow> out = new ArrayList<>();
+		for (HudSection s : hudSections(maxLines, withEstimates, at, worldNames, mode)) out.addAll(s.rows());
+		return out;
+	}
+
+	/** One labelled group of HUD lines; the HUD draws a divider before each group. */
+	public record HudSection(Kind kind, List<TrackerRow> rows) {
+		public enum Kind { PINNED, THIS_WORLD, ANYWHERE, OTHER_WORLDS }
+	}
+
+	/**
+	 * The HUD rows of {@link #hudRows(int, boolean, WorldInfo, Collection, WorldScope.Mode)} split into groups
+	 * in display order — pinned, this world, anywhere, other worlds — leaving out empty ones. Without a known
+	 * world (or with the filter off) everything unpinned is one "anywhere" group. {@code maxLines} caps entries.
+	 */
+	public List<HudSection> hudSections(int maxLines, boolean withEstimates, WorldInfo at, Collection<String> worldNames,
+			WorldScope.Mode mode) {
 		boolean byWorld = mode != null && mode != WorldScope.Mode.OFF && at != null && at.known();
-		List<TrackerRow> pinned = new ArrayList<>();
-		List<TrackerRow> open = new ArrayList<>();
-		Map<String, WorldScope.Relevance> relevance = new HashMap<>();
+		Map<HudSection.Kind, List<TrackerRow>> groups = new java.util.EnumMap<>(HudSection.Kind.class);
+		for (HudSection.Kind k : HudSection.Kind.values()) groups.put(k, new ArrayList<>());
 		for (Trackable t : items.values()) {
 			if (hidden.contains(t.id())) continue;
 			TrackerRow r = row(t, withEstimates);
 			if (r.complete()) continue; // finished work never takes HUD space, pinned or not
 			if (pins.contains(t.id())) {
-				pinned.add(r);
+				groups.get(HudSection.Kind.PINNED).add(r);
 				continue;
 			}
+			HudSection.Kind kind = HudSection.Kind.ANYWHERE;
 			if (byWorld) {
 				WorldScope.Relevance rel = WorldScope.relevance(WorldScope.of(t.name(), objectives.get(t.id()), worldNames), at);
 				if (rel == WorldScope.Relevance.OTHER && mode == WorldScope.Mode.HIDE) continue;
-				relevance.put(t.id(), rel);
+				if (rel == WorldScope.Relevance.CURRENT) kind = HudSection.Kind.THIS_WORLD;
+				else if (rel == WorldScope.Relevance.OTHER) kind = HudSection.Kind.OTHER_WORLDS;
 			}
-			open.add(r);
+			groups.get(kind).add(r);
 		}
-		pinned.sort(ROWS_BY_FRACTION_THEN_NAME);
-		open.sort(byWorld
-				? Comparator.<TrackerRow, WorldScope.Relevance>comparing(
-						r -> relevance.getOrDefault(r.item().id(), WorldScope.Relevance.NEUTRAL)).thenComparing(ROWS_BY_FRACTION_THEN_NAME)
-				: ROWS_BY_FRACTION_THEN_NAME);
-		List<TrackerRow> out = new ArrayList<>(pinned);
-		out.addAll(open);
-		return out.size() > maxLines ? new ArrayList<>(out.subList(0, Math.max(0, maxLines))) : out;
+		List<HudSection> out = new ArrayList<>();
+		int left = Math.max(0, maxLines);
+		for (HudSection.Kind k : HudSection.Kind.values()) {
+			List<TrackerRow> rows = groups.get(k);
+			rows.sort(ROWS_BY_FRACTION_THEN_NAME);
+			if (rows.isEmpty() || left == 0) continue;
+			List<TrackerRow> kept = rows.size() > left ? new ArrayList<>(rows.subList(0, left)) : rows;
+			left -= kept.size();
+			out.add(new HudSection(k, kept));
+		}
+		return out;
 	}
 
 	/** Removes unpinned items matching {@code which} (with their objective, estimate and hidden mark); returns how many. */

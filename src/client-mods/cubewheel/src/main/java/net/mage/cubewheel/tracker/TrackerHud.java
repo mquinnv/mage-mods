@@ -23,6 +23,10 @@ public final class TrackerHud implements HudElement {
 	private static final int TAG_GAP = 3;
 	private static final int EFFECTS_HEIGHT = 52; // two rows of vanilla mob-effect icons
 	private static final int BACKDROP = 0x80000000;
+	/** Behind a divider's label, so the hairline doesn't run through the text. */
+	private static final int BACKDROP_SOLID = 0xFF1A1A1A;
+	private static final int DIVIDER = 0x60FFFFFF;
+	private static final int DIVIDER_TEXT = 0xFF8C8C8C;
 	private static final int GOLD = 0xFFFFAA00;
 	private static final int GREEN = 0xFF55FF55;
 	private static final int YELLOW = 0xFFFFFF55;
@@ -62,23 +66,39 @@ public final class TrackerHud implements HudElement {
 		if (mc.player == null || store == null) return;
 		CubeWheelConfig cfg = CubeWheelClient.config().current();
 		if (!cfg.tracker.hudVisible || !ServerGate.active(cfg)) return;
-		List<TrackerRow> entries = store.hudRows(cfg.tracker.hudMaxLines, cfg.tracker.local.enabled,
+		List<TrackerStore.HudSection> sections = store.hudSections(cfg.tracker.hudMaxLines, cfg.tracker.local.enabled,
 				net.mage.cubewheel.tracker.local.mc.LocalSignals.currentWorld(), cfg.tracker.local.worlds,
 				net.mage.cubewheel.tracker.local.WorldScope.Mode.parse(cfg.tracker.worldFilter));
-		if (entries.isEmpty()) return;
+		if (sections.isEmpty()) return;
+		// A labelled divider before each group, but only when there is more than one group to tell apart.
+		boolean dividers = sections.size() > 1;
 
 		Font font = mc.font;
 		long now = System.currentTimeMillis();
-		List<String> lines = new ArrayList<>(entries.size());
-		// Every line starts with its source's marker (⚒ jobs, ✦ prestige, ⚑ party quests …) in a fixed-width column.
+		List<TrackerRow> entries = new ArrayList<>();
+		List<String> lines = new ArrayList<>();
+		List<Boolean> header = new ArrayList<>();
+		for (TrackerStore.HudSection s : sections) {
+			if (dividers) {
+				entries.add(null);
+				lines.add(sectionLabel(s.kind()));
+				header.add(true);
+			}
+			for (TrackerRow r : s.rows()) {
+				entries.add(r);
+				lines.add(TrackerFormat.line(r, now));
+				header.add(false);
+			}
+		}
+		// Every entry starts with its source's marker (⚒ jobs, ✦ prestige, ⚑ party quests …) in a fixed-width column.
 		int tagW = 0;
-		for (TrackerRow r : entries) tagW = Math.max(tagW, font.width(SourceTag.of(r.item().source()).glyph()));
+		for (TrackerRow r : entries) {
+			if (r != null) tagW = Math.max(tagW, font.width(SourceTag.of(r.item().source()).glyph()));
+		}
 		int textX = tagW + TAG_GAP;
 		int w = font.width("Tracker");
-		for (TrackerRow r : entries) {
-			String line = TrackerFormat.line(r, now);
-			lines.add(line);
-			w = Math.max(w, textX + font.width(line));
+		for (int i = 0; i < lines.size(); i++) {
+			w = Math.max(w, (header.get(i) ? 0 : textX) + font.width(lines.get(i)));
 		}
 		int lh = font.lineHeight + 1;
 		int x = g.guiWidth() - MARGIN - w;
@@ -88,10 +108,28 @@ public final class TrackerHud implements HudElement {
 		g.text(font, "Tracker", x, y, GOLD);
 		for (int i = 0; i < lines.size(); i++) {
 			int ly = y + lh * (i + 1);
-			SourceTag tag = SourceTag.of(entries.get(i).item().source());
+			if (header.get(i)) {
+				// Divider: a hairline across the panel with the group's name on it.
+				g.fill(x, ly + lh / 2, x + w, ly + lh / 2 + 1, DIVIDER);
+				int lw = font.width(lines.get(i));
+				g.fill(x + 6, ly, x + 10 + lw, ly + lh - 1, BACKDROP_SOLID);
+				g.text(font, lines.get(i), x + 8, ly, DIVIDER_TEXT);
+				continue;
+			}
+			TrackerRow row = entries.get(i);
+			SourceTag tag = SourceTag.of(row.item().source());
 			g.text(font, tag.glyph(), x, ly, tag.argb());
-			g.text(font, lines.get(i), x + textX, ly, color(entries.get(i), cfg.tracker.nearThreshold));
+			g.text(font, lines.get(i), x + textX, ly, color(row, cfg.tracker.nearThreshold));
 		}
+	}
+
+	private static String sectionLabel(TrackerStore.HudSection.Kind kind) {
+		return switch (kind) {
+			case PINNED -> "Pinned";
+			case THIS_WORLD -> "This world";
+			case ANYWHERE -> "Anywhere";
+			case OTHER_WORLDS -> "Other worlds";
+		};
 	}
 
 	/** Green only when a menu read says complete; an estimate at the target ("✓?") stays yellow. */
