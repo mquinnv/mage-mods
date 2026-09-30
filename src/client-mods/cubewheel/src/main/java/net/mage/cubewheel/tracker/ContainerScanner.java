@@ -51,12 +51,14 @@ public final class ContainerScanner {
 			Matcher tier = MenuClassifier.JOB_LISTING.matcher(name);
 			Optional<ProgressExtractor.Progress> p;
 			String display;
+			String listingObjective = null;
 			if (tier.matches()) {
 				// A job listing: named after industry, tier and objective; progress is the objective's own
 				// counter, never the hand-in line below it.
 				listingsPage = true;
 				String objective = firstNonBlank(lore);
 				if (objective == null) continue;
+				listingObjective = objective;
 				display = jobListingName(industry, tier.group(1), objective);
 				listed.add(display);
 				p = ProgressExtractor.extract(List.of(objective));
@@ -72,7 +74,7 @@ public final class ContainerScanner {
 			boolean changed = store.update(source, display, progress, now);
 			// The objective text feeds local counting (tracker.local); a read is authoritative, so any
 			// estimate for this entry was just dropped by update().
-			changed |= store.setObjective(Trackable.idOf(source, display), ObjectiveExtractor.extract(name, lore));
+			changed |= store.setObjective(Trackable.idOf(source, display), ObjectiveExtractor.extract(name, lore, listingObjective));
 			if (seen != null) seen.accept(Trackable.idOf(source, display));
 			if (changed) updated++;
 		}

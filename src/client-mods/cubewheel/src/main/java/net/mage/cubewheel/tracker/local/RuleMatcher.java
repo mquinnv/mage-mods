@@ -23,6 +23,8 @@ public final class RuleMatcher {
 			case Signal.MobKilled m -> rule.kind() == CounterRule.Kind.KILL && !m.groups().contains("player")
 					&& targetMatches(rule.what(), m.typeId(), m.name(), m.groups());
 			case Signal.FishCaught f -> rule.kind() == CounterRule.Kind.FISH && rule.what() instanceof Any;
+			case Signal.Sheared s -> rule.kind() == CounterRule.Kind.SHEAR
+					&& targetMatches(rule.what(), s.typeId(), s.name(), java.util.Set.of("mob"));
 		};
 	}
 

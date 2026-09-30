@@ -16,6 +16,8 @@ import net.mage.cubewheel.tracker.local.LocalCounter;
 import net.mage.cubewheel.tracker.local.LootLine;
 import net.mage.cubewheel.tracker.local.LootMatch;
 import net.mage.cubewheel.tracker.local.PendingBreaks;
+import net.mage.cubewheel.tracker.local.PendingShears;
+import net.mage.cubewheel.tracker.local.ShearTool;
 import net.mage.cubewheel.tracker.local.PlacedBlocks;
 import net.mage.cubewheel.tracker.local.Pos;
 import net.mage.cubewheel.tracker.local.RemovalKills;
@@ -45,7 +47,13 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.entity.Shearable;
+import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.minecraft.world.item.FishingRodItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ShearsItem;
+import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -59,7 +67,7 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public final class LocalSignals {
 	/** Hook kinds that can fail independently. */
-	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, LOOT_POLL, FISH, TICK, LEVEL }
+	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, LOOT_POLL, FISH, SHEAR, TICK, LEVEL }
 
 	private static final int MAX_FAILURES = 10;
 	private static final long SAVE_INTERVAL_MS = 30_000;
@@ -72,6 +80,10 @@ public final class LocalSignals {
 	private static final KillAttribution kills = new KillAttribution();
 	private static final StackWatch stacks = new StackWatch();
 	private static final RemovalKills removals = new RemovalKills();
+	private static final PendingShears shears = new PendingShears();
+	/** Unsheared shearables within this many blocks of a sheared one wait for an area shear. */
+	private static final double AREA_SHEAR_RANGE = 5;
+	private static final int MAX_AREA_SHEAR = 32;
 	/** A hit mob removed farther away than this left our view rather than died. */
 	private static final double REMOVAL_KILL_RANGE = 16;
 	/** Deaths nobody near us hit are written to capture only within this many blocks. */
@@ -103,6 +115,11 @@ public final class LocalSignals {
 				onUseEntity(player, level.isClientSide(), entity, player.getItemInHand(hand).getHoverName().getString());
 			} catch (Throwable t) {
 				fail(Hook.ATTACK, t);
+			}
+			try {
+				onShearUse(player, level.isClientSide(), entity, player.getItemInHand(hand));
+			} catch (Throwable t) {
+				fail(Hook.SHEAR, t);
 			}
 			return InteractionResult.PASS;
 		});
@@ -457,8 +474,83 @@ public final class LocalSignals {
 		}
 	}
 
+	/**
+	 * UseEntityCallback (client side): shears (vanilla or a custom "Shears" tool) used on a shearable entity
+	 * that is ready (a sheep: not sheared, not a baby). Records it, and the ready shearables within
+	 * {@link #AREA_SHEAR_RANGE} blocks (an area shears tool), as pending; {@link #checkShears} counts each
+	 * one whose sheared state syncs true within its window. Nothing counts at use time.
+	 */
+	private static void onShearUse(Player player, boolean clientSide, Entity target, ItemStack held) {
+		if (!clientSide || !enabled(Hook.SHEAR) || !local().shear) return;
+		Minecraft mc = Minecraft.getInstance();
+		if (player != mc.player || !survivalMode(player) || !(target instanceof Shearable)) return;
+		if (held == null || held.isEmpty()) return;
+		String heldName = held.getHoverName().getString();
+		if (!ShearTool.isShears(held.getItem() instanceof ShearsItem, held.typeHolder().getRegisteredName(), heldName, lore(held))) {
+			return;
+		}
+		boolean ready = readyForShears(target);
+		List<Integer> near = new ArrayList<>();
+		if (ready) {
+			for (Entity e : target.level().getEntities(target, target.getBoundingBox().inflate(AREA_SHEAR_RANGE),
+					e -> e instanceof Shearable && !(e instanceof Player))) {
+				if (near.size() >= MAX_AREA_SHEAR) break;
+				if (e.distanceTo(target) <= AREA_SHEAR_RANGE && readyForShears(e)) near.add(e.getId());
+			}
+			shears.use(target.getId(), near, tick);
+		}
+		captureEntity("use", target, "shears (held " + heldName + "); sheared before=" + !ready
+				+ (ready ? "; pending, " + near.size() + " ready nearby" : "; not shearable now, ignored"));
+	}
+
+	/** Each client tick while shears are pending: confirm, drop or keep only the pending ids. */
+	private static void checkShears(Minecraft mc) {
+		if (!enabled(Hook.SHEAR)) return;
+		try {
+			for (PendingShears.Outcome o : shears.tick(tick, id -> shearState(mc.level.getEntity(id)))) {
+				Entity e = mc.level.getEntity(o.entityId());
+				String role = o.area() ? "area" : "target";
+				if (o.result() == PendingShears.Result.CONFIRMED && e != null && local().shear) {
+					Signal.Sheared signal = new Signal.Sheared(e.typeHolder().getRegisteredName(), rawName(e), world());
+					capture("shear", signal.typeId(), signal.name(), "confirmed, " + role, signal.world(), count(signal));
+				} else if (!o.area()) {
+					// Area entries that were never sheared are the norm; only the used-on entity is explained.
+					CaptureLog capture = CubeWheelClient.capture();
+					if (capture != null && capture.enabled()) {
+						capture.local("shear", e == null ? "#" + o.entityId() : e.typeHolder().getRegisteredName(),
+								e == null ? null : rawName(e), "not counted: " + o.result().name().toLowerCase(java.util.Locale.ROOT)
+										+ ", " + role, new ArrayList<>(world().tokens()), List.of(), 0, System.currentTimeMillis());
+					}
+				}
+			}
+		} catch (Throwable t) {
+			fail(Hook.SHEAR, t);
+		}
+	}
+
+	/** Can shears act on it now: a sheep that is alive, unsheared and grown; other shearables by their own test. */
+	private static boolean readyForShears(Entity e) {
+		if (e == null || !e.isAlive()) return false;
+		if (e instanceof Sheep s) return !s.isSheared() && !s.isBaby();
+		return e instanceof Shearable sh && sh.readyForShearing();
+	}
+
+	/** A pending entity's state: removed or dead is gone; a sheep by its sheared flag, others by readiness lost. */
+	private static PendingShears.State shearState(Entity e) {
+		if (e == null || e.isRemoved() || !e.isAlive()) return PendingShears.State.GONE;
+		if (e instanceof Sheep s) return s.isSheared() ? PendingShears.State.SHEARED : PendingShears.State.NOT_YET;
+		if (e instanceof Shearable sh) return sh.readyForShearing() ? PendingShears.State.NOT_YET : PendingShears.State.SHEARED;
+		return PendingShears.State.GONE;
+	}
+
+	private static List<String> lore(ItemStack stack) {
+		ItemLore lore = stack.get(DataComponents.LORE);
+		return lore == null ? List.of() : lore.lines().stream().map(Component::getString).toList();
+	}
+
 	private static void onLevelChange() {
 		try {
+			shears.clear();
 			pending.clear();
 			placed.clear();
 			kills.clear();
@@ -479,6 +571,8 @@ public final class LocalSignals {
 			pending.expire(tick);
 			kills.expire(tick);
 			stacks.retainRoots(kills::tracks);
+			if (!active) shears.clear();
+			else if (!shears.isEmpty()) checkShears(mc);
 			if (active) pollActionBar(mc); // before expiry: a line that just arrived still names a waiting removal
 			if (removals.awaitingLoot()) {
 				for (RemovalKills.Removed r : removals.expire(System.currentTimeMillis())) {

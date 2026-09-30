@@ -12,12 +12,21 @@ public final class ObjectiveExtractor {
 	private static final Pattern ARROW = Pattern.compile("^\\s*(?:(\\d{1,3}(?:\\.\\d+)?)%\\s*)?→\\s*(.+)$");
 	/** Menus without an arrow or OBJECTIVE heading: a line that starts with a counting verb and holds a number. */
 	private static final Pattern VERB_LINE = Pattern.compile(
-			"(?i)^\\s*(harvest|mine|break|chop|dig|gather|kill|slay|slaughter|defeat|catch|fish)\\b.*\\d.*$");
+			"(?i)^\\s*(harvest|mine|break|chop|dig|gather|kill|slay|slaughter|defeat|catch|fish|shear)\\b.*\\d.*$");
 	private static final Pattern FORMATTING = Pattern.compile("§.");
 
 	private ObjectiveExtractor() {}
 
 	public static ObjectiveInfo extract(String name, List<String> lore) {
+		return extract(name, lore, null);
+	}
+
+	/**
+	 * Like {@link #extract(String, List)}; {@code listingObjective} is a job listing's objective line
+	 * ("Shear 10/84 Sheep"), stored as the objective whatever its verb when nothing else is found, so a
+	 * verb this class does not know yet still reaches the parser (and the tracker file).
+	 */
+	public static ObjectiveInfo extract(String name, List<String> lore, String listingObjective) {
 		List<String> lines = new ArrayList<>();
 		if (lore != null) {
 			for (String l : lore) lines.add(clean(l));
@@ -29,6 +38,9 @@ public final class ObjectiveExtractor {
 		List<ObjectiveInfo.Sub> subs = prestige(lines);
 		if (subs.isEmpty()) subs = arrows(lines);
 		if (subs.isEmpty()) subs = verbLines(clean(name), lines);
+		if (subs.isEmpty() && !clean(listingObjective).isEmpty()) {
+			subs = List.of(new ObjectiveInfo.Sub(clean(listingObjective), null));
+		}
 		boolean handIn = false;
 		for (ObjectiveInfo.Sub s : subs) {
 			String t = s.text().toLowerCase(Locale.ROOT);

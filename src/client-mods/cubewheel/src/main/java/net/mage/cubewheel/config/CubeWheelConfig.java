@@ -124,6 +124,8 @@ public final class CubeWheelConfig {
 		public boolean blocks = true;
 		public boolean kills = true;
 		public boolean fish = true;
+		/** Count shears used on sheep (and other shearables) once the server confirms the shear. */
+		public boolean shear = true;
 		/** World names recognised at the start of an objective's noun ("Wolfhaven Resources"). */
 		public List<String> worlds;
 		/** Worlds that count as "special worlds (/worlds)". */

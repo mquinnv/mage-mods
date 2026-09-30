@@ -140,6 +140,10 @@ Open `/pquests`, `/prestige` (rank objectives) and `/challenges` once so the obj
 - [ ] No mixin errors for `LocalCountingHudMixin` / `TextDisplayAccessor`; no FPS change while fighting in a crowd.
 - [ ] Kill a monster in the overworld: an objective scoped to Sandara or to "special worlds" does not move; in Sandara (or another Mana world) it does. Capture: the `"kind":"world"` line shows the dimension and `tokens` (note whether the dimension is named after the world and whether the sidebar has a `World:` line).
 - [ ] Catch a fish: "Catch N Fish" +1. Reeling in without a bite adds nothing.
+- [ ] Shearing, capture on, with the job listing "Farming Experienced · Shear Sheep" tracked (open the listings page once; `config/cubewheel-tracker.json` `objectives` now has "Shear 10/84 Sheep" for it): shear a woolly adult sheep with vanilla shears. Expect a `"signal":"use"` line (`shears (held Shears); sheared before=false; pending, N ready nearby`) then a `"signal":"shear"` line with `detail` `confirmed, target` and `matched` = the job; the HUD entry shows `~11 / 84`. Right-click an already-sheared sheep or a lamb: a `use` line with `sheared before=true` / `not shearable now, ignored`, no count. Compare with `/jobs` after 10 shears.
+- [ ] Shear with a custom ManaCube shears item (if any): same as above; if it shears several sheep at once, each sheep within 5 blocks gets a `shear` line `confirmed, area`. Note the `use` line's held name if nothing counts.
+- [ ] Another player shears sheep next to you while you do nothing: no `shear` line, no count.
+- [ ] Right-click a sheep with shears in creative or with `"tracker.local": {"shear": false}`: nothing counts.
 - [ ] Push an estimate to its target: `~300 / 300 (99%) ✓?` in yellow, never green, until a menu read.
 - [ ] Picker: estimated rows end with `+N~`; hovering one shows "Estimated from what you did since this menu was last read (…)" and, after a snap-back, "Last check: counted …, actual …".
 - [ ] Linked sidebar values (e.g. Skills) replace estimates too.

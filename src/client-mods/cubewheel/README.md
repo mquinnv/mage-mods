@@ -107,7 +107,7 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `tracker.worldFilter` | HUD order for the world you are in: `"sort"` lists entries naming the current world first (after pinned) and other worlds' last, `"hide"` drops other worlds' unpinned entries, `"off"` (see [World filter](#world-filter)) | `"sort"` |
 | `tracker.sidebarLinks` | Sidebar key -> regex on tracked names that follow that live value | `{"Skills": "(?i)reach [\\d,]+ skill level"}` |
 | `tracker.local.enabled` | Live `~` estimates between menu reads (see [Live estimates](#live-estimates-local-counting)) | `true` |
-| `tracker.local.blocks` / `kills` / `fish` | Count own block breaks / kills / catches | `true` each |
+| `tracker.local.blocks` / `kills` / `fish` / `shear` | Count own block breaks / kills / catches / shears | `true` each |
 | `tracker.local.worlds` | World names recognised in objectives ("Wolfhaven Resources") | the six Mana worlds |
 | `tracker.local.specialWorlds` | Worlds that count as "special worlds (/worlds)" | the six Mana worlds |
 | `events.enabled` | Event panel and alerts (see [Event timer](#event-timer)) | `true` |
@@ -327,6 +327,7 @@ What is counted, per objective text read from the menu (only objectives with a s
 | Kill / Slay N Mobs / Monsters / Zombies / Mana Wolves, "Slay 16/64 Tigers in Tangleroots" | kill it: you were the last player to damage it within 5 s (arrows and tridents count). Names match the mob type or its name tag, ignoring stack counts, health (`Dart Frog 20⺛`, `❤ 20`), levels and small caps. A **stacked** mob you hit whose count drops (`5x Tiger` -> `4x Tiger`) counts the drop (only when both names show a count; at most 2 per change unless you hit it again). A **custom-model mob** (Tangleroot tigers: an unnamed hitbox such as a `Slime` that vanishes without dying) counts when the server removes it within 1.5 s (30 ticks) of your hit and within 16 blocks, once; it is named by its own name tag, a name tag riding it or within 3 blocks, or else by a loot action bar seen from your first hit on it (at most 3 s before the removal) until 1.5 s after it (`+2  Tiger Hide` counts for the one kill objective whose target is a whole word of the item name, singular or plural, here "Tigers"; `+N Mana` is ignored) |
 | Catch N Fireflies (any non-fish), "Catch 0/61 Tangleroots Fireflies" | like a custom-model kill: the entity (a firefly is a `minecraft:interaction` hitbox) is hit **or used on** (Firefly Bottle) and then removed; named by the loot line (`+1  Sad Firefly` -> "Fireflies"), or, with a Firefly Bottle in hand and no loot line, by "Firefly" when exactly one such objective fits this world. Counted under `tracker.local.kills` |
 | Catch N Fish | reel in while the bobber is biting |
+| Shear N Sheep (any shearable mob by name: "Shear 20 Mooshrooms"), job listing "Shear 10/84 Sheep" | use shears (vanilla shears, or any item whose name or lore says "Shears") on a grown, unsheared sheep **and** see the server sync it as sheared within 2 s (40 ticks); nothing counts at the click. With an area shears tool, other sheep within 5 blocks that were unsheared at the click and turn sheared within 1 s (20 ticks) count too. Sheep sheared by anyone else never count (only sheep in the snapshot taken at your click). Counted under `tracker.local.shear` |
 | ... "Wolfhaven Resources", "Sandara Monsters", "in <world>" | only while you are in that world (names match with or without spaces/underscores: "Burning Lands" = `burning_lands` = `burninglands`) |
 | Job listings: "Harvest 3,127/4,773 Cherry Logs" | as "Harvest 4,773 Cherry Logs" |
 | ... with "special worlds (/worlds)" in the lore | only in one of `tracker.local.specialWorlds` |
@@ -361,6 +362,12 @@ causes:
   kill within 3 s (but after your first hit) can name a later removal; a name tag of a different mob
   within 3 blocks; right-clicking a non-living entity (interaction, display) that the server then
   removes within 1.5 s; a Firefly Bottle used on something that is removed without being caught.
+- *Shearing:* under-count when the sheared flag syncs late (over 2 s; area sheep over 1 s), when an
+  area tool reaches farther than 5 blocks or more than 32 sheep, when a custom shears item neither is
+  vanilla shears nor says "Shears" in its name or lore, or for mobs that are replaced rather than
+  flagged when sheared (a mooshroom turns into a cow: it is removed, so it never counts); over-count
+  when another player shears a sheep in your snapshot within that window (right after your click), or
+  when the server shears it but does not count it for the job (plugin rules).
 - *Over-count (other):* hits and breaks the server ignores for the objective (plugin rules we cannot see, e.g.
   spawner mobs, custom drops, anti-farm limits, a player-placed block the client did not see you
   place); a break the server undoes more than 5 s later; before this version, "Resources"/"Blocks"
@@ -546,7 +553,7 @@ Each line is JSON with a kind:
 - `bossbars`: boss bar names and progress, when they change.
 - `sidebar`: the scoreboard sidebar title and lines as drawn, when they change.
 - `world`: the world local counting resolved (dimension, sidebar lines, tokens, special), when it changes.
-- `local`: a counted signal (`break`, `kill`, `fish`, or `reject` for a break the server undid) with
+- `local`: a counted signal (`break`, `kill`, `fish`, `shear`, or `reject` for a break the server undid) with
   the block/mob id and name, the world and the tracker entries it moved. Kill diagnostics also land here,
   with a `detail`: `attack` (each own hit: type id, raw name, custom name or not, passengers), `stack`
   (a hit mob's name changed, `old -> new (killed n, local hit)`), `death` (a death not credited to you:

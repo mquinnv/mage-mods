@@ -120,6 +120,28 @@ class ManaCubeMenusTest {
 		assertTrue(store.estimate(beginner).isEmpty());
 	}
 
+	@Test void shearListingStoresItsObjectiveAndCountsShears() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		ItemView shear = item(14, "Experienced Objective", "Shear 10/84 Sheep", "", "Hand In:", "", "Reward",
+				"- 40 Job XP", "", "㎋ Click to complete job");
+		ContainerScanner.scan("jobs", List.of(industry(0), shear), store, 0);
+		String id = Trackable.idOf("jobs", "Farming Experienced · Shear Sheep");
+		assertEquals("Shear 10/84 Sheep", store.objective(id).orElseThrow().subs().get(0).text());
+		var rule = store.activeRules(List.of()).get(id);
+		assertEquals(new net.mage.cubewheel.tracker.local.CounterRule(net.mage.cubewheel.tracker.local.CounterRule.Kind.SHEAR, 84,
+				new net.mage.cubewheel.tracker.local.CounterRule.Named("sheep"),
+				new net.mage.cubewheel.tracker.local.CounterRule.AnyWorld()), rule);
+		var overworld = new net.mage.cubewheel.tracker.local.WorldInfo(Set.of("overworld"), false, true);
+		net.mage.cubewheel.tracker.local.LocalCounter.onSignal(
+				new net.mage.cubewheel.tracker.local.Signal.Sheared("minecraft:sheep", "Sheep", overworld), store, List.of(), 5);
+		assertEquals(1, store.estimate(id).orElseThrow().count());
+		// A listing with a verb nothing knows is still stored as its objective line.
+		ContainerScanner.scan("jobs", List.of(industry(0), item(12, "Beginner Objective", "Milk 3/40 Cows", "",
+				"㎋ Click to complete job")), store, 10);
+		assertEquals("Milk 3/40 Cows", store.objective(Trackable.idOf("jobs", "Farming Beginner · Milk Cows"))
+				.orElseThrow().subs().get(0).text());
+	}
+
 	@Test void jobListingsWithoutAnIndustryItemOmitTheIndustry() {
 		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
 		ContainerScanner.scan("jobs", List.of(HEAVY), store, 0);
