@@ -42,15 +42,17 @@ public final class WheelResolver {
 				// Create leaves for each home, sorted case-insensitive
 				List<String> sortedHomes = new ArrayList<>(homes);
 				sortedHomes.sort(String.CASE_INSENSITIVE_ORDER);
+				String defaultIcon = node.icon != null ? node.icon : "minecraft:red_bed";
 				for (String home : sortedHomes) {
-					String icon = node.icon != null ? node.icon : "minecraft:red_bed";
-					result.add(WheelNode.leaf(home, icon, "/home " + home));
+					result.add(WheelNode.leaf(home, defaultIcon, "/home " + home));
 				}
 			}
 			// For unknown dynamic sources, just add extras
 
-			// Add extras to the result
-			result.addAll(node.children);
+			// Add extras to the result (guard against null children from deserialization)
+			if (node.children != null) {
+				result.addAll(node.children);
+			}
 			return result;
 		}
 

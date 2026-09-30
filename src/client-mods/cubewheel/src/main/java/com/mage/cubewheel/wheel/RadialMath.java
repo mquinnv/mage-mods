@@ -11,7 +11,7 @@ public final class RadialMath {
 	 * @param dy vertical offset (screen coords, positive = down)
 	 * @param count number of slices; must be > 0
 	 * @param deadZone minimum distance from center; points within are ignored
-	 * @return slice index (0 = up, increasing clockwise), or -1 if count ≤ 0, outside deadZone, or slices ≤ 0
+	 * @return slice index (0 = up, increasing clockwise), or -1 if count ≤ 0 or outside deadZone
 	 */
 	public static int sliceAt(double dx, double dy, int count, double deadZone) {
 		if (count <= 0 || Math.hypot(dx, dy) < deadZone) return -1;
