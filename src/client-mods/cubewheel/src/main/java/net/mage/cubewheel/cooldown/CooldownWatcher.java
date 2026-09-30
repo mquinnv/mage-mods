@@ -160,17 +160,23 @@ public final class CooldownWatcher {
 		if (++failures == MAX_FAILURES) CubeWheelClient.LOG.warn("[cubewheel] item cooldowns switched off for this session after repeated failures");
 	}
 
-	/** The "Cooldowns" panel: "Samurai Katana · 4.5s", soonest first, then the held item's "Uses: N". */
+	/**
+	 * The "Cooldowns" panel: "Samurai Katana · 4.5s", soonest first, then mcMMO abilities
+	 * ({@link McmmoWatcher#lines}), then the held item's "Uses: N".
+	 */
 	public static Optional<Panel> panel(long now) {
-		if (!active()) return Optional.empty();
 		CubeWheelConfig cfg = CubeWheelClient.config().current();
 		List<Panel.Line> lines = new ArrayList<>();
-		for (CooldownTracker.Entry e : tracker.active(now)) {
-			long left = e.endsAt() - now;
-			lines.add(new Panel.Line(e.label() + " · " + Durations.shortCountdown(left), left < ENDING_SOON_MS ? Panel.YELLOW : Panel.WHITE));
+		boolean items = active();
+		if (items) {
+			for (CooldownTracker.Entry e : tracker.active(now)) {
+				long left = e.endsAt() - now;
+				lines.add(new Panel.Line(e.label() + " · " + Durations.shortCountdown(left), left < ENDING_SOON_MS ? Panel.YELLOW : Panel.WHITE));
+			}
 		}
+		lines.addAll(McmmoWatcher.lines(now));
 		String uses = heldUses;
-		if (cfg.cooldowns.showUses && uses != null) lines.add(new Panel.Line(uses, Panel.GRAY));
+		if (items && cfg.cooldowns.showUses && uses != null) lines.add(new Panel.Line(uses, Panel.GRAY));
 		if (lines.isEmpty()) return Optional.empty();
 		CubeWheelConfig.Position p = cfg.cooldowns.position;
 		return Optional.of(new Panel("Cooldowns", lines, HudLayout.Corner.parse(p.corner), p.x, p.y));

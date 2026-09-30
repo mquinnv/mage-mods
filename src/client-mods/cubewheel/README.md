@@ -121,6 +121,7 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `boosters.position` | Panel corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) and `x`/`y` offset in GUI pixels | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `cooldowns.enabled` | Item ability countdowns (see [Item cooldowns](#item-cooldowns)) | `true` |
 | `cooldowns.showUses` | Also show the held item's `Uses: N` | `true` |
+| `cooldowns.mcmmo` | mcMMO ability countdowns (see [mcMMO ability cooldowns](#mcmmo-ability-cooldowns)); needs `cooldowns.enabled` | `true` |
 | `cooldowns.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `wheel` | The root ring: a list of nodes | see `DefaultConfig.java` |
 
@@ -481,6 +482,25 @@ This only watches your own clicks: every click still goes to the game unchanged,
 rejects (not enough souls, wrong world, a cooldown the HUD did not know about) still starts it; rank perks that
 shorten cooldowns are not known; and the heading words come from a list of ManaCube item lore, not from
 captures of your own items.
+
+### mcMMO ability cooldowns
+
+The same **Cooldowns** panel counts down mcMMO super abilities (Super Breaker, Giga Drill Breaker, Tree Feller,
+Serrated Strikes, Skull Splitter, Berserk, Green Terra, Blast Mining): `Super Breaker · 3:12` (yellow in the
+last 10 s), then a green `Super Breaker · ready` for 5 s once it is refreshed. It reads the messages ManaCube
+sends (action bar and chat; player chat is ignored):
+
+| Message | Effect |
+|---|---|
+| `●● SUPER BREAKER ACTIVATED ●●` | starts the countdown with the learned cooldown (default 240 s, Blast Mining 60 s) |
+| `MINING » Your Super Breaker ability is refreshed!` | clears it, shows "ready", and learns the real cooldown (refresh time minus activation time, whole seconds, kept only between 10 s and 1 h) |
+| `mcMMO ➡ You are too tired to use that ability again. (12s)` | sets the remaining time of the ability of the tool you last readied |
+| `MINING » You ready your pickaxe.` | remembers the tool: pickaxe = Super Breaker, shovel = Giga Drill Breaker, axe = Tree Feller (Skull Splitter if that was your last activation), hoe = Green Terra, sword = Serrated Strikes, fists = Berserk |
+
+With no tool readied yet, "too tired" goes to the most recent activation. Learned cooldowns are stored in
+`config/cubewheel-mcmmo.json` (`{"Super Breaker": 180}`); running countdowns are kept in memory only (they
+survive a reconnect, not a game restart). Purely passive: nothing is sent or hidden.
+`cooldowns.mcmmo: false` turns it off.
 
 ## SVA catalog
 

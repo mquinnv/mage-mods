@@ -86,6 +86,8 @@ public final class CubeWheelConfig {
 		public boolean enabled = true;
 		/** Also show the held item's "Uses: N" lore value. */
 		public boolean showUses = true;
+		/** Also track mcMMO super-ability cooldowns (Super Breaker, Tree Feller, ...) from their messages. */
+		public boolean mcmmo = true;
 		public Position position = DefaultConfig.cooldownsPosition();
 	}
 

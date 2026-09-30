@@ -200,6 +200,19 @@ Needs a custom item with a cooldown in its lore (e.g. a crate weapon or tool wit
 - [ ] On the hub, another gamemode or a non-ManaCube server: nothing is shown or counted.
 - [ ] The log shows no "[cubewheel] item cooldown hook failed" errors; no FPS change while clicking.
 
+## mcMMO ability cooldowns
+
+In Survival with a pickaxe (capture on, so the action-bar/chat lines are recorded if anything misbehaves):
+
+- [ ] Right-click with the pickaxe ("MINING » You ready your pickaxe."), then mine: on "SUPER BREAKER ACTIVATED" the Cooldowns panel shows `Super Breaker · 4:00` (or the learned time) counting down.
+- [ ] Right-click again while it counts: on "You are too tired to use that ability again. (Ns)" the countdown jumps to N seconds.
+- [ ] When "Your Super Breaker ability is refreshed!" arrives, the line turns into a green `Super Breaker · ready` for about 5 s and disappears; the log shows `mcMMO cooldowns learned: {SUPER_BREAKER=N}` and `config/cubewheel-mcmmo.json` has `"Super Breaker": N`.
+- [ ] The next activation counts down from the learned N (compare with the refresh message).
+- [ ] Same with a shovel (Giga Drill Breaker) and an axe (Tree Feller); "too tired" goes to the tool last readied.
+- [ ] Another player typing "SUPER BREAKER ACTIVATED" in chat does not start anything.
+- [ ] Reconnect mid-countdown: it keeps counting. `"cooldowns": {"mcmmo": false}` + reload: no mcMMO lines (item cooldowns unchanged).
+- [ ] On the hub / another gamemode: nothing is shown. The log has no "[cubewheel] mcMMO cooldown hook failed".
+
 ## SVA catalog
 
 Bind "Open SVA catalog" first. Start with `config/cubewheel-cache/` deleted.

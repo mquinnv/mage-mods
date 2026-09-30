@@ -241,6 +241,7 @@ class ConfigStoreTest {
 		ConfigStore s = new ConfigStore(f);
 		assertNull(s.reload());
 		assertTrue(s.current().cooldowns.enabled);
+		assertTrue(s.current().cooldowns.mcmmo);
 		assertFalse(s.current().cooldowns.showUses);
 		assertEquals("bottom_left", s.current().cooldowns.position.corner);
 		assertEquals(4, s.current().cooldowns.position.x);

@@ -8,6 +8,7 @@ import net.mage.cubewheel.mixin.FishingHookAccessor;
 import net.mage.cubewheel.mixin.HudAccessor;
 import net.mage.cubewheel.sidebar.SidebarLinker;
 import net.mage.cubewheel.tracker.TrackerStore;
+import net.mage.cubewheel.cooldown.McmmoWatcher;
 import net.mage.cubewheel.tracker.local.ActionBarFeed;
 import net.mage.cubewheel.tracker.local.FishDetector;
 import net.mage.cubewheel.tracker.local.KeyThrottle;
@@ -400,11 +401,13 @@ public final class LocalSignals {
 
 	/** Mixin, Hud.setOverlayMessage HEAD: an action-bar message being shown. */
 	public static void onOverlayMessage(Component message) {
+		McmmoWatcher.onActionBarEvent(ActionBarFeed.Source.HUD, message);
 		onActionBarEvent(ActionBarFeed.Source.HUD, message);
 	}
 
 	/** Mixin, ClientPacketListener.setActionBarText (client thread): an action-bar packet's text. */
 	public static void onActionBarPacket(Component message) {
+		McmmoWatcher.onActionBarEvent(ActionBarFeed.Source.PACKET, message);
 		onActionBarEvent(ActionBarFeed.Source.PACKET, message);
 	}
 

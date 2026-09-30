@@ -7,6 +7,7 @@ import net.mage.cubewheel.config.ConfigStore;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.config.WheelNode;
 import net.mage.cubewheel.cooldown.CooldownWatcher;
+import net.mage.cubewheel.cooldown.McmmoWatcher;
 import net.mage.cubewheel.events.EventHud;
 import net.mage.cubewheel.homes.HomesCache;
 import net.mage.cubewheel.homes.HomesFetcher;
@@ -93,6 +94,8 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ClientReceiveMessageEvents.ALLOW_GAME.register(homesFetcher::onGameMessage);
 		BoosterWatcher.init(configDir);
 		ClientReceiveMessageEvents.ALLOW_GAME.register(BoosterWatcher::onGameMessage);
+		McmmoWatcher.init(configDir);
+		ClientReceiveMessageEvents.ALLOW_GAME.register(McmmoWatcher::onGameMessage);
 		ClientSendMessageEvents.COMMAND.register(homesFetcher::onCommand);
 		ClientSendMessageEvents.COMMAND.register(CubeWheelClient::noteCommand);
 		ContainerHook.register();
