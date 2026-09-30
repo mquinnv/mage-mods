@@ -234,4 +234,20 @@ class ConfigStoreTest {
 		assertEquals(4, s.warnings().size(), s.warnings().toString());
 		assertTrue(s.warnings().stream().anyMatch(w -> w.contains("Broken")));
 	}
+
+	@Test void cooldownsDefaultOn() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{\"cooldowns\": {\"showUses\": false, \"position\": {\"corner\": \"bottom_left\", \"y\": 60}}}");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertTrue(s.current().cooldowns.enabled);
+		assertFalse(s.current().cooldowns.showUses);
+		assertEquals("bottom_left", s.current().cooldowns.position.corner);
+		assertEquals(4, s.current().cooldowns.position.x);
+		assertEquals(60, s.current().cooldowns.position.y);
+		Files.writeString(f, "{\"cooldowns\": null}");
+		assertNull(s.reload());
+		assertTrue(s.current().cooldowns.showUses);
+		assertEquals("top_left", s.current().cooldowns.position.corner);
+	}
 }

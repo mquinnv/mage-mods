@@ -117,6 +117,9 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `events.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `boosters.enabled` | Booster countdowns from chat (see [Boosters](#boosters)) | `true` |
 | `boosters.position` | Panel corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) and `x`/`y` offset in GUI pixels | `{"corner": "top_left", "x": 4, "y": 4}` |
+| `cooldowns.enabled` | Item ability countdowns (see [Item cooldowns](#item-cooldowns)) | `true` |
+| `cooldowns.showUses` | Also show the held item's `Uses: N` | `true` |
+| `cooldowns.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `wheel` | The root ring: a list of nodes | see `DefaultConfig.java` |
 
 `tracker.sources` defaults: `jobs` = `(?i)jobs`, `pquests` = `(?i)quest`, `prestige` = `(?i)prestige`,
@@ -338,7 +341,8 @@ are ignored.
 
 ## HUD panels
 
-Besides the tracker (top right), CubeWheel draws small panels: events, boosters, and more below. Each has a
+Besides the tracker (top right), CubeWheel draws small panels: events, boosters and item cooldowns, stacked
+in that order. Each has a
 `position` in the config: a corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) and an `x`/`y`
 offset from it in GUI pixels. Panels in the same corner stack instead of overlapping (in a top corner, the
 first one is `y` pixels from the top and the next one goes below it); a panel in the top-right corner goes
@@ -404,6 +408,39 @@ turns parsing and the panel off.
 
 **The wording is unverified on Survival** (it comes from another mod's source). If a booster does not show
 up, turn capture mode on, activate one, and send the `"kind":"chat"` line.
+
+### Item cooldowns
+
+Custom items whose lore lists a cooldown get a countdown when you use them: a **Cooldowns** panel shows
+`Samurai Katana · 4.5s` (yellow in the last 3 s), soonest first. The lore is read like ManaCube writes it:
+
+```
+ITEM EFFECTS: (Right-Click)        <- the section says how the ability is triggered
+➟ Duplicate a Monster
+Cooldown: 60s                      <- 60s, 0.5s, 4.5m, 1m 30s, 10 seconds; "None" = no cooldown
+```
+
+| Section heading | Starts when you... |
+|---|---|
+| `(Right-Click)`, `(Right Click)`, plain `Right-Click:` | right-click with the item (air, block or entity) |
+| `(Shift + Right Click)`, `(Sneak + Right-Click)`, `(Right-Click + Sneak)` | right-click while sneaking (a plain right-click ability of the same item is used when not sneaking) |
+| `(Left-Click)`, `(Attack)`, `(On Attack)`, `(Shift + Left Click)` | press attack with the item in your main hand (hit or swing) |
+| `(Consume)`, `(When Consumed)`, `(When Eaten)` | finish eating or drinking it (letting go early does not count) |
+| `(Sneak)` | start sneaking while holding it |
+| a `Cooldown:` line before any heading | right-click |
+
+Passive sections (`While Worn`, `When Held`, `When Attacked`, `Block Attack`, `Take Damage`, `Shoot`, kills, ...)
+start nothing: CubeWheel cannot see when they trigger. Using an item again while its countdown runs does not
+restart it (the server ignores that use too). An item with several abilities shows the section:
+`Iridium Axe (Shift + Right Click) · 7.0s`. Countdowns are keyed by the item's name and are cleared when you
+leave the server. With `cooldowns.showUses`, the item in your main hand adds a grey `Uses: 1,234` line when its
+lore has `Uses: N`, `Uses Left: N` or `Remaining Uses: N`.
+
+This only watches your own clicks: every click still goes to the game unchanged, nothing is sent or cancelled.
+**Unverified:** the countdown starts on your click, not on the server's confirmation, so a use the server
+rejects (not enough souls, wrong world, a cooldown the HUD did not know about) still starts it; rank perks that
+shorten cooldowns are not known; and the heading words come from a list of ManaCube item lore, not from
+captures of your own items.
 
 ## Capture mode
 

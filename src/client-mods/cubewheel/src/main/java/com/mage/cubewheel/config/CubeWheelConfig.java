@@ -18,6 +18,8 @@ public final class CubeWheelConfig {
 	public Boosters boosters = new Boosters();
 	/** Scheduled Survival events with countdowns and "starts soon" alerts. */
 	public Events events = new Events();
+	/** Countdowns for custom-item abilities whose lore has a cooldown. */
+	public Cooldowns cooldowns = new Cooldowns();
 	public List<WheelNode> wheel;
 
 	/**
@@ -68,6 +70,14 @@ public final class CubeWheelConfig {
 			this.name = name;
 			this.when = when;
 		}
+	}
+
+	public static final class Cooldowns {
+		/** Start countdowns when you use such an item, and show the panel. */
+		public boolean enabled = true;
+		/** Also show the held item's "Uses: N" lore value. */
+		public boolean showUses = true;
+		public Position position = DefaultConfig.cooldownsPosition();
 	}
 
 	public static final class Boosters {

@@ -137,6 +137,8 @@ public final class ConfigStore {
 		if (c.boosters == null) c.boosters = new CubeWheelConfig.Boosters();
 		c.boosters.position = normalizePosition(c.boosters.position, DefaultConfig.boostersPosition());
 		normalizeEvents(c, warnings);
+		if (c.cooldowns == null) c.cooldowns = new CubeWheelConfig.Cooldowns();
+		c.cooldowns.position = normalizePosition(c.cooldowns.position, DefaultConfig.cooldownsPosition());
 		c.wheel = c.wheel == null ? DefaultConfig.wheel() : normalizeNodes(c.wheel);
 		c.vaultCount = Math.max(0, Math.min(54, c.vaultCount));
 		c.listThreshold = Math.max(3, Math.min(16, c.listThreshold));

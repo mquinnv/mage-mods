@@ -169,3 +169,20 @@ Bind "Toggle event HUD" under Options > Controls > Key Binds > CubeWheel first.
 - [ ] Pin a tracker entry and have a potion effect active, then set `boosters.position` to `{"corner": "top_right", "x": 4, "y": 4}` and reload: the panel sits below the tracker HUD, never on top of it or the effect icons.
 - [ ] `"boosters": {"enabled": false}` + reload: no panel, and new booster messages are ignored.
 - [ ] On another ManaCube gamemode or the hub, or a non-ManaCube server: no panel.
+
+## Item cooldowns
+
+Needs a custom item with a cooldown in its lore (e.g. a crate weapon or tool with "ITEM EFFECTS: (Right-Click)" and "Cooldown: 5s"). Capture on, open a menu showing the item (e.g. `/pv 1`) so its lore is recorded as a `"kind":"container"` line; send it if anything below misbehaves.
+
+- [ ] Right-click with a "(Right-Click)" item: a "Cooldowns" panel shows `<item name> · 5.0s` counting down (tenths under 10 s), yellow in the last 3 s, gone at 0. The ability itself works as before (nothing is cancelled).
+- [ ] Right-click again while it counts: the countdown does not restart. After it ends, right-clicking starts it again.
+- [ ] Right-click on a block and on a mob with the item: also starts it.
+- [ ] A "(Shift + Right Click)" ability starts only while sneaking; an item with both shows "Name (Right-Click)" and "Name (Shift + Right Click)" separately.
+- [ ] A "(Attack)" / "(Left-Click)" weapon: swinging at air or hitting a mob starts it.
+- [ ] A "(When Consumed)" food/potion: finishing it starts the countdown; letting go of right-click halfway does not.
+- [ ] A "(While Worn)" / "(When Held)" item with a cooldown never shows a countdown.
+- [ ] Holding an item with "Uses: N" / "Uses Left: N" lore shows a grey `Uses: N` line that updates within half a second after a use; `"showUses": false` hides it.
+- [ ] With events and boosters also showing, the three panels stack top left without overlapping; move `cooldowns.position` to `{"corner": "bottom_right", "x": 4, "y": 40}` and reload: it moves above the hotbar area on the right.
+- [ ] `"cooldowns": {"enabled": false}` + reload: no panel, no countdowns.
+- [ ] On the hub, another gamemode or a non-ManaCube server: nothing is shown or counted.
+- [ ] The log shows no "[cubewheel] item cooldown hook failed" errors; no FPS change while clicking.

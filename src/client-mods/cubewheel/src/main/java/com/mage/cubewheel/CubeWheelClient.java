@@ -6,6 +6,7 @@ import com.mage.cubewheel.capture.CaptureLog;
 import com.mage.cubewheel.config.ConfigStore;
 import com.mage.cubewheel.config.CubeWheelConfig;
 import com.mage.cubewheel.config.WheelNode;
+import com.mage.cubewheel.cooldown.CooldownWatcher;
 import com.mage.cubewheel.events.EventHud;
 import com.mage.cubewheel.homes.HomesCache;
 import com.mage.cubewheel.homes.HomesFetcher;
@@ -95,9 +96,11 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ClientSendMessageEvents.COMMAND.register(CubeWheelClient::noteCommand);
 		ContainerHook.register();
 		LocalSignals.register(); // after tracker and capture exist
+		CooldownWatcher.register();
 		TrackerHud.register();
 		PanelsHud.add(EventHud::panel);
 		PanelsHud.add(BoosterWatcher::panel);
+		PanelsHud.add(CooldownWatcher::panel);
 		PanelsHud.register();
 		Keybinds.register();
 		ClientTickEvents.START_CLIENT_TICK.register(mc -> {

@@ -114,6 +114,10 @@ public final class DefaultConfig {
 		return new CubeWheelConfig.Position("top_left", 4, 4);
 	}
 
+	public static CubeWheelConfig.Position cooldownsPosition() {
+		return new CubeWheelConfig.Position("top_left", 4, 4);
+	}
+
 	public static CubeWheelConfig.Position eventsPosition() {
 		return new CubeWheelConfig.Position("top_left", 4, 4);
 	}
