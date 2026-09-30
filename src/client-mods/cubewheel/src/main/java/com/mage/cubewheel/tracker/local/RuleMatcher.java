@@ -40,7 +40,7 @@ public final class RuleMatcher {
 		if (want instanceof AnyWorld) return true;
 		if (at == null || !at.known()) return false;
 		if (want instanceof Special) return at.special();
-		return want instanceof NamedWorld n && at.tokens().contains(n.token());
+		return want instanceof NamedWorld n && (at.tokens().contains(n.token()) || at.tokens().contains(WorldResolver.key(n.token())));
 	}
 
 	/**

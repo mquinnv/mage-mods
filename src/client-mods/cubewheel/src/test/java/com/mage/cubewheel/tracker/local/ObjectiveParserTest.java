@@ -58,6 +58,22 @@ class ObjectiveParserTest {
 		assertEquals(Optional.of(rule(Kind.BREAK, 40, new Group("ore"), new AnyWorld())), parse("Mine 40 Ores"));
 	}
 
+	@Test void multiWordAndUnderscoredWorldNames() {
+		CounterRule.World burning = new NamedWorld("burningland");
+		assertEquals(Optional.of(rule(Kind.BREAK, 500, new Any(), burning)), parse("Mine 500 Burning Lands Resources"));
+		assertEquals(Optional.of(rule(Kind.BREAK, 500, new Any(), burning)), parse("Mine 500 Burninglands Resources"));
+		assertEquals(Optional.of(rule(Kind.KILL, 20, new Named("zombie"), burning)), parse("Kill 20 Zombies in Burning Lands"));
+		assertEquals(Optional.of(rule(Kind.KILL, 20, new Named("zombie"), burning)), parse("Kill 20 Zombies in the burning_lands"));
+		// The configured name may itself be spaced or underscored.
+		for (String configured : List.of("Burning Lands", "burning_lands", "burninglands")) {
+			ObjectiveInfo info = new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Slay 50 Burning Lands Monsters", null)), false, false);
+			assertEquals(Optional.of(rule(Kind.KILL, 50, new Group("monster"), burning)),
+					ObjectiveParser.parse(info, List.of(configured)), configured);
+		}
+		// A world name alone is not a noun: "Mine 5 Burning Lands" has no target left after the world.
+		assertEquals(Optional.of(rule(Kind.BREAK, 5, new Named("burning land"), new AnyWorld())), parse("Mine 5 Burning Lands"));
+	}
+
 	@Test void harvestOfANonCropFallsBackToBreak() {
 		assertEquals(Optional.of(rule(Kind.BREAK, 10, new Named("oak log"), new AnyWorld())), parse("Harvest 10 Oak Logs"));
 		assertEquals(Optional.of(rule(Kind.HARVEST, 10, new Named("potato"), new AnyWorld())), parse("Harvest 10 Potatoes"));

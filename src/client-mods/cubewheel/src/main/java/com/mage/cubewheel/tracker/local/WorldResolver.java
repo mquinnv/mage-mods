@@ -45,16 +45,30 @@ public final class WorldResolver {
 		boolean special = false;
 		if (specialWorlds != null) {
 			for (String s : specialWorlds) {
-				if (s != null && tokens.contains(Singular.phrase(s))) special = true;
+				if (s != null && !key(s).isEmpty() && tokens.contains(key(s))) special = true;
 			}
 		}
 		return new WorldInfo(tokens, special, true);
 	}
 
-	/** The whole value (singular) plus each of its parts: "world_sandara" -> "world sandara", "world", "sandara". */
+	/**
+	 * A world name as compared everywhere: singular, lower case, separators removed, so "Burning Lands",
+	 * "burning_lands" and "burninglands" all give "burningland".
+	 */
+	public static String key(String name) {
+		if (name == null) return "";
+		return SPLIT.matcher(Singular.phrase(name.toLowerCase(java.util.Locale.ROOT))).replaceAll("");
+	}
+
+	/**
+	 * The whole value (singular), its key and each of its parts: "world_sandara" -> "world sandara",
+	 * "worldsandara", "world", "sandara".
+	 */
 	private static void addTokens(Set<String> tokens, String value) {
 		String whole = Singular.phrase(SPLIT.matcher(value).replaceAll(" "));
 		if (!whole.isEmpty()) tokens.add(whole);
+		String key = key(value);
+		if (!key.isEmpty()) tokens.add(key);
 		for (String part : SPLIT.split(value)) {
 			if (!part.isEmpty()) tokens.add(Singular.word(part));
 		}

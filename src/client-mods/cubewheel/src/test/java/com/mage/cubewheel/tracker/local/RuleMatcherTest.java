@@ -68,6 +68,15 @@ class RuleMatcherTest {
 		assertTrue(RuleMatcher.matches(rule(Kind.KILL, new Group("mob"), new AnyWorld()), zombieNowhere));
 	}
 
+	@Test void multiWordWorldsMatch() {
+		CounterRule burning = rule(Kind.KILL, new Group("monster"), new NamedWorld("burningland"));
+		WorldInfo there = WorldResolver.resolve("minecraft:overworld", java.util.List.of("World: Burning Lands"), java.util.List.of());
+		assertTrue(RuleMatcher.matches(burning,
+				new Signal.MobKilled("minecraft:blaze", "Blaze", Set.of("mob", "monster"), 1, there)));
+		assertFalse(RuleMatcher.matches(burning,
+				new Signal.MobKilled("minecraft:blaze", "Blaze", Set.of("mob", "monster"), 1, OVERWORLD)));
+	}
+
 	@Test void customNamedMobs() {
 		Signal.MobKilled manaWolf = new Signal.MobKilled("minecraft:wolf", "Mana Wolf", Set.of("mob", "monster"), 1, OVERWORLD);
 		assertTrue(RuleMatcher.matches(rule(Kind.KILL, new Named("mana wolf"), new AnyWorld()), manaWolf));

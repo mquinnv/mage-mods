@@ -55,23 +55,29 @@ public final class ObjectiveParser {
 		}
 		if (target <= 0) return Optional.empty();
 
-		Set<String> tokens = new LinkedHashSet<>();
+		// World names compared as keys: "Burning Lands", "burning_lands" and "burninglands" are one world.
+		Set<String> keys = new LinkedHashSet<>();
 		if (worldTokens != null) {
 			for (String t : worldTokens) {
-				String s = Singular.phrase(t);
-				if (!s.isEmpty()) tokens.add(s);
+				String k = WorldResolver.key(t);
+				if (!k.isEmpty()) keys.add(k);
 			}
 		}
 		CounterRule.World world = new AnyWorld();
 		String noun = m.group("noun").toLowerCase(Locale.ROOT);
-		int space = noun.indexOf(' ');
-		if (space > 0 && tokens.contains(Singular.word(noun.substring(0, space)))) {
-			world = new NamedWorld(Singular.word(noun.substring(0, space)));
-			noun = noun.substring(space + 1);
+		// A leading world name of one or two words, as long as a noun is left after it.
+		String[] words = noun.split(" ");
+		for (int n = Math.min(2, words.length - 1); n >= 1; n--) {
+			String key = WorldResolver.key(String.join(" ", java.util.Arrays.copyOfRange(words, 0, n)));
+			if (keys.contains(key)) {
+				world = new NamedWorld(key);
+				noun = String.join(" ", java.util.Arrays.copyOfRange(words, n, words.length));
+				break;
+			}
 		}
 		if (m.group("in") != null) {
 			String in = m.group("in").toLowerCase(Locale.ROOT);
-			world = in.contains("special") ? new Special() : new NamedWorld(Singular.phrase(in.replaceFirst("^the\\s+", "")));
+			world = in.contains("special") ? new Special() : new NamedWorld(WorldResolver.key(in.replaceFirst("^the\\s+", "")));
 		}
 		if (info.special() && world instanceof AnyWorld) world = new Special();
 

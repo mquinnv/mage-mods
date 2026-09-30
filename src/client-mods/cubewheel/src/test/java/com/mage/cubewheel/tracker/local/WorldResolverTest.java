@@ -42,6 +42,19 @@ class WorldResolverTest {
 		assertTrue(w.special());
 	}
 
+	@Test void multiWordWorldNamesAreNormalised() {
+		for (WorldInfo w : List.of(
+				WorldResolver.resolve("minecraft:burning_lands", List.of(), SPECIAL),
+				WorldResolver.resolve("minecraft:burninglands", List.of(), SPECIAL),
+				WorldResolver.resolve("minecraft:overworld", List.of("World: Burning Lands"), SPECIAL))) {
+			assertTrue(w.tokens().contains("burningland"), w.toString());
+			assertTrue(w.special(), w.toString());
+		}
+		// A spaced special-world entry matches an unspaced world too.
+		assertTrue(WorldResolver.resolve("minecraft:burninglands", null, List.of("Burning Lands")).special());
+		assertEquals("burningland", WorldResolver.key("Burning_Lands"));
+	}
+
 	@Test void emptyInputIsUnknown() {
 		assertEquals(WorldInfo.UNKNOWN, WorldResolver.resolve(null, null, SPECIAL));
 		assertEquals(WorldInfo.UNKNOWN, WorldResolver.resolve("", List.of("Money: 5"), null));
