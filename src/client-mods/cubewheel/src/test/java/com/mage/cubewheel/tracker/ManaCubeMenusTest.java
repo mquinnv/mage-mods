@@ -45,6 +45,27 @@ class ManaCubeMenusTest {
 			item(10, "JOBS PROFILE", "Jobs Completed: 52", "Chests Opened: 10", "Money Earned: $6,733,000"),
 			item(13, "FARMING INDUSTRY", "", "Jobs Completed: 16", "Streak: 16", "", "㎋ Browse Job Listings"));
 
+	/** The industry filler item of a job listings page (shown 4 times, around the listings). */
+	static ItemView industry(int slot) {
+		return item(slot, "FARMING INDUSTRY", "", "Level: 8 360 XP", "Jobs Completed: 18", "Streak: 18",
+				"Highest Streak: 18", "Money Earned: 2,293,000", "", "#1 FatherTerra - 4,437 Jobs");
+	}
+
+	static final ItemView BEGINNER = item(12, "Beginner Objective", "Harvest 0/506 Acacia Logs", "", "Hand In:",
+			"- ✖ 0/253 Acacia Log", "", "Items can be deposited from", "inventory, shulkers & PVs", "", "Reward",
+			"- 20 Job XP", "- $58,000", "- 1 Golden Key", "", "㎋ Click to complete job");
+	static final ItemView EXPERIENCED = item(14, "Experienced Objective", "Catch 0/61 Tangleroots Fireflies", "",
+			"Hand In:", "", "Reward", "- 40 Job XP", "", "㎋ Click to complete job");
+	static final ItemView HEAVY = item(16, "Heavy Objective", "Harvest 3,127/4,773 Cherry Logs", "", "Hand In:",
+			"- ✔ 2387/2387 Cherry Log", "", "Reward", "- 80 Job XP", "", "㎋ Click to complete job");
+
+	/** /jobs -> an industry: the listings page, title glyph "⻔⻔⻔⻔⻔⻔⻔⻔㏽" (captured 2026-09-30). */
+	static final List<ItemView> JOB_LISTINGS = List.of(
+			industry(0), industry(8), BEGINNER, industry(9), EXPERIENCED, HEAVY, industry(17),
+			item(18, "Go Back", "Main Menu"),
+			item(19, "REFRESH JOB LISTINGS", "Change the 3 jobs that are listed", "to new random ones", "",
+					"Price: FREE", "", "㎋ Click to refresh"));
+
 	static final List<ItemView> WARPS = List.of(
 			item(4, "WORLDS", "◎ Overworld", "", "Land Claiming: Enabled", "Border Size: 40k x 40k",
 					"➟ Teleport [Left-Click]"),
@@ -54,6 +75,70 @@ class ManaCubeMenusTest {
 		assertEquals(Optional.of("prestige"), MenuClassifier.classify(GLYPH_TITLE, PRESTIGE_RANKS, TITLE_SOURCES));
 		assertEquals(Optional.of("pquests"), MenuClassifier.classify(GLYPH_TITLE, PARTY_QUESTS, TITLE_SOURCES));
 		assertEquals(Optional.of("jobs"), MenuClassifier.classify(GLYPH_TITLE, JOBS_MAIN, TITLE_SOURCES));
+	}
+
+	@Test void jobListingsAreClassifiedAsJobs() {
+		assertEquals(Optional.of("jobs"), MenuClassifier.classify("⻔⻔⻔⻔⻔⻔⻔⻔㏽", JOB_LISTINGS, TITLE_SOURCES));
+		// Any one listing is enough, by name or by its "Click to complete job" line.
+		assertEquals(Optional.of("jobs"), MenuClassifier.classify(GLYPH_TITLE, List.of(HEAVY), Map.of()));
+		assertEquals(Optional.of("jobs"), MenuClassifier.classify(GLYPH_TITLE,
+				List.of(item(3, "Odd Name", "Mine 1/2 Stone", "㎋ Click to complete job")), Map.of()));
+	}
+
+	@Test void jobListingsAreNamedByIndustryTierAndObjective() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		assertEquals(3, ContainerScanner.scan("jobs", JOB_LISTINGS, store, 0));
+		Trackable heavy = find(store, "Farming Heavy · Harvest Cherry Logs");
+		assertEquals(3127, heavy.current(), 1e-9); // the objective line, not the hand-in line (2387/2387)
+		assertEquals(4773, heavy.max(), 1e-9);
+		Trackable beginner = find(store, "Farming Beginner · Harvest Acacia Logs");
+		assertEquals(0, beginner.current(), 1e-9);
+		assertEquals(506, beginner.max(), 1e-9);
+		assertEquals(61, find(store, "Farming Experienced · Catch Tangleroots Fireflies").max(), 1e-9);
+		// Industry fillers ("Level: 8 360 XP", "#1 FatherTerra - 4,437 Jobs"), Go Back and Refresh are not entries.
+		assertEquals(3, store.all().size(), store.all().toString());
+	}
+
+	@Test void jobListingsWithoutAnIndustryItemOmitTheIndustry() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		ContainerScanner.scan("jobs", List.of(HEAVY), store, 0);
+		assertEquals(3127, find(store, "Heavy · Harvest Cherry Logs").current(), 1e-9);
+	}
+
+	@Test void industryFillerAloneIsNoProgress() {
+		assertTrue(ProgressExtractor.extract(industry(0).lore()).isEmpty());
+	}
+
+	@Test void rerolledOrCompletedListingsAreForgottenUnlessPinned() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		store.update("jobs", "Farming Heavy · Harvest Birch Logs", new ProgressExtractor.Progress(10, 900), 0); // rerolled
+		store.update("jobs", "Farming Beginner · Mine Stone", new ProgressExtractor.Progress(1, 50), 0);        // pinned
+		store.togglePin(Trackable.idOf("jobs", "Farming Beginner · Mine Stone"));
+		store.update("jobs", "Mining Heavy · Mine Iron Ore", new ProgressExtractor.Progress(5, 100), 0);        // other industry
+		store.update("jobs", "GOLDEN CRATE", new ProgressExtractor.Progress(4, 5), 0);                          // JOBS PROFILE menu
+		store.update("pquests", "Farming Heavy · Harvest Birch Logs", new ProgressExtractor.Progress(1, 2), 0); // other source
+		ContainerScanner.scan("jobs", JOB_LISTINGS, store, 1_000);
+		List<String> names = store.all().stream().map(t -> t.source() + ":" + t.name()).sorted().toList();
+		assertEquals(List.of(
+				"jobs:Farming Beginner · Harvest Acacia Logs",
+				"jobs:Farming Beginner · Mine Stone",
+				"jobs:Farming Experienced · Catch Tangleroots Fireflies",
+				"jobs:Farming Heavy · Harvest Cherry Logs",
+				"jobs:GOLDEN CRATE",
+				"jobs:Mining Heavy · Mine Iron Ore",
+				"pquests:Farming Heavy · Harvest Birch Logs"), names);
+		// A removal alone is a change worth saving.
+		store.update("jobs", "Farming Heavy · Harvest Oak Logs", new ProgressExtractor.Progress(1, 2), 1_000);
+		assertEquals(1, ContainerScanner.scan("jobs", JOB_LISTINGS, store, 1_500));
+		assertTrue(store.all().stream().noneMatch(t -> t.name().endsWith("Oak Logs")));
+	}
+
+	@Test void jobsMainMenuKeepsItsGoldenCrateEntry() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		store.update("jobs", "GOLDEN CRATE", new ProgressExtractor.Progress(4, 5), 0);
+		ContainerScanner.scan("jobs", JOBS_MAIN, store, 1_000); // the main menu is not a listings page
+		ContainerScanner.scan("jobs", JOB_LISTINGS, store, 2_000);
+		assertEquals(4, find(store, "GOLDEN CRATE").current(), 1e-9);
 	}
 
 	@Test void unrelatedMenusAreNotTracked() {

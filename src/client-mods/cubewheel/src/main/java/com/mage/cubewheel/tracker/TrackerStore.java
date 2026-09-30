@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -280,6 +281,19 @@ public final class TrackerStore {
 		List<TrackerRow> out = new ArrayList<>(pinned);
 		out.addAll(open);
 		return out.size() > maxLines ? new ArrayList<>(out.subList(0, Math.max(0, maxLines))) : out;
+	}
+
+	/** Removes unpinned items matching {@code which} (with their objective, estimate and hidden mark); returns how many. */
+	public int forgetUnpinned(Predicate<Trackable> which) {
+		if (which == null) return 0;
+		int before = items.size();
+		items.values().removeIf(t -> !pins.contains(t.id()) && which.test(t));
+		if (items.size() == before) return 0;
+		objectives.keySet().retainAll(items.keySet());
+		estimates.keySet().retainAll(items.keySet());
+		hidden.retainAll(items.keySet());
+		rulesDirty = true;
+		return before - items.size();
 	}
 
 	/** Removes unpinned items last seen more than {@code ageMs} ago (with their objective and estimate). */

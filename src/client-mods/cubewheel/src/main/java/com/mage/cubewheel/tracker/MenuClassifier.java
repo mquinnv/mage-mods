@@ -17,6 +17,8 @@ import com.mage.cubewheel.tracker.ContainerScanner.ItemView;
 public final class MenuClassifier {
 	private static final Pattern PRESTIGE_RANK = Pattern.compile("^Rank \\[✪\\d+]");
 	private static final Pattern PRESTIGE_LEVEL = Pattern.compile("^Prestige \\d+ - ");
+	/** A job listing on an industry's listings page: "Beginner Objective", "Experienced Objective", "Heavy Objective". */
+	static final Pattern JOB_LISTING = Pattern.compile("(?i)^(Beginner|Experienced|Heavy) Objective$");
 	/** A menu nobody told us about is still tracked when this many of its items show explicit progress. */
 	private static final int GENERIC_MIN_ITEMS = 2;
 
@@ -32,6 +34,7 @@ public final class MenuClassifier {
 			List<String> lore = item.lore() == null ? List.of() : item.lore();
 			if (PRESTIGE_RANK.matcher(name).find() || PRESTIGE_LEVEL.matcher(name).find()) return Optional.of("prestige");
 			if (name.equals("JOBS PROFILE") || anyLine(lore, "browse job listings")) return Optional.of("jobs");
+			if (JOB_LISTING.matcher(name).matches() || anyLine(lore, "click to complete job")) return Optional.of("jobs");
 			if (name.endsWith(" Quests") || (anyLine(lore, "quest") && anyLineStarts(lore, "progress:"))) {
 				return Optional.of("pquests");
 			}
