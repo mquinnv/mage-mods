@@ -118,24 +118,36 @@ public final class ContainerHook {
 				}
 				// Other ManaCube gamemodes (SkyBlock, Parkour, hub) have look-alike menus: Survival only.
 				if (!ServerGate.survival(cfg)) return;
-				Optional<String> source = MenuClassifier.classify(title, items, cfg.tracker.sources);
 				TrackerStore store = CubeWheelClient.tracker();
-				if (source.isEmpty() || store == null) return;
+				if (store == null) return;
+				// Facts any menu states about you ("Current Level: 55" on /party) update matching objectives.
+				boolean factsChanged = MenuFacts.apply(MenuFacts.of(items), store, now) > 0;
+				if (factsChanged) store.save();
+				Optional<String> source = MenuClassifier.classify(title, items, cfg.tracker.sources);
+				if (source.isEmpty()) {
+					announceCompletions(store);
+					return;
+				}
 				// During a refresh run, every entry its menus show counts towards "Refreshed N".
 				java.util.function.Consumer<String> seen = RefreshController.running() ? RefreshController::noteSeen : null;
 				if (ContainerScanner.scan(source.get(), items, store, now, seen) > 0) {
 					CubeWheelClient.sidebar().reapply(now);
 					store.save();
 				}
-				Minecraft mc = Minecraft.getInstance();
-				for (String done : store.drainCompletions()) {
-					if (mc.player != null) {
-						mc.player.sendSystemMessage(Component.literal("[CubeWheel] ✔ " + done + " completed")
-								.withStyle(net.minecraft.ChatFormatting.GREEN));
-					}
-				}
+				announceCompletions(store);
 			} catch (RuntimeException e) {
 				CubeWheelClient.LOG.error("[cubewheel] container scan failed", e);
+			}
+		}
+	}
+
+	/** One chat line per pinned entry a true reading just confirmed complete. */
+	static void announceCompletions(TrackerStore store) {
+		Minecraft mc = Minecraft.getInstance();
+		for (String done : store.drainCompletions()) {
+			if (mc.player != null) {
+				mc.player.sendSystemMessage(Component.literal("[CubeWheel] ✔ " + done + " completed")
+						.withStyle(net.minecraft.ChatFormatting.GREEN));
 			}
 		}
 	}

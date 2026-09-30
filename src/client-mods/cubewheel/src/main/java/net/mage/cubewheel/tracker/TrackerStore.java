@@ -125,7 +125,10 @@ public final class TrackerStore {
 			if (t.complete() || t.name() == null || !names.matcher(t.name()).find()) continue;
 			double current = Math.max(t.current(), value);
 			snapBack(t.id(), current);
-			e.setValue(new Trackable(t.id(), t.source(), t.name(), current, t.max(), now));
+			Trackable updated = new Trackable(t.id(), t.source(), t.name(), current, t.max(), now);
+			e.setValue(updated);
+			// A true reading that reaches the target completes it, exactly like a menu read would.
+			if (updated.complete() && pins.remove(t.id())) completions.add(t.name());
 			touched++;
 		}
 		if (touched > 0) rulesDirty = true;
