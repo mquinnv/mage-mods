@@ -10,9 +10,11 @@ import net.mage.cubewheel.tracker.TrackerStore;
 import net.mage.cubewheel.tracker.local.FishDetector;
 import net.mage.cubewheel.tracker.local.KillAttribution;
 import net.mage.cubewheel.tracker.local.LocalCounter;
+import net.mage.cubewheel.tracker.local.LootMatch;
 import net.mage.cubewheel.tracker.local.PendingBreaks;
 import net.mage.cubewheel.tracker.local.PlacedBlocks;
 import net.mage.cubewheel.tracker.local.Pos;
+import net.mage.cubewheel.tracker.local.RemovalKills;
 import net.mage.cubewheel.tracker.local.Signal;
 import net.mage.cubewheel.tracker.local.StackWatch;
 import net.mage.cubewheel.tracker.local.WorldInfo;
@@ -22,6 +24,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -32,6 +35,7 @@ import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -42,15 +46,15 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Minecraft adapter for local counting: the static facade that Fabric callbacks and the optional mixins
- * call. Purely passive: it only observes (own block breaks, damage/death packets, reeling in a biting
- * bobber) and never sends, opens or clicks anything; its only write is the local tracker file. Active
+ * call. Purely passive: it only observes (own block breaks, damage/death/removal packets, action-bar
+ * loot lines, reeling in a biting bobber) and never sends, opens or clicks anything; its only write is the local tracker file. Active
  * only in ManaCube Survival (host gate plus sidebar title, see {@link ServerGate#survival}), in
  * survival/adventure game mode, with {@code tracker.local.enabled}. Every entry point is guarded: a failing hook is
  * logged once and switched off for the session after {@link #MAX_FAILURES} failures.
  */
 public final class LocalSignals {
 	/** Hook kinds that can fail independently. */
-	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, FISH, TICK, LEVEL }
+	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, FISH, TICK, LEVEL }
 
 	private static final int MAX_FAILURES = 10;
 	private static final long SAVE_INTERVAL_MS = 30_000;
@@ -62,6 +66,9 @@ public final class LocalSignals {
 	private static final PlacedBlocks placed = new PlacedBlocks(PlacedBlocks.DEFAULT_CAPACITY);
 	private static final KillAttribution kills = new KillAttribution();
 	private static final StackWatch stacks = new StackWatch();
+	private static final RemovalKills removals = new RemovalKills();
+	/** A hit mob removed farther away than this left our view rather than died. */
+	private static final double REMOVAL_KILL_RANGE = 16;
 	/** Deaths nobody near us hit are written to capture only within this many blocks. */
 	private static final double CAPTURE_DEATH_RANGE = 32;
 	private static final WorldProbe world = new WorldProbe();
@@ -152,6 +159,7 @@ public final class LocalSignals {
 			kills.onDamage(target.getId(), player.getId(), tick);
 			watchStack(target);
 			captureEntity("attack", target, describe(target));
+			probe(target);
 		} catch (Throwable t) {
 			fail(Hook.ATTACK, t);
 		}
@@ -168,7 +176,10 @@ public final class LocalSignals {
 			kills.onDamage(entityId, causeId, tick);
 			if (causeId == mc.player.getId()) {
 				Entity target = mc.level.getEntity(entityId);
-				if (target != null) watchStack(target);
+				if (target != null && !(target instanceof Player)) {
+					watchStack(target);
+					probe(target); // area hits (a katana's sweep) have no attack callback
+				}
 			}
 		} catch (Throwable t) {
 			fail(Hook.DAMAGE, t);
@@ -182,6 +193,7 @@ public final class LocalSignals {
 			Minecraft mc = Minecraft.getInstance();
 			if (!survivalMode(mc.player) || !(entity instanceof LivingEntity) || entity instanceof Player) return;
 			stacks.forget(entity.getId());
+			removals.settle(entity.getId()); // its later removal is the corpse, never a second kill
 			KillAttribution.Verdict verdict = kills.onDeathVerdict(entity.getId(), mc.player.getId(), tick);
 			if (verdict != KillAttribution.Verdict.LOCAL) {
 				// Not provably ours: still explain it in capture if anyone hit it or it died near us.
@@ -218,6 +230,7 @@ public final class LocalSignals {
 					+ (ours ? ", local hit" : ", no recent local hit")
 					+ (root == entity ? "" : ", passenger of " + (root == null ? "#" + c.rootId() : root.typeHolder().getRegisteredName()))
 					+ ")";
+			if (c.killed() > 0) removals.settle(c.rootId()); // a stack drop and a removal never both count
 			if (c.killed() <= 0 || !ours || !survivalMode(mc.player)) {
 				captureEntity("stack", entity, detail);
 				return;
@@ -231,9 +244,12 @@ public final class LocalSignals {
 	}
 
 	/**
-	 * Mixin, ClientPacketListener.handleRemoveEntities (main thread, before removal). Never counted (a
-	 * removal may be a despawn or leaving view distance); written to capture when we had hit the entity,
-	 * since a mob that vanishes without a death event would explain a missing kill.
+	 * Mixin, ClientPacketListener.handleRemoveEntities (main thread, before removal). The server removing
+	 * a mob the local player hit within {@link RemovalKills#WINDOW_TICKS} ticks, while it is within
+	 * {@link #REMOVAL_KILL_RANGE} blocks, is a kill (custom-model mobs die without a death event); counted
+	 * once per entity and never when a death or stack drop already settled it. Chunk unloads and level
+	 * changes never come through this packet (a level change clears all state). Other removals of hit
+	 * mobs go to capture only.
 	 */
 	public static void onRemoveEntities(IntList ids) {
 		try {
@@ -244,13 +260,88 @@ public final class LocalSignals {
 				int id = ids.getInt(i);
 				if (!kills.tracks(id) && !stacks.watching(id)) continue;
 				Entity entity = mc.level.getEntity(id);
-				if (entity != null) {
-					captureEntity("removed", entity, kills.hitBy(id, mc.player.getId(), tick) ? "local hit" : "no recent local hit");
+				if (entity != null && !(entity instanceof Player)) {
+					boolean recent = kills.hitByWithin(id, mc.player.getId(), tick, RemovalKills.WINDOW_TICKS);
+					boolean near = entity.distanceTo(mc.player) <= REMOVAL_KILL_RANGE;
+					String why = !recent ? (kills.hitBy(id, mc.player.getId(), tick) ? "local hit, too long ago" : "no recent local hit")
+							: !near ? "local hit, too far to be a kill"
+							: removals.settled(id) ? "local hit, already counted or refused"
+							: !survivalMode(mc.player) ? "local hit, not in survival mode" : null;
+					if (why == null && removals.claim(id, true, true)) {
+						onRemovalKill(entity);
+					} else {
+						captureEntity("removed", entity, why == null ? "local hit" : why);
+					}
 				}
 				stacks.forget(id);
 			}
 		} catch (Throwable t) {
 			fail(Hook.REMOVE, t);
+		}
+	}
+
+	/** A removal counted as a kill: named from the hint found at hit time, else from the next loot line. */
+	private static void onRemovalKill(Entity entity) {
+		WorldInfo at = world();
+		String typeId = entity.typeHolder().getRegisteredName();
+		Optional<RemovalKills.Hint> hint = removals.hint(entity.getId());
+		if (hint.isEmpty() && !removals.seen(entity.getId())) {
+			hint = Optional.ofNullable(NearbyProbe.of(entity, false).hint());
+		}
+		if (hint.isPresent()) {
+			RemovalKills.Hint h = hint.get();
+			Signal.MobKilled facts = EntityFacts.of(entity, at, h.name(), 1);
+			// A name from another entity, or an invisible hitbox: the hitbox's type ("slime") is not the mob.
+			boolean hitbox = h.method() != RemovalKills.Method.OWN || entity.isInvisible();
+			Signal.MobKilled signal = hitbox
+					? new Signal.MobKilled("", facts.name(), Set.of("mob", "monster"), 1, at)
+					: facts;
+			List<LocalCounter.Contribution> added = count(signal);
+			capture("kill", typeId, h.name(), "removal, method " + h.method().code + " (" + h.source() + "), local hit", at, added);
+			return;
+		}
+		RemovalKills.Removed r = new RemovalKills.Removed(entity.getId(), typeId, rawName(entity), at);
+		removals.awaitLoot(r, System.currentTimeMillis()).ifPresent(loot -> creditLoot(r, loot));
+	}
+
+	/** Method c: credit the one kill objective the loot names; else method d (unattributed, capture only). */
+	private static void creditLoot(RemovalKills.Removed r, List<String> loot) {
+		TrackerStore store = CubeWheelClient.tracker();
+		Optional<LootMatch.Credit> credit = store == null ? Optional.empty()
+				: LootMatch.match(loot, store.activeRules(local().worlds), r.world());
+		if (credit.isEmpty()) {
+			capture("kill", r.typeId(), r.name(), "removal, method d (loot " + loot + " names no single kill objective), local hit",
+					r.world(), List.of());
+			return;
+		}
+		List<LocalCounter.Contribution> added = LocalCounter.credit(credit.get().ruleIds(), store, System.currentTimeMillis());
+		if (!added.isEmpty()) saveThrottle.markDirty();
+		capture("kill", r.typeId(), credit.get().target(), "removal, method c (loot " + loot + " -> " + credit.get().target() + "), local hit",
+				r.world(), added);
+	}
+
+	/** Mixin, Hud.setOverlayMessage HEAD: an action-bar message; its loot names removal kills waiting for it. */
+	public static void onOverlayMessage(Component message) {
+		try {
+			if (message == null || !enabled(Hook.LOOT) || !local().kills) return;
+			String text = message.getString();
+			if (text.indexOf('+') < 0) return;
+			for (RemovalKills.Resolved r : removals.onActionBar(text, System.currentTimeMillis())) creditLoot(r.removed(), r.loot());
+		} catch (Throwable t) {
+			fail(Hook.LOOT, t);
+		}
+	}
+
+	/** Once per hit mob: remembers what names it and, while capturing, writes what is around it. */
+	private static void probe(Entity target) {
+		if (removals.seen(target.getId())) return;
+		CaptureLog capture = CubeWheelClient.capture();
+		boolean forCapture = capture != null && capture.enabled();
+		NearbyProbe.Result r = NearbyProbe.of(target, forCapture);
+		removals.remember(target.getId(), r.hint());
+		if (forCapture) {
+			capture.nearby(target.getId(), target.typeHolder().getRegisteredName(), rawName(target), r.near(),
+					new ArrayList<>(world().tokens()), System.currentTimeMillis());
 		}
 	}
 
@@ -275,6 +366,7 @@ public final class LocalSignals {
 			placed.clear();
 			kills.clear();
 			stacks.clear();
+			removals.clear();
 			world.invalidate();
 		} catch (Throwable t) {
 			fail(Hook.LEVEL, t);
@@ -290,6 +382,12 @@ public final class LocalSignals {
 			pending.expire(tick);
 			kills.expire(tick);
 			stacks.retainRoots(kills::tracks);
+			if (removals.awaitingLoot()) {
+				for (RemovalKills.Removed r : removals.expire(System.currentTimeMillis())) {
+					capture("kill", r.typeId(), r.name(), "removal, method d (no name tag, no loot line within "
+							+ RemovalKills.LOOT_WAIT_MS + " ms), local hit", r.world(), List.of());
+				}
+			}
 			if (store != null && saveThrottle.shouldSave(System.currentTimeMillis())) store.save();
 		} catch (Throwable t) {
 			fail(Hook.TICK, t);

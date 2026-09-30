@@ -28,23 +28,39 @@ public final class StackName {
 	private StackName() {}
 
 	public static Optional<Parsed> parse(String raw) {
+		return parse(raw, false);
+	}
+
+	/**
+	 * As {@link #parse}, but only for a name that shows its stack count ("5x Tiger", "Tiger (x1)"); a
+	 * plain "Tiger" is empty here, since a name without a count says nothing about how many are left.
+	 */
+	public static Optional<Parsed> parseCounted(String raw) {
+		return parse(raw, true);
+	}
+
+	private static Optional<Parsed> parse(String raw, boolean requireCount) {
 		if (raw == null) return Optional.empty();
 		String s = FORMATTING.matcher(raw).replaceAll("").trim();
 		int count = 1;
+		boolean counted = false;
 		Matcher m = STACK_PREFIX.matcher(s);
 		if (m.matches()) {
 			count = Integer.parseInt(m.group(1) != null ? m.group(1) : m.group(2));
 			s = m.group(3);
+			counted = true;
 		}
 		s = HEALTH.matcher(s).replaceFirst("").trim();
-		if (count == 1) {
+		if (!counted) {
 			m = STACK_SUFFIX.matcher(s);
 			if (m.matches() && !m.group(1).isBlank()) {
 				String n = m.group(2) != null ? m.group(2) : m.group(3) != null ? m.group(3) : m.group(4);
 				count = Integer.parseInt(n);
 				s = HEALTH.matcher(m.group(1)).replaceFirst("").trim();
+				counted = true;
 			}
 		}
-		return s.isEmpty() ? Optional.empty() : Optional.of(new Parsed(count, s));
+		if (s.isEmpty() || (requireCount && !counted)) return Optional.empty();
+		return Optional.of(new Parsed(count, s));
 	}
 }

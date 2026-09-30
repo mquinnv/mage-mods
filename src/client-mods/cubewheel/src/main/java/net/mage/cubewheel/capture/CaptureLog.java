@@ -36,6 +36,13 @@ public final class CaptureLog {
 	/** One boss bar as shown: plain name and target progress (0..1). */
 	public record BossBar(String name, float progress) {}
 
+	/**
+	 * An entity near a hit mob: entity id, type id, custom name and text-display text (null if none), the
+	 * entity it rides (null if none), its passengers, and its distance from the hit mob's box in blocks.
+	 */
+	public record Nearby(int entity, String type, String customName, String text, Integer vehicle, List<Integer> passengers,
+			double distance) {}
+
 	private final Path dir;
 	private boolean enabled;
 	// Dedupe state, reset whenever capture is switched on so the current state is recorded again.
@@ -136,6 +143,43 @@ public final class CaptureLog {
 		o.add("matched", array(matched));
 		o.addProperty("units", units);
 		if (detail != null) o.addProperty("detail", detail);
+		append(o, now);
+	}
+
+	/**
+	 * Entities around a mob the local player hit (written once per mob): a {@code local} line with
+	 * {@code "signal": "nearby"}, the hit entity's id, type and raw name, and {@code nearby} entries.
+	 */
+	public void nearby(int entity, String id, String name, List<Nearby> near, List<String> world, long now) {
+		if (!enabled) return;
+		JsonObject o = new JsonObject();
+		o.addProperty("t", now);
+		o.addProperty("kind", "local");
+		o.addProperty("signal", "nearby");
+		o.addProperty("entity", entity);
+		o.addProperty("id", id);
+		o.addProperty("name", name);
+		o.add("world", array(world));
+		JsonArray arr = new JsonArray();
+		if (near != null) {
+			for (Nearby n : near) {
+				if (n == null) continue;
+				JsonObject j = new JsonObject();
+				j.addProperty("entity", n.entity());
+				j.addProperty("type", n.type());
+				if (n.customName() != null) j.addProperty("customName", n.customName());
+				if (n.text() != null) j.addProperty("text", n.text());
+				if (n.vehicle() != null) j.addProperty("vehicle", n.vehicle());
+				if (n.passengers() != null && !n.passengers().isEmpty()) {
+					JsonArray p = new JsonArray();
+					n.passengers().forEach(p::add);
+					j.add("passengers", p);
+				}
+				j.addProperty("distance", Math.round(n.distance() * 100) / 100.0);
+				arr.add(j);
+			}
+		}
+		o.add("nearby", arr);
 		append(o, now);
 	}
 

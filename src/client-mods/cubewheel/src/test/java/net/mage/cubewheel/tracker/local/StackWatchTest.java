@@ -16,7 +16,33 @@ class StackWatchTest {
 		assertEquals(Optional.of(new StackWatch.Change(10, 10, "5x Tiger 20⺛", "5x Tiger 12⺛", 0)), w.onName(10, "5x Tiger 12⺛"));
 		assertEquals(Optional.of(new StackWatch.Change(10, 10, "5x Tiger 12⺛", "4x Tiger 20⺛", 1)), w.onName(10, "4x Tiger 20⺛"));
 		assertEquals(Optional.empty(), w.onName(10, "4x Tiger 20⺛")); // unchanged
-		assertEquals(3, w.onName(10, "Tiger 20⺛").orElseThrow().killed()); // 4 -> 1
+		assertEquals(0, w.onName(10, "Tiger 20⺛").orElseThrow().killed()); // lost its count: not "4 -> 1"
+		assertEquals(Optional.of(new StackWatch.Change(10, 10, "Tiger 20⺛", "4x Tiger 20⺛", 0)), w.onName(10, "4x Tiger 20⺛"));
+		assertEquals(1, w.onName(10, "3x Tiger").orElseThrow().killed());
+		assertEquals(1, w.onName(10, "Tiger x2").orElseThrow().killed()); // suffix form still has a count
+		assertEquals(1, w.onName(10, "Tiger (x1)").orElseThrow().killed());
+	}
+
+	@Test void countFlippingOffAndOnIsNotAKill() {
+		StackWatch w = new StackWatch();
+		w.watch(10, 10, "5x Tiger");
+		assertEquals(0, w.onName(10, "Tiger").orElseThrow().killed());
+		assertEquals(0, w.onName(10, "5x Tiger").orElseThrow().killed());
+		assertEquals(0, w.onName(10, "Tiger 20⺛").orElseThrow().killed());
+		assertEquals(0, w.onName(10, "5x Tiger").orElseThrow().killed());
+	}
+
+	@Test void bigDropsNeedAFreshLocalHit() {
+		StackWatch w = new StackWatch();
+		w.watch(10, 10, "10x Tiger"); // watching starts with a hit
+		assertEquals(6, w.onName(10, "4x Tiger").orElseThrow().killed()); // hit since the last change: full drop
+		assertEquals(StackWatch.MAX_UNHIT_DROP, w.onName(10, "1x Tiger").orElseThrow().killed()); // no hit since: capped
+		w.watch(20, 20, "8x Wolf");
+		w.onName(20, "8x Wolf 12⺛"); // health change uses up the hit
+		w.watch(20, 20, "8x Wolf 12⺛"); // a local hit or damage event refreshes the watch
+		assertEquals(5, w.onName(20, "3x Wolf").orElseThrow().killed());
+		w.watch(99, 99, "2x Tiger"); // another root
+		assertEquals(StackWatch.MAX_UNHIT_DROP, w.onName(20, "0x Wolf").orElseThrow().killed());
 	}
 
 	@Test void growthRenameOrUnwatchedIsNotAKill() {

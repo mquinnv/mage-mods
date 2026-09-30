@@ -30,6 +30,16 @@ public final class LocalCounter {
 		return out;
 	}
 
+	/** One unit to each of {@code ids} (a kill named from its loot, see {@link LootMatch}); returns what was added. */
+	public static List<Contribution> credit(Collection<String> ids, TrackerStore store, long now) {
+		if (ids == null || store == null) return List.of();
+		List<Contribution> out = new ArrayList<>();
+		for (String id : ids) {
+			if (store.addEstimate(id, 1, now)) out.add(new Contribution(id, 1));
+		}
+		return out;
+	}
+
 	public static void reverse(List<Contribution> contributions, TrackerStore store) {
 		if (contributions == null || store == null) return;
 		for (Contribution c : contributions) store.reverseEstimate(c.id(), c.units());

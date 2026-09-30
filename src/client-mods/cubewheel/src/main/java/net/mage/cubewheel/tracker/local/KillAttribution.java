@@ -51,6 +51,12 @@ public final class KillAttribution {
 		return hit != null && hit.playerId() == playerId && tick - hit.tick() <= MEMORY_TICKS;
 	}
 
+	/** Was {@code playerId} the last player to hit {@code entityId}, at most {@code window} ticks ago? Not consumed. */
+	public boolean hitByWithin(int entityId, int playerId, long tick, int window) {
+		Hit hit = lastHit.get(entityId);
+		return hit != null && hit.playerId() == playerId && tick - hit.tick() <= window;
+	}
+
 	/** Is any recent hit on {@code entityId} remembered? */
 	public boolean tracks(int entityId) {
 		return lastHit.containsKey(entityId);

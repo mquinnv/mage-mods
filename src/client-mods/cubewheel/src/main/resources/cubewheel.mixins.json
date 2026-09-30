@@ -9,9 +9,11 @@
 		"HudAccessor",
 		"LerpingBossEventAccessor",
 		"LocalCountingBlockItemMixin",
+		"LocalCountingHudMixin",
 		"LocalCountingLevelMixin",
 		"LocalCountingPacketMixin",
-		"ScreenHideMixin"
+		"ScreenHideMixin",
+		"TextDisplayAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 0

@@ -324,7 +324,7 @@ What is counted, per objective text read from the menu (only objectives with a s
 | Harvest N Crops / Harvest N Wheat (carrots, potatoes, ...) | break a **fully grown** crop (melons and pumpkins count; stems do not) |
 | Mine / Break / Chop / Dig N Stone, Cobblestone, Logs, Ores, Resources | break a matching block yourself; "Resources"/"Blocks" = any block except instant-break plants (grass, flowers, ferns); ripe crops still count |
 | Harvest N Sweet Berries / Cocoa Beans | pick a ripe sweet berry bush / cocoa pod |
-| Kill / Slay N Mobs / Monsters / Zombies / Mana Wolves, "Slay 16/64 Tigers in Tangleroots" | kill it: you were the last player to damage it within 5 s (arrows and tridents count). Names match the mob type or its name tag, ignoring stack counts, health (`Dart Frog 20⺛`, `❤ 20`), levels and small caps. A **stacked** mob you hit whose count drops (`5x Tiger` -> `4x Tiger`) counts the drop |
+| Kill / Slay N Mobs / Monsters / Zombies / Mana Wolves, "Slay 16/64 Tigers in Tangleroots" | kill it: you were the last player to damage it within 5 s (arrows and tridents count). Names match the mob type or its name tag, ignoring stack counts, health (`Dart Frog 20⺛`, `❤ 20`), levels and small caps. A **stacked** mob you hit whose count drops (`5x Tiger` -> `4x Tiger`) counts the drop (only when both names show a count; at most 2 per change unless you hit it again). A **custom-model mob** (Tangleroot tigers: an unnamed hitbox such as a `Slime` that vanishes without dying) counts when the server removes it within 1.5 s (30 ticks) of your hit and within 16 blocks, once; it is named by its own name tag, a name tag riding it or within 3 blocks, or else by the loot on the next action bar (`+2  Tiger Hide` counts for the one kill objective whose target starts the item name, here "Tigers") |
 | Catch N Fish | reel in while the bobber is biting |
 | ... "Wolfhaven Resources", "Sandara Monsters", "in <world>" | only while you are in that world (names match with or without spaces/underscores: "Burning Lands" = `burning_lands` = `burninglands`) |
 | Job listings: "Harvest 3,127/4,773 Cherry Logs" | as "Harvest 4,773 Cherry Logs" |
@@ -349,8 +349,14 @@ causes:
   your last hit; a kill whose damage packet the client never saw); area tools (3x3 hoes, hammers) only
   count the block you broke yourself; a stacker whose name tag shows no count, or a whole stack dying at
   once (counts one); party members' work; a world
-  that cannot be told for world-scoped objectives.
-- *Over-count:* hits and breaks the server ignores for the objective (plugin rules we cannot see, e.g.
+  that cannot be told for world-scoped objectives; custom-model mobs killed by an area hit (a katana's
+  sweep) that sent no damage packet naming you; a custom-model kill with no name tag whose loot line is
+  missing, late (over 1.5 s), shared by several kills, or names two objectives ("unattributed", capture
+  `method d`); a stacked mob's last kill if it is removed rather than dying (its id is already settled).
+- *Over-count:* a hit custom-model mob the server removes within 1.5 s for another reason (despawn,
+  model reload, plugin cleanup) counts as a kill; a loot item that happens to start with an objective's
+  target (`Tiger Lily` for "Tigers") names the wrong mob; a name tag of a different mob within 3 blocks.
+- *Over-count (other):* hits and breaks the server ignores for the objective (plugin rules we cannot see, e.g.
   spawner mobs, custom drops, anti-farm limits, a player-placed block the client did not see you
   place); a break the server undoes more than 5 s later; before this version, "Resources"/"Blocks"
   also counted grass and flowers; any block counts for "Resources" even where ManaCube may only count
@@ -539,8 +545,11 @@ Each line is JSON with a kind:
   the block/mob id and name, the world and the tracker entries it moved. Kill diagnostics also land here,
   with a `detail`: `attack` (each own hit: type id, raw name, custom name or not, passengers), `stack`
   (a hit mob's name changed, `old -> new (killed n, local hit)`), `death` (a death not credited to you:
-  `other_player`, `expired`, or `no_hit` within 32 blocks) and `removed` (a mob you hit vanished
-  without a death event).
+  `other_player`, `expired`, or `no_hit` within 32 blocks), `removed` (a mob you hit vanished
+  without a death event and did not count, with the reason) and `nearby` (once per mob you hit: the
+  entities within 4 blocks with type, custom name, text-display text, vehicle and passengers). A kill
+  counted from a removal has `detail` `removal, method a|b|c|d (...)`: a = the mob's own name, b = a
+  name tag riding it or near it, c = the loot line, d = unattributed (not counted).
 - `estimate`: an estimate replaced by a real read: `counted` (local) vs `actual` (from the menu).
 
 Container lines also carry `afterCommand` (the last command you or CubeWheel sent before the menu was

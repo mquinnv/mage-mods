@@ -70,6 +70,29 @@ class CaptureLogTest {
 		assertEquals(220, est.get("actual").getAsDouble(), 1e-9);
 	}
 
+	@Test void nearbyEntitiesOfAHitTarget() throws Exception {
+		CaptureLog log = new CaptureLog(dir);
+		log.toggle();
+		log.nearby(42, "minecraft:slime", "Slime", List.of(
+				new CaptureLog.Nearby(43, "minecraft:text_display", null, "Tiger 20⺛", 42, List.of(), 0.6),
+				new CaptureLog.Nearby(44, "minecraft:armor_stand", "Tiger", null, null, List.of(45, 46), 1.25)),
+				List.of("tangleroot"), 7);
+		JsonObject o = lines(dir.resolve("1970-01-01.jsonl")).get(0);
+		assertEquals("local", o.get("kind").getAsString());
+		assertEquals("nearby", o.get("signal").getAsString());
+		assertEquals(42, o.get("entity").getAsInt());
+		assertEquals("minecraft:slime", o.get("id").getAsString());
+		JsonObject tag = o.getAsJsonArray("nearby").get(0).getAsJsonObject();
+		assertEquals(43, tag.get("entity").getAsInt());
+		assertEquals("Tiger 20⺛", tag.get("text").getAsString());
+		assertEquals(42, tag.get("vehicle").getAsInt());
+		assertFalse(tag.has("customName"));
+		JsonObject stand = o.getAsJsonArray("nearby").get(1).getAsJsonObject();
+		assertEquals("Tiger", stand.get("customName").getAsString());
+		assertEquals(2, stand.getAsJsonArray("passengers").size());
+		assertEquals(1.25, stand.get("distance").getAsDouble(), 1e-9);
+	}
+
 	@Test void nonJsonChatPayloadIsStoredAsString() throws Exception {
 		CaptureLog log = new CaptureLog(dir);
 		log.toggle();
