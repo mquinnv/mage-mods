@@ -10,6 +10,7 @@ import net.mage.cubewheel.sidebar.SidebarLinker;
 import net.mage.cubewheel.tracker.TrackerStore;
 import net.mage.cubewheel.tracker.local.ActionBarFeed;
 import net.mage.cubewheel.tracker.local.FishDetector;
+import net.mage.cubewheel.tracker.local.KeyThrottle;
 import net.mage.cubewheel.tracker.local.KillAttribution;
 import net.mage.cubewheel.tracker.local.LocalCounter;
 import net.mage.cubewheel.tracker.local.LootLine;
@@ -77,6 +78,8 @@ public final class LocalSignals {
 	private static final double CAPTURE_DEATH_RANGE = 32;
 	private static final WorldProbe world = new WorldProbe();
 	private static final ActionBarFeed actionBars = new ActionBarFeed();
+	private static final long UNMATCHED_BREAK_WINDOW_MS = 10_000;
+	private static final KeyThrottle unmatchedBreaks = new KeyThrottle(UNMATCHED_BREAK_WINDOW_MS, 256);
 	/** Where the first loot line came from (logged once, proving the path works), else null. */
 	private static ActionBarFeed.Source lootSourceLogged;
 	private static long tick;
@@ -128,10 +131,18 @@ public final class LocalSignals {
 			if (!survivalMode(player)) return;
 			Pos p = new Pos(pos.getX(), pos.getY(), pos.getZ());
 			int stateId = Block.getId(state);
-			if (placed.consumeIfPlaced(p, stateId)) return; // plugins ignore blocks you placed
+			if (placed.consumeIfPlaced(p, stateId)) { // plugins ignore blocks you placed
+				captureUnmatched(state.typeHolder().getRegisteredName(), state.getBlock().getName().getString(),
+						"placed by you");
+				return;
+			}
 			Signal.BlockBroken signal = BlockFacts.of(state, level, pos, world());
 			List<LocalCounter.Contribution> added = count(signal);
-			if (added.isEmpty()) return;
+			if (added.isEmpty()) {
+				captureUnmatched(signal.id(), signal.name(), "no rule; crop=" + signal.crop() + " mature="
+						+ signal.mature() + " trivial=" + signal.trivial() + " groups=" + signal.groups());
+				return;
+			}
 			pending.record(p, stateId, added, tick);
 			capture("break", signal.id(), signal.name(), signal.world(), added);
 		} catch (Throwable t) {
@@ -570,6 +581,20 @@ public final class LocalSignals {
 			b.append("; passenger ").append(p.typeHolder().getRegisteredName()).append('=').append(rawName(p));
 		}
 		return b.toString();
+	}
+
+	/**
+	 * Capture only: an own block break that counted nowhere ("break" with matched []), at most one line per
+	 * block id per {@link #UNMATCHED_BREAK_WINDOW_MS}, so a capture shows whether a missed objective's
+	 * blocks reached the client at all. None at all while the server's counter rises means the blocks were
+	 * broken server-side (area/harvester tools), which local counting cannot see.
+	 */
+	private static void captureUnmatched(String id, String name, String detail) {
+		CaptureLog capture = CubeWheelClient.capture();
+		if (capture == null || !capture.enabled()) return;
+		long now = System.currentTimeMillis();
+		if (!unmatchedBreaks.allow(id, now)) return;
+		capture.local("break", id, name, detail, new ArrayList<>(world().tokens()), List.of(), 0, now);
 	}
 
 	/** Capture only: an entity observation that changed nothing. */
