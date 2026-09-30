@@ -2,6 +2,7 @@ package com.mage.cubewheel.tracker;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /** Turns the items of a server GUI into tracker updates. Pure: no Minecraft/Fabric imports. */
@@ -26,9 +27,34 @@ public final class ContainerScanner {
 			for (String line : item.lore()) lore.add(strip(line));
 			Optional<ProgressExtractor.Progress> p = ProgressExtractor.extract(lore);
 			if (p.isEmpty()) continue;
-			if (store.update(source, name, p.get(), now)) updated++;
+			ProgressExtractor.Progress progress = p.get();
+			// "COMPLETED" wins over a lagging number (a quest can read 99% and be done).
+			if (isMarkedComplete(lore)) progress = new ProgressExtractor.Progress(progress.max(), progress.max());
+			if (store.update(source, displayName(name, lore), progress, now)) updated++;
 		}
 		return updated;
+	}
+
+	/** True when a lore line is exactly a completion marker such as "COMPLETED" or "QUEST COMPLETED". */
+	static boolean isMarkedComplete(List<String> lore) {
+		for (String line : lore) {
+			String t = line.trim().toUpperCase(Locale.ROOT);
+			if (t.equals("COMPLETED") || t.equals("QUEST COMPLETED")) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Items whose lore has an "OBJECTIVE" heading (prestige ranks: "Rank [✪4]") are named after the
+	 * objective too, without its bracketed counter: "Rank [✪4] · Reach 2,500 Skill Level".
+	 */
+	static String displayName(String name, List<String> lore) {
+		for (int i = 0; i < lore.size() - 1; i++) {
+			if (!lore.get(i).trim().equalsIgnoreCase("OBJECTIVE")) continue;
+			String objective = lore.get(i + 1).replaceAll("\\s*\\[[^\\]]*]\\s*$", "").trim();
+			if (!objective.isEmpty()) return name + " · " + objective;
+		}
+		return name;
 	}
 
 	/** Removes legacy {@code §x} formatting codes. */

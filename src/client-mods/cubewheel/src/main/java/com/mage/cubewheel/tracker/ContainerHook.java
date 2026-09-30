@@ -87,7 +87,7 @@ public final class ContainerHook {
 					capture.container(title, items, now);
 					lastCaptured = items;
 				}
-				Optional<String> source = TrackerSources.match(title, cfg.tracker.sources);
+				Optional<String> source = MenuClassifier.classify(title, items, cfg.tracker.sources);
 				TrackerStore store = CubeWheelClient.tracker();
 				if (source.isEmpty() || store == null) return;
 				if (ContainerScanner.scan(source.get(), items, store, now) > 0) store.save();

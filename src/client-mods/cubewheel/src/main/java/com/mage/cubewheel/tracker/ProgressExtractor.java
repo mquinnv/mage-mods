@@ -1,6 +1,7 @@
 package com.mage.cubewheel.tracker;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.regex.Matcher;
@@ -20,6 +21,16 @@ public final class ProgressExtractor {
 
 	public static Optional<Progress> extract(List<String> lines) {
 		if (lines == null) return Optional.empty();
+		// An explicit "Progress: …" line beats every other number (sub-objectives, rewards).
+		for (String line : lines) {
+			if (line == null || !line.trim().toLowerCase(Locale.ROOT).startsWith("progress")) continue;
+			Optional<Progress> labelled = extractAny(List.of(line));
+			if (labelled.isPresent()) return labelled;
+		}
+		return extractAny(lines);
+	}
+
+	private static Optional<Progress> extractAny(List<String> lines) {
 		for (String line : lines) {
 			if (line == null) continue;
 			Matcher m = RATIO.matcher(line);
