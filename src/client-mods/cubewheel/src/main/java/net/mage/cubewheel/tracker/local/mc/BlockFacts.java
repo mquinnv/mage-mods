@@ -40,6 +40,18 @@ final class BlockFacts {
 		return new Signal.BlockBroken(id, block.getName().getString(), groups, crop, mature, trivial, world);
 	}
 
+	/** Blocks that break by themselves when the block under (or over) them goes: not counted as area breaks. */
+	private static final Set<String> CASCADES = Set.of("sugar_cane", "cactus", "bamboo", "kelp", "kelp_plant",
+			"twisting_vines", "twisting_vines_plant", "weeping_vines", "weeping_vines_plant", "cave_vines",
+			"cave_vines_plant", "chorus_plant", "chorus_flower", "pointed_dripstone", "scaffolding");
+
+	/** Replaceable, instant-break or a cascading plant (sugar cane, cactus, vines): pops off without its support. */
+	static boolean popsOff(BlockState state, BlockGetter level, BlockPos pos) {
+		String id = state.typeHolder().getRegisteredName();
+		return CASCADES.contains(id.substring(id.indexOf(':') + 1)) || state.canBeReplaced()
+				|| state.getDestroySpeed(level, pos) == 0.0f;
+	}
+
 	/** True if the state's "age" property is at its highest value (or it has none). */
 	private static boolean ageAtMax(BlockState state) {
 		for (Property<?> p : state.getProperties()) {

@@ -8,7 +8,9 @@ import net.mage.cubewheel.mixin.FishingHookAccessor;
 import net.mage.cubewheel.mixin.HudAccessor;
 import net.mage.cubewheel.sidebar.SidebarLinker;
 import net.mage.cubewheel.tracker.TrackerStore;
+import net.mage.cubewheel.cooldown.McmmoParser;
 import net.mage.cubewheel.cooldown.McmmoWatcher;
+import net.mage.cubewheel.tracker.local.AreaBreaks;
 import net.mage.cubewheel.tracker.local.ActionBarFeed;
 import net.mage.cubewheel.tracker.local.FishDetector;
 import net.mage.cubewheel.tracker.local.KeyThrottle;
@@ -37,6 +39,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.event.client.player.ClientPlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
@@ -55,7 +58,11 @@ import net.minecraft.world.item.FishingRodItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShearsItem;
 import net.minecraft.world.item.component.ItemLore;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
@@ -68,7 +75,7 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public final class LocalSignals {
 	/** Hook kinds that can fail independently. */
-	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, LOOT_POLL, FISH, SHEAR, TICK, LEVEL }
+	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, LOOT_POLL, FISH, SHEAR, TICK, LEVEL, AREA }
 
 	private static final int MAX_FAILURES = 10;
 	private static final long SAVE_INTERVAL_MS = 30_000;
@@ -82,6 +89,7 @@ public final class LocalSignals {
 	private static final StackWatch stacks = new StackWatch();
 	private static final RemovalKills removals = new RemovalKills();
 	private static final PendingShears shears = new PendingShears();
+	private static final AreaBreaks areas = new AreaBreaks();
 	/** Unsheared shearables within this many blocks of a sheared one wait for an area shear. */
 	private static final double AREA_SHEAR_RANGE = 5;
 	private static final int MAX_AREA_SHEAR = 32;
@@ -93,6 +101,9 @@ public final class LocalSignals {
 	private static final ActionBarFeed actionBars = new ActionBarFeed();
 	private static final long UNMATCHED_BREAK_WINDOW_MS = 10_000;
 	private static final KeyThrottle unmatchedBreaks = new KeyThrottle(UNMATCHED_BREAK_WINDOW_MS, 256);
+	/** Capture: at most one counted-area-break line per block id per this long (the summary has the totals). */
+	private static final long AREA_LINE_WINDOW_MS = 2_000;
+	private static final KeyThrottle areaLines = new KeyThrottle(AREA_LINE_WINDOW_MS, 256);
 	/** Where the first loot line came from (logged once, proving the path works), else null. */
 	private static ActionBarFeed.Source lootSourceLogged;
 	private static long tick;
@@ -103,6 +114,14 @@ public final class LocalSignals {
 
 	public static void register() {
 		ClientPlayerBlockBreakEvents.AFTER.register(LocalSignals::afterBlockBreak);
+		AttackBlockCallback.EVENT.register((player, level, hand, pos, direction) -> {
+			try {
+				onAttackBlock(player, level.isClientSide(), level.getBlockState(pos), pos);
+			} catch (Throwable t) {
+				fail(Hook.AREA, t);
+			}
+			return InteractionResult.PASS;
+		});
 		AttackEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
 			try {
 				onAttack(player, level.isClientSide(), entity);
@@ -148,6 +167,7 @@ public final class LocalSignals {
 			if (!enabled(Hook.BREAK) || !local().blocks) return;
 			if (!survivalMode(player)) return;
 			Pos p = new Pos(pos.getX(), pos.getY(), pos.getZ());
+			if (areaBreaksOn()) areas.ownBreak(p, state.is(BlockTags.LOGS), tick);
 			int stateId = Block.getId(state);
 			if (placed.consumeIfPlaced(p, stateId)) { // plugins ignore blocks you placed
 				captureUnmatched(state.typeHolder().getRegisteredName(), state.getBlock().getName().getString(),
@@ -182,6 +202,84 @@ public final class LocalSignals {
 		} catch (Throwable t) {
 			fail(Hook.SYNC, t);
 		}
+	}
+
+	/**
+	 * Mixin, ClientLevel.setServerVerifiedBlockState HEAD (block update and section update packets, client
+	 * thread): {@code level} still holds the old state. While an area window is open, a server change of a
+	 * nearby block to air counts as a break of the old block (see {@link AreaBreaks}). Returns at once when no
+	 * window is open: this runs for every block in every section update.
+	 */
+	public static void onServerBlockState(ClientLevel level, BlockPos pos, BlockState newState) {
+		if (!areas.armed(tick)) return;
+		try {
+			if (!areaBreaksOn()) return;
+			Minecraft mc = Minecraft.getInstance();
+			if (level == null || level != mc.level || !survivalMode(mc.player)) return;
+			BlockState old = level.getBlockState(pos);
+			if (old == newState) return;
+			Pos p = new Pos(pos.getX(), pos.getY(), pos.getZ());
+			String id = old.typeHolder().getRegisteredName();
+			AreaBreaks.Change change = new AreaBreaks.Change(p, id, Block.getId(old), old.isAir(),
+					old.getBlock() instanceof LiquidBlock, newState.isAir(), old.is(BlockTags.LOGS),
+					!old.isAir() && BlockFacts.popsOff(old, level, pos));
+			if (areas.onChange(change, tick, placed) != AreaBreaks.Result.COUNT) return;
+			Signal.BlockBroken signal = BlockFacts.of(old, level, pos, world());
+			List<LocalCounter.Contribution> added = count(signal);
+			if (added.isEmpty()) areas.unmatched(id);
+			CaptureLog capture = CubeWheelClient.capture();
+			if (capture != null && capture.enabled() && areaLines.allow(id, System.currentTimeMillis())) {
+				capture("area", id, signal.name(), (areas.treeFeller(tick) ? "tree feller; " : "") + "crop="
+						+ signal.crop() + " mature=" + signal.mature(), signal.world(), added);
+			}
+		} catch (Throwable t) {
+			fail(Hook.AREA, t);
+		}
+	}
+
+	/** AttackBlockCallback (client side): starting to break a block arms an area window around it. */
+	private static void onAttackBlock(Player player, boolean clientSide, BlockState state, BlockPos pos) {
+		if (!clientSide || !areaBreaksOn()) return;
+		if (player != Minecraft.getInstance().player || !survivalMode(player) || state.isAir()) return;
+		areas.attack(new Pos(pos.getX(), pos.getY(), pos.getZ()), state.is(BlockTags.LOGS), tick);
+	}
+
+	/** A mcMMO "TREE FELLER ACTIVATED" / "... has worn off" action-bar line. */
+	private static void checkAbility(String text) {
+		Optional<Boolean> ended = AreaBreaks.wornOff(text);
+		if (ended.isPresent()) {
+			areas.abilityEnded(ended.get());
+			return;
+		}
+		if (text.toLowerCase(java.util.Locale.ROOT).indexOf("activated") < 0) return;
+		Optional<McmmoParser.Message> m = McmmoParser.parse(text);
+		if (m.isEmpty() || !(m.get() instanceof McmmoParser.Activated a)) return;
+		McmmoParser.Ability ability = a.ability();
+		if (ability != McmmoParser.Ability.TREE_FELLER && ability != McmmoParser.Ability.SUPER_BREAKER
+				&& ability != McmmoParser.Ability.GIGA_DRILL_BREAKER && ability != McmmoParser.Ability.GREEN_TERRA) return;
+		Minecraft mc = Minecraft.getInstance();
+		Pos at = null;
+		if (mc.hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK) {
+			BlockPos bp = hit.getBlockPos();
+			at = new Pos(bp.getX(), bp.getY(), bp.getZ());
+		} else if (mc.player != null) {
+			BlockPos bp = mc.player.blockPosition();
+			at = new Pos(bp.getX(), bp.getY(), bp.getZ());
+		}
+		areas.ability(ability == McmmoParser.Ability.TREE_FELLER, at, tick);
+		CaptureLog capture = CubeWheelClient.capture();
+		if (capture != null && capture.enabled()) {
+			capture.local("area", null, ability.label, "ability activated; window at " + at, new ArrayList<>(world().tokens()),
+					List.of(), 0, System.currentTimeMillis());
+		}
+	}
+
+	private static boolean lootOn() {
+		return enabled(Hook.LOOT) && local().kills;
+	}
+
+	private static boolean areaBreaksOn() {
+		return enabled(Hook.AREA) && local().blocks && local().areaBreaks;
 	}
 
 	/** Mixin, BlockItem.place RETURN (client side, successful): remember the placed block. */
@@ -413,7 +511,7 @@ public final class LocalSignals {
 
 	private static void onActionBarEvent(ActionBarFeed.Source source, Component message) {
 		try {
-			if (message == null || !enabled(Hook.LOOT) || !local().kills) return;
+			if (message == null || !(lootOn() || areaBreaksOn())) return;
 			String text = message.getString();
 			long now = System.currentTimeMillis();
 			if (actionBars.event(source, text, now)) onActionBar(source, text, now);
@@ -427,7 +525,7 @@ public final class LocalSignals {
 	 * so loot lines are seen even when neither hook fires (see {@link ActionBarFeed}).
 	 */
 	private static void pollActionBar(Minecraft mc) {
-		if (!enabled(Hook.LOOT_POLL) || !local().kills) return;
+		if (!enabled(Hook.LOOT_POLL) || !(local().kills || areaBreaksOn())) return;
 		try {
 			HudAccessor hud = (HudAccessor) mc.gui.hud;
 			Component message = hud.cubewheel$getOverlayMessage();
@@ -441,7 +539,14 @@ public final class LocalSignals {
 
 	/** An action-bar message, once: its loot names removal kills waiting for it (or the next removal). */
 	private static void onActionBar(ActionBarFeed.Source source, String text, long now) {
-		if (text.indexOf('+') < 0) return;
+		if (areaBreaksOn()) {
+			try {
+				checkAbility(text);
+			} catch (Throwable t) {
+				fail(Hook.AREA, t);
+			}
+		}
+		if (!lootOn() || text.indexOf('+') < 0) return;
 		if (lootSourceLogged == null && !LootLine.items(text).isEmpty()) {
 			lootSourceLogged = source;
 			CubeWheelClient.LOG.info("[cubewheel] loot lines: {}", source.label);
@@ -554,6 +659,7 @@ public final class LocalSignals {
 	private static void onLevelChange() {
 		try {
 			shears.clear();
+			areas.clear();
 			pending.clear();
 			placed.clear();
 			kills.clear();
@@ -572,6 +678,8 @@ public final class LocalSignals {
 			TrackerStore store = CubeWheelClient.tracker();
 			active = cfg.tracker.local.enabled && store != null && mc.player != null && mc.level != null && ServerGate.survival(cfg);
 			pending.expire(tick);
+			areas.expire(tick);
+			if (active) captureAreaSummary();
 			kills.expire(tick);
 			stacks.retainRoots(kills::tracks);
 			if (!active) shears.clear();
@@ -692,6 +800,15 @@ public final class LocalSignals {
 		long now = System.currentTimeMillis();
 		if (!unmatchedBreaks.allow(id, now)) return;
 		capture.local("break", id, name, detail, new ArrayList<>(world().tokens()), List.of(), 0, now);
+	}
+
+	/** Capture only, at most every few seconds: what area windows saw (see {@link AreaBreaks#summary}). */
+	private static void captureAreaSummary() {
+		CaptureLog capture = CubeWheelClient.capture();
+		if (capture == null || !capture.enabled()) return;
+		long now = System.currentTimeMillis();
+		areas.summary(now).ifPresent(s -> capture.local("area", null, null, s, new ArrayList<>(world().tokens()),
+				List.of(), 0, now));
 	}
 
 	/** Capture only: an entity observation that changed nothing. */

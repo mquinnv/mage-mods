@@ -144,6 +144,14 @@ Open `/pquests`, `/prestige` (rank objectives) and `/challenges` once so the obj
 - [ ] Shear with a custom ManaCube shears item (if any): same as above; if it shears several sheep at once, each sheep within 5 blocks gets a `shear` line `confirmed, area`. Note the `use` line's held name if nothing counts.
 - [ ] Another player shears sheep next to you while you do nothing: no `shear` line, no count.
 - [ ] Right-click a sheep with shears in creative or with `"tracker.local": {"shear": false}`: nothing counts.
+- [ ] Area breaks (harvester), capture on, with "Harvest N Warped Wart Blocks" tracked: break warped wart blocks with the 3x3 harvester for ~30 s, then open `/jobs`. The `~` estimate should track the job within a few percent. Capture: `"signal":"area"` lines with `matched` = the job and summary lines `triggers attack=… ; counted minecraft:warped_wart_block=…`. If the job rises but `counted` does not, note the `skipped` reasons (`out_of_range`: the tool reaches past 4 blocks; `not_break`: the server replants or turns blocks into something other than air).
+- [ ] Area breaks, single blocks: mine 20 stone normally with a plain pickaxe: the count goes up by 20, not more (summary: `skipped duplicate`/`not_break` only, no extra `counted`).
+- [ ] Tree Feller, capture on, with "Chop N Logs" / a "... Logs" job tracked: right-click with an axe, hit an oak log (action bar `TREE FELLER ACTIVATED`), let the tree fall. Expect an `area` line `ability activated`, then `counted minecraft:oak_log=<tree's logs minus 1>`; leaves never count (`skipped not_log`). Compare with the job after 3 trees. After "Tree Feller has worn off", breaking a log again counts only that log.
+- [ ] Sugar cane: break the bottom block of a 3-high cane: counts 1 (the two above pop off: `skipped cascade`). With a harvester that cuts a row of canes at one height, each cut cane counts once.
+- [ ] Another player mines or chops next to you while you do nothing: no `area` counts (`NOT_ARMED`, nothing in the summary). While you mine right next to them, a few of their blocks may count (expected over-count, within 4 blocks and 1 s).
+- [ ] Place a block next to you and have the harvester break it: `skipped placed`, no count.
+- [ ] `"tracker.local": {"areaBreaks": false}` + reload: nothing beyond your own breaks counts; no `area` lines.
+- [ ] No mixin errors for `LocalCountingLevelMixin`; no FPS change while chunks load or while mining with a harvester (the hook returns at once when no window is open).
 - [ ] Push an estimate to its target: `~300 / 300 (99%) ✓?` in yellow, never green, until a menu read.
 - [ ] Picker: estimated rows end with `+N~`; hovering one shows "Estimated from what you did since this menu was last read (…)" and, after a snap-back, "Last check: counted …, actual …".
 - [ ] Linked sidebar values (e.g. Skills) replace estimates too.

@@ -108,6 +108,7 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `tracker.sidebarLinks` | Sidebar key -> regex on tracked names that follow that live value | `{"Skills": "(?i)reach [\\d,]+ skill level"}` |
 | `tracker.local.enabled` | Live `~` estimates between menu reads (see [Live estimates](#live-estimates-local-counting)) | `true` |
 | `tracker.local.blocks` / `kills` / `fish` / `shear` | Count own block breaks / kills / catches / shears | `true` each |
+| `tracker.local.areaBreaks` | Also count blocks the server breaks for you right after your own break (Tree Feller, harvester/hammer tools); needs `blocks` | `true` |
 | `tracker.local.worlds` | World names recognised in objectives ("Wolfhaven Resources") | the six Mana worlds |
 | `tracker.local.specialWorlds` | Worlds that count as "special worlds (/worlds)" | the six Mana worlds |
 | `events.enabled` | Event panel and alerts (see [Event timer](#event-timer)) | `true` |
@@ -338,9 +339,20 @@ it cannot be told, world-scoped objectives are not counted.
 
 Not counted (the next read fixes the number): skill levels, "Complete N Jobs", boss kills and
 participation, discovery, dungeons, party/island levels, hand-in jobs ("Harvest and hand in ..."),
-specific fish ("Catch 5 Angelfish"), quests with several objectives, and blocks broken by area tools
-(3x3 hoes, hammers) beyond the one you broke yourself. Blocks you placed yourself do not count when
-broken again, and a break the server undoes (claims, protection) is taken back.
+specific fish ("Catch 5 Angelfish"), and quests with several objectives. Blocks you placed yourself do
+not count when broken again, and a break the server undoes (claims, protection) is taken back.
+
+**Area breaks** (`tracker.local.areaBreaks`). Blocks the server breaks for you (mcMMO Tree Feller,
+ManaCube harvester hoes and hammers) never show up as your own break. Instead, breaking or starting to
+break a block, or a mcMMO `TREE FELLER` / `SUPER BREAKER` / `GIGA DRILL BREAKER` / `GREEN TERRA ACTIVATED`
+action bar, opens a short window: for 1 s (20 ticks, extended by further breaks of the same block), a
+block within 4 blocks (a 9x9x9 cube) that the server turns into air counts as broken by you, as the block
+it was before (ripe crops only, as above). At most 64 per window. After `TREE FELLER ACTIVATED` (until
+it wears off, at most 30 s), breaking a log opens a Tree Feller window instead: 2 s (40 ticks), **logs
+only**, 8 blocks sideways, 2 down and 32 up, at most 256. Never counted: a block turning into another
+block (a replanted crop, stone to cobblestone), water or lava changes, a block turned into water, a block
+you placed, the same position twice, and plants that pop off because the block under or over them was
+just broken (the rest of a sugar cane or cactus column, a flower on a broken dirt block).
 
 Party quests count the whole party's work; the estimate only counts yours, so it runs low until the
 next read.
@@ -349,8 +361,7 @@ next read.
 causes:
 
 - *Under-count:* attribution gaps (a mob that dies to fire, fall damage or a pet more than 5 s after
-  your last hit; a kill whose damage packet the client never saw); area tools (3x3 hoes, hammers) only
-  count the block you broke yourself; a stacker whose name tag shows no count, or a whole stack dying at
+  your last hit; a kill whose damage packet the client never saw); a stacker whose name tag shows no count, or a whole stack dying at
   once (counts one); party members' work; a world
   that cannot be told for world-scoped objectives; custom-model mobs killed by an area hit (a katana's
   sweep) that sent no damage packet naming you; a custom-model kill with no name tag whose loot line is
@@ -369,6 +380,16 @@ causes:
   flagged when sheared (a mooshroom turns into a cow: it is removed, so it never counts); over-count
   when another player shears a sheep in your snapshot within that window (right after your click), or
   when the server shears it but does not count it for the job (plugin rules).
+- *Area breaks:* over-count when another player (or a plugin, piston, explosion, sapling growth, a
+  farm) turns blocks into air within 4 blocks of a block you just broke or hit, within 1 s (Tree Feller:
+  logs within the column box for 2 s), up to 64 (256) per window; when a job counts a harvester's replant
+  differently; for a Tree Feller window after the ability silently ended (no "worn off" line seen: up to
+  30 s). Under-count when an area tool reaches farther than 4 blocks, breaks blocks more than 1 s after
+  your break (slow, staged tools), replants a crop instead of breaking it (block to block, ignored), breaks
+  into water (waterlogged blocks), exceeds 64 blocks per window, or fells a tree wider than 8 blocks or
+  taller than 32; when a job counts plants that popped off (sugar cane, cactus columns); when the
+  mcMMO activation line is not shown in the action bar (then Tree Feller windows only reach 4 blocks);
+  if the `ClientLevel` mixin does not apply (nothing is counted from area tools; logged once).
 - *Over-count (other):* hits and breaks the server ignores for the objective (plugin rules we cannot see, e.g.
   spawner mobs, custom drops, anti-farm limits, a player-placed block the client did not see you
   place); a break the server undoes more than 5 s later; before this version, "Resources"/"Blocks"
@@ -573,7 +594,8 @@ Each line is JSON with a kind:
 - `bossbars`: boss bar names and progress, when they change.
 - `sidebar`: the scoreboard sidebar title and lines as drawn, when they change.
 - `world`: the world local counting resolved (dimension, sidebar lines, tokens, special), when it changes.
-- `local`: a counted signal (`break`, `kill`, `fish`, `shear`, or `reject` for a break the server undid) with
+- `local`: a counted signal (`break`, `kill`, `fish`, `shear`, `area` for a block the server broke in an
+  area window, or `reject` for a break the server undid) with
   the block/mob id and name, the world and the tracker entries it moved. Kill diagnostics also land here,
   with a `detail`: `attack` (each own hit: type id, raw name, custom name or not, passengers), `stack`
   (a hit mob's name changed, `old -> new (killed n, local hit)`), `death` (a death not credited to you:
@@ -585,7 +607,12 @@ Each line is JSON with a kind:
   name tag riding it or near it, c = the loot line, d = unattributed (not counted). Loot lines are read
   from the action-bar packet, from Hud.setOverlayMessage and from a per-tick poll of the Hud's action-bar
   text (whichever works; each message once); the game log names the first source that saw one:
-  `[cubewheel] loot lines: <source>`.
+  `[cubewheel] loot lines: <source>`. Area breaks write `area` lines: one per counted block id per 2 s
+  (`detail` `crop=… mature=…`, `tree feller; …` in a Tree Feller window), one per mcMMO activation
+  (`ability activated; window at Pos[…]`), and a summary at most every 5 s while windows saw changes:
+  `triggers break=… attack=… ability=…; counted <id>=n …; no rule <id>=n; skipped out_of_range=n
+  duplicate=n not_break=n not_log=n cascade=n placed=n cap=n`. A job that rises while `counted` stays
+  empty means the server's changes did not reach the window (too far, too late, or not to air).
 - `estimate`: an estimate replaced by a real read: `counted` (local) vs `actual` (from the menu).
 
 Container lines also carry `afterCommand` (the last command you or CubeWheel sent before the menu was
