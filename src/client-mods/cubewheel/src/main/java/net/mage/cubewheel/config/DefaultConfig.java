@@ -69,6 +69,7 @@ public final class DefaultConfig {
 			leaf("Warps menu", "minecraft:oak_sign", "/warp"),
 			leaf("Party home", "minecraft:white_banner", "/p home"),
 			leaf("Back", "minecraft:arrow", "/back")));
+		w.add(leaf("Fly", "minecraft:feather", "/fly"));
 		w.add(dynamic("Homes", "minecraft:red_bed", "homes"));
 		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
 			leaf("Ender chest", "minecraft:ender_chest", "/ec"),
@@ -82,6 +83,7 @@ public final class DefaultConfig {
 			leaf("Auction house", "minecraft:gold_block", "/ah"),
 			leaf("Forge", "minecraft:anvil", "/forge"),
 			leaf("Fish shop", "minecraft:cod", "/fish")));
+		w.add(leaf("Sell", "minecraft:gold_ingot", "/sell"));
 		w.add(ring("Warps", "minecraft:oak_sign",
 			leaf("Crops", "minecraft:wheat", "/warp crops"),
 			leaf("Spawners", "minecraft:spawner", "/warp spawners")));

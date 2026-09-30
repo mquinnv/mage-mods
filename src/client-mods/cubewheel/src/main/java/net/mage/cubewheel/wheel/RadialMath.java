@@ -17,9 +17,18 @@ public final class RadialMath {
 	 * @return slice index (0 = up, increasing clockwise), or -1 if count ≤ 0 or outside deadZone
 	 */
 	public static int sliceAt(double dx, double dy, int count, double deadZone) {
+		return sliceAt(dx, dy, count, deadZone, 0);
+	}
+
+	/**
+	 * As {@link #sliceAt(double, double, int, double)} for a ring rotated so slice 0 is centred at
+	 * {@code startDegrees} (0 = up, clockwise). Sub-rings start where the slice that opened them was, so
+	 * clicking the same spot twice takes the sub-ring's first (default) entry.
+	 */
+	public static int sliceAt(double dx, double dy, int count, double deadZone, double startDegrees) {
 		if (count <= 0 || Math.hypot(dx, dy) < deadZone) return -1;
-		double deg = Math.toDegrees(Math.atan2(dx, -dy));
-		if (deg < 0) deg += 360;
+		double deg = Math.toDegrees(Math.atan2(dx, -dy)) - startDegrees;
+		deg = ((deg % 360) + 360) % 360;
 		double w = 360.0 / count;
 		return (int) Math.floor((deg + w / 2) / w) % count;
 	}
@@ -32,7 +41,13 @@ public final class RadialMath {
 	 * @return angle in degrees (0 = up, clockwise)
 	 */
 	public static double sliceCenterDegrees(int index, int count) {
-		return index * 360.0 / count;
+		return sliceCenterDegrees(index, count, 0);
+	}
+
+	/** Centre of slice {@code index} in a ring whose slice 0 sits at {@code startDegrees}; in [0, 360). */
+	public static double sliceCenterDegrees(int index, int count, double startDegrees) {
+		double deg = startDegrees + index * 360.0 / count;
+		return ((deg % 360) + 360) % 360;
 	}
 
 	/**

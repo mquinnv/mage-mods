@@ -20,7 +20,7 @@ class ConfigStoreTest {
 		assertNull(s.reload());
 		assertTrue(Files.exists(f));
 		assertEquals(3, s.current().vaultCount);
-		assertEquals(8, s.current().wheel.size());
+		assertEquals(10, s.current().wheel.size()); // 8 rings + Fly + Sell at the top level
 	}
 
 	@Test void localCountingDefaultsAndNormalisation() throws Exception {

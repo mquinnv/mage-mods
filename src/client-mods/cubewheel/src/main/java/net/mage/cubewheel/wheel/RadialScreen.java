@@ -63,6 +63,8 @@ public final class RadialScreen extends Screen {
 	public static BooleanSupplier placeholderPending = () -> false;
 
 	private final Deque<WheelNode> path = new ArrayDeque<>(); // root first, current ring last
+	/** Rotation of each ring on {@link #path}: a sub-ring's first entry sits where the slice that opened it was. */
+	private final Deque<Double> starts = new ArrayDeque<>();
 	private final KeyMapping holdKey;
 	private List<WheelNode> entries;
 	private int hovered = -1;
@@ -73,7 +75,13 @@ public final class RadialScreen extends Screen {
 		this.holdKey = holdKey;
 		this.keyStillHeld = holdKey != null && canPoll(KeyMappingHelper.getBoundKeyOf(holdKey));
 		path.addLast(root);
+		starts.addLast(0.0);
 		entries = resolve(root, false);
+	}
+
+	private double start() {
+		Double s = starts.peekLast();
+		return s == null ? 0 : s;
 	}
 
 	/** Default resolver: vault count from config, homes from the per-server cache (none if not wired). */
@@ -106,6 +114,7 @@ public final class RadialScreen extends Screen {
 		hovered = -1;
 		if (path.size() > 1 && children.size() > listThreshold() && minecraft.gui.screen() == this) {
 			path.removeLast();
+			starts.removeLast();
 			entries = resolve(path.peekLast(), false);
 			openList(top, children);
 			return;
@@ -137,12 +146,12 @@ public final class RadialScreen extends Screen {
 		renderedRadius = r;
 		int ri = (int) Math.round(r);
 		int hub = Math.min((int) Math.round(r * HUB_FRACTION), ri - half - HUB_GAP);
-		hovered = RadialMath.sliceAt(mouseX - cx, mouseY - cy, entries.size(), r * 0.25);
+		hovered = RadialMath.sliceAt(mouseX - cx, mouseY - cy, entries.size(), r * 0.25, start());
 		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + half, ri - half, RING);
 		fillRing(g, cx, cy, hub, 0, HUB);
 		for (int i = 0; i < entries.size(); i++) {
 			WheelNode node = entries.get(i);
-			double[] o = RadialMath.offset(RadialMath.sliceCenterDegrees(i, entries.size()), r);
+			double[] o = RadialMath.offset(RadialMath.sliceCenterDegrees(i, entries.size(), start()), r);
 			int x = cx + (int) Math.round(o[0]);
 			int y = cy + (int) Math.round(o[1]);
 			boolean hot = i == hovered;
@@ -191,7 +200,7 @@ public final class RadialScreen extends Screen {
 			double dy = event.y() - cy;
 			double dead = (renderedRadius > 0 ? renderedRadius : radius()) * 0.25;
 			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
-				int slice = RadialMath.sliceAt(dx, dy, entries.size(), dead);
+				int slice = RadialMath.sliceAt(dx, dy, entries.size(), dead, start());
 				if (slice >= 0) activate(entries.get(slice));
 				else if (Math.hypot(dx, dy) < dead) back();
 				return true;
@@ -225,7 +234,12 @@ public final class RadialScreen extends Screen {
 				openList(node, children);
 				return;
 			}
+			// Rotate the sub-ring so its first (default) entry sits under the slice just chosen:
+			// clicking the same spot again takes the default (Vaults → Vault 1).
+			int index = entries.indexOf(node);
+			double childStart = index < 0 ? start() : RadialMath.sliceCenterDegrees(index, entries.size(), start());
 			path.addLast(node);
+			starts.addLast(childStart);
 			entries = children;
 			hovered = -1;
 		} catch (RuntimeException e) {
@@ -255,6 +269,7 @@ public final class RadialScreen extends Screen {
 			return;
 		}
 		path.removeLast();
+		starts.removeLast();
 		refresh();
 	}
 
