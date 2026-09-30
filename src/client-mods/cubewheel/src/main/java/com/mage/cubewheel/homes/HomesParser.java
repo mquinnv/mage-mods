@@ -54,7 +54,7 @@ public final class HomesParser {
 			String rest = line.substring(h.end()).trim();
 			if (rest.endsWith(".")) rest = rest.substring(0, rest.length() - 1).trim();
 			if (rest.isBlank()) continue;
-			if (rest.equalsIgnoreCase("none") || rest.equalsIgnoreCase("no")) continue;
+			if (rest.equalsIgnoreCase("none") || rest.equalsIgnoreCase("no")) return Optional.of(List.of());
 			Set<String> names = new LinkedHashSet<>();
 			boolean ok = true;
 			for (String tok : rest.split(",")) {

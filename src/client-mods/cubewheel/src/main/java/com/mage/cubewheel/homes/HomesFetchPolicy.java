@@ -18,6 +18,11 @@ public final class HomesFetchPolicy {
 		return cacheStale && now - lastSent >= MIN_INTERVAL_MS;
 	}
 
+	/** User-requested refresh: ignores cache age but still honours MIN_INTERVAL_MS. */
+	public boolean shouldForceFetch(long now) {
+		return now - lastSent >= MIN_INTERVAL_MS;
+	}
+
 	/** Records that a /homes command was sent at {@code now}. */
 	public void armed(long now) {
 		lastSent = now;

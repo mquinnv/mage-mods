@@ -11,6 +11,7 @@ import com.mojang.blaze3d.platform.Window;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
@@ -28,6 +29,9 @@ public final class RadialScreen extends Screen {
 
 	/** Resolves a ring/dynamic node's children. Replaceable so the homes feature can hook fetching in. */
 	public static Function<WheelNode, List<WheelNode>> childrenProvider = RadialScreen::defaultChildren;
+
+	/** True while a placeholder (e.g. "Loading…") is still valid; once false, tick() re-resolves the ring. */
+	public static BooleanSupplier placeholderPending = () -> false;
 
 	private final Deque<WheelNode> path = new ArrayDeque<>(); // root first, current ring last
 	private final KeyMapping holdKey;
@@ -120,6 +124,7 @@ public final class RadialScreen extends Screen {
 	@Override
 	public void tick() {
 		try {
+			if (showsPlaceholder() && !placeholderPending.getAsBoolean()) refresh();
 			if (!keyStillHeld) return;
 			if (!minecraft.isWindowActive()) {
 				keyStillHeld = false; // focus loss is not a release: stay open in click mode
@@ -167,7 +172,7 @@ public final class RadialScreen extends Screen {
 				CommandSender.send(node.command);
 				return;
 			}
-			if (!node.isRing() && !node.isDynamic()) return; // placeholder (e.g. "Loading…"): not actionable
+			if (isPlaceholder(node)) return; // e.g. "Loading…": not actionable
 			List<WheelNode> children = resolve(node);
 			if (children.size() > listThreshold()) {
 				openList(node, children);
@@ -179,6 +184,16 @@ public final class RadialScreen extends Screen {
 		} catch (RuntimeException e) {
 			fail("activate", e);
 		}
+	}
+
+	/** A non-actionable entry: no command, no children to open (e.g. "Loading…"). */
+	private static boolean isPlaceholder(WheelNode node) {
+		return !node.isLeaf() && !node.isRing() && !node.isDynamic();
+	}
+
+	private boolean showsPlaceholder() {
+		for (WheelNode n : entries) if (isPlaceholder(n)) return true;
+		return false;
 	}
 
 	private void openList(WheelNode node, List<WheelNode> children) {

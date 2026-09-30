@@ -40,5 +40,7 @@ Bind "Reload CubeWheel config" to a free key under Options > Controls > Key Bind
 - [ ] `/sethome test`: reopen the wheel, "test" is in the Homes ring immediately (no new `/homes` in the log).
 - [ ] `/delhome test`: reopen the wheel, "test" is gone.
 - [ ] Reopening Homes within 5 minutes sends no `/homes` (no new "fetching /homes" log line); after 5 minutes one is sent again.
+- [ ] Reply not recognised (e.g. a server whose `/homes` format the parser rejects): after ~3 s the "Loading…" entry turns into "↻ Refresh" without moving the mouse; clicking it re-sends `/homes` at most once per 30 s (clicking again sooner shows Refresh again, no new "fetching /homes" log line).
+- [ ] With no homes set, `/homes` replies "none" (or similar): the ring shows only "↻ Refresh" (plus any configured extras); the reply is hidden, and reopening within 5 min sends no `/homes`.
 - [ ] A Homes ring grown past `listThreshold` opens as a list once the homes arrive.
 - [ ] Config reload and other "[CubeWheel] …" chat lines still show normally.

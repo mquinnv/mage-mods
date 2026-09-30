@@ -26,8 +26,13 @@ class HomesParserTest {
 	@Test void rejectsSentenceWithSpaces() { assertEquals(Optional.empty(), HomesParser.parse(r("Home: you have no homes set"))); }
 	@Test void rejectsUnrelated() { assertEquals(Optional.empty(), HomesParser.parse(r("<Steve> hello: world"))); }
 	@Test void rejectsChatAndPlaceholders() {
-		for (String t : new String[] {"Steve: home", "Bob: nice-home", "[Home] Steve: hi", "Home: none"})
+		for (String t : new String[] {"Steve: home", "Bob: nice-home", "[Home] Steve: hi"})
 			assertEquals(Optional.empty(), HomesParser.parse(r(t)), t);
+	}
+	@Test void noneMeansZeroHomes() {
+		for (String t : new String[] {"Home: none", "Homes: None.", "Your homes (0): no"})
+			assertEquals(Optional.of(List.of()), HomesParser.parse(r(t)), t);
+		assertEquals(Optional.empty(), HomesParser.parse(r("Homes: none of your business")));
 	}
 	@Test void singleClickWithoutHeaderRejected() {
 		assertEquals(Optional.empty(), HomesParser.parse(r("Home 'farm' set! Click to teleport", "/home farm")));

@@ -46,6 +46,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		homes.load();
 		homesFetcher = new HomesFetcher(homes);
 		RadialScreen.childrenProvider = homesFetcher::childrenFor;
+		RadialScreen.placeholderPending = () -> homesFetcher.isLoading(System.currentTimeMillis());
 		ClientReceiveMessageEvents.ALLOW_GAME.register(homesFetcher::onGameMessage);
 		ClientSendMessageEvents.COMMAND.register(homesFetcher::onCommand);
 		Keybinds.register();

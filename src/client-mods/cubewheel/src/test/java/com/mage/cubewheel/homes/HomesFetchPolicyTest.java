@@ -36,4 +36,11 @@ class HomesFetchPolicyTest {
 		assertFalse(p.isArmed(3_001));
 		assertEquals(HomesFetchPolicy.Decision.ACCEPT_PASSIVE, p.onMessage(3_001, Optional.of(List.of("a"))));
 	}
+	@Test void forcedFetchIgnoresStalenessButKeepsMinInterval() {
+		HomesFetchPolicy p = new HomesFetchPolicy();
+		assertTrue(p.shouldForceFetch(0));
+		p.armed(0);
+		assertFalse(p.shouldForceFetch(29_999));
+		assertTrue(p.shouldForceFetch(30_000));
+	}
 }
