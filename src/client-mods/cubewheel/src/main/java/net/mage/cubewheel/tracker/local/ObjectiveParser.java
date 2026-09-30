@@ -41,6 +41,8 @@ public final class ObjectiveParser {
 	private static final Set<String> CROP_WORDS = Set.of("crop", "wheat", "carrot", "potato", "beetroot", "nether wart",
 			"wart", "cocoa", "cocoa bean", "sweet berry", "berry", "melon", "pumpkin");
 
+	private static final Set<String> FISH_WORDS = Set.of("cod", "salmon", "pufferfish");
+
 	private ObjectiveParser() {}
 
 	public static Optional<CounterRule> parse(ObjectiveInfo info, Collection<String> worldTokens) {
@@ -92,12 +94,20 @@ public final class ObjectiveParser {
 		Kind kind = switch (m.group("verb").toLowerCase(Locale.ROOT)) {
 			case "harvest" -> isCropNoun(what) ? Kind.HARVEST : Kind.BREAK;
 			case "kill", "slay", "slaughter", "defeat" -> Kind.KILL;
-			case "catch", "fish" -> Kind.FISH;
+			// "Catch 61 Tangleroots Fireflies": a custom entity hit (or bottled) and removed, counted like a kill.
+			case "catch" -> isFishNoun(singular) ? Kind.FISH : Kind.KILL;
+			case "fish" -> Kind.FISH;
 			default -> Kind.BREAK;
 		};
 		if (kind == Kind.FISH && !(what instanceof Any)) return Optional.empty(); // specific fish: not in v1
 		if (kind != Kind.FISH && singular.equals("fish")) return Optional.empty();
 		return Optional.of(new CounterRule(kind, target, what, world));
+	}
+
+	/** Fish nouns keep "catch" on the fishing path: fish, cod, salmon, pufferfish, "tropical fish", "angelfish". */
+	static boolean isFishNoun(String singular) {
+		String last = singular.substring(singular.lastIndexOf(' ') + 1);
+		return last.endsWith("fish") || FISH_WORDS.contains(last);
 	}
 
 	private static boolean isCropNoun(CounterRule.Target what) {

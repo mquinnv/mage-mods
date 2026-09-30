@@ -169,8 +169,8 @@ class RemovalKillTest {
 		// The loot action bar and the removal can arrive in the same tick in either order.
 		RemovalKills r = new RemovalKills();
 		r.onActionBar("+5 Mana | +3  Tiger Hide", 1_000);
-		assertEquals(Optional.of(List.of("Mana", "Tiger Hide")), r.awaitLoot(removed(1), 1_000 + RemovalKills.LOOKBACK_MS));
-		// Older loot belongs to an earlier kill: wait for the next message instead.
+		assertEquals(Optional.of(List.of("Mana", "Tiger Hide")), r.awaitLoot(removed(1), 1_250));
+		// That loot line is used up by the first kill: wait for the next message instead.
 		assertEquals(Optional.empty(), r.awaitLoot(removed(2), 2_000));
 	}
 

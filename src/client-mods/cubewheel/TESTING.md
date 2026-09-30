@@ -125,7 +125,7 @@ Open `/pquests`, `/prestige` (rank objectives) and `/challenges` once so the obj
 - [ ] Break fully grown wheat: "Harvest N Crops"/"Harvest N Wheat" go up by 1 each; breaking unripe wheat or a melon/pumpkin stem adds nothing. A melon block counts.
 - [ ] Break grass, flowers and ferns: a "... Resources" objective does not move; breaking stone does.
 - [ ] "Harvest N Sweet Berries" / "Cocoa Beans": picking a ripe bush / pod counts.
-- [ ] Job listing "Farming Heavy · Harvest Cherry Logs": break a cherry log, the entry shows `~3,128 / 4,773`; "Catch … Tangleroots Fireflies" never gets a `~`.
+- [ ] Job listing "Farming Heavy · Harvest Cherry Logs": break a cherry log, the entry shows `~3,128 / 4,773`; "Catch … Tangleroots Fireflies" gets a `~` only in Tangleroot, from catching fireflies (below).
 - [ ] In Burning Lands (if its sidebar says "World: Burning Lands" or its dimension is `burning_lands`), a "Burninglands" / "Burning Lands" objective counts.
 - [ ] Place a stone and break it again: no count. Break a crop you planted once it is grown: counts.
 - [ ] Break a block inside another player's claim (the block comes back): the count goes up and back down within a second (capture: `"signal":"reject"`).
@@ -134,6 +134,7 @@ Open `/pquests`, `/prestige` (rank objectives) and `/challenges` once so the obj
 - [ ] Tigers (custom-model mobs: an unnamed `minecraft:slime` hitbox), capture on: the first hit on each tiger writes one `"signal":"nearby"` line (entities within 4 blocks: note whether a `text_display`/`armor_stand` carries "Tiger" and whether it is a passenger/vehicle of the slime). Each kill writes exactly one `"signal":"kill"` with `detail` `removal, method b (...)` (name tag found) or `method c (loot [Mana, Tiger Hide] -> tiger)` and `matched` = the job, and the job's `~` estimate goes up by one per tiger. No second `kill` line for the same tiger. Compare the count with `/jobs` after 10 kills.
 - [ ] Kill a tiger with a katana sweep that also hits a second tiger: note whether the second one counts (a `method` line) or not (under-count, expected if no damage packet names you).
 - [ ] Walk away (or teleport) right after hitting a tiger without killing it: no `kill` line; the `removed` line says `too long ago` / `too far`.
+- [ ] Fireflies (Tangleroot, `minecraft:interaction` hitbox riding an `area_effect_cloud`), capture on, with "Farming Experienced · Catch Tangleroots Fireflies" tracked: catch one with the Firefly Bottle (and once by hitting). The action bar `+1  Sad Firefly` usually comes ~0.5-1 s *before* the removal; expect one `"signal":"kill"` with `detail` `removal, method c (loot [Sad Firefly] -> firefly), local hit` (or `held item [Firefly]` if no loot line showed) and the job's `~` +1. Compare with `/jobs` after 10 catches.
 - [ ] Kill a Dart Frog (a real frog that dies normally): one `kill` line with `death, local hit`, no `removal` kill for it.
 - [ ] Stacked mob (if any server area stacks): a name losing its count (`5x Tiger` -> `Tiger`) counts nothing; `5x Tiger` -> `4x Tiger` counts 1.
 - [ ] No mixin errors for `LocalCountingHudMixin` / `TextDisplayAccessor`; no FPS change while fighting in a crowd.

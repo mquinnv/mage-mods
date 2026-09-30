@@ -31,6 +31,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.event.client.player.ClientPlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -83,6 +84,14 @@ public final class LocalSignals {
 		AttackEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
 			try {
 				onAttack(player, level.isClientSide(), entity);
+			} catch (Throwable t) {
+				fail(Hook.ATTACK, t);
+			}
+			return InteractionResult.PASS;
+		});
+		UseEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
+			try {
+				onUseEntity(player, level.isClientSide(), entity, player.getItemInHand(hand).getHoverName().getString());
 			} catch (Throwable t) {
 				fail(Hook.ATTACK, t);
 			}
@@ -157,8 +166,32 @@ public final class LocalSignals {
 			Minecraft mc = Minecraft.getInstance();
 			if (player != mc.player || !survivalMode(player) || target instanceof Player) return;
 			kills.onDamage(target.getId(), player.getId(), tick);
+			removals.hit(target.getId(), System.currentTimeMillis());
 			watchStack(target);
 			captureEntity("attack", target, describe(target));
+			probe(target);
+		} catch (Throwable t) {
+			fail(Hook.ATTACK, t);
+		}
+	}
+
+	/**
+	 * UseEntityCallback (client side): using an item on an entity (a Firefly Bottle on a firefly's
+	 * interaction hitbox) counts as a local hit for removal kills, like an attack. With a Firefly Bottle in
+	 * hand the removal falls back to "Firefly" loot when no loot line names it. Living mobs count only with
+	 * such a bottle: right-clicking a villager or a pet is not an attack.
+	 */
+	private static void onUseEntity(Player player, boolean clientSide, Entity target, String heldItem) {
+		try {
+			if (!clientSide || !enabled(Hook.ATTACK) || !local().kills) return;
+			Minecraft mc = Minecraft.getInstance();
+			if (player != mc.player || !survivalMode(player) || target == null || target instanceof Player) return;
+			String bottle = RemovalKills.bottleLoot(heldItem);
+			if (bottle == null && target instanceof LivingEntity) return;
+			kills.onDamage(target.getId(), player.getId(), tick);
+			removals.hit(target.getId(), System.currentTimeMillis());
+			removals.fallback(target.getId(), bottle);
+			captureEntity("use", target, describe(target) + "; held " + heldItem);
 			probe(target);
 		} catch (Throwable t) {
 			fail(Hook.ATTACK, t);
@@ -177,6 +210,7 @@ public final class LocalSignals {
 			if (causeId == mc.player.getId()) {
 				Entity target = mc.level.getEntity(entityId);
 				if (target != null && !(target instanceof Player)) {
+					removals.hit(entityId, System.currentTimeMillis());
 					watchStack(target);
 					probe(target); // area hits (a katana's sweep) have no attack callback
 				}
@@ -306,17 +340,26 @@ public final class LocalSignals {
 
 	/** Method c: credit the one kill objective the loot names; else method d (unattributed, capture only). */
 	private static void creditLoot(RemovalKills.Removed r, List<String> loot) {
+		creditLoot(r, loot, "loot");
+	}
+
+	private static void creditLoot(RemovalKills.Removed r, List<String> loot, String from) {
 		TrackerStore store = CubeWheelClient.tracker();
 		Optional<LootMatch.Credit> credit = store == null ? Optional.empty()
 				: LootMatch.match(loot, store.activeRules(local().worlds), r.world());
 		if (credit.isEmpty()) {
-			capture("kill", r.typeId(), r.name(), "removal, method d (loot " + loot + " names no single kill objective), local hit",
+			Optional<String> bottle = removals.fallback(r.entityId());
+			if (from.equals("loot") && bottle.isPresent()) {
+				creditLoot(r, List.of(bottle.get()), "held item");
+				return;
+			}
+			capture("kill", r.typeId(), r.name(), "removal, method d (" + from + " " + loot + " names no single kill objective), local hit",
 					r.world(), List.of());
 			return;
 		}
 		List<LocalCounter.Contribution> added = LocalCounter.credit(credit.get().ruleIds(), store, System.currentTimeMillis());
 		if (!added.isEmpty()) saveThrottle.markDirty();
-		capture("kill", r.typeId(), credit.get().target(), "removal, method c (loot " + loot + " -> " + credit.get().target() + "), local hit",
+		capture("kill", r.typeId(), credit.get().target(), "removal, method c (" + from + " " + loot + " -> " + credit.get().target() + "), local hit",
 				r.world(), added);
 	}
 
@@ -384,6 +427,11 @@ public final class LocalSignals {
 			stacks.retainRoots(kills::tracks);
 			if (removals.awaitingLoot()) {
 				for (RemovalKills.Removed r : removals.expire(System.currentTimeMillis())) {
+					Optional<String> bottle = removals.fallback(r.entityId());
+					if (bottle.isPresent()) {
+						creditLoot(r, List.of(bottle.get()), "held item");
+						continue;
+					}
 					capture("kill", r.typeId(), r.name(), "removal, method d (no name tag, no loot line within "
 							+ RemovalKills.LOOT_WAIT_MS + " ms), local hit", r.world(), List.of());
 				}

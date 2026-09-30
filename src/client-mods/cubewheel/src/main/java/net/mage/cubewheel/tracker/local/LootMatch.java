@@ -8,9 +8,11 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 /**
- * Last-resort naming of a kill from its loot: a loot item whose leading words are a kill objective's
- * target ("Tiger Hide" -> "tiger", "Frog Legs" -> "frog"). Credits only when exactly one distinct target
- * fits (every rule with that target, e.g. a job and a quest); two different targets fitting credit nothing.
+ * Last-resort naming of a kill (or catch) from its loot: a loot item containing a kill objective's target
+ * as whole words, compared singular ("Tiger Hide" -> "tiger", "Frog Legs" -> "frog", "Sad Firefly" ->
+ * "firefly" for "Catch 61 Fireflies"). The "+N Mana" entry is never loot. Credits only when exactly one
+ * distinct target fits (every rule with that target, e.g. a job and a quest); two different targets
+ * fitting credit nothing.
  * Pure: no Minecraft/Fabric imports.
  */
 public final class LootMatch {
@@ -22,7 +24,10 @@ public final class LootMatch {
 	public static Optional<Credit> match(List<String> lootItems, Map<String, CounterRule> rules, WorldInfo at) {
 		if (lootItems == null || lootItems.isEmpty() || rules == null) return Optional.empty();
 		List<String[]> loot = new ArrayList<>();
-		for (String item : lootItems) loot.add(words(item));
+		for (String item : lootItems) {
+			String[] w = words(item);
+			if (w.length > 0 && !(w.length == 1 && w[0].equals("mana"))) loot.add(w);
+		}
 		Map<String, List<String>> byTarget = new TreeMap<>();
 		for (Map.Entry<String, CounterRule> e : rules.entrySet()) {
 			CounterRule r = e.getValue();
@@ -31,7 +36,7 @@ public final class LootMatch {
 			String[] want = words(n.singular());
 			if (want.length == 0) continue;
 			for (String[] l : loot) {
-				if (startsWith(l, want)) {
+				if (contains(l, want)) {
 					byTarget.computeIfAbsent(String.join(" ", want), k -> new ArrayList<>()).add(e.getKey());
 					break;
 				}
@@ -51,9 +56,13 @@ public final class LootMatch {
 		return Arrays.stream(name.split(" ")).map(Singular::word).toArray(String[]::new);
 	}
 
-	private static boolean startsWith(String[] loot, String[] want) {
-		if (want.length > loot.length) return false;
-		for (int i = 0; i < want.length; i++) if (!loot[i].equals(want[i])) return false;
-		return true;
+	/** Is {@code want} a run of whole words in {@code loot}? Every word is singular, so plurals never matter. */
+	private static boolean contains(String[] loot, String[] want) {
+		outer:
+		for (int start = 0; start + want.length <= loot.length; start++) {
+			for (int i = 0; i < want.length; i++) if (!loot[start + i].equals(want[i])) continue outer;
+			return true;
+		}
+		return false;
 	}
 }

@@ -80,8 +80,9 @@ class ObjectiveParserTest {
 				parse("Harvest 3,127/4,773 Cherry Logs"));
 		assertEquals(Optional.of(rule(Kind.BREAK, 506, new Named("acacia log"), new AnyWorld())),
 				parse("Harvest 0/506 Acacia Logs"));
-		// A specific catch in a named world (fireflies are not fish): no rule, as for "Catch 5 Angelfish".
-		assertTrue(parse("Catch 0/61 Tangleroots Fireflies").isEmpty());
+		// A catch of a non-fish is a hit-and-remove entity rule (see CatchRemovalTest).
+		assertEquals(Optional.of(rule(Kind.KILL, 61, new Named("firefly"), new NamedWorld("tangleroot"))),
+				parse("Catch 0/61 Tangleroots Fireflies"));
 		assertTrue(parse("Harvest 5/0 Cherry Logs").isEmpty());
 	}
 

@@ -108,7 +108,10 @@ class ManaCubeMenusTest {
 		Map<String, net.mage.cubewheel.tracker.local.CounterRule> rules = store.activeRules(List.of("tangleroots"));
 		assertTrue(rules.containsKey(heavy), rules.toString());
 		assertTrue(rules.containsKey(beginner), rules.toString());
-		assertTrue(!rules.containsKey(fireflies), rules.toString());
+		// "Catch Fireflies" is a hit-and-remove entity rule in Tangleroot (fireflies are not fish).
+		assertEquals(new net.mage.cubewheel.tracker.local.CounterRule(net.mage.cubewheel.tracker.local.CounterRule.Kind.KILL, 61,
+				new net.mage.cubewheel.tracker.local.CounterRule.Named("firefly"),
+				new net.mage.cubewheel.tracker.local.CounterRule.NamedWorld("tangleroot")), rules.get(fireflies));
 		var overworld = new net.mage.cubewheel.tracker.local.WorldInfo(Set.of("overworld"), false, true);
 		var cherry = new net.mage.cubewheel.tracker.local.Signal.BlockBroken(
 				"minecraft:cherry_log", "Cherry Log", Set.of("logs"), false, false, overworld);
