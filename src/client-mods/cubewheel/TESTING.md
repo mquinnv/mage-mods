@@ -1,6 +1,6 @@
 # CubeWheel manual test checklist
 
-Run the client (`./gradlew runClient`) and connect to ManaCube (`play.manacube.com`) unless a step says otherwise.
+Run the client (`./gradlew runClient`, or drop `build/libs/cubewheel-0.1.0.jar` plus Fabric API into a 26.2 instance) and connect to ManaCube (`play.manacube.com`) unless a step says otherwise. See README.md for what each feature is meant to do.
 Bind "Reload CubeWheel config" to a free key under Options > Controls > Key Binds > CubeWheel first.
 
 ## Wheel
