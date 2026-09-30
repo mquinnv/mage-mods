@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "cubewheel",
+  "version": "${version}",
+  "name": "CubeWheel (unofficial ManaCube helper)",
+  "description": "Unofficial client-side helper for ManaCube Survival: a radial command wheel for vaults, shops, warps and homes, plus a passive quest/job progress tracker. Not affiliated with ManaCube.",
+  "authors": ["Mage Realism"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": { "client": ["com.mage.cubewheel.CubeWheelClient"] },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=25"
+  }
+}
