@@ -62,10 +62,21 @@ public final class RadialScreen extends Screen {
 		}
 	}
 
-	/** Re-resolves the current ring (e.g. when homes arrive). */
+	/**
+	 * Re-resolves the current ring (e.g. when homes arrive). A sub-ring that has grown past
+	 * listThreshold is handed over to a ListScreen, exactly as activate() would have done.
+	 */
 	public void refresh() {
-		entries = resolve(path.peekLast());
+		WheelNode top = path.peekLast();
+		List<WheelNode> children = resolve(top);
 		hovered = -1;
+		if (path.size() > 1 && children.size() > listThreshold() && minecraft.gui.screen() == this) {
+			path.removeLast();
+			entries = resolve(path.peekLast());
+			openList(top, children);
+			return;
+		}
+		entries = children;
 	}
 
 	@Override
@@ -108,51 +119,74 @@ public final class RadialScreen extends Screen {
 
 	@Override
 	public void tick() {
-		if (!keyStillHeld || isHoldKeyDown()) return;
-		keyStillHeld = false;
-		if (hovered >= 0 && hovered < entries.size()) activate(entries.get(hovered));
-		else onClose();
+		try {
+			if (!keyStillHeld) return;
+			if (!minecraft.isWindowActive()) {
+				keyStillHeld = false; // focus loss is not a release: stay open in click mode
+				return;
+			}
+			if (isHoldKeyDown()) return;
+			keyStillHeld = false;
+			if (hovered >= 0 && hovered < entries.size()) activate(entries.get(hovered));
+			else onClose();
+		} catch (RuntimeException e) {
+			fail("tick", e);
+		}
 	}
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		int cx = width / 2;
-		int cy = height / 2;
-		double dx = event.x() - cx;
-		double dy = event.y() - cy;
-		double r = radius();
-		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
-			int slice = RadialMath.sliceAt(dx, dy, entries.size(), r * 0.25);
-			if (slice >= 0) activate(entries.get(slice));
-			else if (Math.hypot(dx, dy) < r * 0.25) back();
+		try {
+			keyStillHeld = false; // any mouse-driven action ends hold mode; a later release must not commit
+			int cx = width / 2;
+			int cy = height / 2;
+			double dx = event.x() - cx;
+			double dy = event.y() - cy;
+			double dead = radius() * 0.25;
+			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+				int slice = RadialMath.sliceAt(dx, dy, entries.size(), dead);
+				if (slice >= 0) activate(entries.get(slice));
+				else if (Math.hypot(dx, dy) < dead) back();
+				return true;
+			}
+			if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
+				back();
+				return true;
+			}
+			return super.mouseClicked(event, doubleClick);
+		} catch (RuntimeException e) {
+			fail("mouseClicked", e);
 			return true;
 		}
-		if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
-			back();
-			return true;
-		}
-		return super.mouseClicked(event, doubleClick);
 	}
 
 	private void activate(WheelNode node) {
-		if (node.isLeaf()) {
-			onClose();
-			CommandSender.send(node.command);
-			return;
+		try {
+			if (node.isLeaf()) {
+				onClose();
+				CommandSender.send(node.command);
+				return;
+			}
+			if (!node.isRing() && !node.isDynamic()) return; // placeholder (e.g. "Loading…"): not actionable
+			List<WheelNode> children = resolve(node);
+			if (children.size() > listThreshold()) {
+				openList(node, children);
+				return;
+			}
+			path.addLast(node);
+			entries = children;
+			hovered = -1;
+		} catch (RuntimeException e) {
+			fail("activate", e);
 		}
-		if (!node.isRing() && !node.isDynamic()) return; // placeholder (e.g. "Loading…"): not actionable
-		List<WheelNode> children = resolve(node);
-		if (children.size() > CubeWheelClient.config().current().listThreshold) {
-			keyStillHeld = false;
-			minecraft.gui.setScreen(new ListScreen(this, node.label, children));
-			return;
-		}
-		path.addLast(node);
-		entries = children;
-		hovered = -1;
 	}
 
-	/** Up one level; at the root, closes. */
+	private void openList(WheelNode node, List<WheelNode> children) {
+		keyStillHeld = false; // returning from the list must not look like a key release
+		minecraft.gui.setScreen(new ListScreen(this, node.label, children));
+	}
+
+	/** Up one level (re-resolving that ring, which is cheap and rate-limited for homes); at the root, closes. */
 	private void back() {
 		if (path.size() <= 1) {
 			onClose();
@@ -160,6 +194,15 @@ public final class RadialScreen extends Screen {
 		}
 		path.removeLast();
 		refresh();
+	}
+
+	private void fail(String where, RuntimeException e) {
+		CubeWheelClient.LOG.error("[cubewheel] radial wheel {} failed; closing", where, e);
+		minecraft.gui.setScreen(null);
+	}
+
+	private static int listThreshold() {
+		return CubeWheelClient.config().current().listThreshold;
 	}
 
 	private double radius() {

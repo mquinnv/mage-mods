@@ -1,6 +1,7 @@
 package com.mage.cubewheel.wheel;
 
 import com.mage.cubewheel.CommandSender;
+import com.mage.cubewheel.CubeWheelClient;
 import com.mage.cubewheel.config.WheelNode;
 import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
@@ -92,17 +93,22 @@ public final class ListScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		if (filter.isMouseOver(event.x(), event.y())) return super.mouseClicked(event, doubleClick);
-		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
-			int row = rowAt(event.x(), event.y());
-			if (row >= 0) activate(shown.get(row));
+		try {
+			if (filter.isMouseOver(event.x(), event.y())) return super.mouseClicked(event, doubleClick);
+			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+				int row = rowAt(event.x(), event.y());
+				if (row >= 0) activate(shown.get(row));
+				return true;
+			}
+			if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
+				onClose();
+				return true;
+			}
+			return super.mouseClicked(event, doubleClick);
+		} catch (RuntimeException e) {
+			fail("mouseClicked", e);
 			return true;
 		}
-		if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
-			onClose();
-			return true;
-		}
-		return super.mouseClicked(event, doubleClick);
 	}
 
 	@Override
@@ -128,14 +134,23 @@ public final class ListScreen extends Screen {
 	}
 
 	private void activate(WheelNode node) {
-		if (node.isLeaf()) {
-			minecraft.gui.setScreen(null);
-			CommandSender.send(node.command);
-			return;
+		try {
+			if (node.isLeaf()) {
+				minecraft.gui.setScreen(null);
+				CommandSender.send(node.command);
+				return;
+			}
+			if (!node.isRing() && !node.isDynamic()) return; // placeholder: not actionable
+			// Sub-rings open as lists too, so Esc always walks back up the same stack of screens.
+			minecraft.gui.setScreen(new ListScreen(this, node.label, RadialScreen.resolve(node)));
+		} catch (RuntimeException e) {
+			fail("activate", e);
 		}
-		if (!node.isRing() && !node.isDynamic()) return; // placeholder: not actionable
-		// Sub-rings open as lists too, so Esc always walks back up the same stack of screens.
-		minecraft.gui.setScreen(new ListScreen(this, node.label, RadialScreen.resolve(node)));
+	}
+
+	private void fail(String where, RuntimeException e) {
+		CubeWheelClient.LOG.error("[cubewheel] list {} failed; closing", where, e);
+		minecraft.gui.setScreen(null);
 	}
 
 	private int rowAt(double x, double y) {

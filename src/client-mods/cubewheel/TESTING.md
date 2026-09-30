@@ -10,6 +10,9 @@ Bind "Reload CubeWheel config" to a free key under Options > Controls > Key Bind
 - [ ] Flick towards Shops and release `G`: the wheel drills into the Shops ring and stays open ("◀ back" shows in the centre).
 - [ ] In the Shops ring, left-click Sell: the wheel closes and `/sell` is sent.
 - [ ] Hold `G`, flick onto Travel, click Spawn: `/spawn` is sent exactly once.
+- [ ] Hold `G`, click Shops, release `G` over a slice: nothing is sent, the wheel stays open (clicking ends hold mode).
+- [ ] Hold `G`, right-click back from a sub-ring, release `G` over a slice: nothing is sent, the wheel stays open.
+- [ ] Hold `G`, alt-tab away (window loses focus) and release: nothing is sent; on return the wheel is open in click mode.
 - [ ] Right-click inside a sub-ring goes back one level; right-click at the root closes.
 - [ ] Click the centre inside a sub-ring goes back; click the centre at the root closes.
 - [ ] Tap `G` and release without moving the mouse: the wheel closes, nothing is sent.
