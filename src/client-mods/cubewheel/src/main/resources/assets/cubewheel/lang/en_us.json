@@ -1,0 +1,8 @@
+{
+  "key.category.cubewheel.main": "CubeWheel",
+  "key.cubewheel.wheel": "Open command wheel (hold)",
+  "key.cubewheel.reload": "Reload CubeWheel config",
+  "key.cubewheel.tracker_hud": "Toggle tracker HUD",
+  "key.cubewheel.tracker_picker": "Open tracker picker",
+  "key.cubewheel.capture": "Toggle capture mode"
+}

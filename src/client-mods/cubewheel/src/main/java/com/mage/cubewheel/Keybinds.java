@@ -1,0 +1,31 @@
+package com.mage.cubewheel;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.resources.Identifier;
+
+/** CubeWheel key mappings (category "cubewheel:main", label key.category.cubewheel.main). */
+public final class Keybinds {
+	private Keybinds() {}
+
+	public static KeyMapping wheel;
+	public static KeyMapping reload;
+	public static KeyMapping trackerHud;
+	public static KeyMapping trackerPicker;
+	public static KeyMapping capture;
+
+	public static void register() {
+		KeyMapping.Category category =
+				KeyMapping.Category.register(Identifier.fromNamespaceAndPath(CubeWheelClient.MOD_ID, "main"));
+		wheel = key("key.cubewheel.wheel", InputConstants.KEY_G, category);
+		reload = key("key.cubewheel.reload", InputConstants.UNKNOWN.getValue(), category);
+		trackerHud = key("key.cubewheel.tracker_hud", InputConstants.UNKNOWN.getValue(), category);
+		trackerPicker = key("key.cubewheel.tracker_picker", InputConstants.UNKNOWN.getValue(), category);
+		capture = key("key.cubewheel.capture", InputConstants.UNKNOWN.getValue(), category);
+	}
+
+	private static KeyMapping key(String name, int code, KeyMapping.Category category) {
+		return KeyMappingHelper.registerKeyMapping(new KeyMapping(name, InputConstants.Type.KEYSYM, code, category));
+	}
+}
