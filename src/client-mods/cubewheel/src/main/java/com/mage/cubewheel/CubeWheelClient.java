@@ -1,12 +1,14 @@
 package com.mage.cubewheel;
 
 import com.google.gson.JsonElement;
+import com.mage.cubewheel.boosters.BoosterWatcher;
 import com.mage.cubewheel.capture.CaptureLog;
 import com.mage.cubewheel.config.ConfigStore;
 import com.mage.cubewheel.config.CubeWheelConfig;
 import com.mage.cubewheel.config.WheelNode;
 import com.mage.cubewheel.homes.HomesCache;
 import com.mage.cubewheel.homes.HomesFetcher;
+import com.mage.cubewheel.hud.PanelsHud;
 import com.mage.cubewheel.mixin.BossHealthOverlayAccessor;
 import com.mage.cubewheel.mixin.HudAccessor;
 import com.mage.cubewheel.mixin.LerpingBossEventAccessor;
@@ -85,11 +87,15 @@ public final class CubeWheelClient implements ClientModInitializer {
 		// Capture listens first and always allows, so it also records the /homes replies the next listener hides.
 		ClientReceiveMessageEvents.ALLOW_GAME.register(CubeWheelClient::captureChat);
 		ClientReceiveMessageEvents.ALLOW_GAME.register(homesFetcher::onGameMessage);
+		BoosterWatcher.init(configDir);
+		ClientReceiveMessageEvents.ALLOW_GAME.register(BoosterWatcher::onGameMessage);
 		ClientSendMessageEvents.COMMAND.register(homesFetcher::onCommand);
 		ClientSendMessageEvents.COMMAND.register(CubeWheelClient::noteCommand);
 		ContainerHook.register();
 		LocalSignals.register(); // after tracker and capture exist
 		TrackerHud.register();
+		PanelsHud.add(BoosterWatcher::panel);
+		PanelsHud.register();
 		Keybinds.register();
 		ClientTickEvents.START_CLIENT_TICK.register(mc -> {
 			try {

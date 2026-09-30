@@ -6,6 +6,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
+import com.mage.cubewheel.hud.HudLayout;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -122,11 +123,22 @@ public final class ConfigStore {
 		c.tracker.local.worlds = c.tracker.local.worlds == null ? DefaultConfig.manaWorlds() : normalizeWords(c.tracker.local.worlds);
 		c.tracker.local.specialWorlds = c.tracker.local.specialWorlds == null
 				? DefaultConfig.manaWorlds() : normalizeWords(c.tracker.local.specialWorlds);
+		if (c.boosters == null) c.boosters = new CubeWheelConfig.Boosters();
+		c.boosters.position = normalizePosition(c.boosters.position, DefaultConfig.boostersPosition());
 		c.wheel = c.wheel == null ? DefaultConfig.wheel() : normalizeNodes(c.wheel);
 		c.vaultCount = Math.max(0, Math.min(54, c.vaultCount));
 		c.listThreshold = Math.max(3, Math.min(16, c.listThreshold));
 		c.tracker.nearThreshold = Math.max(0.0, Math.min(1.0, c.tracker.nearThreshold));
 		c.tracker.hudMaxLines = Math.max(1, Math.min(20, c.tracker.hudMaxLines));
+	}
+
+	/** Missing position -> the default; unknown corner -> "top_left"; offsets clamped to 0..4000. */
+	static CubeWheelConfig.Position normalizePosition(CubeWheelConfig.Position p, CubeWheelConfig.Position def) {
+		if (p == null) return def;
+		p.corner = HudLayout.Corner.parse(p.corner).id();
+		p.x = Math.max(0, Math.min(4000, p.x));
+		p.y = Math.max(0, Math.min(4000, p.y));
+		return p;
 	}
 
 	/** Trimmed, blank entries dropped, leading "/" added, capped at MAX_REFRESH_COMMANDS. */

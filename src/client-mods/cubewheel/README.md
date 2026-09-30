@@ -107,6 +107,8 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `tracker.local.blocks` / `kills` / `fish` | Count own block breaks / kills / catches | `true` each |
 | `tracker.local.worlds` | World names recognised in objectives ("Wolfhaven Resources") | the six Mana worlds |
 | `tracker.local.specialWorlds` | Worlds that count as "special worlds (/worlds)" | the six Mana worlds |
+| `boosters.enabled` | Booster countdowns from chat (see [Boosters](#boosters)) | `true` |
+| `boosters.position` | Panel corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) and `x`/`y` offset in GUI pixels | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `wheel` | The root ring: a list of nodes | see `DefaultConfig.java` |
 
 `tracker.sources` defaults: `jobs` = `(?i)jobs`, `pquests` = `(?i)quest`, `prestige` = `(?i)prestige`,
@@ -326,6 +328,35 @@ Glued words and three-part dates are rejected. Known limitation: a two-part date
 can be mistaken for progress. Chat and action-bar progress is not parsed; menus that show no numbers
 are ignored.
 
+## HUD panels
+
+Besides the tracker (top right), CubeWheel draws small panels: boosters, and more below. Each has a
+`position` in the config: a corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) and an `x`/`y`
+offset from it in GUI pixels. Panels in the same corner stack instead of overlapping (in a top corner, the
+first one is `y` pixels from the top and the next one goes below it); a panel in the top-right corner goes
+below the tracker HUD and the potion icons. All default to the top left, which vanilla leaves empty. F1 hides
+them. They are shown only in ManaCube Survival (host and sidebar gate, see [Server gate](#server-gate)).
+All of them are passive: they read chat, the clock and your own clicks, and never send or click anything.
+
+### Boosters
+
+When chat says you received or extended a booster, a **Boosters** panel counts it down:
+`2x Sell · 12:34` (yellow in the last minute), soonest-ending first. Recognised messages:
+
+- `You have received a 2x Sell Boost for 30m`
+- `Your 2x Sell Boost has been extended from 5m 10s to 35m 10s` (the new remaining time is used)
+- `Your 2x Sell Boost has expired` / `has ended` (removes it)
+
+Case, colours, "Booster", "a"/"an" and `1h 30m` / `30 minutes` style times are tolerated. The message must
+start with the phrase, so player chat ("[Rank] Name: You have received ...", `[SHOUT]` lines) never counts.
+Types seen so far: Sell, Mob Head, mcMMO, XP; any other word works too. Receiving a booster you already have
+never shortens it. End times are stored as clock times in `config/cubewheel-boosters.json`, so the countdown
+survives a restart. It assumes a booster keeps running while you are offline (unverified). `boosters.enabled: false`
+turns parsing and the panel off.
+
+**The wording is unverified on Survival** (it comes from another mod's source). If a booster does not show
+up, turn capture mode on, activate one, and send the `"kind":"chat"` line.
+
 ## Capture mode
 
 Capture mode records raw samples so the parsers can be tuned to ManaCube's real formats.
@@ -373,6 +404,7 @@ Captures contain chat text, including other players' messages; review the file b
 - Whether the Survival sidebar title is plain text "SURVIVAL" (it may be drawn with a custom font);
   `sidebar` capture lines record the title. If tracking stops in Survival, set
   `tracker.survivalSidebarPattern` to match the captured title, or to `""`.
+- The exact booster chat wording on Survival (see [Boosters](#boosters)).
 - The command that opens the prestige rank-objectives menu ("Rank [✪n]" items); see
   [Refresh key](#refresh-key).
 

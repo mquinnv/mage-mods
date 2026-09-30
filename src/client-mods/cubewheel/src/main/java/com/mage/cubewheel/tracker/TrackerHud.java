@@ -27,16 +27,27 @@ public final class TrackerHud implements HudElement {
 	private static final int YELLOW = 0xFFFFFF55;
 	private static final int WHITE = 0xFFFFFFFF;
 
+	public static final Identifier ID = Identifier.fromNamespaceAndPath(CubeWheelClient.MOD_ID, "tracker");
+
 	private boolean failureLogged;
+	/** Bottom edge (GUI y) of what this element and the effect icons took this frame; 0 = nothing. */
+	private static int lastBottom;
 
 	public static void register() {
-		HudElementRegistry.attachElementAfter(VanillaHudElements.MOB_EFFECTS,
-				Identifier.fromNamespaceAndPath(CubeWheelClient.MOD_ID, "tracker"), new TrackerHud());
+		HudElementRegistry.attachElementAfter(VanillaHudElements.MOB_EFFECTS, ID, new TrackerHud());
+	}
+
+	/** How far down the top-right corner is taken by effect icons and the tracker HUD (last frame drawn). */
+	public static int lastBottom() {
+		return lastBottom;
 	}
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor g, DeltaTracker delta) {
+		lastBottom = 0;
 		try {
+			Minecraft mc = Minecraft.getInstance();
+			if (mc.player != null && !mc.player.getActiveEffects().isEmpty()) lastBottom = MARGIN + EFFECTS_HEIGHT;
 			draw(g);
 		} catch (RuntimeException e) {
 			if (!failureLogged) CubeWheelClient.LOG.error("[cubewheel] tracker HUD failed", e);
@@ -66,6 +77,7 @@ public final class TrackerHud implements HudElement {
 		int x = g.guiWidth() - MARGIN - w;
 		int y = MARGIN + (mc.player.getActiveEffects().isEmpty() ? 0 : EFFECTS_HEIGHT);
 		g.fill(x - 2, y - 2, x + w + 2, y + lh * (lines.size() + 1), BACKDROP);
+		lastBottom = y + lh * (lines.size() + 1);
 		g.text(font, "Tracker", x, y, GOLD);
 		for (int i = 0; i < lines.size(); i++) {
 			g.text(font, lines.get(i), x, y + lh * (i + 1), color(entries.get(i), cfg.tracker.nearThreshold));

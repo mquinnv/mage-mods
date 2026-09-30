@@ -142,3 +142,15 @@ Open `/pquests`, `/prestige` (rank objectives) and `/challenges` once so the obj
 - [ ] In creative or spectator mode (if available), breaking, killing or fishing counts nothing.
 - [ ] The game log shows no mixin errors for `LocalCounting*Mixin`/`FishingHookAccessor`. (Optional: if one fails to apply, only that kind of counting stops; a hook that throws is logged once and switched off after 10 failures.)
 - [ ] No FPS change while mining, fighting or fishing.
+
+## Boosters
+
+- [ ] Capture on, activate a booster you own (e.g. a Sell booster from a crate or the Magic Pond): the capture file has a `"kind":"chat"` line with its message. Compare it with "You have received a 2x Sell Boost for 30m"; if it differs, note the real wording (and the "extended" wording when you activate a second one) and send the line.
+- [ ] With a recognised message, a "Boosters" panel appears top left: `2x Sell · 29:59`, counting down each second; yellow in the last minute; gone when it reaches 0.
+- [ ] A second booster of the same kind: the "extended from … to …" message sets the countdown to the new time.
+- [ ] Two different boosters are listed soonest-ending first.
+- [ ] Quit and restart (or reconnect) mid-booster: the panel shows the right remaining time (`config/cubewheel-boosters.json` holds `endsAt`).
+- [ ] Another player typing "You have received a 2x Sell Boost for 30m" in chat (or `[SHOUT]`) adds nothing.
+- [ ] Pin a tracker entry and have a potion effect active, then set `boosters.position` to `{"corner": "top_right", "x": 4, "y": 4}` and reload: the panel sits below the tracker HUD, never on top of it or the effect icons.
+- [ ] `"boosters": {"enabled": false}` + reload: no panel, and new booster messages are ignored.
+- [ ] On another ManaCube gamemode or the hub, or a non-ManaCube server: no panel.

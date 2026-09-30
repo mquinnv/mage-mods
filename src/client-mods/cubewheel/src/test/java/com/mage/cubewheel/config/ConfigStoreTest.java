@@ -178,4 +178,22 @@ class ConfigStoreTest {
 		assertNull(s.reload());
 		assertTrue(s.lastLoadOk());
 	}
+
+	@Test void boostersDefaultOnAndPositionNormalised() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{}");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertTrue(s.current().boosters.enabled);
+		assertEquals("top_left", s.current().boosters.position.corner);
+		Files.writeString(f, "{\"boosters\": {\"enabled\": false, \"position\": {\"corner\": \"Bottom-Right\", \"x\": -5, \"y\": 30}}}");
+		assertNull(s.reload());
+		assertFalse(s.current().boosters.enabled);
+		assertEquals("bottom_right", s.current().boosters.position.corner);
+		assertEquals(0, s.current().boosters.position.x);
+		assertEquals(30, s.current().boosters.position.y);
+		Files.writeString(f, "{\"boosters\": {\"position\": null}}");
+		assertNull(s.reload());
+		assertEquals(4, s.current().boosters.position.y);
+	}
 }

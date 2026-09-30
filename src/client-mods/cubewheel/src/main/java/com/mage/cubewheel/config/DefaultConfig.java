@@ -109,6 +109,11 @@ public final class DefaultConfig {
 		return w;
 	}
 
+	/** HUD panels default to the top-left corner, which vanilla leaves empty (the tracker HUD is top right). */
+	public static CubeWheelConfig.Position boostersPosition() {
+		return new CubeWheelConfig.Position("top_left", 4, 4);
+	}
+
 	public static CubeWheelConfig create() {
 		CubeWheelConfig c = new CubeWheelConfig();
 		c.configVersion = CONFIG_VERSION;

@@ -14,7 +14,33 @@ public final class CubeWheelConfig {
 	public int vaultCount = 3;
 	public int listThreshold = 8;
 	public Tracker tracker = new Tracker();
+	/** Booster countdowns parsed from chat. */
+	public Boosters boosters = new Boosters();
 	public List<WheelNode> wheel;
+
+	/**
+	 * Where a HUD panel sits: a screen corner ("top_left", "top_right", "bottom_left", "bottom_right") plus
+	 * an offset in GUI pixels from that corner. Panels in the same corner stack instead of overlapping.
+	 */
+	public static final class Position {
+		public String corner = "top_left";
+		public int x = 4;
+		public int y = 4;
+
+		public Position() {}
+
+		public Position(String corner, int x, int y) {
+			this.corner = corner;
+			this.x = x;
+			this.y = y;
+		}
+	}
+
+	public static final class Boosters {
+		/** Parse booster chat messages and show the countdown panel. */
+		public boolean enabled = true;
+		public Position position = DefaultConfig.boostersPosition();
+	}
 
 	public static final class Tracker {
 		public double nearThreshold = 0.8;
