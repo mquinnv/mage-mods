@@ -92,6 +92,9 @@ public final class ConfigStore {
 		c.tracker.refreshCommands = c.tracker.refreshCommands == null
 				? DefaultConfig.refreshCommands() : normalizeCommands(c.tracker.refreshCommands);
 		if (c.tracker.sidebarLinks == null) c.tracker.sidebarLinks = DefaultConfig.sidebarLinks();
+		else if (DefaultConfig.OLD_SKILLS_LINK.equals(c.tracker.sidebarLinks.get("Skills"))) {
+			c.tracker.sidebarLinks.put("Skills", DefaultConfig.SKILLS_LINK);
+		}
 		if (c.tracker.local == null) c.tracker.local = DefaultConfig.local();
 		c.tracker.local.worlds = c.tracker.local.worlds == null ? DefaultConfig.manaWorlds() : normalizeWords(c.tracker.local.worlds);
 		c.tracker.local.specialWorlds = c.tracker.local.specialWorlds == null

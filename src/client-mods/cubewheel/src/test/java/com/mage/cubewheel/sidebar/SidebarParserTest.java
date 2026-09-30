@@ -55,6 +55,12 @@ class SidebarParserTest {
 		assertTrue(v.isEmpty(), v.toString());
 	}
 
+	@Test void clockTimesAreNotNumbers() {
+		Map<String, Double> v = SidebarParser.parse(List.of("Time: 12:30", "Clock: 7:05pm", "Mana: 5"));
+		assertEquals(Map.of("Mana", 5.0), v);
+		assertFalse(SidebarParser.parseValue("12:30").isPresent());
+	}
+
 	@Test void firstOccurrenceWins() {
 		Map<String, Double> v = SidebarParser.parse(List.of("Mana: 1", "Mana: 2"));
 		assertEquals(1, v.get("Mana"), 1e-9);

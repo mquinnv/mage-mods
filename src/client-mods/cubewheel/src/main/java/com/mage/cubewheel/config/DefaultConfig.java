@@ -29,9 +29,14 @@ public final class DefaultConfig {
 		return new ArrayList<>(List.of("/pquests", "/prestige", "/jobs"));
 	}
 
+	/** The pre-2026-09-30 default for "Skills"; it also matched unrelated entries, so loading upgrades it. */
+	public static final String OLD_SKILLS_LINK = "(?i)skill level";
+	/** Only prestige objectives such as "Rank [✪4] · Reach 2,500 Skill Level". */
+	public static final String SKILLS_LINK = "(?i)reach [\\d,]+ skill level";
+
 	public static Map<String, String> sidebarLinks() {
 		Map<String, String> m = new LinkedHashMap<>();
-		m.put("Skills", "(?i)skill level");
+		m.put("Skills", SKILLS_LINK);
 		return m;
 	}
 

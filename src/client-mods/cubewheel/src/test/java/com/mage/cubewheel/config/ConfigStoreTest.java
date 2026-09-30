@@ -93,14 +93,23 @@ class ConfigStoreTest {
 	@Test void refreshAndSidebarDefaults() throws Exception {
 		CubeWheelConfig c = DefaultConfig.create();
 		assertEquals(List.of("/pquests", "/prestige", "/jobs"), c.tracker.refreshCommands);
-		assertEquals("(?i)skill level", c.tracker.sidebarLinks.get("Skills"));
+		assertEquals("(?i)reach [\\d,]+ skill level", c.tracker.sidebarLinks.get("Skills"));
 		// A file written before these keys existed gets the defaults.
 		Path f = dir.resolve("cubewheel.json");
 		Files.writeString(f, "{ \"tracker\": { \"hudMaxLines\": 4 } }");
 		ConfigStore s = new ConfigStore(f);
 		assertNull(s.reload());
 		assertEquals(List.of("/pquests", "/prestige", "/jobs"), s.current().tracker.refreshCommands);
-		assertEquals(java.util.Map.of("Skills", "(?i)skill level"), s.current().tracker.sidebarLinks);
+		assertEquals(java.util.Map.of("Skills", "(?i)reach [\\d,]+ skill level"), s.current().tracker.sidebarLinks);
+	}
+
+	@Test void oldBroadSkillsLinkIsUpgraded() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{\"tracker\": {\"sidebarLinks\": {\"Skills\": \"(?i)skill level\", \"Mana\": \"(?i)mana\"}}}");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals("(?i)reach [\\d,]+ skill level", s.current().tracker.sidebarLinks.get("Skills"));
+		assertEquals("(?i)mana", s.current().tracker.sidebarLinks.get("Mana"));
 	}
 
 	@Test void refreshCommandsAreNormalised() throws Exception {

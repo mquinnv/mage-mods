@@ -42,6 +42,17 @@ class SidebarLinkerTest {
 		assertEquals(3_600_000, t.seenAt()); // fresh
 	}
 
+	@Test void defaultLinkOnlyMatchesReachNSkillLevelObjectives() {
+		TrackerStore store = storeWithPrestigeRank(0);
+		store.update("pquests", "Skill Level Hunter", new Progress(3, 10), 0);
+		store.update("challenges", "Skill level bonus", new Progress(1, 5), 0);
+		int n = SidebarLinker.apply(Map.of("Skills", 1860.0), com.mage.cubewheel.config.DefaultConfig.sidebarLinks(), store, 10);
+		assertEquals(1, n);
+		assertEquals(1860, find(store, "Rank [✪4] · Reach 2,500 Skill Level").current(), 1e-9);
+		assertEquals(3, find(store, "Skill Level Hunter").current(), 1e-9);
+		assertEquals(1, find(store, "Skill level bonus").current(), 1e-9);
+	}
+
 	@Test void keepsMaxAndStillMarksFresh() {
 		TrackerStore store = storeWithPrestigeRank(0);
 		assertEquals(1, SidebarLinker.apply(Map.of("Skills", 1700.0), LINKS, store, 5_000));

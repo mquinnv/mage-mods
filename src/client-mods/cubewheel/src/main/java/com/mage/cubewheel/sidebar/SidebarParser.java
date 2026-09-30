@@ -18,8 +18,11 @@ public final class SidebarParser {
 	private static final Pattern FORMATTING = Pattern.compile("§.");
 	/** Key: Latin words (icon glyphs before it are not letters, so they fall away); value: the rest. */
 	private static final Pattern KEY_VALUE = Pattern.compile("([A-Za-z][A-Za-z ]*?)\\s*:\\s*(.*)$");
-	/** First number in the value, with an optional magnitude suffix touching it. */
-	private static final Pattern NUMBER = Pattern.compile("(?<![\\d.,])(\\d[\\d,]*(?:\\.\\d+)?)([kKmMbBtT])?(?![A-Za-z\\d])");
+	/**
+	 * First number in the value, with an optional magnitude suffix touching it. A number touching a ':' is
+	 * part of a clock time ("12:30") and is not a value.
+	 */
+	private static final Pattern NUMBER = Pattern.compile("(?<![\\d.,:])(\\d[\\d,]*(?:\\.\\d+)?)([kKmMbBtT])?(?![A-Za-z\\d:])");
 
 	private SidebarParser() {}
 

@@ -75,6 +75,19 @@ public final class SidebarWatcher {
 		}
 	}
 
+	/**
+	 * Saves sidebar-driven tracker changes that the 10 s throttle has not written yet (disconnect,
+	 * CLIENT_STOPPING), so they are not lost on quit. Never throws.
+	 */
+	public void flush() {
+		try {
+			TrackerStore store = CubeWheelClient.tracker();
+			if (store != null && saveThrottle.consumeDirty()) store.save();
+		} catch (RuntimeException e) {
+			CubeWheelClient.LOG.error("[cubewheel] sidebar flush failed", e);
+		}
+	}
+
 	/** END_CLIENT_TICK. */
 	public void tick(Minecraft mc) {
 		try {

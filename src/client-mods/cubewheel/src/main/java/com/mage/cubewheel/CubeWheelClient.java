@@ -25,9 +25,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
@@ -89,6 +91,9 @@ public final class CubeWheelClient implements ClientModInitializer {
 		TrackerHud.register();
 		Keybinds.register();
 		ClientTickEvents.END_CLIENT_TICK.register(CubeWheelClient::onEndTick);
+		// Sidebar-driven changes are saved at most every 10 s; write the rest when leaving or quitting.
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, mc) -> sidebar.flush());
+		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> sidebar.flush());
 		LOG.info("[cubewheel] initialised");
 	}
 
