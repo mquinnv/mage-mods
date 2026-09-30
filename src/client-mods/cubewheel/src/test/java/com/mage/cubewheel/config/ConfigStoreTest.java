@@ -73,4 +73,17 @@ class ConfigStoreTest {
 		assertTrue(c.wheel.stream().anyMatch(n -> "homes".equals(n.dynamic)));
 		assertTrue(c.wheel.stream().anyMatch(n -> "vaults".equals(n.dynamic)));
 	}
+
+	@Test void lastLoadOkTracksMostRecentReload() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertTrue(s.lastLoadOk());
+		Files.writeString(f, "{ \"vaultCount\": 2, }}}");
+		assertNotNull(s.reload());
+		assertFalse(s.lastLoadOk());
+		Files.writeString(f, "{ \"vaultCount\": 2 }");
+		assertNull(s.reload());
+		assertTrue(s.lastLoadOk());
+	}
 }

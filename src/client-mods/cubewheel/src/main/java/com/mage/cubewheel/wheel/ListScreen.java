@@ -3,6 +3,7 @@ package com.mage.cubewheel.wheel;
 import com.mage.cubewheel.CommandSender;
 import com.mage.cubewheel.CubeWheelClient;
 import com.mage.cubewheel.config.WheelNode;
+import com.mage.cubewheel.homes.HomesFetcher;
 import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,14 +25,16 @@ public final class ListScreen extends Screen {
 	private static final int GREY = 0xFFAAAAAA;
 
 	private final Screen parent;
-	private final List<WheelNode> all;
+	private final WheelNode source; // the ring/dynamic node whose children this list shows
+	private List<WheelNode> all;
 	private List<WheelNode> shown;
 	private EditBox filter;
 	private int scroll;
 
-	public ListScreen(Screen parent, String title, List<WheelNode> entries) {
-		super(Component.literal(title == null ? "" : title));
+	public ListScreen(Screen parent, WheelNode source, List<WheelNode> entries) {
+		super(Component.literal(source.label == null ? "" : source.label));
 		this.parent = parent;
+		this.source = source;
 		this.all = List.copyOf(entries);
 		this.shown = this.all;
 	}
@@ -141,8 +144,14 @@ public final class ListScreen extends Screen {
 				return;
 			}
 			if (!node.isRing() && !node.isDynamic()) return; // placeholder: not actionable
+			if (HomesFetcher.isRefreshEntry(node)) {
+				RadialScreen.resolve(node, true); // user click: may force one /homes (rate-limited)
+				all = List.copyOf(RadialScreen.resolve(source, false)); // re-resolve in place, no send
+				applyFilter();
+				return;
+			}
 			// Sub-rings open as lists too, so Esc always walks back up the same stack of screens.
-			minecraft.gui.setScreen(new ListScreen(this, node.label, RadialScreen.resolve(node)));
+			minecraft.gui.setScreen(new ListScreen(this, node, RadialScreen.resolve(node, true)));
 		} catch (RuntimeException e) {
 			fail("activate", e);
 		}

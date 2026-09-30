@@ -43,4 +43,26 @@ class HomesFetchPolicyTest {
 		assertFalse(p.shouldForceFetch(29_999));
 		assertTrue(p.shouldForceFetch(30_000));
 	}
+	@Test void nonUserInitiatedNeverFetches() {
+		HomesFetchPolicy p = new HomesFetchPolicy();
+		for (boolean force : new boolean[] {false, true})
+			for (boolean stale : new boolean[] {false, true})
+				for (long now : new long[] {0, 30_000, 1_000_000})
+					assertFalse(p.mayFetch(now, false, force, stale), "force=" + force + " stale=" + stale + " now=" + now);
+	}
+	@Test void userOpenFetchesOnlyWhenStaleAndNotRecent() {
+		HomesFetchPolicy p = new HomesFetchPolicy();
+		assertFalse(p.mayFetch(0, true, false, false));
+		assertTrue(p.mayFetch(0, true, false, true));
+		p.armed(0);
+		assertFalse(p.mayFetch(29_999, true, false, true));
+		assertTrue(p.mayFetch(30_000, true, false, true));
+	}
+	@Test void userRefreshIgnoresStalenessButKeepsMinInterval() {
+		HomesFetchPolicy p = new HomesFetchPolicy();
+		assertTrue(p.mayFetch(0, true, true, false));
+		p.armed(0);
+		assertFalse(p.mayFetch(29_999, true, true, false));
+		assertTrue(p.mayFetch(30_000, true, true, false));
+	}
 }

@@ -12,7 +12,8 @@ import java.util.regex.Pattern;
 /** Recognises a server's /homes reply and outgoing home edits. Pure: no Minecraft/Fabric imports. */
 public final class HomesParser {
 	private static final Pattern NAME = Pattern.compile("[A-Za-z0-9_\\-]{1,32}");
-	private static final Pattern CLICK_ANY = Pattern.compile("^/homes? +(\\S+)$");
+	/** Only "/home name" clicks name a home; "/homes 2" (pagination) and other clicks are ignored. */
+	private static final Pattern CLICK_HOME = Pattern.compile("^/home +(\\S+)$");
 	private static final Pattern HEADER = Pattern.compile(
 			"^\\W*(your\\s+)?homes?\\b\\s*(\\(\\d+\\)|\\[\\d+\\])?\\s*:", Pattern.CASE_INSENSITIVE);
 
@@ -31,7 +32,7 @@ public final class HomesParser {
 		if (r.clickCommands() != null) {
 			for (String c : r.clickCommands()) {
 				if (c == null) continue;
-				Matcher m = CLICK_ANY.matcher(c);
+				Matcher m = CLICK_HOME.matcher(c);
 				if (!m.matches()) continue;
 				if (!NAME.matcher(m.group(1)).matches()) return Optional.empty();
 				clicks.add(m.group(1));

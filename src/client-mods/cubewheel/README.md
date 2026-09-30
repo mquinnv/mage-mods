@@ -9,11 +9,13 @@ show job / quest progress on a small HUD.
 ## Requirements and install
 
 - Minecraft **26.2** with Fabric Loader 0.19.3 or newer.
+- Java **25** or newer at runtime (the launcher's bundled Java for 26.2 is fine).
 - [Fabric API](https://modrinth.com/mod/fabric-api) (the only dependency).
 - Drop `cubewheel-0.1.0.jar` and the Fabric API jar into your `mods` folder.
 
-The mod is client-only and does nothing on servers whose address does not end in `manacube.com`
-or `manacube.net` (see [Server gate](#server-gate)).
+The mod is client-only. On servers whose address does not end in `manacube.com` or `manacube.net`
+the wheel, commands, menu scans and capture do nothing; only the tracker HUD toggle key and the
+tracker picker still work, on data recorded earlier (see [Server gate](#server-gate)).
 
 ## Building
 
@@ -59,41 +61,52 @@ Travel, Homes, Vaults, Shops, Warps, Isles & Bosses, Progress, Party. All of it 
 
 The Homes slice is filled from `/homes`:
 
-- The first time (or when the cached list is older than 5 minutes) opening the ring sends one
-  `/homes` and shows a single "Loading..." entry. The reply is parsed and hidden from chat, then
-  the ring fills in.
-- If nothing parseable arrives within about 3 seconds, the entry becomes "Refresh". Clicking it
-  re-sends `/homes`, at most once per 30 seconds.
+- When the cached list is older than 5 minutes (or there is none yet), opening the ring sends one
+  `/homes`, at most once per 30 seconds. The reply is parsed and hidden from chat, then the ring
+  fills in.
+- "Loading…" appears only when the cached list is empty. A stale but non-empty list shows the old
+  homes straight away while `/homes` refreshes them in the background.
+- If nothing parseable arrives within about 3 seconds, "Loading…" becomes "↻ Refresh". Clicking it
+  re-sends `/homes` (at most once per 30 seconds) and refreshes the ring in place.
 - A reply that says you have no homes ("Homes: none") is understood: the ring shows only Refresh
   plus any extras you configured.
+- `/homes` is sent **only** when you open the Homes ring or click Refresh. Going back, the
+  "Loading…" timeout, and any chat message that looks like a homes list never send it.
 - `/homes` you type yourself is shown normally and still updates the cache.
 - `/sethome X` and `/delhome X` update the list immediately.
 - The list is cached per server in `config/cubewheel-homes.json`.
 
 The parser only trusts a reply line that starts with a `Homes:`, `Your homes (N):` or `Home:` header,
-or a message with at least two `/home <name>` click events. **If ManaCube's format differs, homes
+or a message with at least two `/home <name>` click events. Only `/home <name>` clicks count as
+homes; pagination clicks such as `/homes 2` are ignored (only the first page is read). **If ManaCube's format differs, homes
 will not load until the parser is tuned**: use capture mode (below) and send the file.
 
 ## Configuration
 
 `config/cubewheel.json` is written with defaults on first run. Edit it, then press the "Reload
 CubeWheel config" key. A green chat line confirms; on a JSON error a red line shows the location and
-the previous config keeps working.
+the previous config keeps working. Numbers outside their range are clamped.
 
 | Key | Meaning | Default |
 |---|---|---|
 | `enabled` | Master switch | `true` |
 | `serverHosts` | Host suffixes the mod is active on | `["manacube.com", "manacube.net"]` |
-| `vaultCount` | Number of `/pv` entries in a `vaults` node (your rank decides this) | `3` |
-| `listThreshold` | Rings with more entries open as a list | `8` |
-| `tracker.nearThreshold` | Fraction at which unpinned entries appear on the HUD | `0.8` |
-| `tracker.hudMaxLines` | Max HUD lines | `6` |
-| `tracker.hudVisible` | HUD on/off (saved when you toggle it) | `true` |
+| `vaultCount` | Number of `/pv` entries in a `vaults` node (your rank decides this), 0–54 | `3` |
+| `listThreshold` | Rings with more entries open as a list, 3–16 | `8` |
+| `tracker.nearThreshold` | Fraction at which unpinned entries appear on the HUD, 0–1 | `0.8` |
+| `tracker.hudMaxLines` | Max HUD lines, 1–20 | `6` |
+| `tracker.hudVisible` | HUD on/off (saved when you toggle it, see below) | `true` |
 | `tracker.sources` | Source id -> regex matched against the menu title | see below |
 | `wheel` | The root ring: a list of nodes | see `DefaultConfig.java` |
 
 `tracker.sources` defaults: `jobs` = `(?i)jobs`, `pquests` = `(?i)quest`, `prestige` = `(?i)prestige`,
 `challenges` = `(?i)challenge`. Icons are item ids such as `minecraft:ender_chest`.
+
+The toggle-HUD key saves `tracker.hudVisible` by rewriting `cubewheel.json` from the loaded config
+(so ignored nodes, see below, are dropped from the file and clamped numbers are written back). If
+the last load or reload failed (for example a JSON typo), it does **not** save: the HUD is toggled
+for this session only and the action bar says "CubeWheel: HUD toggled for this session (config has
+errors, not saved)", so your file is never overwritten.
 
 ### Node kinds
 
@@ -128,6 +141,10 @@ entries appended after the generated ones:
 
 `vaults` generates `/pv 1` .. `/pv <vaultCount>`; `homes` generates `/home <name>` per cached home.
 
+A node must be exactly one kind. Nodes that are not are **silently ignored** (with their children):
+a blank or missing label; both `command` and `children` on a non-dynamic node; neither; an unknown
+`dynamic` source; a `dynamic` node that also has a `command`.
+
 ## Rules note
 
 ManaCube's rules say: *"Rebinding a command or message to a key isn't a macro as long as you
@@ -135,8 +152,10 @@ manually press it. Automating presses is."* CubeWheel is built around that:
 
 - Every command is the direct result of a keypress or click of yours.
 - No timers, no background polling, no automatic re-sends.
-- The one narrow case is `/homes`, sent when you open the Homes ring (or click Refresh), which is
-  still a direct result of your action, at most once per 30 seconds.
+- The one narrow case is `/homes`, sent only when you open the Homes ring (and the cached list is
+  older than 5 minutes) or click Refresh, which is still a direct result of your action, at most
+  once per 30 seconds. Nothing else ever sends it: not going back, not a timeout, not an incoming
+  chat message.
 - The tracker never opens, clicks or closes menus itself.
 
 Please check the current server rules yourself; you are responsible for how you use any client mod.
@@ -145,8 +164,9 @@ Please check the current server rules yourself; you are responsible for how you 
 
 The mod only acts when the connected server's host equals or is a subdomain of an entry in
 `serverHosts` (case-insensitive, port ignored). Elsewhere, and in singleplayer, pressing the wheel
-key shows the action-bar hint "CubeWheel is only active on ManaCube", the HUD is not drawn and menus
-are not recorded.
+key shows the action-bar hint "CubeWheel is only active on ManaCube", no command is ever sent, the
+HUD is not drawn, menus are not recorded and capture records nothing. The toggle-HUD key and the
+tracker picker still work there, on locally stored data.
 
 ## Progress tracker
 
@@ -175,6 +195,10 @@ Capture mode records raw samples so the parsers can be tuned to ManaCube's real 
 2. Run `/homes`, then open `/jobs`, `/pquests`, `/prestige` and `/challenges`; optionally play a
    little so action-bar and boss-bar text is seen.
 3. Press the key again ("Capture OFF"). It is also off after every restart.
+
+If a Minecraft update breaks the (optional) HUD accessors, the game still starts; action-bar and
+boss-bar capture is then switched off for the session with one warning in the log, and chat and
+menu capture keep working.
 4. Send `config/cubewheel-captures/<yyyy-MM-dd>.jsonl` (UTC date).
 
 Each line is JSON with a kind:

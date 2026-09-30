@@ -44,6 +44,8 @@ public final class CubeWheelClient implements ClientModInitializer {
 	private static HomesFetcher homesFetcher;
 	private static TrackerStore tracker;
 	private static CaptureLog capture;
+	/** Set once if the optional HUD accessor mixins are unusable; action-bar/boss-bar capture then stays off. */
+	private static boolean hudCaptureDisabled;
 
 	public static ConfigStore config() { return config; }
 
@@ -65,7 +67,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		homes = new HomesCache(configDir.resolve("cubewheel-homes.json"));
 		homes.load();
 		homesFetcher = new HomesFetcher(homes);
-		RadialScreen.childrenProvider = homesFetcher::childrenFor;
+		RadialScreen.childrenProvider = homesFetcher::childrenFor; // (node, userInitiated)
 		RadialScreen.placeholderPending = () -> homesFetcher.isLoading(System.currentTimeMillis());
 		tracker = new TrackerStore(configDir.resolve("cubewheel-tracker.json"));
 		tracker.load();
@@ -127,13 +129,20 @@ public final class CubeWheelClient implements ClientModInitializer {
 		if (!pressed(Keybinds.trackerHud)) return;
 		CubeWheelConfig cfg = config.current();
 		cfg.tracker.hudVisible = !cfg.tracker.hudVisible;
-		try {
-			config.save();
-		} catch (IOException e) {
-			LOG.warn("[cubewheel] could not save tracker HUD setting: {}", e.toString());
+		// After a failed load the in-memory config is not the file on disk: saving would overwrite
+		// the user's (broken) cubewheel.json with defaults/the previous config. Toggle in memory only.
+		boolean saved = config.lastLoadOk();
+		if (saved) {
+			try {
+				config.save();
+			} catch (IOException e) {
+				LOG.warn("[cubewheel] could not save tracker HUD setting: {}", e.toString());
+			}
 		}
 		if (mc.player != null) {
-			mc.player.sendOverlayMessage(Component.literal(cfg.tracker.hudVisible ? "Tracker HUD ON" : "Tracker HUD OFF"));
+			mc.player.sendOverlayMessage(Component.literal(saved
+					? (cfg.tracker.hudVisible ? "Tracker HUD ON" : "Tracker HUD OFF")
+					: "CubeWheel: HUD toggled for this session (config has errors, not saved)"));
 		}
 	}
 
@@ -170,14 +179,27 @@ public final class CubeWheelClient implements ClientModInitializer {
 	 * only changes). Read-only: the SetActionBarText packet and boss events never reach ALLOW_GAME.
 	 */
 	private static void pollHudCapture(Minecraft mc) {
+		if (hudCaptureDisabled) return;
 		if (!capture.enabled() || mc.player == null || !ServerGate.active(config.current())) return;
 		long now = System.currentTimeMillis();
-		Component actionBar = ((HudAccessor) mc.gui.hud).cubewheel$getOverlayMessage();
-		capture.actionBar(actionBar == null ? null : actionBar.getString(), now);
+		String actionBarText;
 		List<CaptureLog.BossBar> bars = new ArrayList<>();
-		for (LerpingBossEvent e : ((BossHealthOverlayAccessor) mc.gui.hud.getBossOverlay()).cubewheel$getEvents().values()) {
-			bars.add(new CaptureLog.BossBar(e.getName().getString(), ((LerpingBossEventAccessor) e).cubewheel$getTargetPercent()));
+		try {
+			Component actionBar = ((HudAccessor) mc.gui.hud).cubewheel$getOverlayMessage();
+			actionBarText = actionBar == null ? null : actionBar.getString();
+			for (LerpingBossEvent e : ((BossHealthOverlayAccessor) mc.gui.hud.getBossOverlay()).cubewheel$getEvents().values()) {
+				bars.add(new CaptureLog.BossBar(e.getName().getString(), ((LerpingBossEventAccessor) e).cubewheel$getTargetPercent()));
+			}
+		} catch (VirtualMachineError e) {
+			throw e;
+		} catch (Throwable t) {
+			// The accessor mixins are optional (required=false): if one did not apply (e.g. a field was
+			// renamed in a Minecraft update) the casts/calls fail here. Disable once, don't spam per tick.
+			hudCaptureDisabled = true;
+			LOG.warn("[cubewheel] action-bar/boss-bar capture disabled for this session (mixin accessor unavailable): {}", t.toString());
+			return;
 		}
+		capture.actionBar(actionBarText, now);
 		capture.bossBars(bars, now);
 	}
 

@@ -34,25 +34,30 @@ public final class HomesFetcher {
 		return policy.isArmed(now);
 	}
 
+	/** The runtime "↻ Refresh" entry; screens re-resolve their current ring in place when it is activated. */
+	public static boolean isRefreshEntry(WheelNode node) {
+		return node != null && node.isDynamic() && REFRESH_SOURCE.equals(node.dynamic);
+	}
+
 	/**
-	 * RadialScreen.childrenProvider: the Homes ring fetches on demand (stale cache), the Refresh entry
-	 * forces a fetch (still at most once per MIN_INTERVAL_MS); everything else uses the default.
+	 * RadialScreen.childrenProvider. Resolution always comes from the cache; /homes is sent only when
+	 * {@code userInitiated} and HomesFetchPolicy.mayFetch agrees: opening the Homes ring with a stale
+	 * cache, or activating Refresh (forced), both at most once per MIN_INTERVAL_MS. Non-user calls
+	 * (refresh, Back, tick, reply-driven) never send. Everything else uses the default resolver.
 	 */
-	public List<WheelNode> childrenFor(WheelNode node) {
+	public List<WheelNode> childrenFor(WheelNode node, boolean userInitiated) {
 		CubeWheelConfig cfg = CubeWheelClient.config().current();
 		Optional<String> host = ServerGate.currentHost();
 		boolean homesRing = node.isDynamic() && "homes".equals(node.dynamic);
-		boolean refresh = node.isDynamic() && REFRESH_SOURCE.equals(node.dynamic);
+		boolean refresh = isRefreshEntry(node);
 		if (!(homesRing || refresh) || !ServerGate.active(cfg) || host.isEmpty()) {
 			return RadialScreen.defaultChildren(node);
 		}
 		if (homesRing) lastHomesNode = node;
 		WheelNode ring = lastHomesNode != null ? lastHomesNode : WheelNode.dynamic("Homes", null, "homes");
 		long now = System.currentTimeMillis();
-		boolean fetch = refresh
-				? policy.shouldForceFetch(now)
-				: policy.shouldFetch(now, homes.isStale(host.get(), now, HomesFetchPolicy.MAX_AGE_MS));
-		if (fetch && CommandSender.send("/homes")) {
+		boolean stale = homes.isStale(host.get(), now, HomesFetchPolicy.MAX_AGE_MS);
+		if (policy.mayFetch(now, userInitiated, refresh, stale) && CommandSender.send("/homes")) {
 			policy.armed(now);
 			CubeWheelClient.LOG.info("[cubewheel] fetching /homes for {}", host.get());
 		}

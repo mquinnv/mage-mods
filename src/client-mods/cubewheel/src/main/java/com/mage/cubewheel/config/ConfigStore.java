@@ -23,6 +23,7 @@ public final class ConfigStore {
 
 	private final Path file;
 	private CubeWheelConfig current;
+	private boolean lastLoadOk = true;
 
 	public ConfigStore(Path file) {
 		this.file = file;
@@ -33,8 +34,22 @@ public final class ConfigStore {
 		return current;
 	}
 
+	/**
+	 * False when the most recent reload() returned an error, i.e. the file on disk is not what is in
+	 * memory; callers must then not save(), or they would overwrite the user's (broken) file.
+	 */
+	public boolean lastLoadOk() {
+		return lastLoadOk;
+	}
+
 	/** Returns null on success, otherwise an error message (previous config is kept). */
 	public String reload() {
+		String err = load();
+		lastLoadOk = err == null;
+		return err;
+	}
+
+	private String load() {
 		if (!Files.exists(file)) {
 			current = DefaultConfig.create();
 			try {

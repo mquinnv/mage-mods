@@ -23,6 +23,17 @@ public final class HomesFetchPolicy {
 		return now - lastSent >= MIN_INTERVAL_MS;
 	}
 
+	/**
+	 * The single "may this call send /homes?" decision. Only a direct user activation
+	 * ({@code userInitiated}) can ever send; refreshes, Back, tick-driven and reply-driven
+	 * re-resolves pass false and never send. {@code force} is the "↻ Refresh" entry (ignores
+	 * cache age); otherwise the cache must be {@code stale}. Both keep MIN_INTERVAL_MS.
+	 */
+	public boolean mayFetch(long now, boolean userInitiated, boolean force, boolean stale) {
+		if (!userInitiated) return false;
+		return force ? shouldForceFetch(now) : shouldFetch(now, stale);
+	}
+
 	/** Records that a /homes command was sent at {@code now}. */
 	public void armed(long now) {
 		lastSent = now;

@@ -14,3 +14,6 @@ remappedSrc/
 .classpath
 .project
 .settings/
+
+# runClient logs (incl. *.log.gz)
+logs/

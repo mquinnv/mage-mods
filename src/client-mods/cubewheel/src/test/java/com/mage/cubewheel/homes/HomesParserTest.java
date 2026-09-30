@@ -52,4 +52,14 @@ class HomesParserTest {
 		assertEquals(Optional.of(new HomesParser.Edit(false, "farm")), HomesParser.parseOutgoing("delhome farm"));
 		assertEquals(Optional.empty(), HomesParser.parseOutgoing("home farm"));
 	}
+	@Test void paginationClicksAreIgnored() {
+		assertEquals(Optional.of(List.of("a", "b")), HomesParser.parse(r("Homes: a, b  [Next page]", "/home a", "/home b", "/homes 2")));
+		assertEquals(Optional.of(List.of("a", "b")), HomesParser.parse(r("click one", "/home a", "/homes 2", "/home b")));
+	}
+	@Test void paginationClickAloneIsNotAHome() {
+		assertEquals(Optional.empty(), HomesParser.parse(r("Next page", "/homes 2", "/homes 3")));
+	}
+	@Test void paginationClickWithOddArgumentDoesNotInvalidate() {
+		assertEquals(Optional.of(List.of("a", "b")), HomesParser.parse(r("Homes: a, b", "/home a", "/home b", "/homes page=2")));
+	}
 }

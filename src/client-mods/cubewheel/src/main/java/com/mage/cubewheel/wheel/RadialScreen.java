@@ -6,13 +6,13 @@ import com.mage.cubewheel.ServerGate;
 import com.mage.cubewheel.config.CubeWheelConfig;
 import com.mage.cubewheel.config.WheelNode;
 import com.mage.cubewheel.homes.HomesCache;
+import com.mage.cubewheel.homes.HomesFetcher;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -27,8 +27,18 @@ public final class RadialScreen extends Screen {
 	private static final int WHITE = 0xFFFFFFFF;
 	private static final int GREY = 0xFFAAAAAA;
 
-	/** Resolves a ring/dynamic node's children. Replaceable so the homes feature can hook fetching in. */
-	public static Function<WheelNode, List<WheelNode>> childrenProvider = RadialScreen::defaultChildren;
+	/**
+	 * Resolves a ring/dynamic node's children. {@code userInitiated} is true only for a direct user
+	 * activation (click, Enter, hold-key release on that node); only such a call may have a side
+	 * effect such as sending /homes. Refreshes, Back and tick/reply-driven re-resolves pass false.
+	 */
+	@FunctionalInterface
+	public interface ChildrenProvider {
+		List<WheelNode> children(WheelNode node, boolean userInitiated);
+	}
+
+	/** Replaceable so the homes feature can hook fetching in. */
+	public static ChildrenProvider childrenProvider = (node, userInitiated) -> defaultChildren(node);
 
 	/** True while a placeholder (e.g. "Loading…") is still valid; once false, tick() re-resolves the ring. */
 	public static BooleanSupplier placeholderPending = () -> false;
@@ -44,7 +54,7 @@ public final class RadialScreen extends Screen {
 		this.holdKey = holdKey;
 		this.keyStillHeld = holdKey != null && canPoll(KeyMappingHelper.getBoundKeyOf(holdKey));
 		path.addLast(root);
-		entries = resolve(root);
+		entries = resolve(root, false);
 	}
 
 	/** Default resolver: vault count from config, homes from the per-server cache (none if not wired). */
@@ -56,9 +66,9 @@ public final class RadialScreen extends Screen {
 	}
 
 	/** childrenProvider with failures contained: a broken provider yields an empty ring, not a crash. */
-	static List<WheelNode> resolve(WheelNode node) {
+	static List<WheelNode> resolve(WheelNode node, boolean userInitiated) {
 		try {
-			List<WheelNode> out = childrenProvider.apply(node);
+			List<WheelNode> out = childrenProvider.children(node, userInitiated);
 			return out == null ? List.of() : out;
 		} catch (RuntimeException e) {
 			CubeWheelClient.LOG.error("[cubewheel] resolving children of '{}' failed", node.label, e);
@@ -69,14 +79,15 @@ public final class RadialScreen extends Screen {
 	/**
 	 * Re-resolves the current ring (e.g. when homes arrive). A sub-ring that has grown past
 	 * listThreshold is handed over to a ListScreen, exactly as activate() would have done.
+	 * Never user-initiated, so it never sends anything (it runs from tick() and from the homes reply).
 	 */
 	public void refresh() {
 		WheelNode top = path.peekLast();
-		List<WheelNode> children = resolve(top);
+		List<WheelNode> children = resolve(top, false);
 		hovered = -1;
 		if (path.size() > 1 && children.size() > listThreshold() && minecraft.gui.screen() == this) {
 			path.removeLast();
-			entries = resolve(path.peekLast());
+			entries = resolve(path.peekLast(), false);
 			openList(top, children);
 			return;
 		}
@@ -173,7 +184,12 @@ public final class RadialScreen extends Screen {
 				return;
 			}
 			if (isPlaceholder(node)) return; // e.g. "Loading…": not actionable
-			List<WheelNode> children = resolve(node);
+			if (HomesFetcher.isRefreshEntry(node)) {
+				resolve(node, true); // user click: may force one /homes (rate-limited)
+				refresh(); // re-resolve the current ring in place, without sending
+				return;
+			}
+			List<WheelNode> children = resolve(node, true);
 			if (children.size() > listThreshold()) {
 				openList(node, children);
 				return;
@@ -198,10 +214,10 @@ public final class RadialScreen extends Screen {
 
 	private void openList(WheelNode node, List<WheelNode> children) {
 		keyStillHeld = false; // returning from the list must not look like a key release
-		minecraft.gui.setScreen(new ListScreen(this, node.label, children));
+		minecraft.gui.setScreen(new ListScreen(this, node, children));
 	}
 
-	/** Up one level (re-resolving that ring, which is cheap and rate-limited for homes); at the root, closes. */
+	/** Up one level (re-resolving that ring from the cache; never sends); at the root, closes. */
 	private void back() {
 		if (path.size() <= 1) {
 			onClose();
