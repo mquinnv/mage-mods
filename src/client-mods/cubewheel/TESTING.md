@@ -58,7 +58,9 @@ Bind "Toggle tracker HUD", "Open tracker picker" and "Toggle capture mode" under
 - [ ] The mod never clicks in, opens or closes a menu itself, and sends no command while tracking.
 - [ ] Items from your own inventory (bottom half of the menu) never appear in the picker.
 - [ ] Click an entry in the picker: its ☆ becomes ★ and the top-right HUD shows it with an age suffix ("now", later "5m"). Click again to unpin.
-- [ ] Unpinned entries at ≥80% (and not complete) show on the HUD without a pin, in yellow; complete pinned entries show green; at most 6 lines.
+- [ ] The HUD shows pinned entries first, then every other incomplete entry, closest to done first (not only those at ≥80%); at most 8 lines (`tracker.hudMaxLines`; a config file written before this change keeps its old value, e.g. 6). Entries at ≥80% are yellow, the rest white; complete entries appear only when pinned (green).
+- [ ] Estimated entries on the HUD keep their `~` (and `✓?` at the target) and move up the list as they are counted.
+- [ ] The picker's top line reads "Left-click: pin to HUD   Right-click: hide from HUD". Right-click an entry: it turns dark grey with "(hidden)" and disappears from the HUD, even if pinned. Right-click again: back on the HUD. Hidden entries survive a restart (`hidden` in `config/cubewheel-tracker.json`).
 - [ ] With a potion effect active, the HUD sits below the effect icons.
 - [ ] The toggle-HUD key hides/shows the HUD ("Tracker HUD OFF/ON" on the action bar) and the setting survives a restart (`tracker.hudVisible` in `config/cubewheel.json`).
 - [ ] Break `config/cubewheel.json` (delete a brace), press the reload key (red error), then the toggle-HUD key: the HUD toggles, the action bar says "CubeWheel: HUD toggled for this session (config has errors, not saved)", and the broken file on disk is unchanged. Fix the file and reload: toggling saves again.
@@ -77,7 +79,9 @@ Bind "Toggle tracker HUD", "Open tracker picker" and "Toggle capture mode" under
 - [ ] The value never goes down: after re-opening the prestige rank menu, the entry shows the higher of the menu's and the sidebar's value.
 - [ ] Complete (green) entries are not changed by the sidebar.
 - [ ] Add `"Mana": "(?i)mana"` to `tracker.sidebarLinks`, reload: an entry whose name contains "mana" follows the sidebar's Mana value. `"sidebarLinks": {}` switches linking off.
-- [ ] `config/cubewheel-tracker.json` is rewritten at most every ~10 s while linked values change (watch its modification time).
+- [ ] `config/cubewheel-tracker.json` is rewritten at most every ~10 s while linked values change (watch its modification time). Gain a skill level and quit (or disconnect) within 10 s: after a restart the entry has the new value.
+- [ ] The default link only moves "… · Reach N Skill Level" entries; a quest merely named after skill levels is not changed. An old config with `"Skills": "(?i)skill level"` is upgraded to `"(?i)reach [\\d,]+ skill level"` when loaded.
+- [ ] A sidebar clock line such as `Time: 12:30` is not read as a number.
 - [ ] Capture on: `"kind":"sidebar"` lines with `title` and `lines` appear when the sidebar changes (not every tick); lines read like `Money: $2.89M`, `Skills: Lvl 1851` (icon glyphs may show as odd characters).
 - [ ] No lag: with the sidebar changing constantly (money ticking), FPS is unchanged.
 - [ ] On a non-ManaCube server the sidebar is ignored (no captures, no tracker changes).
@@ -86,18 +90,27 @@ Bind "Toggle tracker HUD", "Open tracker picker" and "Toggle capture mode" under
 
 Bind "Refresh trackers" under Options > Controls > Key Binds > CubeWheel first.
 
-- [ ] Press it once with no screen open: `/pquests`, `/prestige`, `/jobs` are sent one after another (log: "[cubewheel] tracker refresh: …"); each menu opens and closes by itself within about a second, the next command only after the previous menu closed. Chat ends with a grey `[CubeWheel] Refreshed N trackers`.
+- [ ] Press it once with no screen open: `/pquests`, `/prestige`, `/jobs` are sent one after another (log: "[cubewheel] tracker refresh: …"); each menu opens and closes by itself within about a second, the next command only after the previous menu closed. Chat ends with a grey `[CubeWheel] Refreshed N trackers`, N = the entries those menus showed (unchanged ones included, entries from earlier runs not).
 - [ ] Hiding: during the run the menus are not drawn (only the mouse cursor briefly appears). If the log shows "hiding refresh menus disabled for this session" or mixin errors for `ScreenHideMixin`, the menus flash instead; the run still works.
 - [ ] Nothing in a menu is ever clicked: move the mouse and click during a run; no item is taken or moved and no click reaches the menu (keys other than Esc are ignored too).
 - [ ] Press it again within 60 s: `[CubeWheel] refresh skipped: wait Ns` and nothing is sent. After 60 s it runs again.
 - [ ] Press Esc during a run: the current menu closes, `[CubeWheel] refresh stopped: the menu was closed`, nothing more is sent.
 - [ ] Open chat (T) or the inventory (E) right after pressing: `[CubeWheel] refresh stopped: another screen was opened`, no further commands.
+- [ ] Press the refresh key and immediately right-click a chest (or an NPC, or hold attack): `[CubeWheel] refresh stopped: you used or attacked something`; the chest opens normally, is visible and usable, and is not closed.
+- [ ] Open a chest by other means during a run (e.g. a menu that is not a tracker menu opening between commands): the run stops ("another screen was opened" / "an unexpected menu opened") and the menu stays visible and clickable.
+- [ ] Late menu: if the server is slow and a tracker menu opens after its 3 s timeout, it is still read and closed (hidden) and the run carries on.
 - [ ] Put a harmless command that opens no menu (e.g. `"/list"`; not one that teleports) first in `tracker.refreshCommands`, reload, press: after ~3 s the next command is sent; the final line says "(1 menu did not load)".
 - [ ] `"refreshCommands": []`: pressing says `refresh skipped: tracker.refreshCommands is empty`.
-- [ ] Picker: click **Refresh**: the picker closes, the run happens, the picker reopens with fresh ages. Within 60 s the button only prints the "wait" line and the picker stays open.
+- [ ] Picker: click **Refresh**: the picker closes, the run happens, the picker reopens with fresh ages and shows "Refreshed N trackers" in gold above the buttons for a few seconds. Within 60 s the button shows "refresh skipped: wait Ns" in the picker itself (and in chat) and the picker stays open.
 - [ ] On a non-ManaCube server the key only shows "CubeWheel is only active on ManaCube" and sends nothing.
 - [ ] Disconnect during a run: no error; the next run on reconnect works after the cooldown.
 - [ ] Capture on, then run a refresh and also open a menu via a typed command: each `"kind":"container"` line has `afterCommand` naming the command (e.g. `"/prestige"`) and `afterCommandMs`. Use this to find the command that opens the "Rank [✪n]" objectives menu, then add it to `tracker.refreshCommands`.
+
+## Job listings
+
+- [ ] `/jobs`, then click an industry (e.g. Farming): its three listings appear in the picker under "jobs" as "Farming Beginner · Harvest Acacia Logs", "Farming Experienced · Catch Tangleroots Fireflies", "Farming Heavy · Harvest Cherry Logs", with the objective's own counter (`3,127 / 4,773`), not the hand-in line.
+- [ ] The "FARMING INDUSTRY" items (level, streak, leaderboard "#1 … - 4,437 Jobs"), "Go Back" and "REFRESH JOB LISTINGS" never become entries.
+- [ ] Reroll the listings ("REFRESH JOB LISTINGS", clicked by you) or complete one, then reopen the page: the old listings of that industry disappear from the picker unless pinned; other industries' listings and "GOLDEN CRATE" from the main jobs menu stay.
 
 ## Live estimates (local counting)
 

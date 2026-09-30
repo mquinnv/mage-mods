@@ -94,12 +94,12 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `serverHosts` | Host suffixes the mod is active on | `["manacube.com", "manacube.net"]` |
 | `vaultCount` | Number of `/pv` entries in a `vaults` node (your rank decides this), 0–54 | `3` |
 | `listThreshold` | Rings with more entries open as a list, 3–16 | `8` |
-| `tracker.nearThreshold` | Fraction at which unpinned entries appear on the HUD, 0–1 | `0.8` |
-| `tracker.hudMaxLines` | Max HUD lines, 1–20 | `6` |
+| `tracker.nearThreshold` | Fraction from which HUD entries are highlighted yellow, 0–1 | `0.8` |
+| `tracker.hudMaxLines` | Max HUD lines, 1–20 (a file written earlier keeps its own value) | `8` |
 | `tracker.hudVisible` | HUD on/off (saved when you toggle it, see below) | `true` |
 | `tracker.sources` | Source id -> regex matched against the menu title | see below |
 | `tracker.refreshCommands` | Commands the "Refresh trackers" key sends, one at a time (max 8) | `["/pquests", "/prestige", "/jobs"]` |
-| `tracker.sidebarLinks` | Sidebar key -> regex on tracked names that follow that live value | `{"Skills": "(?i)skill level"}` |
+| `tracker.sidebarLinks` | Sidebar key -> regex on tracked names that follow that live value | `{"Skills": "(?i)reach [\\d,]+ skill level"}` |
 | `tracker.local.enabled` | Live `~` estimates between menu reads (see [Live estimates](#live-estimates-local-counting)) | `true` |
 | `tracker.local.blocks` / `kills` / `fish` | Count own block breaks / kills / catches | `true` each |
 | `tracker.local.worlds` | World names recognised in objectives ("Wolfhaven Resources") | the six Mana worlds |
@@ -188,10 +188,13 @@ container (never your inventory) and records the entries that show progress. Con
 
 - **Data is only as fresh as the last time you opened that menu** (or pressed the refresh key, or
   a linked sidebar value changed, see below). The HUD shows an age suffix ("now", "5m", ...).
-- **HUD** (top right, below potion icons): pinned entries plus unpinned incomplete entries at or
-  above `nearThreshold`, at most `hudMaxLines`. Complete entries are green. F1 hides it.
+- **HUD** (top right, below potion icons): pinned entries first, then every other incomplete entry,
+  closest to done first, at most `hudMaxLines` lines. Entries at or above `nearThreshold` are yellow,
+  estimated ones keep their `~`. Complete entries only show when pinned (green). Hidden entries never
+  show. F1 hides it.
 - **Picker** (bind "Open tracker picker"): all known entries grouped by source, sorted by
-  percentage. Click to pin/unpin. A button forgets unpinned entries not seen for 7 days.
+  percentage. Left-click to pin/unpin, right-click to hide/unhide an entry on the HUD (hidden entries
+  stay listed, dimmed and marked "(hidden)"). A button forgets unpinned entries not seen for 7 days.
 - Stored in `config/cubewheel-tracker.json`.
 
 ### Live sidebar values
@@ -203,10 +206,12 @@ ignored).
 
 `tracker.sidebarLinks` connects a sidebar key to tracked entries: whenever that value changes, every
 incomplete entry whose name matches the regex gets it as its current value (it is never lowered) and
-counts as seen "now". The default links `Skills` to entries containing "skill level", so the prestige
-objective "Rank [✪4] · Reach 2,500 Skill Level" moves live with your skill level once you have opened
-the prestige rank menu once. Add more links (e.g. `"Mana": "(?i)mana"`) as needed; `{}` turns linking
-off. Linked changes are saved at most every 10 seconds.
+counts as seen "now". The default links `Skills` to entries containing "Reach N Skill Level", so the
+prestige objective "Rank [✪4] · Reach 2,500 Skill Level" moves live with your skill level once you have
+opened the prestige rank menu once (a config still holding the older, broader `(?i)skill level` is
+upgraded when loaded). Add more links (e.g. `"Mana": "(?i)mana"`) as needed; `{}` turns linking off.
+Linked changes are saved at most every 10 seconds, and on disconnect/quit. A clock such as
+`Time: 12:30` is not read as a number.
 
 ### Refresh key
 
@@ -216,18 +221,31 @@ Bind "Refresh trackers" (or click **Refresh** in the picker). One press = one ru
 2. Waits up to 3 s for the server's menu; once its items are shown it is read (as if you had opened it)
    and closed with the normal close packet. A menu that does not open or stays empty is skipped.
 3. Only then sends the next command, and so on.
-4. Chat shows a grey `[CubeWheel] Refreshed N trackers` (N = entries seen during the run).
+4. Chat shows a grey `[CubeWheel] Refreshed N trackers` (N = the entries its menus showed, whether
+   they changed or were just confirmed). From the picker's Refresh button, the result (or why it was
+   skipped) is also shown in the picker for a few seconds.
 
 While a run is active the menus it opens are not drawn and ignore clicks and keys (except Esc), so the
-screen does not flash and nothing can be clicked by accident. Opening any other screen (chat,
-inventory, pause menu) or pressing Esc stops the run. A second press within 60 s of the last start is
-refused: `[CubeWheel] refresh skipped: wait Ns`.
+screen does not flash and nothing can be clicked by accident. Only menus CubeWheel recognises as
+tracker menus are hidden and closed; any other menu (a chest, the warps menu) stops the run and stays
+visible and usable. Opening any other screen (chat, inventory, pause menu), pressing Esc, or pressing
+use or attack while the run waits for a menu (you may be opening a chest or an NPC) stops the run. A
+tracker menu that arrives late, after its 3 s wait, is still read and closed. A second press within
+60 s of the last start is refused: `[CubeWheel] refresh skipped: wait Ns`.
 
 **Which commands?** `/prestige` opens the list of prestige levels ("Prestige N - Not Completed"); the
 rank objectives with the real progress ("Rank [✪n]" items) are in a menu reached by clicking, whose
 command is not known yet. CubeWheel never clicks, so it cannot reach that menu. Use capture mode: each
 captured menu records the command sent just before it opened (`afterCommand`). Once the command that
 opens the rank-objectives menu is known, put it in `tracker.refreshCommands` (and reload the config).
+
+### Job listings
+
+`/jobs` -> an industry shows three listings ("Beginner/Experienced/Heavy Objective"). Each is tracked
+as `<Industry> <Tier> · <objective>`, e.g. `Farming Heavy · Harvest Cherry Logs  3,127 / 4,773`: the
+progress is the objective's own counter, not the hand-in line. When an industry's listings page is
+read again, that industry's listings that are no longer offered (rerolled or completed) are forgotten,
+unless pinned. Entries from the main jobs menu (e.g. `GOLDEN CRATE`) are kept.
 
 ### Live estimates (local counting)
 
