@@ -26,6 +26,19 @@ import org.lwjgl.glfw.GLFW;
 public final class RadialScreen extends Screen {
 	private static final int WHITE = 0xFFFFFFFF;
 	private static final int GREY = 0xFFAAAAAA;
+	/** Light dim over the world, so it stays visible behind the wheel. */
+	private static final int BACKDROP = 0x33000000;
+	/** Translucent charcoal band the slices sit on. */
+	private static final int RING = 0xC0141418;
+	/** Slightly lighter hub inside the dead-zone, behind the ring label. */
+	private static final int HUB = 0xB0202028;
+	/** Soft highlight behind the hovered slice (icon + label). */
+	private static final int HOVER = 0x50FFFFFF;
+	/** Band extent around the slice radius: icons sit centred, labels hang below. */
+	private static final int RING_INSIDE = 16;
+	private static final int RING_OUTSIDE = 24;
+	private static final int HOVER_RADIUS = 15;
+	private static final double HUB_FRACTION = 0.45;
 
 	/**
 	 * Resolves a ring/dynamic node's children. {@code userInitiated} is true only for a direct user
@@ -101,7 +114,7 @@ public final class RadialScreen extends Screen {
 
 	@Override
 	public void extractBackground(GuiGraphicsExtractor g, int mouseX, int mouseY, float partial) {
-		g.fill(0, 0, width, height, 0x66000000);
+		g.fill(0, 0, width, height, BACKDROP);
 	}
 
 	@Override
@@ -110,14 +123,17 @@ public final class RadialScreen extends Screen {
 		int cx = width / 2;
 		int cy = height / 2;
 		double r = radius();
+		int ri = (int) Math.round(r);
 		hovered = RadialMath.sliceAt(mouseX - cx, mouseY - cy, entries.size(), r * 0.25);
+		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + RING_OUTSIDE, ri - RING_INSIDE, RING);
+		fillRing(g, cx, cy, (int) Math.round(r * HUB_FRACTION), 0, HUB);
 		for (int i = 0; i < entries.size(); i++) {
 			WheelNode node = entries.get(i);
 			double[] o = RadialMath.offset(RadialMath.sliceCenterDegrees(i, entries.size()), r);
 			int x = cx + (int) Math.round(o[0]);
 			int y = cy + (int) Math.round(o[1]);
 			boolean hot = i == hovered;
-			if (hot) g.fill(x - 11, y - 11, x + 11, y + 11, 0x80FFFFFF);
+			if (hot) fillRing(g, x, y + 4, HOVER_RADIUS, 0, HOVER);
 			ItemStack icon = Icons.stack(node.icon);
 			if (!icon.isEmpty()) g.item(icon, x - 8, y - 8);
 			g.centeredText(font, node.label == null ? "" : node.label, x, y + 12, hot ? WHITE : GREY);
@@ -237,7 +253,14 @@ public final class RadialScreen extends Screen {
 	}
 
 	private double radius() {
-		return Math.max(60, Math.min(140, Math.min(width, height) * 0.30));
+		return Math.max(48, Math.min(100, Math.min(width, height) * 0.22));
+	}
+
+	/** Fills a ring (or a disc when {@code inner} is 0) as one-unit-tall strips. */
+	private static void fillRing(GuiGraphicsExtractor g, int cx, int cy, int outer, int inner, int argb) {
+		for (int[] s : RadialMath.ringSpans(outer, inner)) {
+			g.fill(cx + s[1], cy + s[0], cx + s[2], cy + s[0] + 1, argb);
+		}
 	}
 
 	/** Keyboard keys and mouse buttons can be polled; scancode/unbound keys fall back to click mode. */

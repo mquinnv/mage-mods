@@ -157,8 +157,10 @@ public final class CubeWheelClient implements ClientModInitializer {
 		capture.toggle();
 		LOG.info("[cubewheel] capture {} ({})", capture.enabled() ? "on" : "off", capture.dir());
 		if (mc.player != null) {
-			mc.player.sendOverlayMessage(Component.literal(
-					capture.enabled() ? "Capture ON → config/cubewheel-captures" : "Capture OFF"));
+			// Chat, not the action bar: servers (ManaCube included) overwrite the action bar constantly.
+			mc.player.sendSystemMessage(Component.literal(capture.enabled()
+					? "[CubeWheel] Capture ON → config/cubewheel-captures"
+					: "[CubeWheel] Capture OFF").withStyle(capture.enabled() ? ChatFormatting.GOLD : ChatFormatting.GRAY));
 		}
 	}
 

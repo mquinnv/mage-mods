@@ -1,5 +1,8 @@
 package com.mage.cubewheel.wheel;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /** Radial geometry for wheel UI. All angles: 0 = up, clockwise increasing (screen coords: y down). */
 public final class RadialMath {
 	private RadialMath() {}
@@ -42,5 +45,35 @@ public final class RadialMath {
 	public static double[] offset(double degrees, double radius) {
 		double r = Math.toRadians(degrees);
 		return new double[] { Math.sin(r) * radius, -Math.cos(r) * radius };
+	}
+
+	/**
+	 * Horizontal spans that rasterise a ring (or a disc when {@code inner} is 0) centred on the
+	 * origin, one row per unit of height. The GUI renderer can only fill rectangles, so circles are
+	 * drawn as these one-unit-tall strips.
+	 *
+	 * @param outer outer radius
+	 * @param inner inner radius (0 for a solid disc)
+	 * @return {@code {dy, x0, x1}} per span, x1 exclusive; empty if {@code outer <= 0} or
+	 *         {@code inner >= outer}
+	 */
+	public static List<int[]> ringSpans(int outer, int inner) {
+		List<int[]> spans = new ArrayList<>();
+		if (outer <= 0 || inner >= outer) return spans;
+		for (int dy = -outer; dy < outer; dy++) {
+			double yc = dy + 0.5;
+			int xo = (int) Math.round(Math.sqrt(outer * (double) outer - yc * yc));
+			if (xo <= 0) continue;
+			if (Math.abs(yc) < inner) {
+				int xi = (int) Math.round(Math.sqrt(inner * (double) inner - yc * yc));
+				if (xi < xo) {
+					spans.add(new int[] { dy, -xo, -xi });
+					spans.add(new int[] { dy, xi, xo });
+				}
+			} else {
+				spans.add(new int[] { dy, -xo, xo });
+			}
+		}
+		return spans;
 	}
 }
