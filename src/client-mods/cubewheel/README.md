@@ -40,6 +40,7 @@ Options > Controls > Key Binds > **CubeWheel**.
 | Toggle capture mode | unbound |
 | Refresh trackers | unbound |
 | Toggle event HUD | unbound |
+| Open SVA catalog | unbound |
 
 Any key or mouse button can be used for the wheel. Each press does its action once: holding a key
 (so the system repeats it) does not toggle capture or the HUD back and forth.
@@ -186,6 +187,10 @@ manually press it. Automating presses is."* CubeWheel is built around that:
   60 seconds. Nothing starts a refresh except that press; there is no timer.
 - Live estimates only observe what already happens on your screen (your own breaks, damage and
   death updates the server sends anyway, your own reel-ins). They send nothing and never touch a menu.
+
+- The SVA catalog and tooltip read ManaCube's public web API (`api.manacube.com`) and, for "Compare
+  with player", Mojang's name look-up: nothing goes to the game server. The one command is the
+  catalog's left-click, a single `/ah search <name>` per click.
 
 Please check the current server rules yourself; you are responsible for how you use any client mod.
 
@@ -458,6 +463,53 @@ This only watches your own clicks: every click still goes to the game unchanged,
 rejects (not enough souls, wrong world, a cooldown the HUD did not know about) still starts it; rank perks that
 shorten cooldowns are not known; and the heading words come from a list of ManaCube item lore, not from
 captures of your own items.
+
+## SVA catalog
+
+Press **Open SVA catalog** (unbound by default) for a grid of every Survival SVA (season vault
+item) from ManaCube's public API: the item's own model when ManaCube's resource pack is loaded,
+otherwise its vanilla item.
+
+- **Search** matches the name and the lore (every word must occur: `souls monsters`).
+- **All / Only owned / Not owned** filters by what you own; **Sort** cycles A–Z, Rarest, Most common
+  (by circulation). Your own SVAs have a green border.
+- **Compare with player…**: type a name and press Enter or *Compare*. Borders then show
+  green = only you, pink = only them, aqua = both; *×* stops comparing.
+- Hover: name and lore as in game, `Circulation: N`, whether you (and the compared player) own it.
+- **Left-click** closes the screen and runs `/ah search <name>` (decorative symbols dropped).
+- **↻** re-fetches your owned SVAs now (at most every 15 s). Scroll with the wheel or PgUp/PgDn.
+
+The status line under the search fields says how old the data is, or "Offline: only fetched while on
+ManaCube", "Too many requests…" or "API error: HTTP 503". The last good data stays usable offline.
+
+### SVA tooltip line
+
+Any item whose name (colour codes ignored, case-insensitive) is an SVA's gets a line
+`✦ SVA · Circulation: 107` in its tooltip, plus `· owned` (`· owned ×2`) when you own it. When several
+SVAs share a name (e.g. `DEEP OCEAN SCYTHE` and its enhanced version) the item type, item model and
+lore pick the right one; if that still leaves several, each circulation is listed (`27 / 342`). Only
+on a gated (ManaCube) server, and only once the catalog has been downloaded.
+
+### Data and limits
+
+| Request | When |
+|---|---|
+| `GET https://api.manacube.com/api/svas/survival` (catalog, ~700 KB) | on joining ManaCube or opening the screen, if the cached copy is missing or older than 6 hours |
+| `GET https://api.manacube.com/api/svas/survival/<your uuid>` | the same, if older than 10 minutes; or ↻ |
+| `GET https://api.mojang.com/users/profiles/minecraft/<name>` then that player's owned SVAs | Compare (cached 10 minutes per name) |
+
+Every request is asynchronous (10 s timeout, `User-Agent: CubeWheel/<version>`), all of them share a
+budget of 20 per minute, a failed automatic fetch is retried after a minute at the earliest, and
+nothing is fetched unless the server gate is open. Responses are cached in
+`config/cubewheel-cache/` (`svas-survival.json`, `owned-<uuid>.json`, `index.json`); delete the folder
+to force a fresh download.
+
+```json
+"svas": { "enabled": true, "tooltip": true }
+```
+
+`enabled: false` switches the whole feature off (no requests, the key does nothing);
+`tooltip: false` only drops the tooltip line.
 
 ## Capture mode
 

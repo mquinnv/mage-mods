@@ -6,5 +6,6 @@
   "key.cubewheel.tracker_picker": "Open tracker picker",
   "key.cubewheel.capture": "Toggle capture mode",
   "key.cubewheel.refresh": "Refresh trackers",
-  "key.cubewheel.events_hud": "Toggle event HUD"
+  "key.cubewheel.events_hud": "Toggle event HUD",
+  "key.cubewheel.sva_catalog": "Open SVA catalog"
 }

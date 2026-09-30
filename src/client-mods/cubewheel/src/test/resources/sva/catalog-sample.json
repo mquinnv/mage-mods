@@ -1,0 +1,502 @@
+[
+  {
+    "itemType": "valhallahelmet",
+    "slot": "ARMOR_HELMET",
+    "version": 1,
+    "circulation": 107,
+    "material": "CARVED_PUMPKIN",
+    "durability": 0,
+    "displayName": "&r&lV&lA&lL&lH&lA&lL&lL&lA &lH&lE&lL&lM&lE&lT",
+    "lore": [
+      "&r§6Unbreakable",
+      "&r§8Valhalla Helmet",
+      "&r",
+      "&r§f§lITEM EFFECTS: §7(While Worn)",
+      "&r§x§D§4§A§F§3§7➟ 2x Souls from Monsters",
+      "&r§x§D§4§A§F§3§7➟ Regeneration II §7(On Low Health)",
+      "&r",
+      "&r§fTrigger: §c<4❤",
+      "&r§fCooldown: §b60s",
+      "&r§fDuration:§d 10s",
+      "&r",
+      "&r§f§lFULL SET EFFECTS: §7(While Worn)",
+      "&r§x§D§4§A§F§3§7➟ 5% Chance to get 2x drops from Bosses",
+      "&r§x§D§4§A§F§3§7➟ +20% Extra Damage to Bosses & Minibosses",
+      "&r",
+      "&r§aSeason Vault Access ✔"
+    ],
+    "enchants": {
+      "Fire Protection": 8,
+      "Blast Protection": 8,
+      "Respiration": 5,
+      "Protection": 8,
+      "Projectile Protection": 8
+    },
+    "customModelData": -1,
+    "itemModel": "manalabs:crates/viking/viking_helmet",
+    "unbreakable": true,
+    "leatherColor": null
+  },
+  {
+    "itemType": "iridium-scythe",
+    "slot": "HOTBAR",
+    "version": 1,
+    "circulation": 140,
+    "material": "NETHERITE_AXE",
+    "durability": 0,
+    "displayName": "&r&lIRIDIUM SCYTHE",
+    "lore": [
+      "&r§6Unbreakable",
+      "&r§8Iridium Scythe",
+      "&r",
+      "&r§f§lITEM EFFECTS: ",
+      "&r§x§7§E§5§6§B§2➟ Plants a 3x3 patch of crops",
+      "&r§x§7§E§5§6§B§2   from your inventory §7(Right-Click)",
+      "&r§x§7§E§5§6§B§2➟ Vein Mine Herbalism Blocks §7(Break Block)",
+      "&r§x§7§E§5§6§B§2➟ Gain McMMO from each Block",
+      "&r",
+      "&r§fDistance:§b 3 Blocks",
+      "&r",
+      "&r§aSeason Vault Access ✔"
+    ],
+    "enchants": {
+      "Efficiency": 10,
+      "Fortune": 7
+    },
+    "customModelData": -1,
+    "itemModel": "manalabs:crates/stardew/iridium_scythe",
+    "unbreakable": true,
+    "leatherColor": null
+  },
+  {
+    "itemType": "phoenixstaff",
+    "slot": "EITHER_HAND",
+    "version": 1,
+    "circulation": 43,
+    "material": "NETHERITE_HOE",
+    "durability": 0,
+    "displayName": "&r&lP&lH&lO&lE&lN&lI&lX &lS&lT&lA&lF&lF",
+    "lore": [
+      "&r§6Unbreakable",
+      "&r§8Phoenix Staff",
+      "&r§f",
+      "&r§f§lITEM EFFECTS: ",
+      "&r§x§F§8§4§F§2§4➟ Shoot a Flame §7(Left-Click)",
+      "&r§f",
+      "&r§fPVP Damage:§c 10",
+      "&r§fPVE Damage:§c 20",
+      "&r§fCooldown:§b 0.5s",
+      "&r§f",
+      "&r§x§F§8§4§F§2§4➟ Shoot a High Damage Burst of Fire §7(Right-Click)",
+      "&r§f",
+      "&r§fPVP Damage:§c 30",
+      "&r§fPVE Damage:§c 65",
+      "&r§fCooldown:§b 10s",
+      "&r§f",
+      "&r§aSeason Vault Access ✔"
+    ],
+    "enchants": {},
+    "customModelData": -1,
+    "itemModel": "manalabs:crates/fantasy/phoenix_staff",
+    "unbreakable": true,
+    "leatherColor": null
+  },
+  {
+    "itemType": "soulcrossbow",
+    "slot": "HOTBAR",
+    "version": 1,
+    "circulation": 87,
+    "material": "CROSSBOW",
+    "durability": 0,
+    "displayName": "&r&lSOUL CROSSBOW",
+    "lore": [
+      "&r§6Unbreakable",
+      "&r§8Soul Crossbow",
+      "&r",
+      "&r§f§lITEM EFFECTS: §7(Shoot)",
+      "&r§x§F§7§5§6§F§F➟ On impact shards scatter in all directions",
+      "&r§f",
+      "&r§fPVP Damage:§c 20 §7(Shards)",
+      "&r§fPVE Damage:§c 25 §7(Shards)",
+      "&r§fCooldown:§b None",
+      "&r§f",
+      "&r§aSeason Vault Access ✔"
+    ],
+    "enchants": {
+      "Infinity": 1,
+      "Quick Charge": 2,
+      "Multishot": 3,
+      "Piercing": 10
+    },
+    "customModelData": -1,
+    "itemModel": "manalabs:crates/fantasy/soul_crossbow",
+    "unbreakable": true,
+    "leatherColor": null
+  },
+  {
+    "itemType": "oceanscythe",
+    "slot": "HOTBAR",
+    "version": 1,
+    "circulation": 342,
+    "material": "DIAMOND_SWORD",
+    "durability": 0,
+    "displayName": "&r&9&lDEEP OCEAN SCYTHE",
+    "lore": [
+      "&r§8Sahuagin Scythe",
+      "&r",
+      "&r§bOnly obtainable by killing Bosses",
+      "&r§7Upgrade this item with §f/enhance",
+      "&r",
+      "&r§f§lITEM EFFECTS: §7(When Held)",
+      "&r§6➟ Water Particles at Feet",
+      "&r§6➟ Passive Dolphins Grace"
+    ],
+    "enchants": {
+      "Smite": 3,
+      "Unbreaking": 5,
+      "Looting": 3,
+      "Sharpness": 7
+    },
+    "customModelData": -1,
+    "itemModel": "manalabs:gear/sword/water_scythe",
+    "unbreakable": false,
+    "leatherColor": null
+  },
+  {
+    "itemType": "enhanced-oceanscythe",
+    "slot": "HOTBAR",
+    "version": 1,
+    "circulation": 27,
+    "material": "DIAMOND_SWORD",
+    "durability": 0,
+    "displayName": "&r&9&lDEEP OCEAN SCYTHE",
+    "lore": [
+      "&r§6Unbreakable",
+      "&r§x§1§C§E§C§F§FEnhanced Sahuagin Scythe",
+      "&r",
+      "&r§bOnly obtainable by killing Bosses",
+      "&r",
+      "&r§f§lITEM EFFECTS: §7(When Held)",
+      "&r§6➟ +15% Extra Damage to Monsters",
+      "&r§6➟ Water Particles at Feet",
+      "&r§6➟ Passive Dolphins Grace"
+    ],
+    "enchants": {
+      "Smite": 7,
+      "Bane of Arthropods": 7,
+      "Looting": 5,
+      "Sharpness": 8
+    },
+    "customModelData": -1,
+    "itemModel": "manalabs:gear/sword/water_scythe",
+    "unbreakable": true,
+    "leatherColor": null
+  },
+  {
+    "itemType": "skeletonshield",
+    "slot": "OFF_HAND",
+    "version": 1,
+    "circulation": 141,
+    "material": "SHIELD",
+    "durability": 0,
+    "displayName": "&r&lS&lK&lE&lL&lE&lT&lO&lN &lS&lH&lI&lE&lL&lD",
+    "lore": [
+      "&r§8Skeleton Shield",
+      "&r",
+      "&r§f§lITEM EFFECTS: §7(Off Hand)",
+      "&r§x§C§6§D§E§F§1➟ Remove all negative potion",
+      "&r§x§C§6§D§E§F§1   effects §7(Shift + Right-Click)",
+      "&r",
+      "&r§fCooldown: §b45s",
+      "&r",
+      "&r§aSeason Vault Access ✔"
+    ],
+    "enchants": {
+      "Mending": 3,
+      "Unbreaking": 10
+    },
+    "customModelData": -1,
+    "itemModel": "manalabs:crates/halloween25/skeleton_shield",
+    "unbreakable": false,
+    "leatherColor": null
+  },
+  {
+    "itemType": "samuraikatana",
+    "slot": "HOTBAR",
+    "version": 2,
+    "circulation": 21,
+    "material": "NETHERITE_SWORD",
+    "durability": 0,
+    "displayName": "&r&lS&lA&lM&lU&lR&lA&lI &lK&lA&lT&lA&lN&lA",
+    "lore": [
+      "&r§6Unbreakable",
+      "&r§8Samurai Katana",
+      "&r",
+      "&r§f§lITEM EFFECTS: §7(While Held)",
+      "&r§x§F§2§D§1§2§1➟ Every 5th hit deals 2x Damage",
+      "&r",
+      "&r§fCooldown:§b 5s",
+      "&r§fHit Reset Time:§e 1s",
+      "&r",
+      "&r§aSeason Vault Access ✔"
+    ],
+    "enchants": {
+      "Fire Aspect": 3,
+      "Smite": 8,
+      "Bane of Arthropods": 8,
+      "Looting": 4,
+      "Sharpness": 8
+    },
+    "customModelData": -1,
+    "itemModel": "manalabs:crates/samurai/katana",
+    "unbreakable": true,
+    "leatherColor": null
+  },
+  {
+    "itemType": "harvestsword",
+    "slot": "HOTBAR",
+    "version": 1,
+    "circulation": 18,
+    "material": "NETHERITE_SWORD",
+    "durability": 0,
+    "displayName": "&r&lH&lA&lR&lV&lE&lS&lT &lS&lW&lO&lR&lD",
+    "lore": [
+      "&r§6Unbreakable",
+      "&r§8Harvest Sword",
+      "&r",
+      "&r§f§lITEM EFFECTS §7(When Held)",
+      "&r§6➟ +40% Chance to get double mob heads",
+      "&r",
+      "&r§aSeason Vault Access ✔"
+    ],
+    "enchants": {
+      "Smite": 6,
+      "Bane of Arthropods": 5,
+      "Knockback": 2,
+      "Looting": 4,
+      "Sharpness": 7
+    },
+    "customModelData": -1,
+    "itemModel": "manalabs:gear/sword/harvestsword",
+    "unbreakable": true,
+    "leatherColor": null
+  },
+  {
+    "itemType": "carrotsword-20",
+    "slot": "EITHER_HAND",
+    "version": 2,
+    "circulation": 13,
+    "material": "GOLDEN_CARROT",
+    "durability": 0,
+    "displayName": "&r&6&lCARROT SWORD",
+    "lore": [
+      "&r§6Unbreakable",
+      "&r",
+      "&r§8Exclusive Easter 2020",
+      "&r§8Season Vault Access  ✔"
+    ],
+    "enchants": {
+      "Smite": 5,
+      "Looting": 3,
+      "Sharpness": 25
+    },
+    "customModelData": -1,
+    "itemModel": null,
+    "unbreakable": true,
+    "leatherColor": null
+  },
+  {
+    "itemType": "carrotsword2-20",
+    "slot": "EITHER_HAND",
+    "version": 1,
+    "circulation": 9,
+    "material": "DIAMOND_SWORD",
+    "durability": 0,
+    "displayName": "&r&6&lCARROT SWORD",
+    "lore": [
+      "&r§6Unbreakable",
+      "&r",
+      "&r§8Exclusive Easter 2020",
+      "&r§8Season Vault Access ✔"
+    ],
+    "enchants": {
+      "Smite": 5,
+      "Looting": 3,
+      "Sharpness": 6
+    },
+    "customModelData": -1,
+    "itemModel": null,
+    "unbreakable": true,
+    "leatherColor": null
+  },
+  {
+    "itemType": "easter-boots",
+    "slot": "ARMOR_BOOTS",
+    "version": 1,
+    "circulation": 34,
+    "material": "DIAMOND_BOOTS",
+    "durability": 0,
+    "displayName": "&r&e&lEASTER BUNNY BOOTS",
+    "lore": [
+      "&r",
+      "&r§8Exclusive Easter 2020",
+      "&r§8Season Vault Access ✔",
+      "&r",
+      "&r§f§lITEM EFFECTS:",
+      "&r§f- §bJump Boost V"
+    ],
+    "enchants": {
+      "Unbreaking": 5,
+      "Protection": 6,
+      "Feather Falling": 10
+    },
+    "customModelData": -1,
+    "itemModel": null,
+    "unbreakable": false,
+    "leatherColor": null
+  },
+  {
+    "itemType": "carrotsword-20",
+    "slot": "EITHER_HAND",
+    "version": 2,
+    "circulation": 13,
+    "material": "GOLDEN_CARROT",
+    "durability": 0,
+    "displayName": "&r&6&lCARROT SWORD",
+    "lore": [
+      "&r§6Unbreakable",
+      "&r",
+      "&r§8Exclusive Easter 2020",
+      "&r§8Season Vault Access  ✔"
+    ],
+    "enchants": {
+      "Smite": 5,
+      "Looting": 3,
+      "Sharpness": 25
+    },
+    "customModelData": -1,
+    "itemModel": null,
+    "unbreakable": true,
+    "leatherColor": null
+  },
+  {
+    "itemType": "easter-boots",
+    "slot": "ARMOR_BOOTS",
+    "version": 1,
+    "circulation": 34,
+    "material": "DIAMOND_BOOTS",
+    "durability": 0,
+    "displayName": "&r&e&lEASTER BUNNY BOOTS",
+    "lore": [
+      "&r",
+      "&r§8Exclusive Easter 2020",
+      "&r§8Season Vault Access ✔",
+      "&r",
+      "&r§f§lITEM EFFECTS:",
+      "&r§f- §bJump Boost V"
+    ],
+    "enchants": {
+      "Unbreaking": 5,
+      "Protection": 6,
+      "Feather Falling": 10
+    },
+    "customModelData": -1,
+    "itemModel": null,
+    "unbreakable": false,
+    "leatherColor": null
+  },
+  {
+    "itemType": "marshmellohelmet",
+    "slot": "ARMOR_HELMET",
+    "version": 1,
+    "circulation": 22,
+    "material": "CARVED_PUMPKIN",
+    "durability": 0,
+    "displayName": "&r&f&lMARSHMELLO'S HELMET",
+    "lore": [
+      "&r§6Unbreakable",
+      "&r§8Marshmello's Helmet",
+      "&r",
+      "&r§f§lITEM EFFECTS: §7(While Worn)",
+      "&r§f➟ Each kill increases damage by +2%",
+      "&r§f   to a max of +20% projectile damage",
+      "&r",
+      "&r§fPer Kill: §b+2%",
+      "&r§fMultiplier Cap: §a20%",
+      "&r§fMultiplier Reset Time:§e 10s",
+      "&r",
+      "&r§aSeason Vault Access ✔"
+    ],
+    "enchants": {
+      "": 3,
+      "Fire Protection": 8,
+      "Blast Protection": 8,
+      "Respiration": 3,
+      "Protection": 8,
+      "Projectile Protection": 8
+    },
+    "customModelData": -1,
+    "itemModel": "manalabs:crates/music/marshmello_helmet",
+    "unbreakable": true,
+    "leatherColor": null
+  },
+  {
+    "itemType": "sunsword",
+    "slot": "HOTBAR",
+    "version": 1,
+    "circulation": 81,
+    "material": "NETHERITE_SWORD",
+    "durability": 0,
+    "displayName": "&r☀ &lSUN SWORD ☀",
+    "lore": [
+      "&r§6Unbreakable",
+      "&r§8Sun Sword",
+      "&r",
+      "&r§f§lITEM EFFECTS: §7(While Held)",
+      "&r§x§F§C§F§F§0§C➟ 25% Chance to Deal 2x Damage §7(PvE)",
+      "&r§x§F§C§F§F§0§C➟ 15% Chance to Deal 2x Damage §7(PvP)",
+      "&r§x§F§C§F§F§0§C➟ 15% Chance for 2x Souls from Monsters",
+      "&r§x§F§C§F§F§0§C➟ 15% Chance for 2x Mana from Monsters",
+      "&r",
+      "&r§aSeason Vault Access ✔"
+    ],
+    "enchants": {
+      "Fire Aspect": 3,
+      "Smite": 8,
+      "Bane of Arthropods": 7,
+      "Looting": 4,
+      "Sharpness": 7
+    },
+    "customModelData": -1,
+    "itemModel": "manalabs:crates/summer26/sun_sword",
+    "unbreakable": true,
+    "leatherColor": null
+  },
+  {
+    "itemType": "wizardbook",
+    "slot": "EITHER_HAND",
+    "version": 2,
+    "circulation": 0,
+    "material": "BOOK",
+    "durability": 0,
+    "displayName": "&r▲ &lWIZARDS BOOK ▼",
+    "lore": [
+      "&r§8Wizards Book",
+      "&r",
+      "&r§f§lITEM EFFECTS: §7(Right Click)",
+      "&r§x§D§1§9§7§D§1➟ Summon Magic Circle",
+      "&r",
+      "&r§fDamage: §c10dps",
+      "&r§fRadius: §e5x5",
+      "&r§fDuration: §d10s",
+      "&r§fCooldown: §b30s"
+    ],
+    "enchants": {
+      "Unbreaking": 1
+    },
+    "customModelData": -1,
+    "itemModel": "manalabs:gear/misc/magic_book",
+    "unbreakable": true,
+    "leatherColor": null
+  }
+]

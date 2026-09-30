@@ -188,3 +188,24 @@ Needs a custom item with a cooldown in its lore (e.g. a crate weapon or tool wit
 - [ ] `"cooldowns": {"enabled": false}` + reload: no panel, no countdowns.
 - [ ] On the hub, another gamemode or a non-ManaCube server: nothing is shown or counted.
 - [ ] The log shows no "[cubewheel] item cooldown hook failed" errors; no FPS change while clicking.
+
+## SVA catalog
+
+Bind "Open SVA catalog" first. Start with `config/cubewheel-cache/` deleted.
+
+- [ ] In singleplayer, press the key: the screen opens and says "Offline: join ManaCube to download the SVA catalog"; no request is made (log shows no SVA fetch).
+- [ ] Join ManaCube: within a few seconds `config/cubewheel-cache/svas-survival.json` (~700 KB) and `owned-<uuid>.json` exist. The game never stutters while it downloads.
+- [ ] Open the screen: a grid of ~1,200 items, header "SVA Catalog · N of N · you own K"; with ManaCube's resource pack loaded the icons are the custom models, otherwise vanilla items. Your SVAs have a green border.
+- [ ] Type `valhalla`: only matching items; type `souls monsters` (lore words): still finds the Valhalla Helmet. Clearing the search shows everything again from the top.
+- [ ] Hover an item: its coloured name and lore (hex colours such as the gold "➟ 2x Souls from Monsters"), "Circulation: N", owned/not owned, "Click: /ah search NAME".
+- [ ] "Only owned" / "Not owned" / "All" and "Sort: A–Z / Rarest / Most common" behave; the counts in the header change.
+- [ ] Type a friend's name in "Compare with player…", press Enter: "Comparing with Name (owns N)", borders green/pink/aqua with the legend top right. A made-up name says "No such player"; `bad name!` says "Not a Minecraft name". × clears it.
+- [ ] Left-click an item: the screen closes and exactly one `/ah search NAME` is sent (the AH opens with results). Symbols like ☀ are not in the search.
+- [ ] Press ↻ twice quickly: only one owned request (log/cache time), the second within 15 s does nothing.
+- [ ] Resize the window / change GUI scale with the screen open: layout adapts, search text and compare name are kept.
+- [ ] Scroll with the wheel and PgUp/PgDn; the scrollbar on the right tracks the position.
+- [ ] Rejoin within 6 hours: the catalog is not downloaded again (file time unchanged); owned is re-fetched only if older than 10 minutes.
+- [ ] Hover an SVA in your inventory or `/pv 1`: the tooltip ends with `✦ SVA · Circulation: N · owned`. A normal diamond sword gets no line.
+- [ ] `"svas": {"tooltip": false}` + reload: no tooltip line; `"svas": {"enabled": false}`: the key does nothing but says so, nothing is fetched.
+- [ ] Disconnect the network and open the screen: cached data still shows, the status line says "Offline: …" or "API error …" instead of hanging.
+- [ ] On a non-ManaCube server: no tooltip line and no requests.

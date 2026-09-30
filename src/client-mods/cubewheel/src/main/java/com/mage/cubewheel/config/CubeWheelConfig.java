@@ -20,7 +20,16 @@ public final class CubeWheelConfig {
 	public Events events = new Events();
 	/** Countdowns for custom-item abilities whose lore has a cooldown. */
 	public Cooldowns cooldowns = new Cooldowns();
+	/** SVA catalog screen and tooltip line, from ManaCube's public API. */
+	public Svas svas = new Svas();
 	public List<WheelNode> wheel;
+
+	public static final class Svas {
+		/** Master switch: when false nothing is fetched and the catalog key does nothing. */
+		public boolean enabled = true;
+		/** Append "✦ SVA · Circulation: N" to tooltips of items whose name is an SVA's. */
+		public boolean tooltip = true;
+	}
 
 	/**
 	 * Where a HUD panel sits: a screen corner ("top_left", "top_right", "bottom_left", "bottom_right") plus

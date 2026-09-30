@@ -15,6 +15,7 @@ import com.mage.cubewheel.mixin.BossHealthOverlayAccessor;
 import com.mage.cubewheel.mixin.HudAccessor;
 import com.mage.cubewheel.mixin.LerpingBossEventAccessor;
 import com.mage.cubewheel.sidebar.SidebarWatcher;
+import com.mage.cubewheel.sva.mc.SvaClient;
 import com.mage.cubewheel.tracker.ContainerHook;
 import com.mage.cubewheel.tracker.RefreshController;
 import com.mage.cubewheel.tracker.TrackerHud;
@@ -102,6 +103,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		PanelsHud.add(BoosterWatcher::panel);
 		PanelsHud.add(CooldownWatcher::panel);
 		PanelsHud.register();
+		SvaClient.init(configDir);
 		Keybinds.register();
 		ClientTickEvents.START_CLIENT_TICK.register(mc -> {
 			try {
@@ -143,6 +145,11 @@ public final class CubeWheelClient implements ClientModInitializer {
 			handleTrackerPickerKey(mc);
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] tracker picker key handler failed", e);
+		}
+		try {
+			if (pressed(Keybinds.svaCatalog)) SvaClient.openCatalog(mc);
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] SVA catalog key handler failed", e);
 		}
 		try {
 			handleCaptureKey(mc);
