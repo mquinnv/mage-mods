@@ -233,9 +233,8 @@ public final class TrackerStore {
 	}
 
 	private TrackerRow row(Trackable t, boolean withEstimates) {
-		if (!withEstimates) return TrackerRow.plain(t);
-		Estimate est = estimates.get(t.id());
-		return est == null ? TrackerRow.plain(t) : EstimateView.row(t, est, displayRule(t.id()));
+		Estimate est = withEstimates ? estimates.get(t.id()) : null;
+		return EstimateView.row(t, est, displayRule(t.id()));
 	}
 
 	public boolean isPinned(String id) {

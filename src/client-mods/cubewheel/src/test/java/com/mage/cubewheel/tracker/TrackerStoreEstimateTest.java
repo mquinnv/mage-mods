@@ -30,6 +30,23 @@ class TrackerStoreEstimateTest {
 		return new ObjectiveInfo(List.of(new ObjectiveInfo.Sub(line, null)), false, false);
 	}
 
+	@Test void percentEntriesAreShownInObjectiveUnitsOnHudAndPicker() {
+		TrackerStore s = store();
+		s.update("pquests", "Discoverer", p(70, 100), 0); // two objectives: no single total
+		s.setObjective("pquests:Discoverer", new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Discover Wolfhaven", 100.0),
+				new ObjectiveInfo.Sub("Discover Huey", 40.0)), false, false));
+		for (boolean estimates : new boolean[] {false, true}) {
+			TrackerRow harvester = s.rows(estimates).stream().filter(r -> r.item().id().equals(HARVESTER)).findFirst().orElseThrow();
+			assertEquals(6400, harvester.shownCurrent(), 1e-9);
+			assertEquals(10000, harvester.shownMax(), 1e-9);
+			TrackerRow hud = s.hudRows(10, estimates).stream().filter(r -> r.item().id().equals(HARVESTER)).findFirst().orElseThrow();
+			assertEquals(6400, hud.shownCurrent(), 1e-9);
+			TrackerRow discoverer = s.rows(estimates).stream().filter(r -> r.item().id().equals("pquests:Discoverer")).findFirst().orElseThrow();
+			assertEquals(70, discoverer.shownCurrent(), 1e-9);
+			assertEquals(100, discoverer.shownMax(), 1e-9);
+		}
+	}
+
 	TrackerStore store() {
 		TrackerStore s = new TrackerStore(dir.resolve("t.json"));
 		s.update("pquests", "Miner", p(100, 300), 0);

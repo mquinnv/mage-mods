@@ -32,6 +32,28 @@ class EstimateViewTest {
 		assertEquals(10000, row.shownMax(), 1e-9);
 	}
 
+	@Test void percentEntryIsAlwaysShownInObjectiveUnits() {
+		Trackable t = new Trackable("pquests:Haven Harvester", "pquests", "Haven Harvester", 67, 100, 0);
+		TrackerRow plain = EstimateView.row(t, null, HARVEST);
+		assertFalse(plain.estimated());
+		assertEquals(6700, plain.shownCurrent(), 1e-9);
+		assertEquals(10000, plain.shownMax(), 1e-9);
+		assertEquals(0.67, plain.fraction(), 1e-9);
+		assertEquals("Haven Harvester  6,700 / 10,000 (67%) · now", com.mage.cubewheel.tracker.TrackerFormat.line(plain, 0));
+		TrackerRow counted = EstimateView.row(t, est(112, 67), HARVEST);
+		assertEquals("Haven Harvester  ~6,812 / 10,000 (68%) · now", com.mage.cubewheel.tracker.TrackerFormat.line(counted, 0));
+		Trackable done = new Trackable("pquests:Haven Harvester", "pquests", "Haven Harvester", 100, 100, 0);
+		assertEquals("Haven Harvester  10,000 / 10,000 (100%) · now", com.mage.cubewheel.tracker.TrackerFormat.line(EstimateView.row(done, null, HARVEST), 0));
+	}
+
+	@Test void percentEntryWithoutAKnownTotalKeepsThePercent() {
+		Trackable t = new Trackable("pquests:Discoverer", "pquests", "Discoverer", 70, 100, 0);
+		assertEquals("Discoverer  70 / 100 (70%) · now", com.mage.cubewheel.tracker.TrackerFormat.line(EstimateView.row(t, null, null), 0));
+		// A ratio entry is left as it is.
+		Trackable slay = new Trackable("prestige:Slay", "prestige", "Slay", 377, 1000, 0);
+		assertEquals(377, EstimateView.row(slay, null, SLAY).shownCurrent(), 1e-9);
+	}
+
 	@Test void cappedAtMaxAndNeverComplete() {
 		Trackable t = new Trackable("prestige:Slay", "prestige", "Slay", 990, 1000, 0);
 		TrackerRow row = EstimateView.row(t, est(50, 990), SLAY);
