@@ -1,6 +1,6 @@
-package com.mage.hammerharvest.mixin;
+package net.mage.hammerharvest.mixin;
 
-import com.mage.hammerharvest.HammerHarvest;
+import net.mage.hammerharvest.HammerHarvest;
 
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;

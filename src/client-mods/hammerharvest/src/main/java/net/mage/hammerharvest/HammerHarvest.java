@@ -1,4 +1,4 @@
-package com.mage.hammerharvest;
+package net.mage.hammerharvest;
 
 import java.util.Map;
 import java.util.Set;

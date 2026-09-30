@@ -1,7 +1,7 @@
 {
 	"required": true,
 	"minVersion": "0.8",
-	"package": "com.mage.hammerharvest.mixin",
+	"package": "net.mage.hammerharvest.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"ItemStackMixin"
