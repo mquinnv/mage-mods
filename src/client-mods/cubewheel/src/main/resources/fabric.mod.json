@@ -7,7 +7,7 @@
   "authors": ["Mage Realism"],
   "license": "MIT",
   "environment": "client",
-  "entrypoints": { "client": ["com.mage.cubewheel.CubeWheelClient"] },
+  "entrypoints": { "client": ["net.mage.cubewheel.CubeWheelClient"] },
   "mixins": [{ "config": "cubewheel.mixins.json", "environment": "client" }],
   "depends": {
     "fabricloader": ">=${loader_version}",

@@ -1,7 +1,7 @@
 {
 	"required": false,
 	"minVersion": "0.8",
-	"package": "com.mage.cubewheel.mixin",
+	"package": "net.mage.cubewheel.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"BossHealthOverlayAccessor",
