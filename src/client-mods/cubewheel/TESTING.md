@@ -58,7 +58,9 @@ Bind "Toggle tracker HUD", "Open tracker picker" and "Toggle capture mode" under
 - [ ] The mod never clicks in, opens or closes a menu itself, and sends no command while tracking.
 - [ ] Items from your own inventory (bottom half of the menu) never appear in the picker.
 - [ ] Click an entry in the picker: its ☆ becomes ★ and the top-right HUD shows it with an age suffix ("now", later "5m"). Click again to unpin.
-- [ ] The HUD shows pinned entries first, then every other incomplete entry, closest to done first (not only those at ≥80%); at most 8 lines (`tracker.hudMaxLines`; a config file written before this change keeps its old value, e.g. 6). Entries at ≥80% are yellow, the rest white; complete entries appear only when pinned (green).
+- [ ] The HUD shows pinned entries first, then every other incomplete entry, closest to done first (not only those at ≥80%); at most 10 lines (`tracker.hudMaxLines`; an older config file with 6 or 8 is upgraded to 10 once on load and gets `"configVersion": 2`; set it back to 6, reload: it stays 6). Entries at ≥80% are yellow, the rest white; complete entries appear only when pinned (green).
+- [ ] "Haven Harvester" (Progress: 67% of "Harvest or Mine 10,000 Wolfhaven Resources") shows `6,700 / 10,000 (67%)` on the HUD and in the picker, without `~`; "Discoverer" (two objectives) still shows `70 / 100 (70%)`.
+- [ ] Hold the capture key for two seconds: capture toggles once ("Capture ON"), not on and off again. Same for the HUD key.
 - [ ] Estimated entries on the HUD keep their `~` (and `✓?` at the target) and move up the list as they are counted.
 - [ ] The picker's top line reads "Left-click: pin to HUD   Right-click: hide from HUD". Right-click an entry: it turns dark grey with "(hidden)" and disappears from the HUD, even if pinned. Right-click again: back on the HUD. Hidden entries survive a restart (`hidden` in `config/cubewheel-tracker.json`).
 - [ ] With a potion effect active, the HUD sits below the effect icons.
@@ -66,6 +68,7 @@ Bind "Toggle tracker HUD", "Open tracker picker" and "Toggle capture mode" under
 - [ ] Break `config/cubewheel.json` (delete a brace), press the reload key (red error), then the toggle-HUD key: the HUD toggles, the action bar says "CubeWheel: HUD toggled for this session (config has errors, not saved)", and the broken file on disk is unchanged. Fix the file and reload: toggling saves again.
 - [ ] F1 hides the HUD together with the vanilla HUD.
 - [ ] On a non-ManaCube server the HUD is not drawn and opening menus records nothing; the picker still opens (local data).
+- [ ] On another ManaCube gamemode or the hub (sidebar not titled "SURVIVAL"): opening menus adds no tracker entries and the refresh key says "Tracker refresh only works in ManaCube Survival". Back in Survival both work again.
 - [ ] "Forget entries older than 7 days" removes unpinned entries not seen for a week (edit `seenAt` in `config/cubewheel-tracker.json` to test); pinned ones stay.
 - [ ] Capture key: action bar "Capture ON → config/cubewheel-captures". Run `/homes` (also via the wheel, whose reply is hidden), then open `/jobs`, `/pquests`, `/prestige`, `/challenges`: `config/cubewheel-captures/<UTC date>.jsonl` gets one `"kind":"chat"` line per chat message and one `"kind":"container"` line per menu (another only if the contents change while it is open).
 - [ ] While capture is on, action-bar text (e.g. job XP popups while farming) adds `"kind":"actionbar"` lines, and boss bars (quest/event bars) add `"kind":"bossbars"` lines with `name` and `progress`; each is written only when the value changes (standing still with an unchanged bar writes nothing). Action-bar game messages also appear as `"kind":"chat"` lines with `"overlay":true`, with consecutive repeats skipped.
@@ -101,7 +104,7 @@ Bind "Refresh trackers" under Options > Controls > Key Binds > CubeWheel first.
 - [ ] Late menu: if the server is slow and a tracker menu opens after its 3 s timeout, it is still read and closed (hidden) and the run carries on.
 - [ ] Put a harmless command that opens no menu (e.g. `"/list"`; not one that teleports) first in `tracker.refreshCommands`, reload, press: after ~3 s the next command is sent; the final line says "(1 menu did not load)".
 - [ ] `"refreshCommands": []`: pressing says `refresh skipped: tracker.refreshCommands is empty`.
-- [ ] Picker: click **Refresh**: the picker closes, the run happens, the picker reopens with fresh ages and shows "Refreshed N trackers" in gold above the buttons for a few seconds. Within 60 s the button shows "refresh skipped: wait Ns" in the picker itself (and in chat) and the picker stays open.
+- [ ] Picker: click **Refresh**: the picker closes, the run happens, the picker reopens with fresh ages and shows "Refreshed N trackers" in gold above the buttons for a few seconds (not "refresh stopped: another screen was opened"). Within 60 s the button shows "refresh skipped: wait Ns" in the picker itself (and in chat) and the picker stays open.
 - [ ] On a non-ManaCube server the key only shows "CubeWheel is only active on ManaCube" and sends nothing.
 - [ ] Disconnect during a run: no error; the next run on reconnect works after the cooldown.
 - [ ] Capture on, then run a refresh and also open a menu via a typed command: each `"kind":"container"` line has `afterCommand` naming the command (e.g. `"/prestige"`) and `afterCommandMs`. Use this to find the command that opens the "Rank [✪n]" objectives menu, then add it to `tracker.refreshCommands`.
@@ -119,6 +122,10 @@ Open `/pquests`, `/prestige` (rank objectives) and `/challenges` once so the obj
 - [ ] With an open "Mine 300 Stone"-style quest (or any "Mine/Harvest or Mine ... Resources" objective), break 10 stone: the entry shows `~` and grows by 10 (percentage quests: the shown value is in objective units, e.g. `~6,437 / 10,000`); the age suffix does not change.
 - [ ] Reopen `/pquests` (or press the refresh key): the `~` disappears and the menu's value is shown; the log has "[cubewheel] estimate for ...: counted N, actual M" (capture: a `"kind":"estimate"` line).
 - [ ] Break fully grown wheat: "Harvest N Crops"/"Harvest N Wheat" go up by 1 each; breaking unripe wheat or a melon/pumpkin stem adds nothing. A melon block counts.
+- [ ] Break grass, flowers and ferns: a "... Resources" objective does not move; breaking stone does.
+- [ ] "Harvest N Sweet Berries" / "Cocoa Beans": picking a ripe bush / pod counts.
+- [ ] Job listing "Farming Heavy · Harvest Cherry Logs": break a cherry log, the entry shows `~3,128 / 4,773`; "Catch … Tangleroots Fireflies" never gets a `~`.
+- [ ] In Burning Lands (if its sidebar says "World: Burning Lands" or its dimension is `burning_lands`), a "Burninglands" / "Burning Lands" objective counts.
 - [ ] Place a stone and break it again: no count. Break a crop you planted once it is grown: counts.
 - [ ] Break a block inside another player's claim (the block comes back): the count goes up and back down within a second (capture: `"signal":"reject"`).
 - [ ] Kill a mob with a sword and one with a bow: "Kill N Mobs" +1 each. A mob another player finished off (they hit it last) does not count.
@@ -131,5 +138,7 @@ Open `/pquests`, `/prestige` (rank objectives) and `/challenges` once so the obj
 - [ ] `"tracker.local": {"enabled": false}` + reload: nothing counts and the `~` values disappear; set it back: the stored estimates reappear.
 - [ ] Nothing is ever sent: counting produces no chat commands and opens no menu (watch the log and chat).
 - [ ] On a non-ManaCube server nothing is counted.
+- [ ] Break stone on another ManaCube gamemode (e.g. SkyBlock) or in the hub: no count.
+- [ ] In creative or spectator mode (if available), breaking, killing or fishing counts nothing.
 - [ ] The game log shows no mixin errors for `LocalCounting*Mixin`/`FishingHookAccessor`. (Optional: if one fails to apply, only that kind of counting stops; a hook that throws is logged once and switched off after 10 failures.)
 - [ ] No FPS change while mining, fighting or fishing.

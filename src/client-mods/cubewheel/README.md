@@ -40,7 +40,8 @@ Options > Controls > Key Binds > **CubeWheel**.
 | Toggle capture mode | unbound |
 | Refresh trackers | unbound |
 
-Any key or mouse button can be used for the wheel.
+Any key or mouse button can be used for the wheel. Each press does its action once: holding a key
+(so the system repeats it) does not toggle capture or the HUD back and forth.
 
 ## Using the wheel
 
@@ -90,15 +91,17 @@ the previous config keeps working. Numbers outside their range are clamped.
 
 | Key | Meaning | Default |
 |---|---|---|
+| `configVersion` | File format version, managed by the mod. Loading an older file applies one-time upgrades and writes the file back | `2` |
 | `enabled` | Master switch | `true` |
 | `serverHosts` | Host suffixes the mod is active on | `["manacube.com", "manacube.net"]` |
 | `vaultCount` | Number of `/pv` entries in a `vaults` node (your rank decides this), 0–54 | `3` |
 | `listThreshold` | Rings with more entries open as a list, 3–16 | `8` |
 | `tracker.nearThreshold` | Fraction from which HUD entries are highlighted yellow, 0–1 | `0.8` |
-| `tracker.hudMaxLines` | Max HUD lines, 1–20 (a file written earlier keeps its own value) | `8` |
+| `tracker.hudMaxLines` | Max HUD lines, 1–20 (an older file with the old default 6 or 8 is upgraded to 10 once, see `configVersion`) | `10` |
 | `tracker.hudVisible` | HUD on/off (saved when you toggle it, see below) | `true` |
 | `tracker.sources` | Source id -> regex matched against the menu title | see below |
 | `tracker.refreshCommands` | Commands the "Refresh trackers" key sends, one at a time (max 8) | `["/pquests", "/prestige", "/jobs"]` |
+| `tracker.survivalSidebarPattern` | Regex on the sidebar title; menu reading, refresh runs and live estimates only run while it matches (see [Server gate](#server-gate)). `""` switches the check off | `"(?i)survival"` |
 | `tracker.sidebarLinks` | Sidebar key -> regex on tracked names that follow that live value | `{"Skills": "(?i)reach [\\d,]+ skill level"}` |
 | `tracker.local.enabled` | Live `~` estimates between menu reads (see [Live estimates](#live-estimates-local-counting)) | `true` |
 | `tracker.local.blocks` / `kills` / `fish` | Count own block breaks / kills / catches | `true` each |
@@ -180,6 +183,12 @@ key shows the action-bar hint "CubeWheel is only active on ManaCube", no command
 HUD is not drawn, menus are not recorded and capture records nothing. The toggle-HUD key and the
 tracker picker still work there, on locally stored data.
 
+ManaCube runs SkyBlock, Parkour, the hub and more on the same address, and their menus and blocks must
+not feed Survival's trackers. So menu reading, refresh runs and live estimates also need the sidebar
+title to match `tracker.survivalSidebarPattern` (default `(?i)survival`: Survival's sidebar is titled
+"SURVIVAL"). No sidebar means inactive. The wheel, capture and sidebar-linked values only need the
+host gate. Refreshing elsewhere says "Tracker refresh only works in ManaCube Survival".
+
 ## Progress tracker
 
 The tracker reads what you open. When you open a menu whose title matches a `tracker.sources` regex (defaults:
@@ -192,6 +201,9 @@ container (never your inventory) and records the entries that show progress. Con
   closest to done first, at most `hudMaxLines` lines. Entries at or above `nearThreshold` are yellow,
   estimated ones keep their `~`. Complete entries only show when pinned (green). Hidden entries never
   show. F1 hides it.
+- **Percentage quests** whose objective has one known total are shown in objective units, on the HUD
+  and in the picker: `Haven Harvester  6,700 / 10,000 (67%)` for "Progress: 67%" of "Harvest or Mine
+  10,000 Wolfhaven Resources". Quests with several objectives keep `67 / 100 (67%)`.
 - **Picker** (bind "Open tracker picker"): all known entries grouped by source, sorted by
   percentage. Left-click to pin/unpin, right-click to hide/unhide an entry on the HUD (hidden entries
   stay listed, dimmed and marked "(hidden)"). A button forgets unpinned entries not seen for 7 days.
@@ -227,10 +239,12 @@ Bind "Refresh trackers" (or click **Refresh** in the picker). One press = one ru
 
 While a run is active the menus it opens are not drawn and ignore clicks and keys (except Esc), so the
 screen does not flash and nothing can be clicked by accident. Only menus CubeWheel recognises as
-tracker menus are hidden and closed; any other menu (a chest, the warps menu) stops the run and stays
-visible and usable. Opening any other screen (chat, inventory, pause menu), pressing Esc, or pressing
-use or attack while the run waits for a menu (you may be opening a chest or an NPC) stops the run. A
-tracker menu that arrives late, after its 3 s wait, is still read and closed. A second press within
+tracker menus are hidden. The menu that opens right after one of the run's commands is that command's
+answer: it is waited for while it fills in, and closed after 3 s (counted as "did not load") if it is
+never recognised. Any other menu (a chest, the warps menu) stops the run and stays visible and usable.
+Opening any other screen (chat, inventory, pause menu), pressing Esc, or pressing use or attack while
+the run waits for a menu (you may be opening a chest or an NPC) stops the run; the picker a run was
+started from does not. A tracker menu that arrives late, after its 3 s wait, is still read and closed. A second press within
 60 s of the last start is refused: `[CubeWheel] refresh skipped: wait Ns`.
 
 **Which commands?** `/prestige` opens the list of prestige levels ("Prestige N - Not Completed"); the
@@ -245,16 +259,21 @@ opens the rank-objectives menu is known, put it in `tracker.refreshCommands` (an
 as `<Industry> <Tier> · <objective>`, e.g. `Farming Heavy · Harvest Cherry Logs  3,127 / 4,773`: the
 progress is the objective's own counter, not the hand-in line. When an industry's listings page is
 read again, that industry's listings that are no longer offered (rerolled or completed) are forgotten,
-unless pinned. Entries from the main jobs menu (e.g. `GOLDEN CRATE`) are kept.
+unless pinned. Entries from the main jobs menu (e.g. `GOLDEN CRATE`) are kept. Listings get live
+estimates like other objectives: breaking cherry logs advances `Farming Heavy · Harvest Cherry Logs`
+(the objective "Harvest 3,127/4,773 Cherry Logs" is read as "Harvest 4,773 Cherry Logs"). Specific
+catches such as "Catch 0/61 Tangleroots Fireflies" are not counted.
 
 ### Live estimates (local counting)
 
 Between menu reads CubeWheel estimates progress from what it sees you do, so the HUD moves while you
-play. It only watches; it never sends a command, opens a menu or clicks anything.
+play. It only watches; it never sends a command, opens a menu or clicks anything. It is active only in
+ManaCube Survival (see [Server gate](#server-gate)) and never counts what you do in creative or
+spectator mode.
 
 - An estimated entry is shown with a `~`: `Haven Harvester  ~6,437 / 10,000 (64%) · 5m`. The age is still
   that of the last real read. Percentage quests are shown in objective units (64% of 10,000 plus what
-  was counted since).
+  was counted since), estimated or not.
 - An estimate never turns an entry green. When it reaches the target it shows `✓?` in yellow until a
   menu read confirms it.
 - Every real reading replaces the estimate ("snaps back"): opening the menu, a refresh run, or a
@@ -269,14 +288,16 @@ What is counted, per objective text read from the menu (only objectives with a s
 | Objective | Counted when you... |
 |---|---|
 | Harvest N Crops / Harvest N Wheat (carrots, potatoes, ...) | break a **fully grown** crop (melons and pumpkins count; stems do not) |
-| Mine / Break / Chop / Dig N Stone, Cobblestone, Logs, Ores, Resources | break a matching block yourself; "Resources"/"Blocks" = any block |
+| Mine / Break / Chop / Dig N Stone, Cobblestone, Logs, Ores, Resources | break a matching block yourself; "Resources"/"Blocks" = any block except instant-break plants (grass, flowers, ferns); ripe crops still count |
+| Harvest N Sweet Berries / Cocoa Beans | pick a ripe sweet berry bush / cocoa pod |
 | Kill / Slay N Mobs / Monsters / Zombies / Mana Wolves | kill it: you were the last player to damage it within 5 s (arrows and tridents count) |
 | Catch N Fish | reel in while the bobber is biting |
-| ... "Wolfhaven Resources", "Sandara Monsters", "in <world>" | only while you are in that world |
+| ... "Wolfhaven Resources", "Sandara Monsters", "in <world>" | only while you are in that world (names match with or without spaces/underscores: "Burning Lands" = `burning_lands` = `burninglands`) |
+| Job listings: "Harvest 3,127/4,773 Cherry Logs" | as "Harvest 4,773 Cherry Logs" |
 | ... with "special worlds (/worlds)" in the lore | only in one of `tracker.local.specialWorlds` |
 
 The world comes from the dimension name and the sidebar's `World:` line, if the server shows one. If
-it cannot be told, world-scoped objectives are not counted (under-count, never over-count).
+it cannot be told, world-scoped objectives are not counted.
 
 Not counted (the next read fixes the number): skill levels, "Complete N Jobs", boss kills and
 participation, discovery, dungeons, party/island levels, hand-in jobs ("Harvest and hand in ..."),
@@ -286,6 +307,19 @@ broken again, and a break the server undoes (claims, protection) is taken back.
 
 Party quests count the whole party's work; the estimate only counts yours, so it runs low until the
 next read.
+
+**Estimates are approximate and can be off in both directions.** Every real read corrects them. Known
+causes:
+
+- *Under-count:* attribution gaps (a mob that dies to fire, fall damage or a pet more than 5 s after
+  your last hit; a kill whose damage packet the client never saw); area tools (3x3 hoes, hammers) only
+  count the block you broke yourself; stacked mobs count as one kill; party members' work; a world
+  that cannot be told for world-scoped objectives.
+- *Over-count:* hits and breaks the server ignores for the objective (plugin rules we cannot see, e.g.
+  spawner mobs, custom drops, anti-farm limits, a player-placed block the client did not see you
+  place); a break the server undoes more than 5 s later; before this version, "Resources"/"Blocks"
+  also counted grass and flowers; any block counts for "Resources" even where ManaCube may only count
+  certain blocks.
 
 Progress recognised in lore: `N / M`, `N/M`, `N of M`, `k`/`m` suffixes (`1.5k / 2k`) and percentages.
 Glued words and three-part dates are rejected. Known limitation: a two-part date such as `12/25`
@@ -336,6 +370,9 @@ Captures contain chat text, including other players' messages; review the file b
 - Local counting: whether ManaCube's world dimensions are named after the world, whether its Survival
   sidebar has a `World:` line, and how "Resources" is counted; `local`/`world`/`estimate` capture lines
   answer these.
+- Whether the Survival sidebar title is plain text "SURVIVAL" (it may be drawn with a custom font);
+  `sidebar` capture lines record the title. If tracking stops in Survival, set
+  `tracker.survivalSidebarPattern` to match the captured title, or to `""`.
 - The command that opens the prestige rank-objectives menu ("Rank [✪n]" items); see
   [Refresh key](#refresh-key).
 
