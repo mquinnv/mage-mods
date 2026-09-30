@@ -23,6 +23,22 @@ class ConfigStoreTest {
 		assertEquals(8, s.current().wheel.size());
 	}
 
+	@Test void localCountingDefaultsAndNormalisation() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{\"tracker\": {\"local\": {\"kills\": false, \"worlds\": [\" Sandara \", null, \"\"]}}}");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		CubeWheelConfig.Local l = s.current().tracker.local;
+		assertTrue(l.enabled);
+		assertFalse(l.kills);
+		assertEquals(List.of("Sandara"), l.worlds);
+		assertTrue(l.specialWorlds.contains("wolfhaven"));
+		Files.writeString(f, "{\"tracker\": {}}");
+		assertNull(s.reload());
+		assertTrue(s.current().tracker.local.fish);
+		assertEquals(6, s.current().tracker.local.worlds.size());
+	}
+
 	@Test void roundTripKeepsEdits() throws Exception {
 		Path f = dir.resolve("cubewheel.json");
 		ConfigStore s = new ConfigStore(f); s.reload();

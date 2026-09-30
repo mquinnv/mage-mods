@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import com.mage.cubewheel.tracker.local.ObjectiveExtractor;
 
 /** Turns the items of a server GUI into tracker updates. Pure: no Minecraft/Fabric imports. */
 public final class ContainerScanner {
@@ -30,7 +31,12 @@ public final class ContainerScanner {
 			ProgressExtractor.Progress progress = p.get();
 			// "COMPLETED" wins over a lagging number (a quest can read 99% and be done).
 			if (isMarkedComplete(lore)) progress = new ProgressExtractor.Progress(progress.max(), progress.max());
-			if (store.update(source, displayName(name, lore), progress, now)) updated++;
+			String display = displayName(name, lore);
+			boolean changed = store.update(source, display, progress, now);
+			// The objective text feeds local counting (tracker.local); a read is authoritative, so any
+			// estimate for this entry was just dropped by update().
+			changed |= store.setObjective(Trackable.idOf(source, display), ObjectiveExtractor.extract(name, lore));
+			if (changed) updated++;
 		}
 		return updated;
 	}

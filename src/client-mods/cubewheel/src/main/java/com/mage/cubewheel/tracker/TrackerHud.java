@@ -47,15 +47,15 @@ public final class TrackerHud implements HudElement {
 		if (mc.player == null || store == null) return;
 		CubeWheelConfig cfg = CubeWheelClient.config().current();
 		if (!cfg.tracker.hudVisible || !ServerGate.active(cfg)) return;
-		List<Trackable> entries = store.hudEntries(cfg.tracker.nearThreshold, cfg.tracker.hudMaxLines);
+		List<TrackerRow> entries = store.hudRows(cfg.tracker.nearThreshold, cfg.tracker.hudMaxLines, cfg.tracker.local.enabled);
 		if (entries.isEmpty()) return;
 
 		Font font = mc.font;
 		long now = System.currentTimeMillis();
 		List<String> lines = new ArrayList<>(entries.size());
 		int w = font.width("Tracker");
-		for (Trackable t : entries) {
-			String line = TrackerFormat.line(t, now);
+		for (TrackerRow r : entries) {
+			String line = TrackerFormat.line(r, now);
 			lines.add(line);
 			w = Math.max(w, font.width(line));
 		}
@@ -69,8 +69,9 @@ public final class TrackerHud implements HudElement {
 		}
 	}
 
-	private static int color(Trackable t, double near) {
-		if (t.complete()) return GREEN;
-		return t.fraction() >= near ? YELLOW : WHITE;
+	/** Green only when a menu read says complete; an estimate at the target ("✓?") stays yellow. */
+	private static int color(TrackerRow r, double near) {
+		if (r.complete()) return GREEN;
+		return r.atCap() || r.fraction() >= near ? YELLOW : WHITE;
 	}
 }

@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -86,6 +87,23 @@ class ManaCubeMenusTest {
 		assertEquals(70, discoverer.current(), 1e-9); // the Progress line, not the first sub-objective's 100%
 		assertTrue(find(store, "Miner").complete());
 		assertTrue(store.all().stream().noneMatch(t -> t.name().equals("Icey Lands") || t.name().equals("Beginner Quests")));
+	}
+
+	@Test void scansRecordObjectivesAndSnapEstimatesBack() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		ContainerScanner.scan("prestige", PRESTIGE_RANKS, store, 0);
+		String slay = Trackable.idOf("prestige", "Rank [✪6] · Slay 1,000 Monsters");
+		assertTrue(store.objective(slay).orElseThrow().special());
+		// 4,377/1,000 is already complete: no rule, no estimate.
+		assertTrue(store.activeRules(List.of("sandara")).isEmpty());
+		List<ItemView> sandara = List.of(item(12, "Sandara Slayer", "Monster Slaying Challenge", "",
+				"→ Slay 1,000 Sandara Monsters", "", "Progress: 21%", "", "Rewards:", "● 3,000 Mana"));
+		ContainerScanner.scan("challenges", sandara, store, 0);
+		String id = Trackable.idOf("challenges", "Sandara Slayer");
+		assertEquals(Set.of(id), store.activeRules(List.of("sandara")).keySet());
+		assertTrue(store.addEstimate(id, 12, 5));
+		assertEquals(1, ContainerScanner.scan("challenges", sandara, store, 10)); // same values, but the estimate snaps back
+		assertTrue(store.estimate(id).isEmpty());
 	}
 
 	@Test void progressLineIsPreferredOverOtherNumbers() {

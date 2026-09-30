@@ -35,6 +35,18 @@ public final class DefaultConfig {
 		return m;
 	}
 
+	/** ManaCube's Mana worlds; used both as world names and as the "special worlds". */
+	public static List<String> manaWorlds() {
+		return new ArrayList<>(List.of("wolfhaven", "tangleroots", "sandara", "icehaven", "morend", "burninglands"));
+	}
+
+	public static CubeWheelConfig.Local local() {
+		CubeWheelConfig.Local l = new CubeWheelConfig.Local();
+		l.worlds = manaWorlds();
+		l.specialWorlds = manaWorlds();
+		return l;
+	}
+
 	public static List<WheelNode> wheel() {
 		List<WheelNode> w = new ArrayList<>();
 		w.add(ring("Travel", "minecraft:compass",
@@ -90,6 +102,7 @@ public final class DefaultConfig {
 		c.tracker.sources = trackerSources();
 		c.tracker.refreshCommands = refreshCommands();
 		c.tracker.sidebarLinks = sidebarLinks();
+		c.tracker.local = local();
 		c.wheel = wheel();
 		return c;
 	}

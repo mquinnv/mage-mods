@@ -24,7 +24,7 @@ public final class TrackerScreen extends Screen {
 	private static final int GOLD = 0xFFFFAA00;
 
 	/** A header row has a source and no trackable. */
-	private record Row(String header, Trackable item) {}
+	private record Row(String header, TrackerRow item) {}
 
 	private List<Row> rows = List.of();
 	private int scroll;
@@ -47,16 +47,18 @@ public final class TrackerScreen extends Screen {
 
 	private void rebuild() {
 		TrackerStore store = CubeWheelClient.tracker();
-		Map<String, List<Trackable>> bySource = new TreeMap<>();
+		Map<String, List<TrackerRow>> bySource = new TreeMap<>();
 		if (store != null) {
-			for (Trackable t : store.all()) { // already sorted by fraction desc
-				bySource.computeIfAbsent(t.source() == null ? "?" : t.source(), k -> new ArrayList<>()).add(t);
+			boolean estimates = CubeWheelClient.config().current().tracker.local.enabled;
+			for (TrackerRow r : store.rows(estimates)) { // already sorted by (estimated) fraction desc
+				String source = r.item().source();
+				bySource.computeIfAbsent(source == null ? "?" : source, k -> new ArrayList<>()).add(r);
 			}
 		}
 		List<Row> out = new ArrayList<>();
-		for (Map.Entry<String, List<Trackable>> e : bySource.entrySet()) {
+		for (Map.Entry<String, List<TrackerRow>> e : bySource.entrySet()) {
 			out.add(new Row(e.getKey(), null));
-			for (Trackable t : e.getValue()) out.add(new Row(null, t));
+			for (TrackerRow r : e.getValue()) out.add(new Row(null, r));
 		}
 		rows = out;
 		scroll = Math.max(0, Math.min(scroll, maxScroll()));
@@ -85,9 +87,17 @@ public final class TrackerScreen extends Screen {
 				continue;
 			}
 			if (scroll + i == hot) g.fill(left, y, left + w, y + ROW, 0x40FFFFFF);
-			boolean pinned = store != null && store.isPinned(row.item().id());
-			String text = (pinned ? "★ " : "☆ ") + TrackerFormat.line(row.item(), now);
+			String id = row.item().item().id();
+			boolean pinned = store != null && store.isPinned(id);
+			String text = (pinned ? "★ " : "☆ ") + TrackerFormat.pickerLine(row.item(), now);
 			g.text(font, font.plainSubstrByWidth(text, w - 8), left + 6, y + 2, pinned ? WHITE : GREY);
+			if (scroll + i == hot && row.item().estimated()) {
+				List<Component> tip = new ArrayList<>();
+				for (String line : TrackerFormat.estimateTooltip(row.item(), store == null ? null : store.lastAccuracy(id).orElse(null), now)) {
+					tip.add(Component.literal(line));
+				}
+				g.setComponentTooltipForNextFrame(font, tip, mouseX, mouseY);
+			}
 		}
 	}
 
@@ -98,7 +108,7 @@ public final class TrackerScreen extends Screen {
 				int index = rowAt(event.x(), event.y());
 				TrackerStore store = CubeWheelClient.tracker();
 				if (index >= 0 && store != null && rows.get(index).item() != null) {
-					store.togglePin(rows.get(index).item().id());
+					store.togglePin(rows.get(index).item().item().id());
 					store.save();
 					return true;
 				}

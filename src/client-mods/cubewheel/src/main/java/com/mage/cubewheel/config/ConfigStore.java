@@ -92,6 +92,10 @@ public final class ConfigStore {
 		c.tracker.refreshCommands = c.tracker.refreshCommands == null
 				? DefaultConfig.refreshCommands() : normalizeCommands(c.tracker.refreshCommands);
 		if (c.tracker.sidebarLinks == null) c.tracker.sidebarLinks = DefaultConfig.sidebarLinks();
+		if (c.tracker.local == null) c.tracker.local = DefaultConfig.local();
+		c.tracker.local.worlds = c.tracker.local.worlds == null ? DefaultConfig.manaWorlds() : normalizeWords(c.tracker.local.worlds);
+		c.tracker.local.specialWorlds = c.tracker.local.specialWorlds == null
+				? DefaultConfig.manaWorlds() : normalizeWords(c.tracker.local.specialWorlds);
 		c.wheel = c.wheel == null ? DefaultConfig.wheel() : normalizeNodes(c.wheel);
 		c.vaultCount = Math.max(0, Math.min(54, c.vaultCount));
 		c.listThreshold = Math.max(3, Math.min(16, c.listThreshold));
@@ -107,6 +111,15 @@ public final class ConfigStore {
 			if (out.size() == MAX_REFRESH_COMMANDS) break;
 			String c = cmd.trim();
 			out.add(c.startsWith("/") ? c : "/" + c);
+		}
+		return out;
+	}
+
+	/** Trimmed, blank and null entries dropped. */
+	private static List<String> normalizeWords(List<String> in) {
+		List<String> out = new ArrayList<>();
+		for (String w : in) {
+			if (w != null && !w.isBlank()) out.add(w.trim());
 		}
 		return out;
 	}

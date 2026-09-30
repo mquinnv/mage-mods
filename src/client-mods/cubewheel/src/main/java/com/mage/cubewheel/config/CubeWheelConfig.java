@@ -20,5 +20,19 @@ public final class CubeWheelConfig {
 		public List<String> refreshCommands;
 		/** Sidebar key ("Skills") -> regex on trackable names whose current value follows it live. */
 		public Map<String, String> sidebarLinks;
+		/** Local counting: live "~" estimates between menu reads. */
+		public Local local = new Local();
+	}
+
+	public static final class Local {
+		/** Master switch; when false nothing is counted and stored estimates are not shown (not deleted). */
+		public boolean enabled = true;
+		public boolean blocks = true;
+		public boolean kills = true;
+		public boolean fish = true;
+		/** World names recognised at the start of an objective's noun ("Wolfhaven Resources"). */
+		public List<String> worlds;
+		/** Worlds that count as "special worlds (/worlds)". */
+		public List<String> specialWorlds;
 	}
 }
