@@ -10,17 +10,26 @@ import org.junit.jupiter.api.Test;
 class SvaFormatTest {
 	@Test void singleMatch() throws IOException {
 		SvaCatalog c = SvaCatalogTest.sample();
-		SvaCatalog.Match m = c.match("VALHALLA HELMET", null, null, List::of);
+		SvaCatalog.Match m = c.match("VALHALLA HELMET", "carved_pumpkin", SvaCatalogTest.VALHALLA_MODEL, List::of);
 		assertEquals("✦ SVA · Circulation: 107", SvaFormat.tooltipLine(m, Map.of()));
 		assertEquals("✦ SVA · Circulation: 107 · owned", SvaFormat.tooltipLine(m, Map.of("valhallahelmet", 1)));
 		assertEquals("✦ SVA · Circulation: 107 · owned ×2", SvaFormat.tooltipLine(m, Map.of("valhallahelmet", 2)));
 	}
 
-	@Test void ambiguousMatchListsEachCirculation() throws IOException {
+	@Test void ambiguousMatchListsEachCirculationAndOnlyHedgesOwnership() throws IOException {
 		SvaCatalog c = SvaCatalogTest.sample();
-		SvaCatalog.Match m = c.match("Deep Ocean Scythe", null, null, List::of);
+		SvaCatalog.Match m = c.match("Deep Ocean Scythe", "diamond_sword", SvaCatalogTest.SCYTHE_MODEL, List::of);
 		assertEquals("✦ SVA · Circulation: 27 / 342", SvaFormat.tooltipLine(m, Map.of()));
-		assertEquals("✦ SVA · Circulation: 27 / 342 · owned", SvaFormat.tooltipLine(m, Map.of("oceanscythe", 1)));
+		assertEquals("✦ SVA · Circulation: 27 / 342 · owned (a variant)", SvaFormat.tooltipLine(m, Map.of("oceanscythe", 1)));
+		assertEquals("✦ SVA · Circulation: 27 / 342 · owned (a variant)",
+				SvaFormat.tooltipLine(m, Map.of("oceanscythe", 2, "enhanced-oceanscythe", 1)));
+	}
+
+	@Test void nameOnlyMatchWarns() throws IOException {
+		SvaCatalog c = SvaCatalogTest.sample();
+		SvaCatalog.Match m = c.match("Valhalla Helmet", "diamond_sword", "minecraft:diamond_sword", List::of);
+		assertEquals(SvaFormat.NAME_ONLY, SvaFormat.tooltipLine(m, Map.of("valhallahelmet", 1)));
+		assertEquals("⚠ Name matches an SVA, item doesn't", SvaFormat.NAME_ONLY);
 	}
 
 	@Test void noMatchIsNull() throws IOException {

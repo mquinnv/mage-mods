@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -32,7 +33,7 @@ public final class SvaClient {
 	private static final int MAX_FAILURES = 10;
 
 	private static SvaService service;
-	private static int tooltipFailures;
+	private static final AtomicInteger tooltipFailures = new AtomicInteger();
 
 	private SvaClient() {}
 
@@ -90,22 +91,26 @@ public final class SvaClient {
 	}
 
 	private static void appendTooltip(ItemStack stack, List<Component> lines) {
-		if (tooltipFailures >= MAX_FAILURES || service == null || stack == null || stack.isEmpty()) return;
+		if (tooltipFailures.get() >= MAX_FAILURES || service == null || stack == null || stack.isEmpty()) return;
 		try {
 			SvaCatalog catalog = service.catalog();
 			if (catalog == null) return;
 			CubeWheelConfig cfg = CubeWheelClient.config().current();
-			if (!cfg.svas.enabled || !cfg.svas.tooltip || !ServerGate.active(cfg)) return;
+			if (!cfg.svas.enabled || !cfg.svas.tooltip || !ServerGate.survival(cfg)) return;
 			if (Minecraft.getInstance().gui.screen() instanceof SvaCatalogScreen) return; // it has its own
-			Identifier model = stack.get(DataComponents.ITEM_MODEL);
+			// the registry key and item model are only looked up once the name is an SVA name
 			SvaCatalog.Match match = catalog.match(stack.getHoverName().getString(),
-					BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath(),
-					model == null ? null : model.toString(),
+					() -> BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath(),
+					() -> {
+						Identifier model = stack.get(DataComponents.ITEM_MODEL);
+						return model == null ? null : model.toString();
+					},
 					() -> SvaItems.plainLore(stack));
 			String line = SvaFormat.tooltipLine(match, service.owned());
-			if (line != null) lines.add(Component.literal(line).withStyle(ChatFormatting.LIGHT_PURPLE));
+			if (line == null) return;
+			lines.add(Component.literal(line).withStyle(match.nameOnly() ? ChatFormatting.RED : ChatFormatting.LIGHT_PURPLE));
 		} catch (RuntimeException e) {
-			if (++tooltipFailures >= MAX_FAILURES) {
+			if (tooltipFailures.incrementAndGet() == MAX_FAILURES) {
 				CubeWheelClient.LOG.error("[cubewheel] SVA tooltip disabled for this session after repeated failures", e);
 			}
 		}

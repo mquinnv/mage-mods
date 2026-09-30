@@ -269,8 +269,9 @@ public final class TrackerStore {
 	}
 
 	/**
-	 * Pinned items first, then every other incomplete item, each group closest to done first; hidden items
-	 * never; complete items only when pinned. Capped at {@code maxLines}.
+	 * Incomplete items only: pinned ones first, then the rest, each group closest to done first. Hidden and
+	 * complete items never appear (pinned or not). No world ordering; capped at {@code maxLines}. Same order
+	 * as {@link #hudRows(int, boolean)} without estimates.
 	 */
 	public List<Trackable> hudEntries(int maxLines) {
 		return hudRows(maxLines, false).stream().map(TrackerRow::item).toList();

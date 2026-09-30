@@ -29,7 +29,10 @@ public final class BoosterParser {
 	private static final Pattern FORMATTING = Pattern.compile("§.");
 	/** Private-use glyphs (ManaCube's rank/icon font) and other invisible prefix junk. */
 	private static final Pattern GLYPHS = Pattern.compile("[\\uE000-\\uF8FF\\u200B-\\u200D\\uFEFF]");
-	private static final String TAG = "(?:\\[[^\\]]{1,24}\\]\\s*)?";
+	/** An arrow as in "[A -> B]" / "A » B": private messages and replies. */
+	private static final String ARROW = "(?:->|\u2192|\u00bb)";
+	/** An optional leading "[Tag]"; never one with an arrow in it ("[KingBee -> me]" is a private message). */
+	private static final String TAG = "(?:\\[(?![^\\]]*" + ARROW + ")[^\\]]{1,24}\\]\\s*)?";
 	private static final String BOOST = "(\\d+(?:\\.\\d+)?)x\\s+([a-z][a-z ]{0,24}?)\\s+boost(?:er)?(?:\\s+booster)?";
 	private static final String END = "\\s*[.!]*\\s*$";
 	private static final Pattern RECEIVED = Pattern.compile(
@@ -44,6 +47,10 @@ public final class BoosterParser {
 	/** "[Rank] [Title] *Name: " after colour codes and glyphs are removed. */
 	private static final Pattern PLAYER_PREFIX = Pattern.compile(
 			"^[^\\p{L}\\p{N}\\[*]{0,8}(?:\\[[^\\]]{0,24}\\]\\s*)*\\*?[A-Za-z0-9_]{1,16}:\\s");
+
+	/** "[KingBee -> me] ", "[MSG] KingBee -> me: ", "KingBee » ": private-message, reply and party shapes. */
+	private static final Pattern DM_PREFIX = Pattern.compile(
+			"^[^\\p{L}\\p{N}\\[*]{0,8}(?:\\[[^\\]]{0,24}\\]\\s*)*[^\\s:\\]]{0,20}\\s*" + ARROW);
 
 	/** Parses a chat message's plain text (Component.getString()); empty for anything else. */
 	public static Optional<Message> parse(String raw) {
@@ -60,13 +67,15 @@ public final class BoosterParser {
 
 	/**
 	 * True for player chat as ManaCube shows it: lines starting with "§r" (every captured player line does),
-	 * "[SHOUT]" cross-server chat, or a "[Rank] Name: " prefix.
+	 * "[SHOUT]" cross-server chat, a "[Rank] Name: " prefix, or a private-message / reply shape with an arrow
+	 * ("[A -> B]", "A → B:", "A » ").
 	 */
 	public static boolean isPlayerChat(String raw) {
 		if (raw == null) return false;
 		if (raw.stripLeading().startsWith("§r")) return true;
 		if (raw.contains("[SHOUT]")) return true;
-		return PLAYER_PREFIX.matcher(clean(raw)).find();
+		String s = clean(raw);
+		return PLAYER_PREFIX.matcher(s).find() || DM_PREFIX.matcher(s).find();
 	}
 
 	private static String clean(String raw) {

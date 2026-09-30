@@ -7,12 +7,19 @@ import java.util.TreeSet;
 public final class SvaFormat {
 	private SvaFormat() {}
 
+	/** Shown instead of the SVA line when the name is an SVA's but the item is not (a renamed item). */
+	public static final String NAME_ONLY = "⚠ Name matches an SVA, item doesn't";
+
 	/**
-	 * "✦ SVA · Circulation: 107", with " · owned" (" ×N" for several) when the player owns one of the matched
-	 * SVAs; several candidates list each distinct circulation ("27 / 342"). Null for no match.
+	 * "✦ SVA · Circulation: 107", with " · owned" (" ×N" for several) when the player owns the matched SVA.
+	 * Several candidates list each distinct circulation ("27 / 342") and, since it is unknown which one this
+	 * is, say only " · owned (a variant)" when the player owns any of them. {@link #NAME_ONLY} for a
+	 * name-only match; null for no match.
 	 */
 	public static String tooltipLine(SvaCatalog.Match match, Map<String, Integer> owned) {
-		if (match == null || match.isEmpty()) return null;
+		if (match == null) return null;
+		if (match.nameOnly()) return NAME_ONLY;
+		if (match.isEmpty()) return null;
 		TreeSet<Integer> circ = new TreeSet<>();
 		int count = 0;
 		for (Sva s : match.svas()) {
@@ -25,6 +32,10 @@ public final class SvaFormat {
 			if (!first) b.append(" / ");
 			b.append(c);
 			first = false;
+		}
+		if (match.ambiguous()) {
+			if (count > 0) b.append(" · owned (a variant)");
+			return b.toString();
 		}
 		if (count > 0) b.append(" · owned");
 		if (count > 1) b.append(" ×").append(count);

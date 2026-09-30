@@ -28,6 +28,10 @@ class SvaServiceTest {
 	long now = 1_000_000;
 	/** When set, requests stay pending until completed by the test. */
 	CompletableFuture<SvaService.Response> pending;
+	/** When set, the clock throws (to force a failure inside a continuation). */
+	boolean clockBroken;
+	/** Threads the gate was evaluated on. */
+	final List<Thread> gateThreads = new ArrayList<>();
 
 	SvaService svc;
 
@@ -45,7 +49,15 @@ class SvaServiceTest {
 			if (pending != null) return pending;
 			SvaService.Response r = replies.get(url);
 			return CompletableFuture.completedFuture(r == null ? new SvaService.Response(404, "") : r);
-		}, new SvaCache(dir.resolve("cache")), () -> gate, () -> now);
+		}, new SvaCache(dir.resolve("cache")), () -> {
+			synchronized (gateThreads) {
+				gateThreads.add(Thread.currentThread());
+			}
+			return gate;
+		}, () -> {
+			if (clockBroken) throw new IllegalStateException("clock broke");
+			return now;
+		});
 	}
 
 	@Test void firstRefreshFetchesCatalogAndOwnedThenCaches() {
@@ -167,6 +179,66 @@ class SvaServiceTest {
 		svc.refresh(true);
 		assertEquals(List.of(SvaApi.catalogUrl()), requests);
 		assertFalse(svc.ownedKnown());
+	}
+
+	@Test void compareEvaluatesTheGateOnlyOnTheCallingThread() throws InterruptedException {
+		pending = new CompletableFuture<>();
+		svc.compare("Friend");
+		assertEquals(SvaService.Phase.LOADING, svc.comparison().phase());
+		// the HTTP client completes on its own thread; the owned request must not re-read the gate there
+		Thread http = new Thread(() -> pending.complete(replies.get(SvaApi.mojangUrl("Friend"))));
+		http.start();
+		http.join();
+		assertEquals(2, requests.size());
+		synchronized (gateThreads) {
+			assertFalse(gateThreads.isEmpty());
+			for (Thread t : gateThreads) assertEquals(Thread.currentThread(), t);
+		}
+	}
+
+	@Test void aThrowInsideTheCompareContinuationEndsFailedNotLoading() {
+		pending = new CompletableFuture<>();
+		svc.compare("Friend");
+		assertEquals(SvaService.Phase.LOADING, svc.comparison().phase());
+		clockBroken = true;
+		pending.complete(replies.get(SvaApi.mojangUrl("Friend")));
+		clockBroken = false;
+		assertEquals(SvaService.Phase.FAILED, svc.comparison().phase());
+		assertEquals("Friend", svc.comparison().name());
+	}
+
+	@Test void aThrowInsideTheOwnedContinuationEndsFailedAndCanRetry() {
+		svc.setSelf(SELF);
+		pending = new CompletableFuture<>();
+		svc.refresh(false);
+		clockBroken = true;
+		pending.complete(new SvaService.Response(200, "[]"));
+		clockBroken = false;
+		assertEquals(SvaService.Phase.FAILED, svc.ownedStatus().phase());
+		assertEquals(SvaService.Phase.FAILED, svc.catalogStatus().phase());
+		pending = null;
+		now += SvaService.RETRY_BACKOFF_MS;
+		svc.refresh(false); // not stuck "in flight"
+		assertEquals(4, requests.size());
+	}
+
+	@Test void compareCacheIsBounded() {
+		int n = SvaService.COMPARE_CACHE_SIZE + 1;
+		for (int i = 0; i < n; i++) {
+			String uuid = String.format("11111111-2222-4333-8444-5555555555%02d", i);
+			replies.put(SvaApi.mojangUrl("Player" + i), new SvaService.Response(200, "{\"id\":\"" + uuid.replace("-", "") + "\"}"));
+			replies.put(SvaApi.ownedUrl(uuid), new SvaService.Response(200, "[{\"itemType\":\"sunsword\"}]"));
+		}
+		for (int i = 0; i < n; i++) {
+			svc.compare("Player" + i);
+			assertEquals(SvaService.Phase.IDLE, svc.comparison().phase(), "Player" + i);
+			now += 7_000;
+		}
+		assertEquals(2 * n, requests.size());
+		svc.compare("Player" + (n - 1)); // recent: still cached
+		assertEquals(2 * n, requests.size());
+		svc.compare("Player0"); // the oldest was evicted
+		assertEquals(2 * n + 2, requests.size());
 	}
 
 	/** Mirrors SvaService.MAX_REQUESTS_PER_MINUTE so the test reads clearly. */

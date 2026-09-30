@@ -73,10 +73,22 @@ public final class SvaCatalog {
 		return itemType == null ? null : byType.get(itemType);
 	}
 
-	/** Candidates for an in-game item; empty when its name is not an SVA name. */
-	public record Match(List<Sva> svas) {
+	/**
+	 * The SVA(s) an in-game item is. {@code svas} empty with {@code nameOnly} set means the name is an SVA's
+	 * but the item is not (a renamed vanilla item): the caller must not vouch for it.
+	 */
+	public record Match(List<Sva> svas, boolean nameOnly) {
+		public Match(List<Sva> svas) {
+			this(svas, false);
+		}
+
 		public boolean isEmpty() {
 			return svas.isEmpty();
+		}
+
+		/** More than one SVA fits and nothing on the item tells them apart. */
+		public boolean ambiguous() {
+			return svas.size() > 1;
 		}
 
 		public List<String> types() {
@@ -84,30 +96,41 @@ public final class SvaCatalog {
 		}
 	}
 
-	private static final Match NONE = new Match(List.of());
+	private static final Match NONE = new Match(List.of(), false);
+	private static final Match NAME_ONLY = new Match(List.of(), true);
+
+	/** As {@link #match(String, Supplier, Supplier, Supplier)} with the item parts already known. */
+	public Match match(String hoverName, String itemPath, String itemModel, Supplier<List<String>> plainLore) {
+		return match(hoverName, () -> itemPath, () -> itemModel, plainLore);
+	}
 
 	/**
 	 * Finds the SVA(s) an in-game item is. The name (codes stripped, case-insensitive) must equal an SVA's
-	 * name; when several SVAs share it, the vanilla item id, then the item model, then the lore narrow it
-	 * down (each step only if it leaves at least one). {@code plainLore} is only called in that case.
+	 * name, and -- even for a single candidate -- the item must really be that SVA: the vanilla item id must
+	 * equal the SVA's material, and when the SVA has an item model the stack's must equal it. Anyone can
+	 * rename a vanilla item in an anvil, so a name alone never vouches ({@link Match#nameOnly()}). Several
+	 * candidates left are narrowed by lore when that leaves at least one. The suppliers are only called once
+	 * the name is an SVA name.
 	 *
-	 * @param itemPath  the stack's item id path ("diamond_sword") or null
-	 * @param itemModel the stack's item_model component ("manalabs:…") or null
+	 * @param itemPath  the stack's item id path ("diamond_sword"); null = unknown, which never matches
+	 * @param itemModel the stack's item_model component ("manalabs:..."); null = none
 	 */
-	public Match match(String hoverName, String itemPath, String itemModel, Supplier<List<String>> plainLore) {
+	public Match match(String hoverName, Supplier<String> itemPath, Supplier<String> itemModel,
+			Supplier<List<String>> plainLore) {
 		if (hoverName == null) return NONE;
 		List<Sva> c = byName.get(LegacyText.normalize(hoverName));
 		if (c == null) return NONE;
-		if (c.size() == 1) return new Match(c);
-		if (itemPath != null) c = narrow(c, s -> s.itemId().equals(itemPath));
-		if (c.size() > 1 && itemModel != null) c = narrow(c, s -> itemModel.equals(s.itemModel()));
-		if (c.size() > 1) c = byLore(c, plainLore.get());
-		return new Match(c);
+		String path = itemPath.get();
+		String model = itemModel.get();
+		List<Sva> real = c.stream().filter(s -> isThisItem(s, path, model)).toList();
+		if (real.isEmpty()) return NAME_ONLY;
+		if (real.size() > 1) real = byLore(real, plainLore.get());
+		return new Match(real, false);
 	}
 
-	private static List<Sva> narrow(List<Sva> in, java.util.function.Predicate<Sva> keep) {
-		List<Sva> out = in.stream().filter(keep).toList();
-		return out.isEmpty() ? in : out;
+	private static boolean isThisItem(Sva s, String path, String model) {
+		if (path == null || s.itemId().isEmpty() || !s.itemId().equals(path)) return false;
+		return s.itemModel() == null || s.itemModel().equals(model);
 	}
 
 	/** Keeps the candidates whose non-blank lore lines best overlap the item's lore. */

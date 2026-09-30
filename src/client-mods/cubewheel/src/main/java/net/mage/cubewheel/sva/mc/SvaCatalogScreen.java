@@ -2,6 +2,7 @@ package net.mage.cubewheel.sva.mc;
 
 import net.mage.cubewheel.CommandSender;
 import net.mage.cubewheel.CubeWheelClient;
+import net.mage.cubewheel.ServerGate;
 import net.mage.cubewheel.sva.Sva;
 import net.mage.cubewheel.sva.SvaCatalog;
 import net.mage.cubewheel.sva.SvaFilter;
@@ -28,7 +29,9 @@ import net.minecraft.network.chat.Component;
  */
 public final class SvaCatalogScreen extends Screen {
 	private static final int CELL = 20;
-	private static final int GRID_TOP = 76;
+	/** Below this grid width the search row's buttons move to a row of their own. */
+	private static final int NARROW = 270;
+	private static final String LEGEND = "■ you  ■ them  ■ both";
 	private static final int WHITE = 0xFFFFFFFF;
 	private static final int GREY = 0xFFAAAAAA;
 	private static final int GOLD = 0xFFFFAA00;
@@ -53,6 +56,12 @@ public final class SvaCatalogScreen extends Screen {
 	private SvaFilter.Show filteredShow;
 	private SvaFilter.Sort filteredSort;
 	private int scroll; // in rows
+	private int gridTop = 76;
+	private int statusY = 66;
+	/** Whether the compare box had focus in the last frame, so a resize (which re-runs init) keeps it. */
+	private boolean compareHadFocus;
+	private boolean errorLogged;
+	private String error;
 
 	public SvaCatalogScreen() {
 		super(Component.literal("SVA Catalog"));
@@ -64,48 +73,81 @@ public final class SvaCatalogScreen extends Screen {
 
 	@Override
 	protected void init() {
+		try {
+			layout();
+		} catch (RuntimeException e) {
+			fail("init", e);
+		}
+	}
+
+	private void layout() {
 		SvaItems.clearIcons();
 		int left = left();
 		int w = gridWidth();
 		String prevSearch = search == null ? "" : search.getValue();
 		String prevCompare = compareName == null ? "" : compareName.getValue();
+		boolean narrow = w < NARROW;
 
-		int buttons = 96 + 84 + 20 + 8;
-		search = new EditBox(font, left, 20, Math.max(60, w - buttons), 18, Component.literal("Search"));
+		// row 1: search, then Show / Sort / refresh beside it -- or, when narrow, on a row of their own
+		int searchW = narrow ? w : w - (92 + 80 + 20 + 3 * 4 + 4);
+		search = new EditBox(font, left, 20, Math.max(40, searchW), 18, Component.literal("Search"));
 		search.setHint(Component.literal("Search name or lore…").withStyle(ChatFormatting.DARK_GRAY));
 		search.setMaxLength(100);
 		search.setValue(prevSearch);
 		addRenderableWidget(search);
-		int bx = left + search.getWidth() + 4;
+		int by = narrow ? 42 : 19;
+		int bx = narrow ? left : left + search.getWidth() + 4;
+		int showW = 92;
+		int sortW = 80;
+		if (narrow) { // share the row: refresh keeps 20 px, Show and Sort split the rest
+			int rest = Math.max(40, w - 20 - 8);
+			showW = rest * 53 / 100;
+			sortW = rest - showW;
+		}
 		showButton = addRenderableWidget(Button.builder(Component.literal(show.label), b -> {
 			show = show.next();
 			b.setMessage(Component.literal(show.label));
-		}).bounds(bx, 19, 92, 20).build());
+		}).bounds(bx, by, showW, 20).build());
 		sortButton = addRenderableWidget(Button.builder(Component.literal("Sort: " + sort.label), b -> {
 			sort = sort.next();
 			b.setMessage(Component.literal("Sort: " + sort.label));
-		}).bounds(bx + 96, 19, 80, 20).build());
+		}).bounds(bx + showW + 4, by, sortW, 20).build());
 		addRenderableWidget(Button.builder(Component.literal("↻"), b -> manualRefresh())
-				.bounds(bx + 180, 19, 20, 20).build());
+				.bounds(bx + showW + 4 + sortW + 4, by, 20, 20).build());
 
-		compareName = new EditBox(font, left, 44, Math.max(60, w - 112), 18, Component.literal("Compare with player"));
+		// row 2: compare with player
+		int cy = narrow ? 66 : 44;
+		int compareW = narrow ? 56 : 80;
+		compareName = new EditBox(font, left, cy + 1, Math.max(40, w - compareW - 20 - 8), 18,
+				Component.literal("Compare with player"));
 		compareName.setHint(Component.literal("Compare with player…").withStyle(ChatFormatting.DARK_GRAY));
 		compareName.setMaxLength(16);
 		compareName.setValue(prevCompare);
 		addRenderableWidget(compareName);
 		int cx = left + compareName.getWidth() + 4;
 		addRenderableWidget(Button.builder(Component.literal("Compare"), b -> startCompare())
-				.bounds(cx, 43, 80, 20).build());
+				.bounds(cx, cy, compareW, 20).build());
 		addRenderableWidget(Button.builder(Component.literal("×"), b -> clearCompare())
-				.bounds(cx + 84, 43, 20, 20).build());
+				.bounds(cx + compareW + 4, cy, 20, 20).build());
 
-		setInitialFocus(search);
+		statusY = cy + 22;
+		gridTop = statusY + 10;
+		setInitialFocus(compareHadFocus ? compareName : search);
 		try {
 			if (service() != null) service().refresh(false); // stale-only
 		} catch (RuntimeException e) {
 			CubeWheelClient.LOG.error("[cubewheel] SVA refresh failed", e);
 		}
 		refilter(true);
+	}
+
+	/** Logs the first failure of this screen and keeps a line to draw instead of the grid. */
+	private void fail(String where, RuntimeException e) {
+		if (!errorLogged) {
+			errorLogged = true;
+			CubeWheelClient.LOG.error("[cubewheel] SVA catalog screen failed in {}", where, e);
+		}
+		error = "SVA catalog error (" + where + "), see the log";
 	}
 
 	private void manualRefresh() {
@@ -121,15 +163,19 @@ public final class SvaCatalogScreen extends Screen {
 		try {
 			String name = compareName.getValue().trim();
 			if (name.isEmpty()) clearCompare();
-			else service().compare(name);
+			else if (service() != null) service().compare(name);
 		} catch (RuntimeException e) {
 			CubeWheelClient.LOG.error("[cubewheel] SVA compare failed", e);
 		}
 	}
 
 	private void clearCompare() {
-		compareName.setValue("");
-		service().clearComparison();
+		try {
+			compareName.setValue("");
+			if (service() != null) service().clearComparison();
+		} catch (RuntimeException e) {
+			fail("compare", e);
+		}
 	}
 
 	/** Recomputes the shown list when the query, filter, sort, catalog or owned set changed. */
@@ -153,6 +199,28 @@ public final class SvaCatalogScreen extends Screen {
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partial) {
+		try {
+			if (compareName != null) compareHadFocus = compareName.isFocused();
+			if (error == null) {
+				renderCatalog(g, mouseX, mouseY, partial);
+				return;
+			}
+		} catch (RuntimeException e) {
+			fail("render", e);
+		}
+		try {
+			super.extractRenderState(g, mouseX, mouseY, partial);
+		} catch (RuntimeException ignored) {
+			// already logged once; the error line below still shows
+		}
+		try {
+			g.centeredText(font, error, width / 2, gridTop + 20, RED);
+		} catch (RuntimeException ignored) {
+			// nothing left to draw with
+		}
+	}
+
+	private void renderCatalog(GuiGraphicsExtractor g, int mouseX, int mouseY, float partial) {
 		refilter(false);
 		super.extractRenderState(g, mouseX, mouseY, partial);
 		SvaService svc = service();
@@ -161,9 +229,13 @@ public final class SvaCatalogScreen extends Screen {
 		Map<String, Integer> owned = svc == null ? Map.of() : svc.owned();
 		String head = catalog == null ? "SVA Catalog"
 				: "SVA Catalog · " + shown.size() + " of " + total + (svc.ownedKnown() ? " · you own " + owned.size() : "");
-		g.text(font, head, left(), 6, WHITE);
 		SvaService.Comparison cmp = svc == null ? null : svc.comparison();
 		Set<String> theirs = cmp == null ? null : cmp.owned();
+		boolean legend = cmp != null && cmp.owned() != null;
+		// the legend sits at the header's right end; the header gives way rather than run under it
+		int headRoom = gridWidth() - (legend ? font.width(LEGEND) + 6 : 0);
+		g.text(font, font.plainSubstrByWidth(head, Math.max(0, headRoom)), left(), 6, WHITE);
+		if (legend) legend(g);
 		statusLine(g, svc, catalog, cmp);
 
 		int left = left();
@@ -174,11 +246,11 @@ public final class SvaCatalogScreen extends Screen {
 				case LIMITED, FAILED -> svc.catalogStatus().message();
 				default -> "No SVA catalog yet";
 			};
-			g.centeredText(font, msg, width / 2, GRID_TOP + 20, svc != null && svc.catalogStatus().phase() == SvaService.Phase.FAILED ? RED : GREY);
+			g.centeredText(font, msg, width / 2, gridTop + 20, svc != null && svc.catalogStatus().phase() == SvaService.Phase.FAILED ? RED : GREY);
 			return;
 		}
 		if (shown.isEmpty()) {
-			g.centeredText(font, "(no matches)", width / 2, GRID_TOP + 20, GREY);
+			g.centeredText(font, "(no matches)", width / 2, gridTop + 20, GREY);
 			return;
 		}
 		int cols = cols();
@@ -190,7 +262,7 @@ public final class SvaCatalogScreen extends Screen {
 				if (i >= shown.size()) break;
 				Sva s = shown.get(i);
 				int x = left + c * CELL;
-				int y = GRID_TOP + r * CELL;
+				int y = gridTop + r * CELL;
 				g.fill(x, y, x + CELL - 1, y + CELL - 1, i == hot ? CELL_HOT : CELL_BG);
 				int border = borderColor(SvaFilter.mark(s.itemType(), owned.keySet(), theirs));
 				if (border != 0) g.outline(x, y, CELL - 1, CELL - 1, border);
@@ -200,9 +272,9 @@ public final class SvaCatalogScreen extends Screen {
 		if (maxScroll() > 0) {
 			int trackH = rows * CELL;
 			int barH = Math.max(8, trackH * rows / (maxScroll() + rows));
-			int barY = GRID_TOP + (trackH - barH) * scroll / maxScroll();
+			int barY = gridTop + (trackH - barH) * scroll / maxScroll();
 			int bx = left + cols * CELL + 2;
-			g.fill(bx, GRID_TOP, bx + 2, GRID_TOP + trackH, 0x40FFFFFF);
+			g.fill(bx, gridTop, bx + 2, gridTop + trackH, 0x40FFFFFF);
 			g.fill(bx, barY, bx + 2, barY + barH, 0xC0FFFFFF);
 		}
 		if (hot >= 0) g.setComponentTooltipForNextFrame(font, tooltip(shown.get(hot), owned, cmp), mouseX, mouseY);
@@ -238,14 +310,14 @@ public final class SvaCatalogScreen extends Screen {
 			if (cmp.phase() != SvaService.Phase.IDLE && cmp.phase() != SvaService.Phase.LOADING) color = GOLD;
 			line = line.isEmpty() ? c : line + " · " + c;
 		}
-		g.centeredText(font, font.plainSubstrByWidth(line, width - 8), width / 2, 66, color);
-		if (cmp != null && cmp.owned() != null) {
-			int lx = left() + gridWidth() - font.width("■ you  ■ them  ■ both");
-			lx = Math.max(left(), lx);
-			g.text(font, "■ you", lx, 6, MINE);
-			g.text(font, "■ them", lx + font.width("■ you  "), 6, THEIRS);
-			g.text(font, "■ both", lx + font.width("■ you  ■ them  "), 6, BOTH);
-		}
+		g.centeredText(font, font.plainSubstrByWidth(line, width - 8), width / 2, statusY, color);
+	}
+
+	private void legend(GuiGraphicsExtractor g) {
+		int lx = Math.max(left(), left() + gridWidth() - font.width(LEGEND));
+		g.text(font, "■ you", lx, 6, MINE);
+		g.text(font, "■ them", lx + font.width("■ you  "), 6, THEIRS);
+		g.text(font, "■ both", lx + font.width("■ you  ■ them  "), 6, BOTH);
 	}
 
 	private static int borderColor(SvaFilter.Mark mark) {
@@ -265,7 +337,7 @@ public final class SvaCatalogScreen extends Screen {
 		tip.add(Component.literal("Circulation: " + s.circulation()).withStyle(ChatFormatting.GRAY));
 		int n = owned.getOrDefault(s.itemType(), 0);
 		if (n > 0) tip.add(Component.literal("✔ You own " + (n > 1 ? n : "this")).withStyle(ChatFormatting.GREEN));
-		else if (service().ownedKnown()) tip.add(Component.literal("✘ Not owned").withStyle(ChatFormatting.DARK_GRAY));
+		else if (service() != null && service().ownedKnown()) tip.add(Component.literal("✘ Not owned").withStyle(ChatFormatting.DARK_GRAY));
 		if (cmp != null && cmp.owned() != null) {
 			boolean t = cmp.owned().contains(s.itemType());
 			tip.add(Component.literal((t ? "✔ " : "✘ ") + cmp.name() + (t ? " owns this" : " does not own this"))
@@ -288,15 +360,24 @@ public final class SvaCatalogScreen extends Screen {
 			}
 			return super.mouseClicked(event, doubleClick);
 		} catch (RuntimeException e) {
-			CubeWheelClient.LOG.error("[cubewheel] SVA catalog click failed", e);
+			fail("click", e);
 			return true;
 		}
 	}
 
-	/** A direct user click: close the screen and send exactly one "/ah search <name>". */
+	/**
+	 * A direct user click: close the screen and send exactly one "/ah search <name>" -- only in ManaCube
+	 * Survival, the only place these SVAs are on the auction house.
+	 */
 	private void searchAuctionHouse(Sva s) {
 		String q = s.ahQuery();
 		if (q.isEmpty()) return;
+		if (!ServerGate.survival(CubeWheelClient.config().current())) {
+			if (minecraft.player != null) {
+				minecraft.player.sendOverlayMessage(Component.literal("CubeWheel: /ah search only works in ManaCube Survival"));
+			}
+			return;
+		}
 		minecraft.gui.setScreen(null);
 		if (!CommandSender.send("/ah search " + q) && minecraft.player != null) {
 			minecraft.player.sendOverlayMessage(Component.literal("CubeWheel: /ah search only works on ManaCube"));
@@ -305,26 +386,36 @@ public final class SvaCatalogScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		if (scrollY != 0) scroll = Math.max(0, Math.min(maxScroll(), scroll - (int) Math.signum(scrollY) * 2));
+		try {
+			if (scrollY != 0) scroll = Math.max(0, Math.min(maxScroll(), scroll - (int) Math.signum(scrollY) * 2));
+		} catch (RuntimeException e) {
+			fail("scroll", e);
+		}
 		return true;
 	}
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
-		boolean enter = event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER;
-		if (enter && compareName != null && compareName.isFocused()) {
-			startCompare();
+		try {
+			boolean enter = event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER;
+			if (enter && compareName != null && compareName.isFocused()) {
+				startCompare();
+				return true;
+			}
+			if (event.key() == InputConstants.KEY_PAGEDOWN) {
+				scroll = Math.min(maxScroll(), scroll + visibleRows());
+				return true;
+			}
+			if (event.key() == InputConstants.KEY_PAGEUP) {
+				scroll = Math.max(0, scroll - visibleRows());
+				return true;
+			}
+			return super.keyPressed(event);
+		} catch (RuntimeException e) {
+			fail("key", e);
+			if (event.key() == InputConstants.KEY_ESCAPE) onClose(); // never trap the player in a broken screen
 			return true;
 		}
-		if (event.key() == InputConstants.KEY_PAGEDOWN) {
-			scroll = Math.min(maxScroll(), scroll + visibleRows());
-			return true;
-		}
-		if (event.key() == InputConstants.KEY_PAGEUP) {
-			scroll = Math.max(0, scroll - visibleRows());
-			return true;
-		}
-		return super.keyPressed(event);
 	}
 
 	@Override
@@ -334,9 +425,9 @@ public final class SvaCatalogScreen extends Screen {
 
 	private int indexAt(double x, double y) {
 		int left = left();
-		if (x < left || y < GRID_TOP) return -1;
+		if (x < left || y < gridTop) return -1;
 		int c = (int) ((x - left) / CELL);
-		int r = (int) ((y - GRID_TOP) / CELL);
+		int r = (int) ((y - gridTop) / CELL);
 		if (c >= cols() || r >= visibleRows()) return -1;
 		int i = (scroll + r) * cols() + c;
 		return i < shown.size() ? i : -1;
@@ -355,7 +446,7 @@ public final class SvaCatalogScreen extends Screen {
 	}
 
 	private int visibleRows() {
-		return Math.max(1, (height - GRID_TOP - 6) / CELL);
+		return Math.max(1, (height - gridTop - 6) / CELL);
 	}
 
 	private int maxScroll() {

@@ -1,6 +1,6 @@
 package net.mage.cubewheel.sva;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
  * the catalog is re-fetched at most every {@link #CATALOG_MAX_AGE_MS}, owned SVAs every
  * {@link #OWNED_MAX_AGE_MS} or on a manual refresh. Results are published through volatile fields, so the
  * render thread only ever reads. Nothing here talks to the game server. Pure: no Minecraft imports.
+ * The gate may read game state, so it is only evaluated in {@link #refresh} and {@link #compare}, which are
+ * called on the client thread -- never in a continuation on the HTTP client's threads.
  */
 public final class SvaService {
 	private static final Logger LOG = LoggerFactory.getLogger("cubewheel");
@@ -27,6 +29,8 @@ public final class SvaService {
 	public static final long MANUAL_MIN_INTERVAL_MS = 15_000;
 	public static final long RETRY_BACKOFF_MS = 60_000;
 	public static final int MAX_REQUESTS_PER_MINUTE = 20;
+	/** Compared players remembered (least recently used dropped first). */
+	public static final int COMPARE_CACHE_SIZE = 16;
 
 	/** One GET; implementations must not throw but complete the future (exceptionally on I/O errors). */
 	@FunctionalInterface
@@ -78,7 +82,12 @@ public final class SvaService {
 	private boolean ownedInFlight;
 
 	private volatile Comparison comparison = Comparison.NONE;
-	private final Map<String, Remote> compareCache = new HashMap<>();
+	private final Map<String, Remote> compareCache = new LinkedHashMap<>(COMPARE_CACHE_SIZE + 1, 0.75f, true) {
+		@Override
+		protected boolean removeEldestEntry(Map.Entry<String, Remote> eldest) {
+			return size() > COMPARE_CACHE_SIZE;
+		}
+	};
 	private int compareSeq;
 
 	public SvaService(Http http, SvaCache cache, BooleanSupplier gate, LongSupplier clock) {
@@ -200,28 +209,41 @@ public final class SvaService {
 		catalogInFlight = true;
 		catalogStatus = Status.LOADING;
 		call(SvaApi.catalogUrl()).whenComplete((body, err) -> {
-			SvaCatalog parsed = null;
-			String problem = err != null ? describe(err) : null;
-			if (problem == null) {
-				try {
-					parsed = SvaCatalog.parse(body);
-				} catch (IllegalArgumentException e) {
-					problem = "API error: " + e.getMessage();
+			try {
+				catalogDone(body, err);
+			} catch (RuntimeException e) {
+				LOG.error("[cubewheel] SVA catalog handling failed", e);
+				synchronized (this) {
+					catalogInFlight = false;
+					catalogStatus = Status.failed("Error: " + e);
 				}
 			}
-			synchronized (this) {
-				catalogInFlight = false;
-				if (parsed != null) {
-					catalog = parsed;
-					catalogFetchedAt = clock.getAsLong();
-					catalogStatus = Status.IDLE;
-				} else {
-					catalogStatus = Status.failed(problem);
-					LOG.warn("[cubewheel] SVA catalog fetch failed: {}", problem);
-				}
-			}
-			if (parsed != null) cache.writeCatalog(body, catalogFetchedAt);
 		});
+	}
+
+	private void catalogDone(String body, Throwable err) {
+		SvaCatalog parsed = null;
+		String problem = err != null ? describe(err) : null;
+		if (problem == null) {
+			try {
+				parsed = SvaCatalog.parse(body);
+			} catch (IllegalArgumentException e) {
+				problem = "API error: " + e.getMessage();
+			}
+		}
+		synchronized (this) {
+			catalogInFlight = false;
+			if (parsed != null) {
+				long at = clock.getAsLong();
+				catalog = parsed;
+				catalogFetchedAt = at;
+				catalogStatus = Status.IDLE;
+			} else {
+				catalogStatus = Status.failed(problem);
+				LOG.warn("[cubewheel] SVA catalog fetch failed: {}", problem);
+			}
+		}
+		if (parsed != null) cache.writeCatalog(body, catalogFetchedAt);
 	}
 
 	private void fetchOwned(String uuid, long now) {
@@ -233,35 +255,50 @@ public final class SvaService {
 		ownedInFlight = true;
 		ownedStatus = Status.LOADING;
 		call(SvaApi.ownedUrl(uuid)).whenComplete((body, err) -> {
-			Map<String, Integer> parsed = null;
-			String problem = err != null ? describe(err) : null;
-			if (problem == null) {
-				try {
-					parsed = SvaApi.parseOwned(body);
-				} catch (IllegalArgumentException e) {
-					problem = "API error: " + e.getMessage();
+			try {
+				ownedDone(uuid, body, err);
+			} catch (RuntimeException e) {
+				LOG.error("[cubewheel] owned SVA handling failed", e);
+				synchronized (this) {
+					ownedInFlight = false;
+					if (uuid.equals(self)) ownedStatus = Status.failed("Error: " + e);
 				}
 			}
-			long at;
-			synchronized (this) {
-				ownedInFlight = false;
-				at = clock.getAsLong();
-				if (!uuid.equals(self)) return; // the player changed meanwhile
-				if (parsed != null) {
-					owned = parsed;
-					ownedKnown = true;
-					ownedFetchedAt = at;
-					ownedStatus = Status.IDLE;
-				} else {
-					ownedStatus = Status.failed(problem);
-					LOG.warn("[cubewheel] owned SVA fetch failed: {}", problem);
-				}
-			}
-			if (parsed != null) cache.writeOwned(uuid, body, at);
 		});
 	}
 
-	/** Starts comparing with another player: Mojang name → UUID, then their owned SVAs (cached 10 min). */
+	private void ownedDone(String uuid, String body, Throwable err) {
+		Map<String, Integer> parsed = null;
+		String problem = err != null ? describe(err) : null;
+		if (problem == null) {
+			try {
+				parsed = SvaApi.parseOwned(body);
+			} catch (IllegalArgumentException e) {
+				problem = "API error: " + e.getMessage();
+			}
+		}
+		long at;
+		synchronized (this) {
+			ownedInFlight = false;
+			at = clock.getAsLong();
+			if (!uuid.equals(self)) return; // the player changed meanwhile
+			if (parsed != null) {
+				owned = parsed;
+				ownedKnown = true;
+				ownedFetchedAt = at;
+				ownedStatus = Status.IDLE;
+			} else {
+				ownedStatus = Status.failed(problem);
+				LOG.warn("[cubewheel] owned SVA fetch failed: {}", problem);
+			}
+		}
+		if (parsed != null) cache.writeOwned(uuid, body, at);
+	}
+
+	/**
+	 * Starts comparing with another player: Mojang name -> UUID, then their owned SVAs (cached 10 min). Call on
+	 * the client thread: the gate is evaluated here, once, for both requests.
+	 */
 	public synchronized void compare(String rawName) {
 		String name = rawName == null ? "" : rawName.trim();
 		int seq = ++compareSeq;
@@ -286,46 +323,61 @@ public final class SvaService {
 		}
 		comparison = new Comparison(name, Phase.LOADING, "Looking up " + name + "…", null);
 		call(SvaApi.mojangUrl(name)).handle((body, err) -> {
-			if (err != null) {
-				String msg = unwrap(err) instanceof HttpStatus s && (s.status == 404 || s.status == 204)
-						? "No such player: " + name : describe(err);
-				finishCompare(seq, new Comparison(name, Phase.FAILED, msg, null), null, null);
-				return null;
+			try {
+				if (err != null) {
+					String msg = unwrap(err) instanceof HttpStatus s && (s.status == 404 || s.status == 204)
+							? "No such player: " + name : describe(err);
+					finishCompare(seq, new Comparison(name, Phase.FAILED, msg, null), null, null);
+					return null;
+				}
+				Optional<String> uuid = SvaApi.parseMojang(body);
+				if (uuid.isEmpty()) {
+					finishCompare(seq, new Comparison(name, Phase.FAILED, "No such player: " + name, null), null, null);
+					return null;
+				}
+				fetchCompareOwned(seq, name, key, uuid.get());
+			} catch (RuntimeException e) {
+				compareCrashed(seq, name, e);
 			}
-			Optional<String> uuid = SvaApi.parseMojang(body);
-			if (uuid.isEmpty()) {
-				finishCompare(seq, new Comparison(name, Phase.FAILED, "No such player: " + name, null), null, null);
-				return null;
-			}
-			fetchCompareOwned(seq, name, key, uuid.get());
 			return null;
 		});
 	}
 
+	/** Second step of {@link #compare}; runs on an HTTP thread, so it relies on the gate checked there. */
 	private synchronized void fetchCompareOwned(int seq, String name, String key, String uuid) {
 		if (seq != compareSeq) return;
 		long now = clock.getAsLong();
-		if (!gate.getAsBoolean()) {
-			comparison = new Comparison(name, Phase.OFFLINE, Status.OFFLINE.message(), null);
-			return;
-		}
 		if (!budget.tryAcquire(now)) {
 			comparison = new Comparison(name, Phase.LIMITED, Status.LIMITED.message(), null);
 			return;
 		}
 		comparison = new Comparison(name, Phase.LOADING, "Loading " + name + "'s SVAs…", null);
 		call(SvaApi.ownedUrl(uuid)).whenComplete((body, err) -> {
-			if (err != null) {
-				finishCompare(seq, new Comparison(name, Phase.FAILED, describe(err), null), null, null);
-				return;
-			}
 			try {
-				Set<String> theirs = Set.copyOf(SvaApi.parseOwned(body).keySet());
-				finishCompare(seq, new Comparison(name, Phase.IDLE, "", theirs), key, new Remote(uuid, theirs, clock.getAsLong()));
-			} catch (IllegalArgumentException e) {
-				finishCompare(seq, new Comparison(name, Phase.FAILED, "API error: " + e.getMessage(), null), null, null);
+				if (err != null) {
+					finishCompare(seq, new Comparison(name, Phase.FAILED, describe(err), null), null, null);
+					return;
+				}
+				try {
+					Set<String> theirs = Set.copyOf(SvaApi.parseOwned(body).keySet());
+					finishCompare(seq, new Comparison(name, Phase.IDLE, "", theirs), key, new Remote(uuid, theirs, clock.getAsLong()));
+				} catch (IllegalArgumentException e) {
+					finishCompare(seq, new Comparison(name, Phase.FAILED, "API error: " + e.getMessage(), null), null, null);
+				}
+			} catch (RuntimeException e) {
+				compareCrashed(seq, name, e);
 			}
 		});
+	}
+
+	/** Any unexpected throw in a compare continuation ends in FAILED, never a stuck LOADING. */
+	private void compareCrashed(int seq, String name, RuntimeException e) {
+		LOG.error("[cubewheel] SVA compare handling failed", e);
+		try {
+			finishCompare(seq, new Comparison(name, Phase.FAILED, "Error: " + e, null), null, null);
+		} catch (RuntimeException ignored) {
+			// nothing more to do
+		}
 	}
 
 	private synchronized void finishCompare(int seq, Comparison result, String key, Remote remote) {

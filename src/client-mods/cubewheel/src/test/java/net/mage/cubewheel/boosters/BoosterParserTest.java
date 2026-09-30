@@ -69,6 +69,19 @@ class BoosterParserTest {
 		none("*Maxiecat3030: You have received a 2x Sell Boost for 30m");
 		assertTrue(BoosterParser.isPlayerChat("§r 䟿 [Pond✩Master] Matvii_UA: alr"));
 		assertTrue(BoosterParser.isPlayerChat("Skyblock [SHOUT] imdabestmaan: 140c cf"));
+		// private messages, replies and party chat: a player could paste the booster text into any of them
+		none("[KingBee -> me] You have received a 2x Sell Boost for 30m");
+		none("[me -> KingBee] You have received a 2x Sell Boost for 30m");
+		none("[KingBee → You] Your 2x Sell Boost has been extended from 1m to 31m");
+		none("[KingBee » me] Your 2x Sell Boost has expired");
+		none("§d[§fKingBee §d-> §fme§d] §fYou have received a 2x Sell Boost for 30m");
+		none("KingBee -> me: You have received a 2x Sell Boost for 30m");
+		none("KingBee » You have received a 2x Sell Boost for 30m");
+		none("[MSG] KingBee -> me: You have received a 2x Sell Boost for 30m");
+		none("[Party] KingBee: You have received a 2x Sell Boost for 30m");
+		none("[P] KingBee » You have received a 2x Sell Boost for 30m");
+		assertTrue(BoosterParser.isPlayerChat("[KingBee -> me] hi"));
+		assertTrue(BoosterParser.isPlayerChat("KingBee → me: hi"));
 	}
 
 	@Test void unrelatedMessages() {
