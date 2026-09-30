@@ -14,7 +14,7 @@ import java.util.Optional;
  */
 public final class PendingBreaks {
 	public static final int MAX = 64;
-	public static final int EXPIRE_TICKS = 40;
+	public static final int EXPIRE_TICKS = 100; // 5 s: generous for lag, still short-lived
 
 	private record Pending(int preStateId, List<LocalCounter.Contribution> contributions, long tick) {}
 

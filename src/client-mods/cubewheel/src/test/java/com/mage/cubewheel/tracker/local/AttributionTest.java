@@ -37,9 +37,9 @@ class AttributionTest {
 	@Test void pendingBreaksExpireAndAreBounded() {
 		PendingBreaks p = new PendingBreaks();
 		p.record(P, 42, C, 100);
-		p.expire(140);
+		p.expire(200); // 5 s: a lagging server's verdict still reverses the count
 		assertFalse(p.isEmpty());
-		p.expire(141);
+		p.expire(201);
 		assertTrue(p.isEmpty());
 		for (int i = 0; i < 100; i++) p.record(new Pos(i, 0, 0), 1, C, 100);
 		assertEquals(PendingBreaks.MAX, p.size());
