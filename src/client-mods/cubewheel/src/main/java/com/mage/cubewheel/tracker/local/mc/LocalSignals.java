@@ -332,6 +332,16 @@ public final class LocalSignals {
 		return world.current(Minecraft.getInstance(), local().specialWorlds, tick);
 	}
 
+	/** The world the player is in (cached per second), or {@link WorldInfo#UNKNOWN} outside a level. */
+	public static WorldInfo currentWorld() {
+		try {
+			return Minecraft.getInstance().level == null ? WorldInfo.UNKNOWN : world();
+		} catch (Throwable t) {
+			fail(Hook.LEVEL, t);
+			return WorldInfo.UNKNOWN;
+		}
+	}
+
 	/** Creative and spectator actions never advance ManaCube objectives. */
 	private static boolean survivalMode(Player player) {
 		return player != null && !player.isCreative() && !player.isSpectator();

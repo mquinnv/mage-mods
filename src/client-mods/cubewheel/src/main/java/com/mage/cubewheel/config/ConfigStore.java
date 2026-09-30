@@ -130,6 +130,8 @@ public final class ConfigStore {
 			c.tracker.sidebarLinks.put("Skills", DefaultConfig.SKILLS_LINK);
 		}
 		if (c.tracker.survivalSidebarPattern == null) c.tracker.survivalSidebarPattern = DefaultConfig.SURVIVAL_SIDEBAR;
+		c.tracker.worldFilter = com.mage.cubewheel.tracker.local.WorldScope.Mode.parse(c.tracker.worldFilter).name()
+				.toLowerCase(java.util.Locale.ROOT);
 		if (c.tracker.local == null) c.tracker.local = DefaultConfig.local();
 		c.tracker.local.worlds = c.tracker.local.worlds == null ? DefaultConfig.manaWorlds() : normalizeWords(c.tracker.local.worlds);
 		c.tracker.local.specialWorlds = c.tracker.local.specialWorlds == null

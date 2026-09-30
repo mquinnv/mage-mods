@@ -250,4 +250,17 @@ class ConfigStoreTest {
 		assertTrue(s.current().cooldowns.showUses);
 		assertEquals("top_left", s.current().cooldowns.position.corner);
 	}
+
+	@Test void worldFilterDefaultsToSortAndIsNormalised() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals("sort", s.current().tracker.worldFilter);
+		Files.writeString(f, "{\"tracker\": {\"worldFilter\": \" HIDE \"}}");
+		assertNull(s.reload());
+		assertEquals("hide", s.current().tracker.worldFilter);
+		Files.writeString(f, "{\"tracker\": {\"worldFilter\": \"nonsense\"}}");
+		assertNull(s.reload());
+		assertEquals("sort", s.current().tracker.worldFilter);
+	}
 }

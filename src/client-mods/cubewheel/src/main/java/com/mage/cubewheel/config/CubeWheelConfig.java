@@ -100,6 +100,11 @@ public final class CubeWheelConfig {
 		 * matches (ManaCube hosts other gamemodes on the same address). "" switches this check off.
 		 */
 		public String survivalSidebarPattern = DefaultConfig.SURVIVAL_SIDEBAR;
+		/**
+		 * HUD entries for the world you are in: "sort" (default) lists entries naming the current world first
+		 * (after pinned ones) and other worlds' last, "hide" drops other worlds' unpinned entries, "off".
+		 */
+		public String worldFilter = "sort";
 		/** Local counting: live "~" estimates between menu reads. */
 		public Local local = new Local();
 	}

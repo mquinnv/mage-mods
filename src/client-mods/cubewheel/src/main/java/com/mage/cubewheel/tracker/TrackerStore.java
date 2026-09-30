@@ -8,6 +8,8 @@ import com.mage.cubewheel.tracker.local.Estimate;
 import com.mage.cubewheel.tracker.local.EstimateView;
 import com.mage.cubewheel.tracker.local.ObjectiveInfo;
 import com.mage.cubewheel.tracker.local.ObjectiveParser;
+import com.mage.cubewheel.tracker.local.WorldInfo;
+import com.mage.cubewheel.tracker.local.WorldScope;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -279,17 +281,42 @@ public final class TrackerStore {
 	 * estimated fraction, so an entry moves up live while you work on it.
 	 */
 	public List<TrackerRow> hudRows(int maxLines, boolean withEstimates) {
+		return hudRows(maxLines, withEstimates, null, List.of(), WorldScope.Mode.OFF);
+	}
+
+	/**
+	 * As {@link #hudRows(int, boolean)}, ordered for the world the player is in ({@code tracker.worldFilter}):
+	 * after the pinned entries (kept in their usual order), unpinned entries naming the current world come
+	 * first and those naming other worlds last; {@link WorldScope.Mode#HIDE} drops the latter. Entries
+	 * naming no world, an unknown {@code at} and {@link WorldScope.Mode#OFF} leave the usual order.
+	 * {@code worldNames} are the configured world names to look for in names and objectives.
+	 */
+	public List<TrackerRow> hudRows(int maxLines, boolean withEstimates, WorldInfo at, Collection<String> worldNames,
+			WorldScope.Mode mode) {
+		boolean byWorld = mode != null && mode != WorldScope.Mode.OFF && at != null && at.known();
 		List<TrackerRow> pinned = new ArrayList<>();
 		List<TrackerRow> open = new ArrayList<>();
+		Map<String, WorldScope.Relevance> relevance = new HashMap<>();
 		for (Trackable t : items.values()) {
 			if (hidden.contains(t.id())) continue;
 			TrackerRow r = row(t, withEstimates);
 			if (r.complete()) continue; // finished work never takes HUD space, pinned or not
-			if (pins.contains(t.id())) pinned.add(r);
-			else open.add(r);
+			if (pins.contains(t.id())) {
+				pinned.add(r);
+				continue;
+			}
+			if (byWorld) {
+				WorldScope.Relevance rel = WorldScope.relevance(WorldScope.of(t.name(), objectives.get(t.id()), worldNames), at);
+				if (rel == WorldScope.Relevance.OTHER && mode == WorldScope.Mode.HIDE) continue;
+				relevance.put(t.id(), rel);
+			}
+			open.add(r);
 		}
 		pinned.sort(ROWS_BY_FRACTION_THEN_NAME);
-		open.sort(ROWS_BY_FRACTION_THEN_NAME);
+		open.sort(byWorld
+				? Comparator.<TrackerRow, WorldScope.Relevance>comparing(
+						r -> relevance.getOrDefault(r.item().id(), WorldScope.Relevance.NEUTRAL)).thenComparing(ROWS_BY_FRACTION_THEN_NAME)
+				: ROWS_BY_FRACTION_THEN_NAME);
 		List<TrackerRow> out = new ArrayList<>(pinned);
 		out.addAll(open);
 		return out.size() > maxLines ? new ArrayList<>(out.subList(0, Math.max(0, maxLines))) : out;

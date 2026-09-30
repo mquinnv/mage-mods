@@ -62,7 +62,9 @@ public final class TrackerHud implements HudElement {
 		if (mc.player == null || store == null) return;
 		CubeWheelConfig cfg = CubeWheelClient.config().current();
 		if (!cfg.tracker.hudVisible || !ServerGate.active(cfg)) return;
-		List<TrackerRow> entries = store.hudRows(cfg.tracker.hudMaxLines, cfg.tracker.local.enabled);
+		List<TrackerRow> entries = store.hudRows(cfg.tracker.hudMaxLines, cfg.tracker.local.enabled,
+				com.mage.cubewheel.tracker.local.mc.LocalSignals.currentWorld(), cfg.tracker.local.worlds,
+				com.mage.cubewheel.tracker.local.WorldScope.Mode.parse(cfg.tracker.worldFilter));
 		if (entries.isEmpty()) return;
 
 		Font font = mc.font;

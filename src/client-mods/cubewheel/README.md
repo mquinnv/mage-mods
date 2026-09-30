@@ -103,6 +103,7 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `tracker.sources` | Source id -> regex matched against the menu title | see below |
 | `tracker.refreshCommands` | Commands the "Refresh trackers" key sends, one at a time (max 8) | `["/pquests", "/prestige", "/jobs"]` |
 | `tracker.survivalSidebarPattern` | Regex on the sidebar title; menu reading, refresh runs and live estimates only run while it matches (see [Server gate](#server-gate)). `""` switches the check off | `"(?i)survival"` |
+| `tracker.worldFilter` | HUD order for the world you are in: `"sort"` lists entries naming the current world first (after pinned) and other worlds' last, `"hide"` drops other worlds' unpinned entries, `"off"` (see [World filter](#world-filter)) | `"sort"` |
 | `tracker.sidebarLinks` | Sidebar key -> regex on tracked names that follow that live value | `{"Skills": "(?i)reach [\\d,]+ skill level"}` |
 | `tracker.local.enabled` | Live `~` estimates between menu reads (see [Live estimates](#live-estimates-local-counting)) | `true` |
 | `tracker.local.blocks` / `kills` / `fish` | Count own block breaks / kills / catches | `true` each |
@@ -213,7 +214,7 @@ container (never your inventory) and records the entries that show progress. Con
 - **HUD** (top right, below potion icons): pinned entries first, then every other incomplete entry,
   closest to done first, at most `hudMaxLines` lines. Entries at or above `nearThreshold` are yellow,
   estimated ones keep their `~`. Complete entries only show when pinned (green). Hidden entries never
-  show. F1 hides it.
+  show. F1 hides it. In a world, entries for that world move up (see below).
 - **Percentage quests** whose objective has one known total are shown in objective units, on the HUD
   and in the picker: `Haven Harvester  6,700 / 10,000 (67%)` for "Progress: 67%" of "Harvest or Mine
   10,000 Wolfhaven Resources". Quests with several objectives keep `67 / 100 (67%)`.
@@ -221,6 +222,21 @@ container (never your inventory) and records the entries that show progress. Con
   percentage. Left-click to pin/unpin, right-click to hide/unhide an entry on the HUD (hidden entries
   stay listed, dimmed and marked "(hidden)"). A button forgets unpinned entries not seen for 7 days.
 - Stored in `config/cubewheel-tracker.json`.
+
+### World filter
+
+Many entries can only be worked on in one world: "Slay 16/64 Tigers in Tangleroots", "Harvest or Mine
+10,000 Wolfhaven Resources", "Slay 2,500 Tangleroot Monsters", or a prestige objective that must be
+done in the special worlds. An entry is tied to a world when its name or objective names one of
+`tracker.local.worlds` (singular or plural, with or without spaces: "Tangleroot" = "Tangleroots",
+"Burning Lands" = "burninglands"), or to the special worlds when its lore says so. The current world
+comes from the dimension name (and a sidebar `World:` line, if any), as for live estimates.
+
+With `tracker.worldFilter` = `"sort"` (default), unpinned entries for the current world come first,
+entries tied to no world next, and entries for other worlds last; each group closest to done first.
+`"hide"` also drops unpinned entries for other worlds from the HUD. Pinned entries always show first,
+in their usual order, and the picker is unchanged. If the world cannot be told (or with `"off"`) the
+HUD keeps its usual order.
 
 ### Live sidebar values
 
