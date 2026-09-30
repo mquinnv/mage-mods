@@ -99,6 +99,24 @@ class ManaCubeMenusTest {
 		assertEquals(3, store.all().size(), store.all().toString());
 	}
 
+	@Test void jobListingsGetLocalEstimates() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		ContainerScanner.scan("jobs", JOB_LISTINGS, store, 0);
+		String heavy = Trackable.idOf("jobs", "Farming Heavy · Harvest Cherry Logs");
+		String beginner = Trackable.idOf("jobs", "Farming Beginner · Harvest Acacia Logs");
+		String fireflies = Trackable.idOf("jobs", "Farming Experienced · Catch Tangleroots Fireflies");
+		Map<String, com.mage.cubewheel.tracker.local.CounterRule> rules = store.activeRules(List.of("tangleroots"));
+		assertTrue(rules.containsKey(heavy), rules.toString());
+		assertTrue(rules.containsKey(beginner), rules.toString());
+		assertTrue(!rules.containsKey(fireflies), rules.toString());
+		var overworld = new com.mage.cubewheel.tracker.local.WorldInfo(Set.of("overworld"), false, true);
+		var cherry = new com.mage.cubewheel.tracker.local.Signal.BlockBroken(
+				"minecraft:cherry_log", "Cherry Log", Set.of("logs"), false, false, overworld);
+		com.mage.cubewheel.tracker.local.LocalCounter.onSignal(cherry, store, List.of("tangleroots"), 5);
+		assertEquals(1, store.estimate(heavy).orElseThrow().count());
+		assertTrue(store.estimate(beginner).isEmpty());
+	}
+
 	@Test void jobListingsWithoutAnIndustryItemOmitTheIndustry() {
 		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
 		ContainerScanner.scan("jobs", List.of(HEAVY), store, 0);

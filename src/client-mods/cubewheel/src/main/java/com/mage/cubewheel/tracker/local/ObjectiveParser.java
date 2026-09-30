@@ -17,13 +17,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Turns an objective line such as "Slay 1,000 Sandara Monsters" into a {@link CounterRule}. Only
+ * Turns an objective line such as "Slay 1,000 Sandara Monsters" (or a job listing's "Harvest 3,127/4,773
+ * Cherry Logs") into a {@link CounterRule}. Only
  * single-objective, non-hand-in items get a rule. Pure: no Minecraft/Fabric imports.
  */
 public final class ObjectiveParser {
 	private static final Pattern GRAMMAR = Pattern.compile(
 			"^(?<verb>harvest or mine|harvest|mine|break|chop|dig|gather|kill|slay|slaughter|defeat|catch|fish)"
-			+ "\\s+(?<n>\\d[\\d,]*)\\s+(?<noun>.+?)(?:\\s+in\\s+(?<in>.+))?$",
+			// A /jobs listing embeds its counter: "Harvest 3,127/4,773 Cherry Logs"; the target is the max.
+			+ "\\s+(?:\\d[\\d,]*\\s*/\\s*)?(?<n>\\d[\\d,]*)\\s+(?<noun>.+?)(?:\\s+in\\s+(?<in>.+))?$",
 			Pattern.CASE_INSENSITIVE);
 	/** Whole-noun groups (singular). A null value means "no rule" (bosses are not counted). */
 	private static final Map<String, Optional<CounterRule.Target>> GROUPS = Map.of(

@@ -74,6 +74,17 @@ class ObjectiveParserTest {
 		assertEquals(Optional.of(rule(Kind.BREAK, 5, new Named("burning land"), new AnyWorld())), parse("Mine 5 Burning Lands"));
 	}
 
+	@Test void jobListingCounterBetweenVerbAndTarget() {
+		// /jobs listings: "<verb> <cur>/<max> <target>"; the target number is the max.
+		assertEquals(Optional.of(rule(Kind.BREAK, 4773, new Named("cherry log"), new AnyWorld())),
+				parse("Harvest 3,127/4,773 Cherry Logs"));
+		assertEquals(Optional.of(rule(Kind.BREAK, 506, new Named("acacia log"), new AnyWorld())),
+				parse("Harvest 0/506 Acacia Logs"));
+		// A specific catch in a named world (fireflies are not fish): no rule, as for "Catch 5 Angelfish".
+		assertTrue(parse("Catch 0/61 Tangleroots Fireflies").isEmpty());
+		assertTrue(parse("Harvest 5/0 Cherry Logs").isEmpty());
+	}
+
 	@Test void harvestOfANonCropFallsBackToBreak() {
 		assertEquals(Optional.of(rule(Kind.BREAK, 10, new Named("oak log"), new AnyWorld())), parse("Harvest 10 Oak Logs"));
 		assertEquals(Optional.of(rule(Kind.HARVEST, 10, new Named("potato"), new AnyWorld())), parse("Harvest 10 Potatoes"));
