@@ -19,6 +19,24 @@ class ProgressExtractorTest {
 	@Test void firstRatioLineWins() { assertEquals(Optional.of(new ProgressExtractor.Progress(2, 5)), x("Reward", "2/5", "9/9")); }
 	@Test void noneFound() { assertEquals(Optional.empty(), x("Click to claim", "Reward: $500")); }
 	@Test void zeroMaxIgnored() { assertEquals(Optional.empty(), x("0/0")); }
+	@Test void gluedWordYieldsNoRatio() {
+		assertEquals(Optional.empty(), x("3/10mobs"));
+		assertEquals(Optional.empty(), x("10 of 20th"));
+	}
+	@Test void threePartDatesRejected() {
+		assertEquals(Optional.empty(), x("2026/09/30"));
+		assertEquals(Optional.empty(), x("Expires 09/30/2026"));
+	}
+	// known limitation: indistinguishable from progress
+	@Test void twoPartDateAccepted() { assertEquals(Optional.of(new ProgressExtractor.Progress(12, 25)), x("12/25")); }
+	@Test void percentRejectsGluedAndSigned() {
+		assertEquals(Optional.empty(), x("1234%"));
+		assertEquals(Optional.empty(), x("+15% sell price"));
+	}
+	@Test void nonFiniteRejected() {
+		String huge = "9".repeat(400);
+		assertEquals(Optional.empty(), x(huge + "/" + huge));
+	}
 	@Test void parseNumber() {
 		assertEquals(2_000_000, ProgressExtractor.parseNumber("2M").getAsDouble(), 1e-9);
 		assertTrue(ProgressExtractor.parseNumber("abc").isEmpty());

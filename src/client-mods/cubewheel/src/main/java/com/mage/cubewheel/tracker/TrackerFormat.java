@@ -7,8 +7,10 @@ public final class TrackerFormat {
 	private TrackerFormat() {}
 
 	public static String line(Trackable t, long now) {
+		long pct = Math.round(t.fraction() * 100);
+		if (!t.complete()) pct = Math.min(pct, 99);
 		return t.name() + "  " + fmt(t.current()) + " / " + fmt(t.max())
-			+ " (" + Math.round(t.fraction() * 100) + "%) · " + age(now - t.seenAt());
+			+ " (" + pct + "%) \u00b7 " + age(now - t.seenAt());
 	}
 
 	public static String age(long ms) {
