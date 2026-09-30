@@ -14,10 +14,13 @@ import java.util.Map;
  * <p>Guarantees: at most one run per {@link #COOLDOWN_MS} (counted from each start); a run in progress
  * cannot be restarted; a command is only sent once the previous menu was closed or timed out; any
  * screen the run did not expect (the user opening chat, the inventory, the pause menu, a menu that
- * {@link MenuClassifier} does not recognise, or closing the menu with Esc) aborts the run for good, and
+ * {@link MenuClassifier} does not recognise outside the wait for a command's answer, or closing the menu
+ * with Esc) aborts the run for good, and
  * so does the player pressing use or attack while the run waits between menus (that may open a chest or
  * an NPC's menu of their own). A recognised menu that arrives late (after its command timed out, during
- * the gap before the next command) is read and closed like any other; the run then carries on.
+ * the gap before the next command) is read and closed like any other; the run then carries on. The
+ * menu that opens right after a command is that command's answer: it is waited for until recognised and
+ * closed (as timed out) if it never is. The tracker picker a run starts from counts as no screen.
  */
 public final class RefreshPolicy {
 	public static final long COOLDOWN_MS = 60_000;
@@ -36,7 +39,15 @@ public final class RefreshPolicy {
 		MENU_LOADING,
 		/** A server container menu showing items that {@link MenuClassifier} recognises. */
 		MENU_READY,
-		/** Any other screen: chat, own inventory, pause menu, CubeWheel screens, unrecognised menus... */
+		/**
+		 * A server container menu with items MenuClassifier does not recognise (yet). Right after one of the
+		 * run's commands it is taken for that command's menu still filling in; anywhere else it is the
+		 * player's own menu (a chest, warps) and aborts the run.
+		 */
+		MENU_UNKNOWN,
+		/** The tracker picker (a CubeWheel screen that sends nothing): treated like no screen. */
+		OWN,
+		/** Any other screen: chat, own inventory, pause menu, the wheel... */
 		OTHER
 	}
 
@@ -88,7 +99,7 @@ public final class RefreshPolicy {
 	 */
 	public static View menuView(String title, List<ItemView> items, Map<String, String> titleSources) {
 		if (items == null || items.isEmpty()) return View.MENU_LOADING;
-		return MenuClassifier.classify(title, items, titleSources).isPresent() ? View.MENU_READY : View.OTHER;
+		return MenuClassifier.classify(title, items, titleSources).isPresent() ? View.MENU_READY : View.MENU_UNKNOWN;
 	}
 
 	/** "Refreshed N trackers", plus how many menus did not load. */
@@ -150,6 +161,8 @@ public final class RefreshPolicy {
 	 * waits for a menu or between menus that aborts it (the player may be opening a menu of their own).
 	 */
 	public Action step(long now, View view, boolean userInput) {
+		// The picker a run was started from (or reopened) is not a menu and sends nothing.
+		if (view == View.OWN) view = View.NONE;
 		switch (state) {
 			case IDLE:
 				return Action.IDLE;
@@ -159,6 +172,7 @@ public final class RefreshPolicy {
 			case READY:
 				if (userInput) return abort(USER_INPUT);
 				if (view == View.OTHER) return abort(OTHER_SCREEN);
+				if (view == View.MENU_UNKNOWN) return abort(UNEXPECTED_MENU); // not ours: leave it alone
 				if (view != View.NONE) {
 					if (index == 0) return abort(UNEXPECTED_MENU); // nothing was sent yet: not ours
 					return openLate(now, view, State.READY);
@@ -170,7 +184,8 @@ public final class RefreshPolicy {
 			case WAITING:
 				if (userInput) return abort(USER_INPUT);
 				if (view == View.OTHER) return abort(OTHER_SCREEN);
-				if (view == View.MENU_LOADING || view == View.MENU_READY) {
+				if (view == View.MENU_LOADING || view == View.MENU_READY || view == View.MENU_UNKNOWN) {
+					// Right after our command a server menu is its answer, even before it is recognised.
 					state = State.MENU_OPEN;
 					late = false;
 					openedAt = now;
@@ -190,7 +205,7 @@ public final class RefreshPolicy {
 				}
 				return Action.IDLE;
 			case LINGER:
-				if (userInput || view == View.OTHER) return finish(); // nothing left to send; leave it alone
+				if (userInput || view == View.OTHER || view == View.MENU_UNKNOWN) return finish(); // nothing left to send; leave it alone
 				if (view != View.NONE) return openLate(now, view, State.DONE);
 				return now >= notBefore ? finish() : Action.IDLE;
 			case MENU_OPEN:
@@ -212,6 +227,8 @@ public final class RefreshPolicy {
 	private Action menuOpen(long now, View view) {
 		if (view == View.NONE) return abort("the menu was closed");
 		if (view == View.OTHER) return abort(late ? UNEXPECTED_MENU : OTHER_SCREEN);
+		// A late menu must be recognised to be touched; the command's own menu may still be filling in.
+		if (view == View.MENU_UNKNOWN && late) return abort(UNEXPECTED_MENU);
 		if (view == View.MENU_READY && !filled) {
 			filled = true;
 			filledAt = now;

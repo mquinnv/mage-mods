@@ -190,6 +190,58 @@ class RefreshPolicyTest {
 		assertEquals(NONE, p.step(TIMEOUT + GAP, View.OTHER).kind()); // never closed, nothing sent
 	}
 
+	@Test void aLateUnknownMenuAbortsAndIsLeftAlone() {
+		RefreshPolicy p = new RefreshPolicy();
+		p.start(0, List.of("/a", "/b"));
+		p.step(0, View.NONE);
+		p.step(10, View.MENU_READY);
+		assertEquals(CLOSE_MENU, p.step(10 + SETTLE, View.MENU_READY).kind());
+		assertEquals(ABORTED, p.step(10 + SETTLE + 50, View.MENU_UNKNOWN).kind()); // a chest in the gap
+		assertFalse(p.running());
+		RefreshPolicy q = new RefreshPolicy();
+		q.start(0, List.of("/a"));
+		assertEquals(ABORTED, q.step(0, View.MENU_UNKNOWN).kind()); // open before anything was sent
+	}
+
+	// --- a run started from the picker (a CubeWheel screen), and its own command's menu ---
+
+	@Test void aRunStartedWithTheModScreenOpenIsNotAborted() {
+		RefreshPolicy p = new RefreshPolicy();
+		p.start(0, CMDS);
+		Action first = p.step(0, View.OWN); // the picker is still up on the first step
+		assertEquals(SEND, first.kind());
+		assertEquals("/pquests", first.command());
+		assertEquals(NONE, p.step(50, View.OWN).kind());
+		assertEquals(NONE, p.step(2000, View.MENU_LOADING).kind()); // the server's menu replaces the picker
+		assertEquals(NONE, p.step(2010, View.MENU_READY).kind());
+		assertEquals(CLOSE_MENU, p.step(2010 + SETTLE, View.MENU_READY).kind());
+		assertTrue(p.running());
+		assertEquals(1, p.handled());
+	}
+
+	@Test void theCommandsOwnMenuIsWaitedForWhileItIsNotRecognisedYet() {
+		RefreshPolicy p = new RefreshPolicy();
+		p.start(0, CMDS);
+		p.step(0, View.NONE);
+		assertEquals(NONE, p.step(1500, View.MENU_UNKNOWN).kind()); // e.g. filler slots arrive first
+		assertEquals(NONE, p.step(1600, View.MENU_READY).kind());
+		assertEquals(CLOSE_MENU, p.step(1600 + SETTLE, View.MENU_READY).kind());
+		assertEquals(1, p.handled());
+		assertTrue(p.running());
+	}
+
+	@Test void theCommandsOwnUnrecognisedMenuIsClosedAfterTheTimeout() {
+		RefreshPolicy p = new RefreshPolicy();
+		p.start(0, List.of("/a", "/b"));
+		p.step(0, View.NONE);
+		assertEquals(NONE, p.step(50, View.MENU_UNKNOWN).kind());
+		assertEquals(NONE, p.step(50 + TIMEOUT - 1, View.MENU_UNKNOWN).kind());
+		assertEquals(CLOSE_MENU, p.step(50 + TIMEOUT, View.MENU_UNKNOWN).kind());
+		assertEquals(1, p.timedOut());
+		Action next = p.step(50 + TIMEOUT + GAP, View.NONE);
+		assertEquals("/b", next.command());
+	}
+
 	@Test void aLateMenuThatStaysEmptyAbortsInsteadOfBeingClosed() {
 		RefreshPolicy p = new RefreshPolicy();
 		p.start(0, List.of("/a", "/b"));
@@ -250,10 +302,10 @@ class RefreshPolicyTest {
 		assertEquals(View.MENU_READY, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.JOBS_MAIN, sources));
 		assertEquals(View.MENU_READY, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.PRESTIGE_RANKS, sources));
 		assertEquals(View.MENU_READY, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.PARTY_QUESTS, sources));
-		// A menu the user opened (warps, a chest) is not the run's: reported as OTHER, so the run aborts
-		// and the menu stays visible and usable.
-		assertEquals(View.OTHER, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.WARPS, sources));
-		assertEquals(View.OTHER, RefreshPolicy.menuView("Chest",
+		// Any other menu (warps, a chest) is MENU_UNKNOWN: outside the run's own command it aborts the run
+		// and stays visible and usable.
+		assertEquals(View.MENU_UNKNOWN, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.WARPS, sources));
+		assertEquals(View.MENU_UNKNOWN, RefreshPolicy.menuView("Chest",
 				List.of(ManaCubeMenusTest.item(0, "Diamond", "A shiny gem")), sources));
 	}
 

@@ -18,7 +18,8 @@ import net.minecraft.util.Util;
  * one {@link RefreshPolicy} run: each {@code tracker.refreshCommands} entry is sent, its menu is left
  * open until its items arrive (ContainerHook scans it), then closed with the normal close packet before
  * the next command. Never clicks a slot. Only menus that {@link MenuClassifier} recognises (or that are
- * still empty) are hidden and closed; any other screen, Esc, or pressing use/attack while the run waits
+ * still empty) are hidden; a command's own answer that is never recognised is closed after the timeout.
+ * Any other screen (the picker it started from aside), Esc, or pressing use/attack while the run waits
  * stops it and leaves the player's own menu alone.
  */
 public final class RefreshController {
@@ -177,6 +178,7 @@ public final class RefreshController {
 
 	private static RefreshPolicy.View view(Minecraft mc, Screen screen) {
 		if (screen == null) return RefreshPolicy.View.NONE;
+		if (screen instanceof TrackerScreen) return RefreshPolicy.View.OWN; // the picker a run starts from
 		if (!(screen instanceof AbstractContainerScreen<?> cs) || (mc.player != null && cs.getMenu() == mc.player.inventoryMenu)) {
 			return RefreshPolicy.View.OTHER;
 		}
