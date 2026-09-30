@@ -42,6 +42,10 @@ public final class CaptureLog {
 	private String lastOverlayChat;
 	private String lastActionBar;
 	private List<BossBar> lastBossBars = List.of();
+	private String lastSidebar = "";
+	// Not reset by toggle(): the command sent just before switching capture on still explains the next menu.
+	private String lastCommand;
+	private long lastCommandAt;
 
 	public CaptureLog(Path dir) {
 		this.dir = dir;
@@ -60,6 +64,38 @@ public final class CaptureLog {
 		lastOverlayChat = null;
 		lastActionBar = null;
 		lastBossBars = List.of();
+		lastSidebar = "";
+	}
+
+	/**
+	 * Remembers the last command the player (or a CubeWheel refresh) sent, even while capture is off, so
+	 * each container line can say which command opened it ({@code afterCommand}, {@code afterCommandMs}).
+	 */
+	public void noteCommand(String command, long now) {
+		if (command == null || command.isBlank()) return;
+		String c = command.trim();
+		lastCommand = c.startsWith("/") ? c : "/" + c;
+		lastCommandAt = now;
+	}
+
+	/**
+	 * The scoreboard sidebar as drawn (title and lines, plain text); written only when it changed. A
+	 * missing sidebar is a null title with no lines (recorded when a shown sidebar disappears).
+	 */
+	public void sidebar(String title, List<String> lines, long now) {
+		if (!enabled) return;
+		List<String> current = lines == null ? List.of() : lines;
+		String key = title == null && current.isEmpty() ? "" : String.valueOf(title) + "\n" + String.join("\n", current);
+		if (key.equals(lastSidebar)) return;
+		lastSidebar = key;
+		JsonObject o = new JsonObject();
+		o.addProperty("t", now);
+		o.addProperty("kind", "sidebar");
+		o.addProperty("title", title);
+		JsonArray arr = new JsonArray();
+		current.forEach(arr::add);
+		o.add("lines", arr);
+		append(o, now);
 	}
 
 	/** A regular chat game message; see {@link #chat(String, String, boolean, long)}. */
@@ -124,6 +160,10 @@ public final class CaptureLog {
 		o.addProperty("t", now);
 		o.addProperty("kind", "container");
 		o.addProperty("title", title);
+		if (lastCommand != null) {
+			o.addProperty("afterCommand", lastCommand);
+			o.addProperty("afterCommandMs", now - lastCommandAt);
+		}
 		JsonArray arr = new JsonArray();
 		if (items != null) {
 			for (ItemView item : items) {

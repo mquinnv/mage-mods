@@ -74,6 +74,40 @@ class ConfigStoreTest {
 		assertTrue(c.wheel.stream().anyMatch(n -> "vaults".equals(n.dynamic)));
 	}
 
+	@Test void refreshAndSidebarDefaults() throws Exception {
+		CubeWheelConfig c = DefaultConfig.create();
+		assertEquals(List.of("/pquests", "/prestige", "/jobs"), c.tracker.refreshCommands);
+		assertEquals("(?i)skill level", c.tracker.sidebarLinks.get("Skills"));
+		// A file written before these keys existed gets the defaults.
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{ \"tracker\": { \"hudMaxLines\": 4 } }");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(List.of("/pquests", "/prestige", "/jobs"), s.current().tracker.refreshCommands);
+		assertEquals(java.util.Map.of("Skills", "(?i)skill level"), s.current().tracker.sidebarLinks);
+	}
+
+	@Test void refreshCommandsAreNormalised() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, """
+		  {"tracker": {"refreshCommands": [" jobs ", "", null, "/prestige"], "sidebarLinks": {}}}
+		""");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(List.of("/jobs", "/prestige"), s.current().tracker.refreshCommands);
+		assertTrue(s.current().tracker.sidebarLinks.isEmpty()); // an explicit empty map switches linking off
+	}
+
+	@Test void refreshCommandsAreCapped() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		StringBuilder sb = new StringBuilder("{\"tracker\": {\"refreshCommands\": [");
+		for (int i = 0; i < 20; i++) sb.append(i == 0 ? "" : ",").append("\"/c").append(i).append('"');
+		Files.writeString(f, sb.append("]}}").toString());
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(ConfigStore.MAX_REFRESH_COMMANDS, s.current().tracker.refreshCommands.size());
+	}
+
 	@Test void lastLoadOkTracksMostRecentReload() throws Exception {
 		Path f = dir.resolve("cubewheel.json");
 		ConfigStore s = new ConfigStore(f);

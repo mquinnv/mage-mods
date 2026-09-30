@@ -25,6 +25,16 @@ public final class DefaultConfig {
 		return m;
 	}
 
+	public static List<String> refreshCommands() {
+		return new ArrayList<>(List.of("/pquests", "/prestige", "/jobs"));
+	}
+
+	public static Map<String, String> sidebarLinks() {
+		Map<String, String> m = new LinkedHashMap<>();
+		m.put("Skills", "(?i)skill level");
+		return m;
+	}
+
 	public static List<WheelNode> wheel() {
 		List<WheelNode> w = new ArrayList<>();
 		w.add(ring("Travel", "minecraft:compass",
@@ -78,6 +88,8 @@ public final class DefaultConfig {
 		CubeWheelConfig c = new CubeWheelConfig();
 		c.serverHosts = serverHosts();
 		c.tracker.sources = trackerSources();
+		c.tracker.refreshCommands = refreshCommands();
+		c.tracker.sidebarLinks = sidebarLinks();
 		c.wheel = wheel();
 		return c;
 	}

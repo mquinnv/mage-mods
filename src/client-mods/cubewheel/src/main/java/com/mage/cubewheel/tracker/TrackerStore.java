@@ -13,6 +13,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +54,32 @@ public final class TrackerStore {
 		}
 		items.put(id, new Trackable(id, source, name, p.current(), p.max(), now));
 		return true;
+	}
+
+	/**
+	 * A live value (e.g. from the sidebar) for every incomplete item whose name matches {@code names}:
+	 * current becomes max(current, value) and the item counts as seen at {@code now}. Returns how many
+	 * items were touched.
+	 */
+	public int applyLiveValue(Pattern names, double value, long now) {
+		if (names == null || !Double.isFinite(value)) return 0;
+		int touched = 0;
+		for (Map.Entry<String, Trackable> e : items.entrySet()) {
+			Trackable t = e.getValue();
+			if (t.complete() || t.name() == null || !names.matcher(t.name()).find()) continue;
+			e.setValue(new Trackable(t.id(), t.source(), t.name(), Math.max(t.current(), value), t.max(), now));
+			touched++;
+		}
+		return touched;
+	}
+
+	/** How many items were last seen at or after {@code since}. */
+	public int countSeenSince(long since) {
+		int n = 0;
+		for (Trackable t : items.values()) {
+			if (t.seenAt() >= since) n++;
+		}
+		return n;
 	}
 
 	/** Sorted by fraction descending, then name. */

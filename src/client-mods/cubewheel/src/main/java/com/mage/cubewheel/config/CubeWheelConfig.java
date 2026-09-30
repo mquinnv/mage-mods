@@ -16,5 +16,9 @@ public final class CubeWheelConfig {
 		public int hudMaxLines = 6;
 		public boolean hudVisible = true;
 		public Map<String, String> sources;
+		/** Sent one at a time by the "Refresh trackers" key; each should open a progress menu. */
+		public List<String> refreshCommands;
+		/** Sidebar key ("Skills") -> regex on trackable names whose current value follows it live. */
+		public Map<String, String> sidebarLinks;
 	}
 }

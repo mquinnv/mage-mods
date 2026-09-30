@@ -121,6 +121,48 @@ class CaptureLogTest {
 		assertEquals(2, lines(dir.resolve("1970-01-01.jsonl")).size());
 	}
 
+	@Test void sidebarWritesTitleAndLinesOnlyOnChange() throws Exception {
+		CaptureLog log = new CaptureLog(dir);
+		log.sidebar("MANACUBE", List.of("Money: $1"), 0); // disabled: nothing
+		log.toggle();
+		log.sidebar("MANACUBE", List.of("Money: $2.89M", "Skills: Lvl 1851"), 0);
+		log.sidebar("MANACUBE", List.of("Money: $2.89M", "Skills: Lvl 1851"), 50);
+		log.sidebar("MANACUBE", List.of("Money: $2.90M", "Skills: Lvl 1851"), 100);
+		log.sidebar(null, List.of(), 150); // sidebar gone
+		List<JsonObject> out = lines(dir.resolve("1970-01-01.jsonl"));
+		assertEquals(3, out.size());
+		assertEquals("sidebar", out.get(0).get("kind").getAsString());
+		assertEquals("MANACUBE", out.get(0).get("title").getAsString());
+		assertEquals("Skills: Lvl 1851", out.get(0).getAsJsonArray("lines").get(1).getAsString());
+		assertEquals("Money: $2.90M", out.get(1).getAsJsonArray("lines").get(0).getAsString());
+		assertTrue(out.get(2).get("title").isJsonNull());
+		assertEquals(0, out.get(2).getAsJsonArray("lines").size());
+	}
+
+	@Test void containerRecordsTheLastCommandSentBeforeIt() throws Exception {
+		CaptureLog log = new CaptureLog(dir);
+		log.toggle();
+		log.container("Menu", List.of(), 0);                 // no command yet: no field
+		log.noteCommand("prestige", 1_000);                 // typed or sent without the slash
+		log.container("Prestige", List.of(), 1_400);
+		log.noteCommand("/pquests", 2_000);
+		log.container("Quests", List.of(), 2_250);
+		List<JsonObject> out = lines(dir.resolve("1970-01-01.jsonl"));
+		assertFalse(out.get(0).has("afterCommand"));
+		assertEquals("/prestige", out.get(1).get("afterCommand").getAsString());
+		assertEquals(400, out.get(1).get("afterCommandMs").getAsLong());
+		assertEquals("/pquests", out.get(2).get("afterCommand").getAsString());
+		assertEquals(250, out.get(2).get("afterCommandMs").getAsLong());
+	}
+
+	@Test void commandsAreRememberedWhileCaptureIsOff() throws Exception {
+		CaptureLog log = new CaptureLog(dir);
+		log.noteCommand("/prestige", 0);
+		log.toggle();
+		log.container("Prestige", List.of(), 10);
+		assertEquals("/prestige", lines(dir.resolve("1970-01-01.jsonl")).get(0).get("afterCommand").getAsString());
+	}
+
 	@Test void disabledLogWritesNothing() {
 		Path captures = dir.resolve("cubewheel-captures");
 		CaptureLog log = new CaptureLog(captures);

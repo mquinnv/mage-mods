@@ -20,6 +20,8 @@ import java.util.Set;
 public final class ConfigStore {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	private static final Set<String> DYNAMIC_SOURCES = Set.of("homes", "vaults");
+	/** A refresh run sends at most this many commands. */
+	public static final int MAX_REFRESH_COMMANDS = 8;
 
 	private final Path file;
 	private CubeWheelConfig current;
@@ -87,11 +89,26 @@ public final class ConfigStore {
 		if (c.serverHosts == null) c.serverHosts = DefaultConfig.serverHosts();
 		if (c.tracker == null) c.tracker = new CubeWheelConfig.Tracker();
 		if (c.tracker.sources == null) c.tracker.sources = DefaultConfig.trackerSources();
+		c.tracker.refreshCommands = c.tracker.refreshCommands == null
+				? DefaultConfig.refreshCommands() : normalizeCommands(c.tracker.refreshCommands);
+		if (c.tracker.sidebarLinks == null) c.tracker.sidebarLinks = DefaultConfig.sidebarLinks();
 		c.wheel = c.wheel == null ? DefaultConfig.wheel() : normalizeNodes(c.wheel);
 		c.vaultCount = Math.max(0, Math.min(54, c.vaultCount));
 		c.listThreshold = Math.max(3, Math.min(16, c.listThreshold));
 		c.tracker.nearThreshold = Math.max(0.0, Math.min(1.0, c.tracker.nearThreshold));
 		c.tracker.hudMaxLines = Math.max(1, Math.min(20, c.tracker.hudMaxLines));
+	}
+
+	/** Trimmed, blank entries dropped, leading "/" added, capped at MAX_REFRESH_COMMANDS. */
+	private static List<String> normalizeCommands(List<String> in) {
+		List<String> out = new ArrayList<>();
+		for (String cmd : in) {
+			if (cmd == null || cmd.isBlank()) continue;
+			if (out.size() == MAX_REFRESH_COMMANDS) break;
+			String c = cmd.trim();
+			out.add(c.startsWith("/") ? c : "/" + c);
+		}
+		return out;
 	}
 
 	private static List<WheelNode> normalizeNodes(List<WheelNode> in) {
