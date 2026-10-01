@@ -47,10 +47,11 @@ class CowTest {
 	@Test void availabilityFromClaimsAndMenu() {
 		CowStore s = new CowStore(dir.resolve("cow.json"));
 		long t = 1_000_000_000L;
-		assertTrue(s.status("Qualan", P, t).ready()); // nothing known: ready
+		assertFalse(s.status("Qualan", P, t).ready()); // nothing known: not "ready" (2026-09-30: it claimed ready with 1h+ to go)
+		assertEquals("Daily reward", s.status("Qualan", P, t).label());
 		s.claimed("Qualan", new CowParser.Claim("Qualan", Tier.DAILY, "Key"), t);
 		s.claimed("Qualan", new CowParser.Claim("Qualan", Tier.WEEKLY, "Key"), t);
-		assertTrue(s.status("qualan", P, t + H).ready()); // monthly still unknown
+		assertFalse(s.status("qualan", P, t + H).ready()); // monthly still unknown: ignored, daily/weekly are waiting
 		s.claimed("QUALAN", new CowParser.Claim("Qualan", Tier.MONTHLY, "Key"), t);
 		CowStore.Status st = s.status("Qualan", P, t + H);
 		assertFalse(st.ready());
@@ -68,7 +69,7 @@ class CowTest {
 		assertTrue(s.claimed("Qualan", new CowParser.Claim("Qualan", null, "Promo Key"), t + 5 * H));
 		assertEquals(t + 28 * H, s.nextAvailable("Qualan", Tier.DAILY, P));
 		// Other accounts are separate.
-		assertTrue(s.status("Alt", P, t + H).ready());
+		assertFalse(s.status("Alt", P, t + H).ready()); // nothing known for this account
 	}
 
 	@Test void persistsPerAccount() {
@@ -81,6 +82,17 @@ class CowTest {
 		t.load();
 		assertEquals(5_000L + 7 * D, t.nextAvailable("qualan", Tier.WEEKLY, P));
 		assertEquals(65_000L, t.nextAvailable("Qualan", Tier.DAILY, P));
+	}
+
+	@Test void menuSaysDailyWaitsAnHourWhileOtherTiersAreUnknown() {
+		// The real case: only the /cow menu's daily time is known (about 1h15m), weekly/monthly never seen.
+		CowStore s = new CowStore(dir.resolve("cow2.json"));
+		long t = 1_790_822_688_004L;
+		s.menu("Qualan", new CowParser.MenuState(Tier.DAILY, 4_512_000L), t);
+		CowStore.Status st = s.status("Qualan", P, t + 60_000);
+		assertFalse(st.ready());
+		assertEquals("Daily: 1h", st.label());
+		assertTrue(s.status("Qualan", P, t + 4_512_000L).ready());
 	}
 
 	@Test void sliceLabelAndColour() {

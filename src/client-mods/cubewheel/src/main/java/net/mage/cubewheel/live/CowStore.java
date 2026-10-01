@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>A tier is available at the menu's stated time if it was read after your last claim, else your last
  * claim plus the tier's period (ManaCube's real reset rule is unknown, so the periods are configurable),
- * else it is unknown, which counts as available.
+ * else it is unknown and ignored: only a tier known to be available makes the badge "ready".
  */
 public final class CowStore {
 	/** Periods per tier in ms. */
@@ -57,7 +57,8 @@ public final class CowStore {
 	/** The badge: {@code ready} when any tier is (or may be) available, else the soonest tier and its wait. */
 	public record Status(boolean ready, Tier soonest, long waitMs) {
 		public String label() {
-			return ready ? "Daily reward: ready" : "Daily: " + LiveFormat.compact(waitMs);
+			if (ready) return "Daily reward: ready";
+			return soonest == null ? "Daily reward" : "Daily: " + LiveFormat.compact(waitMs);
 		}
 	}
 
@@ -130,7 +131,8 @@ public final class CowStore {
 		long wait = Long.MAX_VALUE;
 		for (Tier t : Tier.values()) {
 			Long at = nextAvailable(player, t, periods);
-			if (at == null || at <= now) return new Status(true, t, 0);
+			if (at == null) continue; // never seen: says nothing (it used to count as ready, wrongly)
+			if (at <= now) return new Status(true, t, 0);
 			if (at - now < wait) {
 				wait = at - now;
 				soonest = t;
