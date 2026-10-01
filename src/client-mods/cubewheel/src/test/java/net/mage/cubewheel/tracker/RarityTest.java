@@ -16,9 +16,10 @@ class RarityTest {
 	@TempDir Path dir;
 
 	@Test void glyphsMarkRarities() {
-		assertEquals(Optional.of(Rarity.COMMON), Rarity.inText("Catch 1/3   Goldfish while fishing"));
-		assertEquals(Optional.of(Rarity.UNCOMMON), Rarity.inText("Catch 0/9  YellowSeaShroom while fishing"));
-		assertEquals(Optional.of(Rarity.RARE), Rarity.inText("Catch 3/22  Octopus while fishing"));
+		assertEquals(Optional.of(Rarity.COMMON), Rarity.inText("Catch 1/3  \uF895 Goldfish while fishing"));
+		assertEquals(Optional.of(Rarity.UNCOMMON), Rarity.inText("Catch 0/9 \uF894 YellowSeaShroom while fishing"));
+		assertEquals(Optional.of(Rarity.RARE), Rarity.inText("Catch 3/22 \uF893 Octopus while fishing"));
+		assertEquals(Optional.of(Rarity.LEGENDARY), Rarity.inText("Catch 0/1 \uF892 Kraken while fishing"));
 		assertEquals(Optional.empty(), Rarity.inText("Slay 16/64 Tigers in Tangleroots"));
 	}
 
@@ -26,7 +27,7 @@ class RarityTest {
 		TrackerStore s = new TrackerStore(dir.resolve("t.json"));
 		String id = "jobs:Fishing Heavy · Catch  Octopus while fishing";
 		s.update("jobs", "Fishing Heavy · Catch  Octopus while fishing", new ProgressExtractor.Progress(3, 22), 0);
-		s.setObjective(id, new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Catch 3/22  Octopus while fishing", null)),
+		s.setObjective(id, new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Catch 3/22 \uF893 Octopus while fishing", null)),
 				false, false));
 		s.update("jobs", "Farming Heavy · Harvest Cherry Logs", new ProgressExtractor.Progress(1, 4), 0);
 		List<Line> lines = JobsPanelModel.build(s.rows(true), s::isHidden, x -> s.objective(x).orElse(null),
