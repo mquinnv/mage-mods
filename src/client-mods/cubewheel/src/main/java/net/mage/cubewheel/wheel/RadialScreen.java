@@ -30,6 +30,8 @@ public final class RadialScreen extends Screen {
 	private static final double SUB_RING_STEP = 45;
 	/** Depth of each tier beyond the ring (one icon + label block plus padding). */
 	private static final int TIER_STEP = 34;
+	/** Closest tiers may be squeezed when the screen edge is near (icons still clear each other). */
+	private static final int MIN_TIER_STEP = 20;
 	/** How far above the screen centre the wheel sits. */
 	private static final int LIFT = 30;
 	/** Background disc behind an outer entry. */
@@ -80,6 +82,8 @@ public final class RadialScreen extends Screen {
 	private int hoveredTier;
 	private final TierPicker tiers = new TierPicker();
 	private boolean cursorPlaced;
+	/** Outer-tier spacing per slice as last drawn (shrunk where the screen edge is near). */
+	private double[] tierSteps = new double[0];
 	/** The ring's outer edge as last drawn; beyond it the outer tiers start. */
 	private double renderedEdge;
 	private boolean keyStillHeld;
@@ -190,8 +194,13 @@ public final class RadialScreen extends Screen {
 		double[] dirs = directions();
 		hovered = RadialMath.nearest(mouseX - cx, mouseY - cy, dirs, r * 0.25);
 		renderedEdge = ri + half;
+		tierSteps = new double[entries.size()];
+		for (int i = 0; i < entries.size(); i++) {
+			tierSteps[i] = RadialMath.tierStep(renderedEdge, RadialMath.reach(cx, cy, dirs[i], width, height, 2),
+					outerCount(entries.get(i)), OUTER_DISC + font.lineHeight, MIN_TIER_STEP, TIER_STEP);
+		}
 		WheelNode hoveredNode = hovered < 0 ? null : entries.get(hovered);
-		hoveredTier = tiers.pick(hoveredNode, hoveredNode == null ? 0 : distanceTier(hoveredNode, Math.hypot(mouseX - cx, mouseY - cy)),
+		hoveredTier = tiers.pick(hoveredNode, hoveredNode == null ? 0 : distanceTier(hovered, Math.hypot(mouseX - cx, mouseY - cy)),
 				outerCount(hoveredNode), isShiftDown());
 		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + half, ri - half, RING);
 		fillRing(g, cx, cy, hub, 0, HUB);
@@ -209,10 +218,14 @@ public final class RadialScreen extends Screen {
 			SliceViews.View view = views[i];
 			int colour = view != null && view.colour() != null ? view.colour() : hot ? WHITE : GREY;
 			g.centeredText(font, SliceViews.label(node, view), x, top + 18, colour);
-			// Outer tiers: the same slice, further out (e.g. Sell hand, then Sell all).
+			// Outer tiers: the same slice, further out (e.g. Sell hand, then Sell all). A long chain shows only its
+			// first outer tier until hovered; squeezed tiers label only the selected one.
+			int count = outerCount(node);
+			int shown = i == hovered || count <= 2 ? count : 1;
+			boolean roomy = tierSteps[i] >= TIER_STEP - 0.5;
 			WheelNode outer = node.outer;
-			for (int tier = 1; outer != null; tier++, outer = outer.outer) {
-				double[] oo = RadialMath.offset(dirs[i], renderedEdge + (tier - 0.5) * TIER_STEP);
+			for (int tier = 1; outer != null && tier <= shown; tier++, outer = outer.outer) {
+				double[] oo = RadialMath.offset(dirs[i], renderedEdge + (tier - 0.5) * tierSteps[i]);
 				int ox = cx + (int) Math.round(oo[0]);
 				int oy = cy + (int) Math.round(oo[1]);
 				boolean outerHot = i == hovered && hoveredTier == tier;
@@ -220,7 +233,7 @@ public final class RadialScreen extends Screen {
 				int otop = oy - BLOCK_HEIGHT / 2;
 				ItemStack oicon = Icons.stack(outer.icon);
 				if (!oicon.isEmpty()) g.item(oicon, ox - 8, otop);
-				g.centeredText(font, outer.label == null ? "" : outer.label, ox, otop + 18, outerHot ? WHITE : GREY);
+				if (roomy || outerHot) g.centeredText(font, outer.label == null ? "" : outer.label, ox, otop + 18, outerHot ? WHITE : GREY);
 			}
 		}
 		WheelNode current = path.peekLast();
@@ -265,7 +278,7 @@ public final class RadialScreen extends Screen {
 				if (slice >= 0) {
 					WheelNode node = entries.get(slice);
 					int tier = slice == hovered ? hoveredTier
-							: isShiftDown() ? outerCount(node) : distanceTier(node, Math.hypot(dx, dy));
+							: isShiftDown() ? outerCount(node) : distanceTier(slice, Math.hypot(dx, dy));
 					activate(atTier(node, tier));
 				}
 				else if (Math.hypot(dx, dy) < dead) back();
@@ -393,9 +406,11 @@ public final class RadialScreen extends Screen {
 		return key.getType() == InputConstants.Type.KEYSYM || key.getType() == InputConstants.Type.MOUSE;
 	}
 
-	/** The tier the pointer's distance past the ring picks on {@code node}. */
-	private int distanceTier(WheelNode node, double distance) {
-		return renderedEdge > 0 ? RadialMath.tier(distance, renderedEdge, TIER_STEP, outerCount(node)) : 0;
+	/** The tier the pointer's distance past the ring picks on slice {@code index}. */
+	private int distanceTier(int index, double distance) {
+		if (renderedEdge <= 0 || index < 0 || index >= entries.size()) return 0;
+		double step = index < tierSteps.length ? tierSteps[index] : TIER_STEP;
+		return RadialMath.tier(distance, renderedEdge, step, outerCount(entries.get(index)));
 	}
 
 	@Override

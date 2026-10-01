@@ -26,7 +26,7 @@ public final class WheelNode {
 	 */
 	public WheelNode outer;
 	/** Tiers beyond the ring a slice may have. */
-	public static final int MAX_OUTER = 2;
+	public static final int MAX_OUTER = 4;
 
 	/** This node with {@code outer} as its outer entry; returns this for chaining. */
 	public WheelNode withOuter(WheelNode outer) {

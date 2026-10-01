@@ -72,6 +72,29 @@ public final class RadialMath {
 		return (int) Math.min(tiers, 1 + Math.floor((distance - edge) / step));
 	}
 
+	/**
+	 * How far from (cx, cy) the screen edge is in direction {@code degrees}, keeping {@code margin} clear of it.
+	 */
+	public static double reach(double cx, double cy, double degrees, double width, double height, double margin) {
+		double[] d = offset(degrees, 1);
+		double t = Double.MAX_VALUE;
+		if (d[0] > 1e-9) t = Math.min(t, (width - margin - cx) / d[0]);
+		if (d[0] < -1e-9) t = Math.min(t, (margin - cx) / d[0]);
+		if (d[1] > 1e-9) t = Math.min(t, (height - margin - cy) / d[1]);
+		if (d[1] < -1e-9) t = Math.min(t, (margin - cy) / d[1]);
+		return Math.max(0, t);
+	}
+
+	/**
+	 * Spacing of {@code tiers} outer tiers starting at {@code edge} so the last one's centre stays {@code pad} inside
+	 * {@code reach}; between {@code min} and {@code max}. Tier k is centred at {@code edge + (k - 0.5) * step}.
+	 */
+	public static double tierStep(double edge, double reach, int tiers, double pad, double min, double max) {
+		if (tiers <= 0) return max;
+		double fit = (reach - pad - edge) / (tiers - 0.5);
+		return Math.max(min, Math.min(max, fit));
+	}
+
 	/** Index of the entry whose direction is closest to (dx, dy), or -1 inside the dead zone / with no entries. */
 	public static int nearest(double dx, double dy, double[] directions, double deadZone) {
 		if (directions == null || directions.length == 0 || Math.hypot(dx, dy) < deadZone) return -1;

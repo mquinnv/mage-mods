@@ -14,12 +14,13 @@ import org.junit.jupiter.api.io.TempDir;
 class ConfigStoreTest {
 	@TempDir Path dir;
 
-	@Test void outerEntriesAreKeptValidatedAndAtMostTwoDeep() throws Exception {
+	@Test void outerEntriesAreKeptValidatedAndAtMostFourDeep() throws Exception {
 		Path f = dir.resolve("cubewheel.json");
 		Files.writeString(f, """
 		  {"configVersion": 5, "wheel": [
 		    {"label":"Sell","command":"sell","outer":{"label":"Hand","command":"/sell hand",
-		      "outer":{"label":"All","command":"/sell all","outer":{"label":"Too far","command":"/x"}}}},
+		      "outer":{"label":"All","command":"/sell all","outer":{"label":"Three","command":"/3",
+		      "outer":{"label":"Four","command":"/4","outer":{"label":"Too far","command":"/x"}}}}}},
 		    {"label":"Bad outer","command":"/a","outer":{"label":"","command":"/b"}}
 		  ]}""");
 		ConfigStore s = new ConfigStore(f);
@@ -28,7 +29,8 @@ class ConfigStoreTest {
 		assertEquals("/sell", sell.command);
 		assertEquals("/sell hand", sell.outer.command);
 		assertEquals("/sell all", sell.outer.outer.command);
-		assertNull(sell.outer.outer.outer); // three tiers at most
+		assertEquals("/4", sell.outer.outer.outer.outer.command);
+		assertNull(sell.outer.outer.outer.outer.outer); // five tiers at most
 		assertNull(s.current().wheel.get(1).outer);
 	}
 

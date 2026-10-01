@@ -84,6 +84,12 @@ public final class DefaultConfig {
 	 * Version 3 layout: the most used entries at the top level (the first ones get the first fan positions,
 	 * slice 0 at the top), everything else under More. Every ring below the top holds at most 8 entries.
 	 */
+	/** One slice of several tiers: the first node on the ring, each next one an outer tier beyond the last. */
+	static WheelNode chain(WheelNode... tiers) {
+		for (int i = tiers.length - 1; i > 0; i--) tiers[i - 1].withOuter(tiers[i]);
+		return tiers[0];
+	}
+
 	public static List<WheelNode> wheel() {
 		List<WheelNode> w = new ArrayList<>();
 		// Player warps: crops and spawners are player Sushi's warps, the ones most people want.
@@ -91,9 +97,10 @@ public final class DefaultConfig {
 		w.add(leaf("Sushi", "minecraft:wheat", "/warp crops")
 			.withOuter(leaf("Spawners", "minecraft:spawner", "/warp spawners")));
 		w.add(dynamic("Homes", "minecraft:red_bed", "homes"));
-		w.add(ring("Travel", "minecraft:compass",
-			leaf("Spawn", "minecraft:red_bed", "/spawn"),
-			leaf("Random TP menu", "minecraft:grass_block", "/rtp"),
+		// Travel as one slice: Spawn on the ring, then outward (or scroll) Random TP, Teleporter, Warps menu, Back.
+		w.add(chain(
+			leaf("Spawn", "minecraft:compass", "/spawn"),
+			leaf("Random TP", "minecraft:grass_block", "/rtp"),
 			leaf("Teleporter", "minecraft:ender_pearl", "/teleporter"),
 			leaf("Warps menu", "minecraft:oak_sign", "/warp"),
 			leaf("Back", "minecraft:arrow", "/back")));
@@ -115,7 +122,7 @@ public final class DefaultConfig {
 			leaf("Icehaven", "minecraft:packed_ice", "/warp icehaven"),
 			leaf("Morend", "minecraft:end_stone", "/warp morend"),
 			leaf("Burninglands", "minecraft:magma_block", "/warp burninglands")));
-		w.add(ring("Progress", "minecraft:experience_bottle",
+		w.add(chain(
 			leaf("Party quests", "minecraft:writable_book", "/pquests"),
 			leaf("Prestige", "minecraft:nether_star", "/prestige"),
 			leaf("Challenges", "minecraft:target", "/challenges")));

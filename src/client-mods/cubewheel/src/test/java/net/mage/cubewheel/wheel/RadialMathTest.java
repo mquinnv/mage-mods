@@ -64,6 +64,20 @@ class RadialMathTest {
 		assertEquals(0, RadialMath.tier(400, 100, 30, 0));  // a slice with no outer entries
 	}
 
+	@Test void reachToTheScreenEdge() {
+		assertEquals(90, RadialMath.reach(100, 100, 0, 400, 300, 10), 1e-9);   // up: 100 - 10
+		assertEquals(290, RadialMath.reach(100, 100, 90, 400, 300, 10), 1e-9);  // right: 400 - 10 - 100
+		assertEquals(190, RadialMath.reach(100, 100, 180, 400, 300, 10), 1e-9); // down: 300 - 10 - 100
+		assertEquals(Math.sqrt(2) * 90, RadialMath.reach(100, 100, 315, 400, 300, 10), 1e-9); // up-left: corner
+	}
+
+	@Test void tiersShrinkToFitButNotBelowTheMinimum() {
+		assertEquals(34, RadialMath.tierStep(100, 400, 2, 20, 20, 34), 1e-9);   // plenty of room
+		assertEquals(20, RadialMath.tierStep(100, 160, 4, 20, 20, 34), 1e-9);   // (160-20-100)/3.5 = 11.4 → min
+		assertEquals(25, RadialMath.tierStep(100, 207.5, 4, 20, 20, 34), 1e-9); // (207.5-20-100)/3.5
+		assertEquals(34, RadialMath.tierStep(100, 0, 0, 20, 20, 34), 1e-9);
+	}
+
 	@Test void centersAndOffset() {
 		assertEquals(90.0, RadialMath.sliceCenterDegrees(1, 4), 1e-9);
 		double[] o = RadialMath.offset(90, 10); assertEquals(10, o[0], 1e-9); assertEquals(0, o[1], 1e-9);
