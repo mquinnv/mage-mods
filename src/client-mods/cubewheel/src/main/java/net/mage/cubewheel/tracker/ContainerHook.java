@@ -4,6 +4,7 @@ import net.mage.cubewheel.CubeWheelClient;
 import net.mage.cubewheel.ServerGate;
 import net.mage.cubewheel.capture.CaptureLog;
 import net.mage.cubewheel.config.CubeWheelConfig;
+import net.mage.cubewheel.live.LiveWatcher;
 import net.mage.cubewheel.tracker.ContainerScanner.ItemView;
 import java.util.ArrayList;
 import java.util.List;
@@ -118,6 +119,7 @@ public final class ContainerHook {
 				}
 				// Other ManaCube gamemodes (SkyBlock, Parkour, hub) have look-alike menus: Survival only.
 				if (!ServerGate.survival(cfg)) return;
+				LiveWatcher.onMenu(title, items, now); // the /cow menu's reward cooldowns; catches its own failures
 				TrackerStore store = CubeWheelClient.tracker();
 				if (store == null) return;
 				// Facts any menu states about you ("Current Level: 55" on /party) update matching objectives.

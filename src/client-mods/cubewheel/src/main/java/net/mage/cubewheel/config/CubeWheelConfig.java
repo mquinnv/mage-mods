@@ -22,6 +22,8 @@ public final class CubeWheelConfig {
 	public Cooldowns cooldowns = new Cooldowns();
 	/** SVA catalog screen and tooltip line, from ManaCube's public API. */
 	public Svas svas = new Svas();
+	/** The "Daily reward" (/cow) slice badge. */
+	public DailyReward dailyReward = new DailyReward();
 	public List<WheelNode> wheel;
 
 	public static final class Svas {
@@ -63,6 +65,30 @@ public final class CubeWheelConfig {
 		/** The schedule; null = the defaults from ManaCube's wiki. */
 		public List<EventDef> schedule;
 		public Position position = DefaultConfig.eventsPosition();
+		/**
+		 * Boss spawn location regex -> command the "Boss event" slice sends; the first match wins. null = the
+		 * defaults (Boss Arena -> /warp boss, each Mana world -> /warp <world>).
+		 */
+		public Map<String, String> bossWarps;
+		/** The "Boss event" slice shows a spawn for this many minutes, 1-180. */
+		public int bossMinutes = 15;
+	}
+
+	/**
+	 * The /cow reward badge. ManaCube's real reset rule is unknown, so a tier counts as available again this
+	 * long after your claim, unless the /cow menu stated an exact time.
+	 */
+	public static final class DailyReward {
+		/** Badge on the "Daily reward" slice; when false the slice is a plain /cow entry. */
+		public boolean enabled = true;
+		/** 1-168. */
+		public int dailyHours = 24;
+		/** 1-60. */
+		public int weeklyDays = 7;
+		/** 1-60. */
+		public int monthlyDays = 30;
+		/** Regex on a menu title: such menus are read for "Available in 13h 2m" lore. "" = only after /cow. */
+		public String menuTitlePattern = DefaultConfig.COW_MENU_TITLE;
 	}
 
 	/** One scheduled event: {@code when} is "at 08:00, 13:00" or "every 3h from 00:15" (see EventSchedule). */

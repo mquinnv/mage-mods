@@ -3,6 +3,7 @@ package net.mage.cubewheel.config;
 import static net.mage.cubewheel.config.WheelNode.dynamic;
 import static net.mage.cubewheel.config.WheelNode.leaf;
 import static net.mage.cubewheel.config.WheelNode.ring;
+import static net.mage.cubewheel.config.WheelNode.slice;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -13,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 2;
+	public static final int CONFIG_VERSION = 3;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 
@@ -60,7 +61,99 @@ public final class DefaultConfig {
 		return l;
 	}
 
+	/** Menus read for /cow reward cooldowns (the real title is unconfirmed; menus opened right after /cow always are). */
+	public static final String COW_MENU_TITLE = "(?i)cash ?cow|daily reward";
+
+	/** Label of the top-level ring that collects everything else (and, after an upgrade, your own entries). */
+	public static final String MORE = "More";
+
+	/** Boss spawn "Location:" regex -> warp. Locations seen: "Boss Arena", "Wolfhaven Mines", "Sandara Canyon", "Morend". */
+	public static Map<String, String> bossWarps() {
+		Map<String, String> m = new LinkedHashMap<>();
+		m.put("(?i)boss arena", "/warp boss");
+		m.put("(?i)wolfhaven", "/warp wolfhaven");
+		m.put("(?i)tangleroot", "/warp tangleroots");
+		m.put("(?i)sandara", "/warp sandara");
+		m.put("(?i)icehaven", "/warp icehaven");
+		m.put("(?i)morend", "/warp morend");
+		m.put("(?i)burning ?lands", "/warp burninglands");
+		return m;
+	}
+
+	/**
+	 * Version 3 layout: the most used entries at the top level (the first ones get the first fan positions,
+	 * slice 0 at the top), everything else under More. Every ring below the top holds at most 8 entries.
+	 */
 	public static List<WheelNode> wheel() {
+		List<WheelNode> w = new ArrayList<>();
+		// Player warps: crops and spawners are player Sushi's warps, the ones most people want.
+		w.add(leaf("Crops (Sushi)", "minecraft:wheat", "/warp crops"));
+		w.add(leaf("Spawners (Sushi)", "minecraft:spawner", "/warp spawners"));
+		w.add(leaf("Jobs", "minecraft:iron_pickaxe", "/jobs"));
+		w.add(leaf("Kilton", "minecraft:skeleton_skull", "/kilton"));
+		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
+			leaf("Ender chest", "minecraft:ender_chest", "/ec"),
+			leaf("Party vault", "minecraft:barrel", "/p vault")));
+		w.add(leaf("Fly", "minecraft:feather", "/fly"));
+		w.add(ring("Progress", "minecraft:experience_bottle",
+			leaf("Party quests", "minecraft:writable_book", "/pquests"),
+			leaf("Prestige", "minecraft:nether_star", "/prestige"),
+			leaf("Challenges", "minecraft:target", "/challenges")));
+		w.add(leaf("Daily reward", "minecraft:milk_bucket", "/cow"));
+		w.add(slice("Boss event", "minecraft:wither_skeleton_skull", "boss"));
+		w.add(ring(MORE, "minecraft:chest",
+			dynamic("Homes", "minecraft:red_bed", "homes"),
+			ring("Sell", "minecraft:gold_ingot",
+				leaf("Sell menu", "minecraft:gold_ingot", "/sell"),
+				leaf("Sell hand", "minecraft:gold_nugget", "/sell hand"),
+				leaf("Sell all", "minecraft:gold_block", "/sell all")),
+			ring("Shops", "minecraft:emerald",
+				leaf("Alchemist", "minecraft:brewing_stand", "/alchemist"),
+				leaf("Enchanter", "minecraft:enchanting_table", "/enchanter"),
+				leaf("Shop", "minecraft:emerald", "/shop"),
+				leaf("Auction house", "minecraft:gold_block", "/ah"),
+				leaf("Forge", "minecraft:anvil", "/forge"),
+				leaf("Fish shop", "minecraft:cod", "/fish")),
+			ring("Warps", "minecraft:oak_sign",
+				// Server warps from the ManaCube Survival command list (wiki), first so a double-click lands here.
+				ring("Server warps", "minecraft:lodestone",
+					leaf("Pond", "minecraft:water_bucket", "/warp pond"),
+					leaf("Crates", "minecraft:chest", "/warp crates"),
+					leaf("Enchanter", "minecraft:enchanting_table", "/warp enchanter"),
+					leaf("Kilton", "minecraft:skeleton_skull", "/warp kilton"),
+					leaf("Leaderboard", "minecraft:oak_hanging_sign", "/warp leaderboard"),
+					leaf("PvP", "minecraft:iron_sword", "/warp pvp"),
+					leaf("1v1", "minecraft:shield", "/warp 1v1")),
+				ring("Isles", "minecraft:filled_map",
+					leaf("Isles menu", "minecraft:map", "/isles"),
+					leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven"),
+					leaf("Tangleroots", "minecraft:vine", "/warp tangleroots"),
+					leaf("Sandara", "minecraft:sand", "/warp sandara"),
+					leaf("Icehaven", "minecraft:packed_ice", "/warp icehaven"),
+					leaf("Morend", "minecraft:end_stone", "/warp morend"),
+					leaf("Burninglands", "minecraft:magma_block", "/warp burninglands")),
+				// The Isles list has 9 entries with these two: split so every ring stays a wheel.
+				ring("Bosses", "minecraft:wither_skeleton_skull",
+					leaf("Boss arena", "minecraft:wither_skeleton_skull", "/warp boss"),
+					leaf("Bosses", "minecraft:nether_star", "/bosses"))),
+			ring("Travel", "minecraft:compass",
+				leaf("Spawn", "minecraft:red_bed", "/spawn"),
+				leaf("Random TP menu", "minecraft:grass_block", "/rtp"),
+				leaf("Teleporter", "minecraft:ender_pearl", "/teleporter"),
+				leaf("Warps menu", "minecraft:oak_sign", "/warp"),
+				leaf("Back", "minecraft:arrow", "/back")),
+			ring("Party", "minecraft:white_banner",
+				leaf("Party menu", "minecraft:white_banner", "/p"),
+				leaf("Party home", "minecraft:white_banner", "/p home"),
+				leaf("Party warps", "minecraft:lodestone", "/p warps"),
+				leaf("Claim", "minecraft:golden_shovel", "/p claim"),
+				leaf("Map", "minecraft:map", "/p map"),
+				leaf("Party vault", "minecraft:barrel", "/p vault"))));
+		return w;
+	}
+
+	/** The version 1-2 default wheel, kept so tests can check the upgrade from it. */
+	static List<WheelNode> wheelV2() {
 		List<WheelNode> w = new ArrayList<>();
 		w.add(ring("Travel", "minecraft:compass",
 			leaf("Spawn", "minecraft:red_bed", "/spawn"),
@@ -169,6 +262,7 @@ public final class DefaultConfig {
 		c.tracker.sidebarLinks = sidebarLinks();
 		c.tracker.local = local();
 		c.events.schedule = events();
+		c.events.bossWarps = bossWarps();
 		c.wheel = wheel();
 		return c;
 	}

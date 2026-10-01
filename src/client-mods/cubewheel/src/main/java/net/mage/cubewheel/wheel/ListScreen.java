@@ -12,7 +12,10 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -25,6 +28,12 @@ public final class ListScreen extends Screen {
 	private static final int GREY = 0xFFAAAAAA;
 
 	private final Screen parent;
+	/**
+	 * The wheel's hold key while it is still physically down from opening this list, else null. Until it is
+	 * released its presses, repeats and characters are swallowed (so it never types into the filter), the
+	 * filter gets no focus, and its release does nothing.
+	 */
+	private KeyMapping heldKey;
 	private final WheelNode source; // the ring/dynamic node whose children this list shows
 	private List<WheelNode> all;
 	private List<WheelNode> shown;
@@ -32,7 +41,12 @@ public final class ListScreen extends Screen {
 	private int scroll;
 
 	public ListScreen(Screen parent, WheelNode source, List<WheelNode> entries) {
+		this(parent, source, entries, null);
+	}
+
+	public ListScreen(Screen parent, WheelNode source, List<WheelNode> entries, KeyMapping heldKey) {
 		super(Component.literal(source.label == null ? "" : source.label));
+		this.heldKey = heldKey;
 		this.parent = parent;
 		this.source = source;
 		this.all = List.copyOf(entries);
@@ -47,8 +61,48 @@ public final class ListScreen extends Screen {
 		filter.setValue(previous);
 		filter.setResponder(s -> applyFilter());
 		addRenderableWidget(filter);
-		setInitialFocus(filter);
+		if (!holding()) setInitialFocus(filter);
 		applyFilter();
+	}
+
+	/** True while the hold key that opened this list is still down; clears itself on release. */
+	private boolean holding() {
+		if (heldKey == null) return false;
+		if (minecraft != null && RadialScreen.typingKeyDown(minecraft, heldKey)) return true;
+		heldKey = null;
+		return false;
+	}
+
+	private boolean isHeldKey(KeyEvent event) {
+		if (heldKey == null) return false;
+		InputConstants.Key bound = KeyMappingHelper.getBoundKeyOf(heldKey);
+		return bound.getType() == InputConstants.Type.KEYSYM && bound.getValue() == event.key();
+	}
+
+	@Override
+	public void tick() {
+		super.tick();
+		try {
+			if (heldKey != null && !holding() && filter != null && getFocused() == null) setInitialFocus(filter);
+		} catch (RuntimeException e) {
+			CubeWheelClient.LOG.error("[cubewheel] list tick failed", e);
+		}
+	}
+
+	@Override
+	public boolean charTyped(CharacterEvent event) {
+		if (holding()) return true; // the held wheel key's characters (and repeats) never reach the filter
+		return super.charTyped(event);
+	}
+
+	@Override
+	public boolean keyReleased(KeyEvent event) {
+		if (isHeldKey(event)) {
+			heldKey = null; // releasing the wheel key here neither activates nor closes anything
+			if (filter != null && getFocused() == null) setInitialFocus(filter);
+			return true;
+		}
+		return super.keyReleased(event);
 	}
 
 	private void applyFilter() {
@@ -83,10 +137,12 @@ public final class ListScreen extends Screen {
 			if (scroll + i == hot) g.fill(left, y, left + w, y + ROW, 0x40FFFFFF);
 			ItemStack icon = Icons.stack(node.icon);
 			if (!icon.isEmpty()) g.item(icon, left + 2, y + 2);
-			String hint = node.command != null ? node.command : (node.isRing() || node.isDynamic()) ? "▶" : "";
+			SliceViews.View view = SliceViews.view(node, System.currentTimeMillis());
+			String command = SliceViews.command(node, view);
+			String hint = command != null ? command : SliceViews.opens(node) ? "▶" : "";
 			int hintWidth = font.width(hint);
-			String label = font.plainSubstrByWidth(node.label == null ? "" : node.label, w - 30 - hintWidth);
-			g.text(font, label, left + 22, y + 6, WHITE);
+			String label = font.plainSubstrByWidth(SliceViews.label(node, view), w - 30 - hintWidth);
+			g.text(font, label, left + 22, y + 6, view != null && view.colour() != null ? view.colour() : WHITE);
 			g.text(font, hint, left + w - hintWidth - 4, y + 6, GREY);
 		}
 		if (shown.isEmpty()) {
@@ -122,6 +178,7 @@ public final class ListScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
+		if (isHeldKey(event) && holding()) return true; // key repeat of the held wheel key
 		boolean enter = event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER;
 		if (enter && !shown.isEmpty()) {
 			activate(shown.get(0));
@@ -138,12 +195,13 @@ public final class ListScreen extends Screen {
 
 	private void activate(WheelNode node) {
 		try {
-			if (node.isLeaf()) {
+			String command = SliceViews.command(node, SliceViews.view(node, System.currentTimeMillis()));
+			if (command != null) {
 				minecraft.gui.setScreen(null);
-				CommandSender.send(node.command);
+				CommandSender.send(command);
 				return;
 			}
-			if (!node.isRing() && !node.isDynamic()) return; // placeholder: not actionable
+			if (!SliceViews.opens(node)) return; // placeholder: not actionable
 			if (HomesFetcher.isRefreshEntry(node)) {
 				RadialScreen.resolve(node, true); // user click: may force one /homes (rate-limited)
 				all = List.copyOf(RadialScreen.resolve(source, false)); // re-resolve in place, no send
@@ -151,7 +209,7 @@ public final class ListScreen extends Screen {
 				return;
 			}
 			// Sub-rings open as lists too, so Esc always walks back up the same stack of screens.
-			minecraft.gui.setScreen(new ListScreen(this, node, RadialScreen.resolve(node, true)));
+			minecraft.gui.setScreen(new ListScreen(this, node, RadialScreen.resolve(node, true), holding() ? heldKey : null));
 		} catch (RuntimeException e) {
 			fail("activate", e);
 		}

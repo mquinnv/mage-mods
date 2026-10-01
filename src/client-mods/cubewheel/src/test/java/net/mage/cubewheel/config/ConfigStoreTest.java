@@ -20,7 +20,7 @@ class ConfigStoreTest {
 		assertNull(s.reload());
 		assertTrue(Files.exists(f));
 		assertEquals(3, s.current().vaultCount);
-		assertEquals(10, s.current().wheel.size()); // 8 rings + Fly + Sell at the top level
+		assertEquals(10, s.current().wheel.size()); // the version 3 top level
 	}
 
 	@Test void localCountingDefaultsAndNormalisation() throws Exception {
@@ -61,7 +61,7 @@ class ConfigStoreTest {
 	@Test void clampsNumbersAndDropsInvalidNodes() throws Exception {
 		Path f = dir.resolve("cubewheel.json");
 		Files.writeString(f, """
-		  {"vaultCount": 500, "listThreshold": 1, "wheel": [
+		  {"configVersion": 3, "vaultCount": 500, "listThreshold": 1, "wheel": [
 		    {"label":"ok","command":"/spawn"},
 		    {"label":"both","command":"/x","children":[]},
 		    {"label":"none"},
@@ -86,7 +86,7 @@ class ConfigStoreTest {
 		while (!q.isEmpty()) { WheelNode n = q.pop(); if (n.command != null) all.add(n.command); if (n.children != null) q.addAll(n.children); }
 		for (String cmd : List.of("/sell", "/kilton", "/alchemist", "/enchanter", "/warp crops", "/warp spawners", "/warp wolfhaven", "/warp tangleroots", "/warp morend", "/warp boss", "/rtp", "/jobs", "/pquests", "/prestige"))
 			assertTrue(all.contains(cmd), cmd);
-		assertTrue(c.wheel.stream().anyMatch(n -> "homes".equals(n.dynamic)));
+		assertTrue(WheelUpgrade.walk(c.wheel).stream().anyMatch(n -> "homes".equals(n.dynamic)));
 		assertTrue(c.wheel.stream().anyMatch(n -> "vaults".equals(n.dynamic)));
 	}
 

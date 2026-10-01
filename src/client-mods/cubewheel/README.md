@@ -55,11 +55,73 @@ Any key or mouse button can be used for the wheel. Each press does its action on
 - Clicking any mouse button ends "hold" mode, so releasing the key afterwards does nothing.
 - A ring with more entries than `listThreshold` (default 8) opens as a scrolling list instead: type
   to filter (label or command), Enter runs the first visible row, click a row to run it, Esc or
-  right-click returns to the wheel.
+  right-click returns to the wheel. If the wheel key is still held when the list opens, it is ignored
+  there until you let go (it never types into the filter, and releasing it does nothing).
 
 ### Default layout
 
-Travel, Homes, Vaults, Shops, Warps, Isles & Bosses, Progress, Party. All of it is editable, see below.
+Top level, in fan order (slice 0 at the top, then clockwise): Crops (Sushi) `/warp crops`, Spawners
+(Sushi) `/warp spawners`, Jobs `/jobs`, Kilton `/kilton`, Vaults (Vault 1..N, Ender chest, Party vault),
+Fly (`Fly: on`/`off`), Progress (Party quests, Prestige, Challenges), Daily reward `/cow` (live badge, see
+[Daily reward badge](#daily-reward-badge)), Boss event (live, see [Boss event slice](#boss-event-slice)) and
+More. More holds Homes, Sell (menu / hand / all), Shops (Alchemist, Enchanter, Shop, Auction house, Forge,
+Fish shop), Warps (Server warps; Isles: menu + the six Mana worlds; Bosses: Boss arena, `/bosses`), Travel
+(Spawn, Random TP menu, Teleporter, Warps menu, Back) and Party (menu, home, warps, claim, map, vault).
+Every ring below the top level has at most 8 entries, so none of them turns into a list. All of it is
+editable, see below.
+
+**Upgrading from an older version** (`configVersion` below 3): on the first load your `wheel` is replaced
+with this layout once. Any command entry you had added yourself (a command the new layout does not have
+anywhere) is kept under **More › Custom** (split into "Custom 1", "Custom 2", ... beyond 8); rings you made
+are flattened to their entries. The log, and the reload key's chat lines, list what was moved. Everything
+outside `wheel` is kept as it was.
+
+### Live slices
+
+Some slices change with the game: Fly shows `Fly: on` (green) / `Fly: off` (red) from whether the server
+lets you fly; Daily reward and Boss event are below. Each is a small provider (`wheel/SliceViews`) that
+may change a slice's label, colour and command; the wheel asks them every frame.
+
+### Daily reward badge
+
+The Daily reward (`/cow`) slice reads **`Daily reward: ready`** (green) when any reward tier (daily, weekly,
+monthly) is available, or unknown, and otherwise **`Daily: 13h`**: the time until the soonest tier. Clicking
+it always just sends `/cow`.
+
+- Chat: ManaCube broadcasts `[/CASHCOW] <player> claimed daily|weekly|monthly <key>`. When `<player>` is you
+  (your session username, any case), the claim time of that tier is saved per account in
+  `config/cubewheel-cow.json`. `claimed their <key>` broadcasts (e.g. a Promo Key) name no tier: they are
+  recorded but do not change the badge.
+- A tier is then expected back `dailyReward.dailyHours` (24) / `weeklyDays` (7) / `monthlyDays` (30) after
+  the claim. **ManaCube's real reset rule is unknown** (rolling 24 h, or a fixed daily reset); these are
+  guesses and configurable.
+- The /cow menu: when a menu opens within 10 s of sending `/cow` (or its title matches
+  `dailyReward.menuTitlePattern`), each item naming a tier is read for `Available in 13h 2m`, `Claim in …`,
+  `Claimed! Come back in …`, `Cooldown: …` (d/h/m/s) or `Click to claim`. That exact time replaces the
+  estimate until your next claim. The menu wording is unconfirmed: capture the /cow menu (capture mode) so
+  the phrases can be checked.
+- Read only in ManaCube Survival; nothing is sent or clicked.
+
+### Boss event slice
+
+When chat announces a boss (`A BOSS SPAWNED` / `A MINI BOSS SPAWNED`, then `Boss <name>` and
+`Location: <place>`), the Boss event slice shows **`<Boss> · 2m`** (gold, minutes since the announcement)
+for `events.bossMinutes` (15) minutes. Clicking it sends the warp for its location from
+`events.bossWarps` (first regex found in the location wins; one command per click, never automatically):
+
+| Location regex | Command |
+|---|---|
+| `(?i)boss arena` | `/warp boss` |
+| `(?i)wolfhaven` | `/warp wolfhaven` |
+| `(?i)tangleroot` | `/warp tangleroots` |
+| `(?i)sandara` | `/warp sandara` |
+| `(?i)icehaven` | `/warp icehaven` |
+| `(?i)morend` | `/warp morend` |
+| `(?i)burning ?lands` | `/warp burninglands` |
+
+A location with no match shows `<Boss> · 2m (no warp)` and does nothing. With no recent spawn the slice
+reads `No boss event` (grey) and does nothing. Only the latest spawn is kept, in memory. Chat is read only
+in ManaCube Survival.
 
 ### Homes
 
@@ -93,7 +155,7 @@ the previous config keeps working. Numbers outside their range are clamped.
 
 | Key | Meaning | Default |
 |---|---|---|
-| `configVersion` | File format version, managed by the mod. Loading an older file applies one-time upgrades and writes the file back | `2` |
+| `configVersion` | File format version, managed by the mod. Loading an older file applies one-time upgrades and writes the file back (3: new wheel layout, see [Default layout](#default-layout)) | `3` |
 | `enabled` | Master switch | `true` |
 | `serverHosts` | Host suffixes the mod is active on | `["manacube.com", "manacube.net"]` |
 | `vaultCount` | Number of `/pv` entries in a `vaults` node (your rank decides this), 0–54 | `3` |
@@ -118,6 +180,11 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `events.timezone` | Time zone of the schedule's times (entries may set their own `timezone`) | `"America/New_York"` |
 | `events.schedule` | List of `{"name", "when"}` (optional `timezone`, `enabled`) | from ManaCube's wiki, see below |
 | `events.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
+| `events.bossWarps` | Boss location regex -> command for the Boss event slice; invalid entries are dropped with a warning | see [Boss event slice](#boss-event-slice) |
+| `events.bossMinutes` | How long the Boss event slice shows a spawn, 1–180 | `15` |
+| `dailyReward.enabled` | Live badge on the `/cow` slice (see [Daily reward badge](#daily-reward-badge)) | `true` |
+| `dailyReward.dailyHours` / `weeklyDays` / `monthlyDays` | Assumed time from a claim until that tier is back (1–168 h / 1–60 d / 1–60 d) | `24` / `7` / `30` |
+| `dailyReward.menuTitlePattern` | Regex on menu titles read as the /cow menu (menus opened within 10 s of `/cow` always are) | `"(?i)cash ?cow\|daily reward"` |
 | `boosters.enabled` | Booster countdowns from chat (see [Boosters](#boosters)) | `true` |
 | `boosters.position` | Panel corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) and `x`/`y` offset in GUI pixels | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `cooldowns.enabled` | Item ability countdowns (see [Item cooldowns](#item-cooldowns)) | `true` |
@@ -168,9 +235,16 @@ entries appended after the generated ones:
 
 `vaults` generates `/pv 1` .. `/pv <vaultCount>`; `homes` generates `/home <name>` per cached home.
 
+A **live slice** is one entry whose label and command come from the game; the only source is `boss`
+(see [Boss event slice](#boss-event-slice)). It has no `command` and no `children`:
+
+```json
+{ "label": "Boss event", "icon": "minecraft:wither_skeleton_skull", "dynamic": "boss" }
+```
+
 A node must be exactly one kind. Nodes that are not are **silently ignored** (with their children):
 a blank or missing label; both `command` and `children` on a non-dynamic node; neither; an unknown
-`dynamic` source; a `dynamic` node that also has a `command`.
+`dynamic` source; a `dynamic` node that also has a `command`. A live slice's `children` are dropped.
 
 ## Rules note
 
@@ -636,6 +710,9 @@ Captures contain chat text, including other players' messages; review the file b
   `tracker.survivalSidebarPattern` to match the captured title, or to `""`.
 - Whether the wiki's event times are current (see [Event timer](#event-timer)); compare with `/events`.
 - The exact booster chat wording on Survival (see [Boosters](#boosters)).
+- The /cow menu's wording and ManaCube's reward reset rule (see [Daily reward badge](#daily-reward-badge)).
+- Boss locations beyond Wolfhaven Mines, Morend, Boss Arena and Sandara Canyon (the warp regexes are
+  guesses from the world names).
 - The command that opens the prestige rank-objectives menu ("Rank [✪n]" items); see
   [Refresh key](#refresh-key).
 

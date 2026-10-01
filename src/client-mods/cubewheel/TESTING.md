@@ -7,10 +7,11 @@ Bind "Reload CubeWheel config" to a free key under Options > Controls > Key Bind
 
 - [ ] Hold `G` on ManaCube: the wheel opens around the screen centre, the game does not pause, the world stays visible behind a dim overlay.
 - [ ] Move the mouse towards a slice: it highlights (white label, light box behind the icon); others stay grey.
-- [ ] Flick towards Shops and release `G`: the wheel drills into the Shops ring and stays open ("◀ back" shows in the centre).
-- [ ] In the Shops ring, left-click Sell: the wheel closes and `/sell` is sent.
-- [ ] Hold `G`, flick onto Travel, click Spawn: `/spawn` is sent exactly once.
-- [ ] Hold `G`, click Shops, release `G` over a slice: nothing is sent, the wheel stays open (clicking ends hold mode).
+- [ ] The top level reads, clockwise from the top: Crops (Sushi), Spawners (Sushi), Jobs, Kilton, Vaults, Fly: on/off, Progress, Daily reward…, Boss event…, More.
+- [ ] Flick towards More and release `G`: the wheel drills into More and stays open ("◀ back" shows in the centre).
+- [ ] In More › Sell, left-click Sell menu: the wheel closes and `/sell` is sent.
+- [ ] Hold `G`, open More › Travel, click Spawn: `/spawn` is sent exactly once.
+- [ ] Hold `G`, click More, release `G` over a slice: nothing is sent, the wheel stays open (clicking ends hold mode).
 - [ ] Hold `G`, right-click back from a sub-ring, release `G` over a slice: nothing is sent, the wheel stays open.
 - [ ] Hold `G`, alt-tab away (window loses focus) and release: nothing is sent; on return the wheel is open in click mode.
 - [ ] Right-click inside a sub-ring goes back one level; right-click at the root closes.
@@ -22,7 +23,8 @@ Bind "Reload CubeWheel config" to a free key under Options > Controls > Key Bind
 - [ ] Set `"enabled": false` in `config/cubewheel.json`, press the reload key: `G` does nothing (no wheel, no hint).
 - [ ] Edit `vaultCount` to 5, press the reload key: green "[CubeWheel] config reloaded"; Vaults shows Vault 1..5 plus the `/ec` and `/p vault` extras (7 entries: stays a wheel).
 - [ ] Break the JSON (delete a brace), press the reload key: red "[CubeWheel] cubewheel.json: ..." message; the old wheel still opens and works.
-- [ ] Isles & Bosses (9 entries) opens as a list instead of a sub-ring.
+- [ ] No ring under More opens as a list (each has at most 8 entries); with `"listThreshold": 3` + reload, More › Shops opens as a list.
+- [ ] Upgrade: with a pre-update `cubewheel.json` (configVersion 2) that has an extra entry such as `{"label": "Island", "command": "/is"}`, start the game: the log shows "wheel upgraded to the new default layout; your entries were moved to More › Custom: Island (/is)", More › Custom holds it, the file now says `"configVersion": 3`, and other settings (vaultCount, HUD) are unchanged. Restart: no second upgrade.
 
 ## List
 
@@ -30,6 +32,7 @@ Bind "Reload CubeWheel config" to a free key under Options > Controls > Key Bind
 - [ ] Enter runs the first visible row.
 - [ ] Mouse wheel scrolls when the list is taller than the screen (shrink the window to check).
 - [ ] Click a row: the screen closes and the command is sent.
+- [ ] Hold the wheel key (a letter key such as `C`), click a ring that opens as a list and keep holding: no `c`s appear in the filter (no key repeat either); release the key: nothing runs, the list stays open, and the filter now takes typing.
 - [ ] Esc or right-click returns to the wheel it was opened from; the wheel stays open in click mode (releasing `G` earlier does not close it).
 
 ## Homes
@@ -241,3 +244,15 @@ Bind "Open SVA catalog" first. Start with `config/cubewheel-cache/` deleted.
 - [ ] `"svas": {"tooltip": false}` + reload: no tooltip line; `"svas": {"enabled": false}`: the key does nothing but says so, nothing is fetched.
 - [ ] Disconnect the network and open the screen: cached data still shows, the status line says "Offline: …" or "API error …" instead of hanging.
 - [ ] On a non-ManaCube server: no tooltip line and no requests.
+
+## Live slices
+
+- [ ] Fly: `/fly` on and off: the slice shows `Fly: on` (green) / `Fly: off` (red).
+- [ ] Daily reward, fresh install: `Daily reward: ready` (green). Claim a reward in `/cow`: chat shows `[/CASHCOW] <you> claimed daily …`; the log says `/cow claim: daily …` and `config/cubewheel-cow.json` holds the time under your lower-cased name.
+- [ ] After claiming all three tiers (or once the /cow menu showed their cooldowns): the slice reads `Daily: 13h` (soonest tier), not green.
+- [ ] Capture on, open `/cow`: send the `"kind":"container"` line. If an item's lore says e.g. `Available in 13h 2m`, the badge matches it within a minute; if the wording differs, note it.
+- [ ] Another player's `[/CASHCOW] … claimed …` changes nothing.
+- [ ] Boss event, no recent spawn: `No boss event` (grey); clicking it does nothing and sends nothing.
+- [ ] When chat announces `A BOSS SPAWNED … Boss Mana Golem / Location: Wolfhaven Mines`: the slice shows `Mana Golem · <1m` (gold), counting up. Nothing is sent by itself. Click it: the wheel closes and `/warp wolfhaven` is sent once. Also check a mini boss (Cursed Witch at Morend → `/warp morend`) and the Boss Arena (`/warp boss`).
+- [ ] 15 minutes after the announcement the slice is back to `No boss event`.
+- [ ] Off Survival (hub, other gamemodes): boss and `/cow` messages there change nothing.

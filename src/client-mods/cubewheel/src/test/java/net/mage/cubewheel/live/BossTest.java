@@ -1,0 +1,66 @@
+package net.mage.cubewheel.live;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.Map;
+import net.mage.cubewheel.config.DefaultConfig;
+import net.mage.cubewheel.config.WheelNode;
+import net.mage.cubewheel.wheel.SliceViews;
+import org.junit.jupiter.api.Test;
+
+class BossTest {
+	private static final String GOLEM = "\n---------------------\nA BOSS SPAWNED\n\nBoss Mana Golem\nLocation: Wolfhaven Mines\n"
+			+ "● Deal 50 damage for rewards…\n---------------------";
+	private static final long MIN = 60_000;
+
+	@Test void parsesRealAnnouncements() {
+		BossParser.Spawn g = BossParser.parse(GOLEM).orElseThrow();
+		assertEquals(new BossParser.Spawn("Mana Golem", "Wolfhaven Mines", false), g);
+		assertEquals(new BossParser.Spawn("Cursed Witch", "Morend", true),
+				BossParser.parse("A MINI BOSS SPAWNED\n\nBoss Cursed Witch\nLocation: Morend\n● Deal 20 damage").orElseThrow());
+		assertEquals(new BossParser.Spawn("Sahuagin", "Boss Arena", false),
+				BossParser.parse("§c§lA BOSS SPAWNED\n§fBoss §eSahuagin\n§7Location: §fBoss Arena").orElseThrow());
+		assertEquals("Sandara Canyon",
+				BossParser.parse("A MINI BOSS SPAWNED\r\nBoss Desert Golem\r\nLocation: Sandara Canyon").orElseThrow().location());
+		assertNull(BossParser.parse("A BOSS SPAWNED\nBoss Thing").orElseThrow().location());
+	}
+
+	@Test void ignoresOtherMessages() {
+		assertTrue(BossParser.parse("Boss Mana Golem\nLocation: Wolfhaven Mines").isEmpty()); // no header
+		assertTrue(BossParser.parse("Player: A BOSS SPAWNED lol").isEmpty());
+		assertTrue(BossParser.parse("A BOSS SPAWNED\n\n").isEmpty());
+		assertTrue(BossParser.parse(null).isEmpty());
+	}
+
+	@Test void defaultWarpsForEachLocation() {
+		Map<String, String> w = DefaultConfig.bossWarps();
+		assertEquals("/warp boss", BossSlice.warpFor("Boss Arena", w));
+		assertEquals("/warp wolfhaven", BossSlice.warpFor("Wolfhaven Mines", w));
+		assertEquals("/warp tangleroots", BossSlice.warpFor("Tangleroots Forest", w));
+		assertEquals("/warp sandara", BossSlice.warpFor("Sandara Canyon", w));
+		assertEquals("/warp icehaven", BossSlice.warpFor("Icehaven Peaks", w));
+		assertEquals("/warp morend", BossSlice.warpFor("Morend", w));
+		assertEquals("/warp burninglands", BossSlice.warpFor("Burning Lands", w));
+		assertNull(BossSlice.warpFor("Somewhere", w));
+		assertNull(BossSlice.warpFor(null, w));
+	}
+
+	@Test void sliceShowsRecentSpawnAndSendsItsWarp() {
+		BossSlice s = new BossSlice();
+		Map<String, String> w = DefaultConfig.bossWarps();
+		SliceViews.View none = s.view(w, 15 * MIN, 0);
+		assertEquals(BossSlice.NONE, none.label());
+		assertTrue(none.inert());
+		WheelNode node = WheelNode.slice("Boss event", null, "boss");
+		assertNull(SliceViews.command(node, none)); // placeholder: nothing to send
+		s.spawned(BossParser.parse(GOLEM).orElseThrow(), 1_000_000);
+		SliceViews.View v = s.view(w, 15 * MIN, 1_000_000 + 2 * MIN + 5_000);
+		assertEquals("Mana Golem · 2m", v.label());
+		assertEquals("/warp wolfhaven", SliceViews.command(node, v));
+		assertEquals(BossSlice.NONE, s.view(w, 15 * MIN, 1_000_000 + 16 * MIN).label()); // too old
+		s.spawned(new BossParser.Spawn("X", "Nowhere", false), 2_000_000);
+		SliceViews.View unmapped = s.view(w, 15 * MIN, 2_000_000);
+		assertEquals("X · <1m (no warp)", unmapped.label());
+		assertNull(SliceViews.command(node, unmapped));
+	}
+}

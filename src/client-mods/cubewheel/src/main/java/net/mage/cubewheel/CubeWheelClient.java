@@ -12,6 +12,7 @@ import net.mage.cubewheel.events.EventHud;
 import net.mage.cubewheel.homes.HomesCache;
 import net.mage.cubewheel.homes.HomesFetcher;
 import net.mage.cubewheel.hud.PanelsHud;
+import net.mage.cubewheel.live.LiveWatcher;
 import net.mage.cubewheel.mixin.BossHealthOverlayAccessor;
 import net.mage.cubewheel.mixin.HudAccessor;
 import net.mage.cubewheel.mixin.LerpingBossEventAccessor;
@@ -94,6 +95,9 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ClientReceiveMessageEvents.ALLOW_GAME.register(homesFetcher::onGameMessage);
 		BoosterWatcher.init(configDir);
 		ClientReceiveMessageEvents.ALLOW_GAME.register(BoosterWatcher::onGameMessage);
+		LiveWatcher.init(configDir);
+		ClientReceiveMessageEvents.ALLOW_GAME.register(LiveWatcher::onGameMessage);
+		ClientSendMessageEvents.COMMAND.register(LiveWatcher::onCommand);
 		McmmoWatcher.init(configDir);
 		ClientReceiveMessageEvents.ALLOW_GAME.register(McmmoWatcher::onGameMessage);
 		ClientSendMessageEvents.COMMAND.register(homesFetcher::onCommand);

@@ -17,13 +17,15 @@ import java.nio.file.Path;
 import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /** Loads, validates and saves cubewheel.json. Pure: no Minecraft/Fabric imports. */
 public final class ConfigStore {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-	private static final Set<String> DYNAMIC_SOURCES = Set.of("homes", "vaults");
 	/** A refresh run sends at most this many commands. */
 	public static final int MAX_REFRESH_COMMANDS = 8;
 
@@ -82,8 +84,8 @@ public final class ConfigStore {
 			return "cubewheel.json: " + e.getMessage();
 		}
 		if (parsed == null) parsed = DefaultConfig.create();
-		boolean migrated = migrate(parsed);
 		List<String> problems = new ArrayList<>();
+		boolean migrated = migrate(parsed, problems);
 		normalize(parsed, problems);
 		warnings = List.copyOf(problems);
 		current = parsed;
@@ -100,12 +102,22 @@ public final class ConfigStore {
 
 	/**
 	 * One-time upgrades of files older than {@link DefaultConfig#CONFIG_VERSION}; returns true if the file
-	 * should be written back. Version 2: an untouched old HUD default (6, later 8) becomes 10.
+	 * should be written back. Version 2: an untouched old HUD default (6, later 8) becomes 10. Version 3: the
+	 * wheel is replaced by the new default layout; leaves you added are kept under More › Custom (reported in
+	 * {@code notes}, which end up in {@link #warnings()} and the log).
 	 */
-	private static boolean migrate(CubeWheelConfig c) {
+	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
-		if (c.tracker != null && (c.tracker.hudMaxLines == 6 || c.tracker.hudMaxLines == 8)) {
+		if (c.configVersion < 2 && c.tracker != null && (c.tracker.hudMaxLines == 6 || c.tracker.hudMaxLines == 8)) {
 			c.tracker.hudMaxLines = DefaultConfig.HUD_MAX_LINES;
+		}
+		if (c.configVersion < 3 && c.wheel != null) {
+			WheelUpgrade.Result r = WheelUpgrade.upgrade(normalizeNodes(c.wheel));
+			c.wheel = r.wheel();
+			notes.add(r.moved().isEmpty()
+					? "wheel upgraded to the new default layout"
+					: "wheel upgraded to the new default layout; your entries were moved to " + DefaultConfig.MORE + " › "
+							+ WheelUpgrade.CUSTOM + ": " + String.join(", ", r.moved()));
 		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;
@@ -142,6 +154,7 @@ public final class ConfigStore {
 		if (c.cooldowns == null) c.cooldowns = new CubeWheelConfig.Cooldowns();
 		c.cooldowns.position = normalizePosition(c.cooldowns.position, DefaultConfig.cooldownsPosition());
 		if (c.svas == null) c.svas = new CubeWheelConfig.Svas();
+		normalizeDailyReward(c, warnings);
 		c.wheel = c.wheel == null ? DefaultConfig.wheel() : normalizeNodes(c.wheel);
 		c.vaultCount = Math.max(0, Math.min(54, c.vaultCount));
 		c.listThreshold = Math.max(3, Math.min(16, c.listThreshold));
@@ -149,9 +162,48 @@ public final class ConfigStore {
 		c.tracker.hudMaxLines = Math.max(1, Math.min(20, c.tracker.hudMaxLines));
 	}
 
+	private static void normalizeDailyReward(CubeWheelConfig c, List<String> warnings) {
+		if (c.dailyReward == null) c.dailyReward = new CubeWheelConfig.DailyReward();
+		CubeWheelConfig.DailyReward d = c.dailyReward;
+		d.dailyHours = Math.max(1, Math.min(168, d.dailyHours));
+		d.weeklyDays = Math.max(1, Math.min(60, d.weeklyDays));
+		d.monthlyDays = Math.max(1, Math.min(60, d.monthlyDays));
+		if (d.menuTitlePattern == null) d.menuTitlePattern = DefaultConfig.COW_MENU_TITLE;
+		else if (!validRegex(d.menuTitlePattern)) {
+			warnings.add("dailyReward.menuTitlePattern is not a valid regex, using the default");
+			d.menuTitlePattern = DefaultConfig.COW_MENU_TITLE;
+		}
+	}
+
+	/** Invalid regexes and blank commands are dropped with a warning; commands get a leading "/". */
+	private static Map<String, String> normalizeBossWarps(Map<String, String> in, List<String> warnings) {
+		if (in == null) return DefaultConfig.bossWarps();
+		Map<String, String> out = new LinkedHashMap<>();
+		for (Map.Entry<String, String> e : in.entrySet()) {
+			String cmd = e.getValue() == null ? "" : e.getValue().trim();
+			if (e.getKey() == null || !validRegex(e.getKey()) || cmd.isEmpty()) {
+				warnings.add("events.bossWarps \"" + e.getKey() + "\" ignored: needs a valid regex and a command");
+				continue;
+			}
+			out.put(e.getKey(), cmd.startsWith("/") ? cmd : "/" + cmd);
+		}
+		return out;
+	}
+
+	private static boolean validRegex(String regex) {
+		try {
+			Pattern.compile(regex);
+			return true;
+		} catch (PatternSyntaxException ex) {
+			return false;
+		}
+	}
+
 	private static void normalizeEvents(CubeWheelConfig c, List<String> warnings) {
 		if (c.events == null) c.events = new CubeWheelConfig.Events();
 		CubeWheelConfig.Events e = c.events;
+		e.bossWarps = normalizeBossWarps(e.bossWarps, warnings);
+		e.bossMinutes = Math.max(1, Math.min(180, e.bossMinutes));
 		e.position = normalizePosition(e.position, DefaultConfig.eventsPosition());
 		e.show = Math.max(1, Math.min(10, e.show));
 		e.alertMinutes = Math.max(0, Math.min(60, e.alertMinutes));
@@ -235,7 +287,14 @@ public final class ConfigStore {
 		for (WheelNode n : in) {
 			if (n == null || n.label == null || n.label.isBlank()) continue;
 			boolean hasCommand = n.command != null && !n.command.isBlank();
-			boolean hasDynamic = n.dynamic != null && DYNAMIC_SOURCES.contains(n.dynamic);
+			if (n.dynamic != null && WheelNode.SLICE_SOURCES.contains(n.dynamic)) {
+				if (hasCommand) continue;
+				n.command = null;
+				n.children = null; // a live slice never opens a ring
+				out.add(n);
+				continue;
+			}
+			boolean hasDynamic = n.dynamic != null && WheelNode.RING_SOURCES.contains(n.dynamic);
 			if (hasDynamic) {
 				if (hasCommand) continue;
 				n.command = null;

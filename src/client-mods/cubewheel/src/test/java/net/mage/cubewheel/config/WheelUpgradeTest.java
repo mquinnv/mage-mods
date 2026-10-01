@@ -1,0 +1,130 @@
+package net.mage.cubewheel.config;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.google.gson.Gson;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class WheelUpgradeTest {
+	@TempDir Path dir;
+
+	private static List<String> labels(List<WheelNode> nodes) {
+		return nodes.stream().map(n -> n.label).toList();
+	}
+
+	private static WheelNode child(List<WheelNode> nodes, String label) {
+		return nodes.stream().filter(n -> label.equals(n.label)).findFirst().orElseThrow(() -> new AssertionError(label));
+	}
+
+	@Test void newDefaultTopLevelOrder() {
+		List<WheelNode> w = DefaultConfig.wheel();
+		assertEquals(List.of("Crops (Sushi)", "Spawners (Sushi)", "Jobs", "Kilton", "Vaults", "Fly", "Progress",
+				"Daily reward", "Boss event", "More"), labels(w));
+		assertEquals("/warp crops", w.get(0).command);
+		assertEquals("/cow", w.get(7).command);
+		assertTrue(w.get(8).isSlice());
+		assertEquals("boss", w.get(8).dynamic);
+		assertEquals(List.of("Party quests", "Prestige", "Challenges"), labels(w.get(6).children));
+		WheelNode more = w.get(9);
+		assertEquals(List.of("Homes", "Sell", "Shops", "Warps", "Travel", "Party"), labels(more.children));
+		assertEquals(List.of("Alchemist", "Enchanter", "Shop", "Auction house", "Forge", "Fish shop"),
+				labels(child(more.children, "Shops").children));
+		assertEquals(List.of("Server warps", "Isles", "Bosses"), labels(child(more.children, "Warps").children));
+		assertEquals(List.of("Party menu", "Party home", "Party warps", "Claim", "Map", "Party vault"),
+				labels(child(more.children, "Party").children));
+	}
+
+	@Test void everyRingBelowTheTopHoldsAtMostEight() {
+		for (WheelNode n : WheelUpgrade.walk(DefaultConfig.wheel())) {
+			if (n.children != null) assertTrue(n.children.size() <= 8, n.label + ": " + n.children.size());
+		}
+	}
+
+	@Test void oldDefaultBecomesNewDefaultWithNothingMoved() {
+		WheelUpgrade.Result r = WheelUpgrade.upgrade(DefaultConfig.wheelV2());
+		assertTrue(r.moved().isEmpty(), r.moved().toString());
+		assertEquals(new Gson().toJson(DefaultConfig.wheel()), new Gson().toJson(r.wheel()));
+	}
+
+	@Test void userLeavesAreKeptUnderMoreCustom() {
+		List<WheelNode> old = DefaultConfig.wheelV2();
+		old.add(WheelNode.leaf("Island", "minecraft:grass_block", "/is"));
+		old.get(0).children.add(WheelNode.leaf("My farm", null, "/home farm"));
+		old.get(0).children.add(WheelNode.leaf("Spawn again", null, "/SPAWN ")); // known command: dropped
+		old.add(WheelNode.ring("Mine", null, WheelNode.leaf("Dup", null, "is"))); // same as /is: once
+		WheelUpgrade.Result r = WheelUpgrade.upgrade(old);
+		assertEquals(List.of("Island (/is)", "My farm (/home farm)"), r.moved());
+		WheelNode custom = child(child(r.wheel(), "More").children, "Custom");
+		assertEquals(List.of("Island", "My farm"), labels(custom.children));
+		assertEquals("/is", custom.children.get(0).command);
+	}
+
+	@Test void manyUserLeavesAreSplitIntoRingsOfEight() {
+		List<WheelNode> old = new java.util.ArrayList<>();
+		for (int i = 0; i < 11; i++) old.add(WheelNode.leaf("C" + i, null, "/c" + i));
+		WheelNode custom = child(child(WheelUpgrade.upgrade(old).wheel(), "More").children, "Custom");
+		assertEquals(List.of("Custom 1", "Custom 2"), labels(custom.children));
+		assertEquals(8, custom.children.get(0).children.size());
+		assertEquals(3, custom.children.get(1).children.size());
+	}
+
+	@Test void loadingAVersion2FileUpgradesTheWheelOnceAndReportsIt() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		List<WheelNode> old = DefaultConfig.wheelV2();
+		old.add(WheelNode.leaf("Island", null, "/is"));
+		Files.writeString(f, new Gson().toJson(Map.of("configVersion", 2, "vaultCount", 5, "wheel", old)));
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(3, s.current().configVersion);
+		assertEquals(5, s.current().vaultCount); // other settings kept
+		assertEquals("Crops (Sushi)", s.current().wheel.get(0).label);
+		assertTrue(s.warnings().stream().anyMatch(w -> w.contains("Island (/is)")), s.warnings().toString());
+		assertTrue(Files.readString(f).contains("\"configVersion\": 3"));
+		// Once: an edit made afterwards (removing Kilton) survives the next load.
+		s.current().wheel.remove(3);
+		s.save();
+		assertNull(s.reload());
+		assertEquals("Vaults", s.current().wheel.get(3).label);
+		assertTrue(s.warnings().isEmpty());
+	}
+
+	@Test void bossSliceSurvivesNormalisationButNotWithACommand() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, """
+		  {"configVersion": 3, "wheel": [
+		    {"label":"Boss","dynamic":"boss","children":[{"label":"x","command":"/x"}]},
+		    {"label":"Bad","dynamic":"boss","command":"/warp boss"}
+		  ]}""");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(List.of("Boss"), labels(s.current().wheel));
+		assertTrue(s.current().wheel.get(0).isSlice());
+		assertNull(s.current().wheel.get(0).children);
+	}
+
+	@Test void bossWarpsAndDailyRewardDefaultsAndNormalisation() throws Exception {
+		CubeWheelConfig d = DefaultConfig.create();
+		assertEquals("/warp boss", d.events.bossWarps.get("(?i)boss arena"));
+		assertEquals(7, d.events.bossWarps.size());
+		assertEquals(15, d.events.bossMinutes);
+		assertTrue(d.dailyReward.enabled);
+		assertEquals(24, d.dailyReward.dailyHours);
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, """
+		  {"configVersion": 3, "events": {"bossMinutes": 0, "bossWarps": {"(?i)mine": "warp mines", "([": "/x", "(?i)y": ""}},
+		   "dailyReward": {"dailyHours": 0, "weeklyDays": 99, "menuTitlePattern": "(["}}""");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(Map.of("(?i)mine", "/warp mines"), s.current().events.bossWarps);
+		assertEquals(1, s.current().events.bossMinutes);
+		assertEquals(1, s.current().dailyReward.dailyHours);
+		assertEquals(60, s.current().dailyReward.weeklyDays);
+		assertEquals(DefaultConfig.COW_MENU_TITLE, s.current().dailyReward.menuTitlePattern);
+		assertEquals(3, s.warnings().size(), s.warnings().toString());
+	}
+}

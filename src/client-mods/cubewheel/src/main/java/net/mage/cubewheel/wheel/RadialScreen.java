@@ -26,10 +26,8 @@ import org.lwjgl.glfw.GLFW;
 public final class RadialScreen extends Screen {
 	private static final int WHITE = 0xFFFFFFFF;
 	private static final int GREY = 0xFFAAAAAA;
-	private static final int FLY_ON = 0xFF55FF55;
 	/** Widest gap between neighbouring entries of a sub-ring, in degrees. */
 	private static final double SUB_RING_STEP = 45;
-	private static final int FLY_OFF = 0xFFFF7777;
 	/** Light dim over the world, so it stays visible behind the wheel. */
 	private static final int BACKDROP = 0x33000000;
 	/** Translucent charcoal band the slices sit on. */
@@ -151,8 +149,13 @@ public final class RadialScreen extends Screen {
 		int cy = height / 2;
 		// The band must hold each icon+label block wherever it sits on the ring: at 3 and 9 o'clock a
 		// label spans the band's thickness horizontally, so the widest label sets the thickness.
+		long now = System.currentTimeMillis();
+		SliceViews.View[] views = new SliceViews.View[entries.size()];
 		int maxLabel = 0;
-		for (WheelNode node : entries) maxLabel = Math.max(maxLabel, font.width(label(node)));
+		for (int i = 0; i < entries.size(); i++) {
+			views[i] = SliceViews.view(entries.get(i), now);
+			maxLabel = Math.max(maxLabel, font.width(SliceViews.label(entries.get(i), views[i])));
+		}
 		int half = Math.max(BLOCK_HEIGHT / 2, maxLabel / 2) + BAND_PADDING;
 		double r = Math.max(radius(), half + MIN_HUB_RADIUS + HUB_GAP);
 		renderedRadius = r;
@@ -173,9 +176,9 @@ public final class RadialScreen extends Screen {
 			int top = y - BLOCK_HEIGHT / 2;
 			ItemStack icon = Icons.stack(node.icon);
 			if (!icon.isEmpty()) g.item(icon, x - 8, top);
-			Boolean fly = flyState(node);
-			int colour = fly != null ? (fly ? FLY_ON : FLY_OFF) : hot ? WHITE : GREY;
-			g.centeredText(font, label(node), x, top + 18, colour);
+			SliceViews.View view = views[i];
+			int colour = view != null && view.colour() != null ? view.colour() : hot ? WHITE : GREY;
+			g.centeredText(font, SliceViews.label(node, view), x, top + 18, colour);
 		}
 		WheelNode current = path.peekLast();
 		g.centeredText(font, current.label == null ? "" : current.label, cx, cy - font.lineHeight / 2, WHITE);
@@ -233,12 +236,13 @@ public final class RadialScreen extends Screen {
 
 	private void activate(WheelNode node) {
 		try {
-			if (node.isLeaf()) {
+			String command = SliceViews.command(node, SliceViews.view(node, System.currentTimeMillis()));
+			if (command != null) {
 				onClose();
-				CommandSender.send(node.command);
+				CommandSender.send(command); // one command per activation
 				return;
 			}
-			if (isPlaceholder(node)) return; // e.g. "Loading…": not actionable
+			if (!SliceViews.opens(node)) return; // e.g. "Loading…", "No boss event": not actionable
 			if (HomesFetcher.isRefreshEntry(node)) {
 				resolve(node, true); // user click: may force one /homes (rate-limited)
 				refresh(); // re-resolve the current ring in place, without sending
@@ -275,7 +279,16 @@ public final class RadialScreen extends Screen {
 
 	private void openList(WheelNode node, List<WheelNode> children) {
 		keyStillHeld = false; // returning from the list must not look like a key release
-		minecraft.gui.setScreen(new ListScreen(this, node, children));
+		// If the hold key is still down (e.g. a click opened the list), the list must not type it into its filter.
+		minecraft.gui.setScreen(new ListScreen(this, node, children, typingKeyDown(minecraft, holdKey) ? holdKey : null));
+	}
+
+	/** True while {@code key} is a keyboard key that is physically down (a mouse button never types). */
+	static boolean typingKeyDown(net.minecraft.client.Minecraft mc, KeyMapping key) {
+		if (key == null || mc == null) return false;
+		InputConstants.Key bound = KeyMappingHelper.getBoundKeyOf(key);
+		if (bound.getType() != InputConstants.Type.KEYSYM || bound.getValue() < 0) return false;
+		return InputConstants.isKeyDown(mc.getWindow(), bound.getValue());
 	}
 
 	/** Up one level (re-resolving that ring from the cache; never sends); at the root, closes. */
@@ -300,18 +313,6 @@ public final class RadialScreen extends Screen {
 
 	private double radius() {
 		return Math.max(48, Math.min(100, Math.min(width, height) * 0.22));
-	}
-
-	private String label(WheelNode node) {
-		String base = node.label == null ? "" : node.label;
-		Boolean fly = flyState(node);
-		return fly == null ? base : base + (fly ? ": on" : ": off");
-	}
-
-	/** For a "/fly" toggle: whether flight is currently allowed (the server sets it); null for other nodes. */
-	private Boolean flyState(WheelNode node) {
-		if (node == null || node.command == null || !node.command.trim().equalsIgnoreCase("/fly")) return null;
-		return minecraft != null && minecraft.player != null && minecraft.player.getAbilities().mayfly;
 	}
 
 	/** Fills a ring (or a disc when {@code inner} is 0) as one-unit-tall strips. */
