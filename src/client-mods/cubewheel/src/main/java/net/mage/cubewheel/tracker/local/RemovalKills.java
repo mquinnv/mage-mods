@@ -24,8 +24,13 @@ import java.util.Set;
  */
 public final class RemovalKills {
 	public static final int WINDOW_TICKS = 30;
+	/**
+	 * An interaction hitbox (Sandara rattlesnakes: a cloud carrying an interaction and invisible slimes) is removed
+	 * about 3 s after the kill, so its window is longer (capture 2026-10-01).
+	 */
+	public static final int HITBOX_WINDOW_TICKS = 80;
 	/** A loot message at most this old at the removal (and not older than the first hit) is used at once. */
-	public static final long LOOT_BEFORE_MS = 3000;
+	public static final long LOOT_BEFORE_MS = 5000;
 	public static final long LOOT_WAIT_MS = 1500;
 	public static final int MAX_LOOT_LINES = 16;
 	public static final int MAX_HINTS = 256;

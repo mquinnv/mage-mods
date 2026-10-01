@@ -138,6 +138,10 @@ class CatchRemovalTest {
 		assertEquals(Optional.of(new LootMatch.Credit("firefly", List.of("jobs:Farming Experienced"))),
 				LootMatch.match(List.of("Firefly"), rules, TANGLEROOT));
 		WorldInfo sandara = WorldResolver.resolve("minecraft:sandara", KillRuleTest.SIDEBAR, WORLDS);
+		CounterRule snakes = new CounterRule(CounterRule.Kind.KILL, 58, new CounterRule.Named("rattle snake"),
+				new CounterRule.NamedWorld("sandara"));
+		assertEquals(Optional.of(new LootMatch.Credit("rattle snake", List.of("jobs:snakes"))),
+				LootMatch.match(List.of("+5 Mana", "Rattlesnake Meat"), java.util.Map.of("jobs:snakes", snakes), sandara));
 		assertEquals(Optional.empty(), LootMatch.match(List.of("Firefly"), rules, sandara));
 		r.clear();
 		assertEquals(Optional.empty(), r.fallback(9));

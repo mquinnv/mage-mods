@@ -35,8 +35,10 @@ public final class LootMatch {
 			if (!RuleMatcher.worldMatches(r.world(), at)) continue;
 			String[] want = words(n.singular());
 			if (want.length == 0) continue;
+			// "Rattle Snake" also matches loot that writes it as one word ("Rattlesnake Meat").
+			String[] joined = want.length > 1 ? new String[] { String.join("", want) } : null;
 			for (String[] l : loot) {
-				if (contains(l, want)) {
+				if (contains(l, want) || joined != null && contains(l, joined)) {
 					byTarget.computeIfAbsent(String.join(" ", want), k -> new ArrayList<>()).add(e.getKey());
 					break;
 				}

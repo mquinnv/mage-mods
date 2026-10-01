@@ -441,7 +441,9 @@ public final class LocalSignals {
 				if (!kills.tracks(id) && !stacks.watching(id)) continue;
 				Entity entity = mc.level.getEntity(id);
 				if (entity != null && !(entity instanceof Player)) {
-					boolean recent = kills.hitByWithin(id, mc.player.getId(), tick, RemovalKills.WINDOW_TICKS);
+					int window = "minecraft:interaction".equals(entity.typeHolder().getRegisteredName())
+							? RemovalKills.HITBOX_WINDOW_TICKS : RemovalKills.WINDOW_TICKS;
+					boolean recent = kills.hitByWithin(id, mc.player.getId(), tick, window);
 					boolean near = entity.distanceTo(mc.player) <= REMOVAL_KILL_RANGE;
 					String why = !recent ? (kills.hitBy(id, mc.player.getId(), tick) ? "local hit, too long ago" : "no recent local hit")
 							: !near ? "local hit, too far to be a kill"
