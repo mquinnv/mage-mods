@@ -144,6 +144,14 @@ public final class CubeWheelConfig {
 		public String worldFilter = "sort";
 		/** Local counting: live "~" estimates between menu reads. */
 		public Local local = new Local();
+		/** The left-hand "Jobs" panel; while on, job entries leave the tracker HUD. */
+		public JobsPanel jobsPanel = new JobsPanel();
+	}
+
+	public static final class JobsPanel {
+		/** Panel on/off (saved by the "Toggle jobs panel" key). */
+		public boolean enabled = true;
+		public Position position = DefaultConfig.jobsPanelPosition();
 	}
 
 	public static final class Local {

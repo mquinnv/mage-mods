@@ -337,11 +337,20 @@ public final class TrackerStore {
 	 */
 	public List<HudSection> hudSections(int maxLines, boolean withEstimates, WorldInfo at, Collection<String> worldNames,
 			WorldScope.Mode mode) {
+		return hudSections(maxLines, withEstimates, at, worldNames, mode, null);
+	}
+
+	/**
+	 * As {@link #hudSections(int, boolean, WorldInfo, Collection, WorldScope.Mode)} without the items {@code skip}
+	 * accepts (pinned or not), e.g. job entries while the Jobs panel shows them; they take no line of the cap.
+	 */
+	public List<HudSection> hudSections(int maxLines, boolean withEstimates, WorldInfo at, Collection<String> worldNames,
+			WorldScope.Mode mode, Predicate<Trackable> skip) {
 		boolean byWorld = mode != null && mode != WorldScope.Mode.OFF && at != null && at.known();
 		Map<HudSection.Kind, List<TrackerRow>> groups = new java.util.EnumMap<>(HudSection.Kind.class);
 		for (HudSection.Kind k : HudSection.Kind.values()) groups.put(k, new ArrayList<>());
 		for (Trackable t : items.values()) {
-			if (hidden.contains(t.id())) continue;
+			if (hidden.contains(t.id()) || (skip != null && skip.test(t))) continue;
 			TrackerRow r = row(t, withEstimates);
 			if (r.complete()) continue; // finished work never takes HUD space, pinned or not
 			if (pins.contains(t.id())) {

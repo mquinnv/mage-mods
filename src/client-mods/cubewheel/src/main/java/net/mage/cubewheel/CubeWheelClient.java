@@ -19,6 +19,7 @@ import net.mage.cubewheel.mixin.LerpingBossEventAccessor;
 import net.mage.cubewheel.sidebar.SidebarWatcher;
 import net.mage.cubewheel.sva.mc.SvaClient;
 import net.mage.cubewheel.tracker.ContainerHook;
+import net.mage.cubewheel.tracker.JobsPanel;
 import net.mage.cubewheel.tracker.RefreshController;
 import net.mage.cubewheel.tracker.TrackerHud;
 import net.mage.cubewheel.tracker.TrackerScreen;
@@ -110,6 +111,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		PanelsHud.add(EventHud::panel);
 		PanelsHud.add(BoosterWatcher::panel);
 		PanelsHud.add(CooldownWatcher::panel);
+		PanelsHud.add(JobsPanel::panel); // last: in a shared corner it stacks below the small panels
 		PanelsHud.register();
 		SvaClient.init(configDir);
 		Keybinds.register();
@@ -147,6 +149,11 @@ public final class CubeWheelClient implements ClientModInitializer {
 			handleEventsHudKey(mc);
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] event HUD key handler failed", e);
+		}
+		try {
+			handleJobsPanelKey(mc);
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] jobs panel key handler failed", e);
 		}
 		EventHud.tick(mc); // catches and logs its own failures
 		try {
@@ -213,6 +220,13 @@ public final class CubeWheelClient implements ClientModInitializer {
 		CubeWheelConfig cfg = config.current();
 		cfg.events.hudVisible = !cfg.events.hudVisible;
 		saveToggle(mc, cfg.events.hudVisible ? "Event HUD ON" : "Event HUD OFF");
+	}
+
+	private static void handleJobsPanelKey(Minecraft mc) {
+		if (!pressed(Keybinds.jobsPanel)) return;
+		CubeWheelConfig cfg = config.current();
+		cfg.tracker.jobsPanel.enabled = !cfg.tracker.jobsPanel.enabled;
+		saveToggle(mc, cfg.tracker.jobsPanel.enabled ? "Jobs panel ON" : "Jobs panel OFF (jobs back on the tracker HUD)");
 	}
 
 	/** Saves a toggled HUD setting and confirms it on the action bar. */

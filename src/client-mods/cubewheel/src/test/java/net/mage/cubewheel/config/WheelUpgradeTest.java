@@ -80,11 +80,11 @@ class WheelUpgradeTest {
 		Files.writeString(f, new Gson().toJson(Map.of("configVersion", 2, "vaultCount", 5, "wheel", old)));
 		ConfigStore s = new ConfigStore(f);
 		assertNull(s.reload());
-		assertEquals(3, s.current().configVersion);
+		assertEquals(DefaultConfig.CONFIG_VERSION, s.current().configVersion);
 		assertEquals(5, s.current().vaultCount); // other settings kept
 		assertEquals("Crops (Sushi)", s.current().wheel.get(0).label);
 		assertTrue(s.warnings().stream().anyMatch(w -> w.contains("Island (/is)")), s.warnings().toString());
-		assertTrue(Files.readString(f).contains("\"configVersion\": 3"));
+		assertTrue(Files.readString(f).contains("\"configVersion\": " + DefaultConfig.CONFIG_VERSION));
 		// Once: an edit made afterwards (removing Kilton) survives the next load.
 		s.current().wheel.remove(3);
 		s.save();

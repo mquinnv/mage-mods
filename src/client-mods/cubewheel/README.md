@@ -41,6 +41,7 @@ Options > Controls > Key Binds > **CubeWheel**.
 | Refresh trackers | unbound |
 | Toggle event HUD | unbound |
 | Open SVA catalog | unbound |
+| Toggle jobs panel | unbound |
 
 Any key or mouse button can be used for the wheel. Each press does its action once: holding a key
 (so the system repeats it) does not toggle capture or the HUD back and forth.
@@ -155,7 +156,7 @@ the previous config keeps working. Numbers outside their range are clamped.
 
 | Key | Meaning | Default |
 |---|---|---|
-| `configVersion` | File format version, managed by the mod. Loading an older file applies one-time upgrades and writes the file back (3: new wheel layout, see [Default layout](#default-layout)) | `3` |
+| `configVersion` | File format version, managed by the mod. Loading an older file applies one-time upgrades and writes the file back (3: new wheel layout, see [Default layout](#default-layout); 4: the new Jobs panel takes the offset of your lowest top-left panel, see [Jobs panel](#jobs-panel)) | `4` |
 | `enabled` | Master switch | `true` |
 | `serverHosts` | Host suffixes the mod is active on | `["manacube.com", "manacube.net"]` |
 | `vaultCount` | Number of `/pv` entries in a `vaults` node (your rank decides this), 0–54 | `3` |
@@ -172,6 +173,8 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `tracker.local.blocks` / `kills` / `fish` / `shear` | Count own block breaks / kills / catches / shears | `true` each |
 | `tracker.local.areaBreaks` | Also count blocks the server breaks for you right after your own break (Tree Feller, harvester/hammer tools); needs `blocks` | `true` |
 | `tracker.local.worlds` | World names recognised in objectives ("Wolfhaven Resources") | the six Mana worlds |
+| `tracker.jobsPanel.enabled` | Left-hand Jobs panel on/off (saved by the "Toggle jobs panel" key); while on, job entries leave the tracker HUD (see [Jobs panel](#jobs-panel)) | `true` |
+| `tracker.jobsPanel.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `tracker.local.specialWorlds` | Worlds that count as "special worlds (/worlds)" | the six Mana worlds |
 | `events.enabled` | Event panel and alerts (see [Event timer](#event-timer)) | `true` |
 | `events.hudVisible` | Event panel on/off (saved by the "Toggle event HUD" key) | `true` |
@@ -295,7 +298,8 @@ container (never your inventory) and records the entries that show progress. Con
 - **HUD** (top right, below potion icons): pinned entries first, then every other incomplete entry,
   closest to done first, at most `hudMaxLines` lines. Entries at or above `nearThreshold` are yellow,
   estimated ones keep their `~`. Complete entries only show when pinned (green). Hidden entries never
-  show. F1 hides it. In a world, entries for that world move up (see below).
+  show. F1 hides it. In a world, entries for that world move up (see below). While the
+  [Jobs panel](#jobs-panel) is on, job entries (pinned or not) are shown there instead.
 - **Percentage quests** whose objective has one known total are shown in objective units, on the HUD
   and in the picker: `Haven Harvester  6,700 / 10,000 (67%)` for "Progress: 67%" of "Harvest or Mine
   10,000 Wolfhaven Resources". Quests with several objectives keep `67 / 100 (67%)`.
@@ -481,14 +485,42 @@ are ignored.
 
 ## HUD panels
 
-Besides the tracker (top right), CubeWheel draws small panels: events, boosters and item cooldowns, stacked
-in that order. Each has a
+Besides the tracker (top right), CubeWheel draws small panels: events, boosters, item cooldowns and jobs,
+stacked in that order. Each has a
 `position` in the config: a corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) and an `x`/`y`
 offset from it in GUI pixels. Panels in the same corner stack instead of overlapping (in a top corner, the
 first one is `y` pixels from the top and the next one goes below it); a panel in the top-right corner goes
 below the tracker HUD and the potion icons. All default to the top left, which vanilla leaves empty. F1 hides
 them. They are shown only in ManaCube Survival (host and sidebar gate, see [Server gate](#server-gate)).
 All of them are passive: they read chat, the clock and your own clicks, and never send or click anything.
+
+### Jobs panel
+
+A **Jobs** panel (top left, below the other panels) lists every tracked job listing, never capped by
+`hudMaxLines`, grouped by industry (Farming, Hunting, Fishing, Mining, Woodcutting, Excavation, Brewing,
+Enchanting; others after, alphabetically) and within one by tier (Beginner, Experienced, Heavy):
+
+```
+Jobs · Golden Crate 4/5
+⚒ Farming
+  Beginner · Harvest Wheat  64 / 64 (100%) · 12m · hand in
+  Heavy · Harvest Cherry Logs  ~3,240 / 4,773 (68%) · 12m
+⚒ Hunting
+  Beginner · Slay Tigers in Tangleroots  16 / 64 (25%) · 3m
+```
+
+- The `GOLDEN CRATE` entry from the main jobs menu is shown in the title.
+- A listing read complete stays, green, with `· hand in` (it still has to be claimed); it leaves once the
+  industry's page no longer offers it.
+- Live estimates keep their `~` and `✓?` (yellow) as on the tracker HUD.
+- With `tracker.worldFilter` on (`sort`/`hide`) and the world known, listings naming the current world are
+  white, those naming no world light grey and those naming another world dark grey (`hide` does not drop
+  them here).
+- Entries hidden in the picker (right-click) stay hidden here too.
+- While the panel is on, the tracker HUD shows no job entries, pinned or not; turn it off (`tracker.jobsPanel.enabled`
+  or the "Toggle jobs panel" key) to get them back there.
+- Loading a config older than version 4 gives the panel the offset of your lowest top-left panel, so with
+  panels moved down (say `"y": 80`) it stacks below them instead of above.
 
 ### Event timer
 

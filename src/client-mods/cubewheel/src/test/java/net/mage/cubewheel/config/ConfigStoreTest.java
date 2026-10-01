@@ -264,4 +264,29 @@ class ConfigStoreTest {
 		assertNull(s.reload());
 		assertEquals("sort", s.current().tracker.worldFilter);
 	}
+
+	@Test void jobsPanelDefaultsAndStacksBelowYourTopLeftPanelsOnUpgrade() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertTrue(s.current().tracker.jobsPanel.enabled);
+		assertEquals("top_left", s.current().tracker.jobsPanel.position.corner);
+		assertEquals(4, s.current().tracker.jobsPanel.position.y);
+		// A version 3 file whose left panels sit 80 px down: the new panel takes that offset (it stacks below them).
+		Files.writeString(f, "{\"configVersion\": 3, \"events\": {\"position\": {\"corner\": \"top_left\", \"x\": 6, \"y\": 80}},"
+				+ " \"boosters\": {\"position\": {\"corner\": \"top_right\", \"x\": 4, \"y\": 200}}}");
+		assertNull(s.reload());
+		assertEquals(DefaultConfig.CONFIG_VERSION, s.current().configVersion);
+		CubeWheelConfig.Position p = s.current().tracker.jobsPanel.position;
+		assertEquals("top_left", p.corner);
+		assertEquals(6, p.x);
+		assertEquals(80, p.y);
+		// Once: a later edit survives, and the toggle is kept.
+		Files.writeString(f, "{\"configVersion\": " + DefaultConfig.CONFIG_VERSION + ", \"events\": {\"position\": {\"y\": 80}},"
+				+ " \"tracker\": {\"jobsPanel\": {\"enabled\": false, \"position\": {\"corner\": \"bottom_left\", \"y\": 10}}}}");
+		assertNull(s.reload());
+		assertFalse(s.current().tracker.jobsPanel.enabled);
+		assertEquals("bottom_left", s.current().tracker.jobsPanel.position.corner);
+		assertEquals(10, s.current().tracker.jobsPanel.position.y);
+	}
 }

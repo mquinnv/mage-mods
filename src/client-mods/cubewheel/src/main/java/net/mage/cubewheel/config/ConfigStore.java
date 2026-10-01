@@ -104,7 +104,8 @@ public final class ConfigStore {
 	 * One-time upgrades of files older than {@link DefaultConfig#CONFIG_VERSION}; returns true if the file
 	 * should be written back. Version 2: an untouched old HUD default (6, later 8) becomes 10. Version 3: the
 	 * wheel is replaced by the new default layout; leaves you added are kept under More › Custom (reported in
-	 * {@code notes}, which end up in {@link #warnings()} and the log).
+	 * {@code notes}, which end up in {@link #warnings()} and the log). Version 4: the new Jobs panel takes the
+	 * offset of your top-left panels (the lowest one), so it stacks below them instead of sitting above them.
 	 */
 	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
@@ -119,8 +120,27 @@ public final class ConfigStore {
 					: "wheel upgraded to the new default layout; your entries were moved to " + DefaultConfig.MORE + " › "
 							+ WheelUpgrade.CUSTOM + ": " + String.join(", ", r.moved()));
 		}
+		if (c.configVersion < 4 && c.tracker != null) {
+			if (c.tracker.jobsPanel == null) c.tracker.jobsPanel = new CubeWheelConfig.JobsPanel();
+			c.tracker.jobsPanel.position = jobsPanelPosition(c);
+		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;
+	}
+
+	/** The top-left offset of the lowest existing top-left panel (events, boosters, cooldowns), else the default. */
+	static CubeWheelConfig.Position jobsPanelPosition(CubeWheelConfig c) {
+		CubeWheelConfig.Position best = null;
+		List<CubeWheelConfig.Position> existing = new ArrayList<>();
+		if (c.events != null) existing.add(c.events.position);
+		if (c.boosters != null) existing.add(c.boosters.position);
+		if (c.cooldowns != null) existing.add(c.cooldowns.position);
+		for (CubeWheelConfig.Position p : existing) {
+			if (p == null || HudLayout.Corner.parse(p.corner) != HudLayout.Corner.TOP_LEFT) continue;
+			if (best == null || p.y > best.y) best = p;
+		}
+		return best == null ? DefaultConfig.jobsPanelPosition()
+				: new CubeWheelConfig.Position(HudLayout.Corner.TOP_LEFT.id(), best.x, best.y);
 	}
 
 	public void save() throws IOException {
@@ -145,6 +165,8 @@ public final class ConfigStore {
 		c.tracker.worldFilter = net.mage.cubewheel.tracker.local.WorldScope.Mode.parse(c.tracker.worldFilter).name()
 				.toLowerCase(java.util.Locale.ROOT);
 		if (c.tracker.local == null) c.tracker.local = DefaultConfig.local();
+		if (c.tracker.jobsPanel == null) c.tracker.jobsPanel = new CubeWheelConfig.JobsPanel();
+		c.tracker.jobsPanel.position = normalizePosition(c.tracker.jobsPanel.position, DefaultConfig.jobsPanelPosition());
 		c.tracker.local.worlds = c.tracker.local.worlds == null ? DefaultConfig.manaWorlds() : normalizeWords(c.tracker.local.worlds);
 		c.tracker.local.specialWorlds = c.tracker.local.specialWorlds == null
 				? DefaultConfig.manaWorlds() : normalizeWords(c.tracker.local.specialWorlds);

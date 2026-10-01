@@ -14,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 3;
+	public static final int CONFIG_VERSION = 4;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 
@@ -228,6 +228,11 @@ public final class DefaultConfig {
 	}
 
 	public static CubeWheelConfig.Position eventsPosition() {
+		return new CubeWheelConfig.Position("top_left", 4, 4);
+	}
+
+	/** Registered after the other panels, so in the same corner it stacks below them. */
+	public static CubeWheelConfig.Position jobsPanelPosition() {
 		return new CubeWheelConfig.Position("top_left", 4, 4);
 	}
 

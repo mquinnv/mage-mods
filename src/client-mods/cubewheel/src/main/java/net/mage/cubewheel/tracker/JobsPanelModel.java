@@ -1,0 +1,144 @@
+package net.mage.cubewheel.tracker;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import net.mage.cubewheel.tracker.local.ObjectiveInfo;
+import net.mage.cubewheel.tracker.local.WorldScope;
+
+/**
+ * The left-hand "Jobs" panel: every tracked "jobs" entry, job listings grouped by industry (fixed order, unknown
+ * industries after, alphabetically) and within one by tier (Beginner, Experienced, Heavy). Never capped. Finished
+ * listings stay, marked " · hand in" (they still have to be claimed). The GOLDEN CRATE entry becomes the panel's
+ * title ("Jobs · Golden Crate 4/5"). Hidden entries stay hidden. Pure: no Minecraft/Fabric imports.
+ */
+public final class JobsPanelModel {
+	public static final String SOURCE = "jobs";
+	public static final String TITLE = "Jobs";
+	/** Industries in display order; others follow alphabetically, listings without an industry last. */
+	static final List<String> INDUSTRY_ORDER =
+			List.of("Farming", "Hunting", "Fishing", "Mining", "Woodcutting", "Excavation", "Brewing", "Enchanting");
+	static final List<String> TIERS = List.of("Beginner", "Experienced", "Heavy");
+	/** The group of jobs entries that are not listings (and listings read without their industry). */
+	static final String OTHER = "Other";
+	static final String INDUSTRY_MARK = "⚒ ";
+	static final String INDENT = "  ";
+	static final String HAND_IN = " · hand in";
+
+	/** "Farming Heavy · Harvest Cherry Logs" (see {@link ContainerScanner#jobListingName}). */
+	private static final Pattern LISTING =
+			Pattern.compile("^(?:(.+?) )?(Beginner|Experienced|Heavy) · (.+)$", Pattern.CASE_INSENSITIVE);
+	private static final Pattern CRATE = Pattern.compile("(?i)^golden crate$");
+
+	/** How a line is drawn; the adapter picks the colours. */
+	public enum Tone {
+		/** An industry heading. */
+		INDUSTRY,
+		/** An entry naming the world you are in. */
+		CURRENT,
+		/** An entry naming no world (or the world is unknown). */
+		NEUTRAL,
+		/** An entry naming another world. */
+		OTHER_WORLD,
+		/** An estimate at its target ("✓?"), not confirmed by a menu read. */
+		AT_CAP,
+		/** Read complete: hand it in. */
+		DONE
+	}
+
+	public record Line(String text, Tone tone) {}
+
+	/** The panel's title (with the crate when known) and its lines; empty lines = nothing to show. */
+	public record Model(String title, List<Line> lines) {}
+
+	private JobsPanelModel() {}
+
+	/** True for entries that belong in this panel (and leave the tracker HUD while it is on). */
+	public static boolean isJob(Trackable t) {
+		return t != null && SOURCE.equals(t.source());
+	}
+
+	/**
+	 * Builds the panel from {@code rows} (all tracked rows, any source). {@code hidden} says which ids the picker
+	 * hid, {@code objectives} gives an entry's stored objective (may return null) and {@code relevance} how an
+	 * entry relates to the current world.
+	 */
+	public static Model build(List<TrackerRow> rows, Predicate<String> hidden, Function<String, ObjectiveInfo> objectives,
+			Function<Trackable, WorldScope.Relevance> relevance, long now) {
+		String crate = null;
+		Map<String, List<Item>> groups = new LinkedHashMap<>();
+		for (TrackerRow r : rows) {
+			Trackable t = r.item();
+			if (!isJob(t) || t.name() == null || (hidden != null && hidden.test(t.id()))) continue;
+			if (CRATE.matcher(t.name().trim()).matches()) {
+				crate = "Golden Crate " + count(t.current()) + "/" + count(t.max());
+				continue;
+			}
+			ObjectiveInfo info = objectives == null ? null : objectives.apply(t.id());
+			String title = EntryLabel.of(t.name(), info).title();
+			Matcher m = LISTING.matcher(title);
+			String industry = OTHER;
+			int tier = TIERS.size();
+			String text = title;
+			if (m.matches()) {
+				if (m.group(1) != null) industry = m.group(1).trim();
+				tier = tierIndex(m.group(2));
+				text = TIERS.get(tier) + " · " + m.group(3).trim();
+			}
+			WorldScope.Relevance rel = relevance == null ? WorldScope.Relevance.NEUTRAL : relevance.apply(t);
+			groups.computeIfAbsent(industry, k -> new ArrayList<>()).add(new Item(r, tier, text, rel));
+		}
+		List<String> industries = new ArrayList<>(groups.keySet());
+		industries.sort(Comparator.comparingInt(JobsPanelModel::industryRank).thenComparing(s -> s.toLowerCase(Locale.ROOT)));
+		List<Line> lines = new ArrayList<>();
+		for (String industry : industries) {
+			List<Item> items = groups.get(industry);
+			items.sort(Comparator.comparingInt(Item::tier).thenComparing(Item::text));
+			lines.add(new Line(INDUSTRY_MARK + industry, Tone.INDUSTRY));
+			for (Item it : items) {
+				String text = INDENT + TrackerFormat.line(it.row(), it.text(), now) + (it.row().complete() ? HAND_IN : "");
+				lines.add(new Line(text, tone(it)));
+			}
+		}
+		return new Model(crate == null ? TITLE : TITLE + " · " + crate, List.copyOf(lines));
+	}
+
+	private record Item(TrackerRow row, int tier, String text, WorldScope.Relevance rel) {}
+
+	private static Tone tone(Item it) {
+		if (it.row().complete()) return Tone.DONE;
+		if (it.row().atCap()) return Tone.AT_CAP;
+		return switch (it.rel()) {
+			case CURRENT -> Tone.CURRENT;
+			case OTHER -> Tone.OTHER_WORLD;
+			default -> Tone.NEUTRAL;
+		};
+	}
+
+	private static int tierIndex(String tier) {
+		for (int i = 0; i < TIERS.size(); i++) {
+			if (TIERS.get(i).equalsIgnoreCase(tier)) return i;
+		}
+		return TIERS.size();
+	}
+
+	/** Known industries by their place, then unknown ones, then {@link #OTHER}. */
+	private static int industryRank(String industry) {
+		if (OTHER.equals(industry)) return Integer.MAX_VALUE;
+		for (int i = 0; i < INDUSTRY_ORDER.size(); i++) {
+			if (INDUSTRY_ORDER.get(i).equalsIgnoreCase(industry)) return i;
+		}
+		return INDUSTRY_ORDER.size();
+	}
+
+	private static String count(double v) {
+		return v == Math.rint(v) ? Long.toString(Math.round(v)) : String.format(Locale.ROOT, "%.1f", v);
+	}
+}

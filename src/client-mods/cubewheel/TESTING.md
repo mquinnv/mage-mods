@@ -119,6 +119,17 @@ Bind "Refresh trackers" under Options > Controls > Key Binds > CubeWheel first.
 - [ ] The "FARMING INDUSTRY" items (level, streak, leaderboard "#1 … - 4,437 Jobs"), "Go Back" and "REFRESH JOB LISTINGS" never become entries.
 - [ ] Reroll the listings ("REFRESH JOB LISTINGS", clicked by you) or complete one, then reopen the page: the old listings of that industry disappear from the picker unless pinned; other industries' listings and "GOLDEN CRATE" from the main jobs menu stay.
 
+## Jobs panel
+
+- [ ] With listings of several industries read: a "Jobs" panel at the top left, below the Events/Boosters/Cooldowns panels (none overlap; with their `y` set to 80, it stays below them), lists every listing grouped "⚒ Farming", "⚒ Hunting", … with Beginner, Experienced, Heavy in that order, even with more than `hudMaxLines` listings.
+- [ ] Title reads "Jobs · Golden Crate 4/5" after the main `/jobs` menu was read.
+- [ ] The tracker HUD (top right) shows no job entries, also pinned ones; "Toggle jobs panel" hides the panel ("Jobs panel OFF …" on the action bar) and the job entries are back on the tracker HUD; the setting survives a restart.
+- [ ] A finished listing stays green with "· hand in" until the industry page no longer offers it.
+- [ ] Breaking cherry logs moves "Heavy · Harvest Cherry Logs" live with "~".
+- [ ] In Tangleroots, "Slay Tigers in Tangleroots" is white, "… in Sandara" dark grey, unscoped ones light grey.
+- [ ] Hide a listing in the picker (right-click): it leaves the panel.
+- [ ] An existing config with `"configVersion": 3` and events at `"y": 80`: after loading, `tracker.jobsPanel.position` is `{"corner": "top_left", "x": 4, "y": 80}` and `configVersion` is 4.
+
 ## Live estimates (local counting)
 
 Open `/pquests`, `/prestige` (rank objectives) and `/challenges` once so the objectives are known, and pin the entries below. Turn capture on to see `local`/`world`/`estimate` lines while testing.

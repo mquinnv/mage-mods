@@ -16,7 +16,8 @@ import net.minecraft.resources.Identifier;
 
 /**
  * Top-right overlay: pinned trackables, then every other incomplete one closest to done first (hidden
- * ones never), capped at {@code tracker.hudMaxLines}. Entries at or above {@code nearThreshold} are yellow.
+ * ones never), capped at {@code tracker.hudMaxLines}. Entries at or above {@code nearThreshold} are yellow. Job
+ * entries are left out while the Jobs panel ({@link JobsPanel}) shows them.
  */
 public final class TrackerHud implements HudElement {
 	private static final int MARGIN = 4;
@@ -69,7 +70,8 @@ public final class TrackerHud implements HudElement {
 		if (!cfg.tracker.hudVisible || !ServerGate.active(cfg)) return;
 		List<TrackerStore.HudSection> sections = store.hudSections(cfg.tracker.hudMaxLines, cfg.tracker.local.enabled,
 				net.mage.cubewheel.tracker.local.mc.LocalSignals.currentWorld(), cfg.tracker.local.worlds,
-				net.mage.cubewheel.tracker.local.WorldScope.Mode.parse(cfg.tracker.worldFilter));
+				net.mage.cubewheel.tracker.local.WorldScope.Mode.parse(cfg.tracker.worldFilter),
+				cfg.tracker.jobsPanel.enabled ? JobsPanelModel::isJob : null); // the Jobs panel shows those
 		if (sections.isEmpty()) return;
 		// A labelled divider before each group, but only when there is more than one group to tell apart.
 		boolean dividers = sections.size() > 1;
