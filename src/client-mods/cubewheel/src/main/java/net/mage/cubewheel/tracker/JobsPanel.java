@@ -8,6 +8,7 @@ import net.mage.cubewheel.hud.Panel;
 import net.mage.cubewheel.tracker.local.WorldInfo;
 import net.mage.cubewheel.tracker.local.WorldScope;
 import net.mage.cubewheel.tracker.local.mc.LocalSignals;
+import net.mage.cubewheel.wheel.Icons;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +42,15 @@ public final class JobsPanel {
 			// A fish target takes its rarity colour (as the server draws it); the count keeps the progress colour.
 			int progress = color(l.tone());
 			int text = l.rarity() != null && l.tone() != JobsPanelModel.Tone.DONE ? l.rarity().argb : progress;
+			if (l.tone() == JobsPanelModel.Tone.INDUSTRY) {
+				// An industry heading: its tool as the icon ("Farming" with a hoe), else the generic ⚒ mark.
+				String name = JobsPanelModel.industryName(l.text());
+				String icon = JobsPanelModel.industryIcon(name);
+				if (icon != null) {
+					lines.add(new Panel.Line(l.tag(), 0, name, text, l.right(), progress).withIcon(Icons.stack(icon)));
+					continue;
+				}
+			}
 			lines.add(new Panel.Line(l.tag(), worldTagColor(l.tag()), l.text(), text, l.right(), progress)
 					.withAccent(accent(l.activity())).withProgress(l.progress()));
 		}

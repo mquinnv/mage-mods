@@ -30,6 +30,27 @@ public final class JobsPanelModel {
 	static final String OTHER = "Other";
 	static final String INDUSTRY_MARK = "⚒ ";
 
+	/** The item drawn before an industry heading instead of {@link #INDUSTRY_MARK}; null for unknown industries. */
+	public static String industryIcon(String industry) {
+		if (industry == null) return null;
+		return switch (industry.toLowerCase(java.util.Locale.ROOT)) {
+			case "farming" -> "minecraft:iron_hoe";
+			case "fishing" -> "minecraft:fishing_rod";
+			case "hunting" -> "minecraft:bow";
+			case "mining" -> "minecraft:iron_pickaxe";
+			case "woodcutting" -> "minecraft:iron_axe";
+			case "excavation" -> "minecraft:iron_shovel";
+			case "brewing" -> "minecraft:brewing_stand";
+			case "enchanting" -> "minecraft:enchanting_table";
+			default -> null;
+		};
+	}
+
+	/** "⚒ Farming" -> "Farming"; other text unchanged. */
+	public static String industryName(String headingText) {
+		return headingText != null && headingText.startsWith(INDUSTRY_MARK) ? headingText.substring(INDUSTRY_MARK.length()) : headingText;
+	}
+
 	/** "Farming Heavy · Harvest Cherry Logs" (see {@link ContainerScanner#jobListingName}). */
 	private static final Pattern LISTING =
 			Pattern.compile("^(?:(.+?) )?(Beginner|Experienced|Heavy) · (.+)$", Pattern.CASE_INSENSITIVE);

@@ -112,6 +112,15 @@ class JobsPanelModelTest {
 				"Polished Blacks… | 12.5k/250k"), texts(m));
 	}
 
+	@Test void industryHeadingsHaveTheirTool() {
+		assertEquals("minecraft:iron_hoe", JobsPanelModel.industryIcon("Farming"));
+		assertEquals("minecraft:fishing_rod", JobsPanelModel.industryIcon("Fishing"));
+		assertEquals("minecraft:bow", JobsPanelModel.industryIcon("Hunting"));
+		assertEquals("minecraft:iron_pickaxe", JobsPanelModel.industryIcon("Mining"));
+		assertEquals(null, JobsPanelModel.industryIcon("Other"));
+		assertEquals("Farming", JobsPanelModel.industryName("⚒ Farming"));
+	}
+
 	@Test void nonListingJobEntriesGoToOtherLast() {
 		TrackerStore s = new TrackerStore(dir.resolve("o.json"));
 		s.update("jobs", "Heavy · Harvest Cherry Logs", new ProgressExtractor.Progress(1, 4), 0);
