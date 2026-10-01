@@ -33,12 +33,24 @@ public final class JobsPanel {
 		List<String> worlds = cfg.tracker.local.worlds;
 		JobsPanelModel.Model m = JobsPanelModel.build(store.rows(cfg.tracker.local.enabled), store::isHidden,
 				id -> store.objective(id).orElse(null),
-				t -> WorldScope.relevance(WorldScope.of(t.name(), store.objective(t.id()).orElse(null), worlds), at), now);
+				t -> WorldScope.relevance(WorldScope.of(t.name(), store.objective(t.id()).orElse(null), worlds), at), worlds, now);
 		if (m.lines().isEmpty()) return Optional.empty();
 		List<Panel.Line> lines = new ArrayList<>(m.lines().size());
-		for (JobsPanelModel.Line l : m.lines()) lines.add(new Panel.Line(l.text(), color(l.tone())));
+		for (JobsPanelModel.Line l : m.lines()) {
+			lines.add(new Panel.Line(l.tag(), tierColor(l.tag()), l.text(), color(l.tone()), l.right()));
+		}
 		CubeWheelConfig.Position p = cfg.tracker.jobsPanel.position;
 		return Optional.of(new Panel(m.title(), lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
+	}
+
+	/** Tier letters in their own colours: Beginner green, Experienced blue, Heavy red. */
+	private static int tierColor(String tag) {
+		return switch (tag) {
+			case "B" -> 0xFF55FF55;
+			case "E" -> 0xFF55AAFF;
+			case "H" -> 0xFFFF5555;
+			default -> Panel.GRAY;
+		};
 	}
 
 	private static int color(JobsPanelModel.Tone tone) {

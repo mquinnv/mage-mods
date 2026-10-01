@@ -12,5 +12,13 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 	public static final int GRAY = 0xFFAAAAAA;
 	public static final int GREEN = 0xFF55FF55;
 
-	public record Line(String text, int color) {}
+	/**
+	 * A row: an optional short {@code tag} in its own coloured column, the {@code text}, and an optional
+	 * {@code right} part aligned to the panel's right edge (so counts line up in a proportional font).
+	 */
+	public record Line(String tag, int tagColor, String text, int color, String right) {
+		public Line(String text, int color) {
+			this("", 0, text, color, "");
+		}
+	}
 }

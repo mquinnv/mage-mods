@@ -29,8 +29,6 @@ public final class JobsPanelModel {
 	/** The group of jobs entries that are not listings (and listings read without their industry). */
 	static final String OTHER = "Other";
 	static final String INDUSTRY_MARK = "⚒ ";
-	static final String INDENT = "  ";
-	static final String HAND_IN = " · hand in";
 
 	/** "Farming Heavy · Harvest Cherry Logs" (see {@link ContainerScanner#jobListingName}). */
 	private static final Pattern LISTING =
@@ -53,7 +51,11 @@ public final class JobsPanelModel {
 		DONE
 	}
 
-	public record Line(String text, Tone tone) {}
+	/**
+	 * One panel row in three columns: {@code tag} (tier letter: B, E, H), {@code text} (an industry heading, or the
+	 * target without verb or world) and {@code right} (a short count, right-aligned). Unused columns are "".
+	 */
+	public record Line(String tag, String text, String right, Tone tone) {}
 
 	/** The panel's title (with the crate when known) and its lines; empty lines = nothing to show. */
 	public record Model(String title, List<Line> lines) {}
@@ -71,14 +73,14 @@ public final class JobsPanelModel {
 	 * entry relates to the current world.
 	 */
 	public static Model build(List<TrackerRow> rows, Predicate<String> hidden, Function<String, ObjectiveInfo> objectives,
-			Function<Trackable, WorldScope.Relevance> relevance, long now) {
+			Function<Trackable, WorldScope.Relevance> relevance, java.util.Collection<String> worldNames, long now) {
 		String crate = null;
 		Map<String, List<Item>> groups = new LinkedHashMap<>();
 		for (TrackerRow r : rows) {
 			Trackable t = r.item();
 			if (!isJob(t) || t.name() == null || (hidden != null && hidden.test(t.id()))) continue;
 			if (CRATE.matcher(t.name().trim()).matches()) {
-				crate = "Golden Crate " + count(t.current()) + "/" + count(t.max());
+				crate = "Crate " + count(t.current()) + "/" + count(t.max());
 				continue;
 			}
 			ObjectiveInfo info = objectives == null ? null : objectives.apply(t.id());
@@ -90,7 +92,7 @@ public final class JobsPanelModel {
 			if (m.matches()) {
 				if (m.group(1) != null) industry = m.group(1).trim();
 				tier = tierIndex(m.group(2));
-				text = TIERS.get(tier) + " · " + m.group(3).trim();
+				text = m.group(3).trim();
 			}
 			WorldScope.Relevance rel = relevance == null ? WorldScope.Relevance.NEUTRAL : relevance.apply(t);
 			groups.computeIfAbsent(industry, k -> new ArrayList<>()).add(new Item(r, tier, text, rel));
@@ -101,10 +103,10 @@ public final class JobsPanelModel {
 		for (String industry : industries) {
 			List<Item> items = groups.get(industry);
 			items.sort(Comparator.comparingInt(Item::tier).thenComparing(Item::text));
-			lines.add(new Line(INDUSTRY_MARK + industry, Tone.INDUSTRY));
+			lines.add(new Line("", INDUSTRY_MARK + industry, "", Tone.INDUSTRY));
 			for (Item it : items) {
-				String text = INDENT + TrackerFormat.line(it.row(), it.text(), now) + (it.row().complete() ? HAND_IN : "");
-				lines.add(new Line(text, tone(it)));
+				String tag = it.tier() < TIERS.size() ? TIERS.get(it.tier()).substring(0, 1) : "";
+				lines.add(new Line(tag, CompactJob.target(it.text(), worldNames), CompactJob.count(it.row(), now), tone(it)));
 			}
 		}
 		return new Model(crate == null ? TITLE : TITLE + " · " + crate, List.copyOf(lines));

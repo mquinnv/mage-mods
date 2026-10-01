@@ -15,7 +15,10 @@ import net.mage.cubewheel.tracker.local.WorldScope.Mode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** The left-hand Jobs panel: every job listing, grouped by industry and tier, crate in the title. */
+/**
+ * The left-hand Jobs panel: every job listing, grouped by industry, in a compact three-column form — tier
+ * letter, target (no verb, no world: colour shows the world), short count — with the crate in the title.
+ */
 class JobsPanelModelTest {
 	@TempDir Path dir;
 	static final long NOW = 10 * 60_000L;
@@ -36,44 +39,48 @@ class JobsPanelModelTest {
 		return s;
 	}
 
-	static Model build(TrackerStore s, WorldInfo at) {
+	static Model build(TrackerStore s, WorldInfo at, long now) {
 		return JobsPanelModel.build(s.rows(true), s::isHidden, id -> s.objective(id).orElse(null),
 				t -> WorldScope.relevance(WorldScope.of(t.name(), s.objective(t.id()).orElse(null),
-						TrackerStoreWorldFilterTest.WORLDS), at), NOW);
+						TrackerStoreWorldFilterTest.WORLDS), at), TrackerStoreWorldFilterTest.WORLDS, now);
 	}
 
+	static Model build(TrackerStore s, WorldInfo at) {
+		return build(s, at, NOW);
+	}
+
+	/** "tag text | right", trimmed, for compact assertions. */
 	static List<String> texts(Model m) {
-		return m.lines().stream().map(Line::text).toList();
+		return m.lines().stream().map(l -> (l.tag() + " " + l.text() + " | " + l.right()).trim()).toList();
 	}
 
-	@Test void groupsByIndustryInFixedOrderThenTiersUncapped() {
+	@Test void groupsByIndustryInFixedOrderThenTiersInCompactColumns() {
 		Model m = build(store(), WorldInfo.UNKNOWN);
-		assertEquals("Jobs · Golden Crate 4/5", m.title());
+		assertEquals("Jobs · Crate 4/5", m.title());
 		assertEquals(List.of(
-				"⚒ Farming",
-				"  Beginner · Harvest Wheat  64 / 64 (100%) · 10m · hand in",
-				"  Experienced · Harvest or Mine Wolfhaven Resources  1 / 10 (10%) · 10m",
-				"  Heavy · Harvest Cherry Logs  3,127 / 4,773 (66%) · 10m",
-				"⚒ Hunting",
-				"  Beginner · Slay Tigers in Tangleroots  16 / 64 (25%) · 10m",
-				"  Experienced · Slay Rattle Snakes in Sandara  5 / 58 (9%) · 10m",
-				"⚒ Mining",
-				"  Heavy · Mine Deepslate  10 / 100 (10%) · 10m",
-				"⚒ Cooking",
-				"  Heavy · Cook Fish  1 / 2 (50%) · 10m"), texts(m));
-		assertEquals(Tone.DONE, m.lines().get(1).tone());
+				"⚒ Farming |",
+				"B Wheat | 64/64 ✓",
+				"E Resources | 1/10",
+				"H Cherry Logs | 3.1k/4.8k",
+				"⚒ Hunting |",
+				"B Tigers | 16/64",
+				"E Rattle Snakes | 5/58",
+				"⚒ Mining |",
+				"H Deepslate | 10/100",
+				"⚒ Cooking |",
+				"H Fish | 1/2"), texts(m));
 		assertEquals(Tone.INDUSTRY, m.lines().get(0).tone());
-		assertEquals(Tone.NEUTRAL, m.lines().get(2).tone());
+		assertEquals(Tone.DONE, m.lines().get(1).tone());
+		assertEquals(Tone.NEUTRAL, m.lines().get(3).tone());
 	}
 
 	@Test void currentWorldIsHighlightedAndOtherWorldsDimmed() {
 		Model m = build(store(), TrackerStoreWorldFilterTest.TANGLEROOT);
 		List<String> t = texts(m);
-		assertEquals(Tone.CURRENT, m.lines().get(t.indexOf("  Beginner · Slay Tigers in Tangleroots  16 / 64 (25%) · 10m")).tone());
-		assertEquals(Tone.OTHER_WORLD, m.lines().get(t.indexOf("  Experienced · Slay Rattle Snakes in Sandara  5 / 58 (9%) · 10m")).tone());
-		assertEquals(Tone.OTHER_WORLD,
-				m.lines().get(t.indexOf("  Experienced · Harvest or Mine Wolfhaven Resources  1 / 10 (10%) · 10m")).tone());
-		assertEquals(Tone.NEUTRAL, m.lines().get(t.indexOf("  Heavy · Mine Deepslate  10 / 100 (10%) · 10m")).tone());
+		assertEquals(Tone.CURRENT, m.lines().get(t.indexOf("B Tigers | 16/64")).tone());
+		assertEquals(Tone.OTHER_WORLD, m.lines().get(t.indexOf("E Rattle Snakes | 5/58")).tone());
+		assertEquals(Tone.OTHER_WORLD, m.lines().get(t.indexOf("E Resources | 1/10")).tone());
+		assertEquals(Tone.NEUTRAL, m.lines().get(t.indexOf("H Deepslate | 10/100")).tone());
 	}
 
 	@Test void hiddenEntriesAndTheCrateStayHidden() {
@@ -82,18 +89,27 @@ class JobsPanelModelTest {
 		s.toggleHidden("jobs:GOLDEN CRATE");
 		Model m = build(s, WorldInfo.UNKNOWN);
 		assertEquals("Jobs", m.title());
-		assertFalse(texts(m).contains("⚒ Mining"));
+		assertFalse(texts(m).contains("⚒ Mining |"));
 		assertTrue(texts(m).stream().noneMatch(l -> l.contains("Deepslate")));
 	}
 
 	@Test void estimatesShowTildeAndAtCapMark() {
 		TrackerStore s = store();
-		String id = "jobs:Cooking Heavy · Cook Fish";
-		s.addEstimate(id, 1, NOW);
+		s.addEstimate("jobs:Cooking Heavy · Cook Fish", 1, NOW);
 		Model m = build(s, WorldInfo.UNKNOWN);
-		Line cook = m.lines().get(texts(m).indexOf("⚒ Cooking") + 1);
-		assertEquals("  Heavy · Cook Fish  ~2 / 2 (99%) ✓? · 10m", cook.text());
+		Line cook = m.lines().get(texts(m).indexOf("⚒ Cooking |") + 1);
+		assertEquals("H", cook.tag());
+		assertEquals("~2/2 ✓?", cook.right());
 		assertEquals(Tone.AT_CAP, cook.tone());
+	}
+
+	@Test void longTargetsAreCutAndOldReadsShowTheirAge() {
+		TrackerStore s = new TrackerStore(dir.resolve("l.json"));
+		s.update("jobs", "Fishing Experienced · Catch   YellowSeaShroom while fishing", new ProgressExtractor.Progress(0, 9), 0);
+		s.update("jobs", "Mining Heavy · Mine Polished Blackstone Bricks", new ProgressExtractor.Progress(12_500, 250_000), 0);
+		Model m = build(s, WorldInfo.UNKNOWN, 3 * 3_600_000L);
+		assertEquals(List.of("⚒ Fishing |", "E YellowSeaShroom | 0/9 ·3h", "⚒ Mining |",
+				"H Polished Blacks… | 12.5k/250k ·3h"), texts(m));
 	}
 
 	@Test void nonListingJobEntriesGoToOtherLast() {
@@ -103,8 +119,7 @@ class JobsPanelModelTest {
 		s.update("jobs", "Fishing Beginner · Catch Cod", new ProgressExtractor.Progress(1, 2), 0);
 		Model m = build(s, WorldInfo.UNKNOWN);
 		assertEquals("Jobs", m.title());
-		assertEquals(List.of("⚒ Fishing", "  Beginner · Catch Cod  1 / 2 (50%) · 10m",
-				"⚒ Other", "  Heavy · Harvest Cherry Logs  1 / 4 (25%) · 10m", "  Weekly Bonus  1 / 3 (33%) · 10m"), texts(m));
+		assertEquals(List.of("⚒ Fishing |", "B Cod | 1/2", "⚒ Other |", "H Cherry Logs | 1/4", "Weekly Bonus | 1/3"), texts(m));
 	}
 
 	@Test void noJobsMeansNoLines() {
