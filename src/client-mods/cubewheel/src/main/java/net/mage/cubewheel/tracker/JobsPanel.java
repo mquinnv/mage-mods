@@ -42,7 +42,7 @@ public final class JobsPanel {
 			int progress = color(l.tone());
 			int text = l.rarity() != null && l.tone() != JobsPanelModel.Tone.DONE ? l.rarity().argb : progress;
 			lines.add(new Panel.Line(l.tag(), worldTagColor(l.tag()), l.text(), text, l.right(), progress)
-					.withAccent(accent(l.activity())));
+					.withAccent(accent(l.activity())).withProgress(l.progress()));
 		}
 		CubeWheelConfig.Position p = cfg.tracker.jobsPanel.position;
 		return Optional.of(new Panel(m.title(), lines, HudLayout.Corner.parse(p.corner), p.x, p.y));

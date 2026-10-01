@@ -29,6 +29,10 @@ public final class PanelsHud implements HudElement {
 	private static final int COLUMN_GAP = 4;
 	/** An item icon before a line's text: drawn at half size (8 px) plus a gap. */
 	private static final int ICON_W = 10;
+	/** Progress meter under a row: empty track, filling, full. */
+	private static final int METER_TRACK = 0x40FFFFFF;
+	private static final int METER_FILL = 0xFF4FA3FF;
+	private static final int METER_DONE = 0xFF55FF55;
 
 	/** A panel source, given the current time in epoch ms. */
 	public interface Source extends Function<Long, Optional<Panel>> {}
@@ -122,6 +126,14 @@ public final class PanelsHud implements HudElement {
 			if (l.accent() != 0) g.fill(box.x(), ly - 1, box.x() + PAD, ly + lh - 1, l.accent());
 			if (!l.tag().isEmpty()) g.text(font, l.tag(), x, ly, l.tagColor());
 			int tx = heading ? x : x + tagW;
+			if (l.progress() >= 0) {
+				// A 1 px meter in the gap under the row, across the text and count columns.
+				int my = ly + font.lineHeight;
+				int end = x + w;
+				int fill = tx + (int) Math.round((end - tx) * Math.min(1, l.progress()));
+				g.fill(tx, my, end, my + 1, METER_TRACK);
+				if (fill > tx) g.fill(tx, my, fill, my + 1, l.progress() >= 1 ? METER_DONE : METER_FILL);
+			}
 			if (l.icon() instanceof ItemStack stack && !stack.isEmpty()) {
 				g.pose().pushMatrix();
 				g.pose().translate(tx, ly - 0.5f);

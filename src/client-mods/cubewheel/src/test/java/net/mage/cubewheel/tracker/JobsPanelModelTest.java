@@ -61,7 +61,7 @@ class JobsPanelModelTest {
 				"⚒ Farming |",
 				"Wheat | 64/64 ✓",
 				"WH Resources | 1/10",
-				"Cherry Logs | 3.1k/4.8k",
+				"Cherry Logs | 3,127/4,773",
 				"⚒ Hunting |",
 				"TR Tigers | 16/64",
 				"SA Rattle Snakes | 5/58",

@@ -35,7 +35,7 @@ public final class TrackerPanel {
 		List<Panel.Line> lines = new ArrayList<>(model.size());
 		for (TrackerPanelModel.Line l : model) {
 			lines.add(new Panel.Line(l.tag(), l.tagColor(), l.text(), color(l.tone()), l.right())
-					.withAccent(JobsPanel.accent(l.activity())));
+					.withAccent(JobsPanel.accent(l.activity())).withProgress(l.progress()));
 		}
 		CubeWheelConfig.Position p = cfg.tracker.position;
 		return Optional.of(new Panel(TrackerPanelModel.TITLE, lines, HudLayout.Corner.parse(p.corner), p.x, p.y));

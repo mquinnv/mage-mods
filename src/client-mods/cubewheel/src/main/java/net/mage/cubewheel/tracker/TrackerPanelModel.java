@@ -50,7 +50,11 @@ public final class TrackerPanelModel {
 	 * One panel row: {@code tag} (the source's marker, "" for headings and objective rows) in {@code tagColor},
 	 * {@code text} and {@code right} (a short count, "" for headings and objective rows).
 	 */
-	public record Line(String tag, int tagColor, String text, String right, Tone tone, Activity activity) {
+	public record Line(String tag, int tagColor, String text, String right, Tone tone, Activity activity, double progress) {
+		public Line(String tag, int tagColor, String text, String right, Tone tone, Activity activity) {
+			this(tag, tagColor, text, right, tone, activity, -1);
+		}
+
 		public Line(String tag, int tagColor, String text, String right, Tone tone) {
 			this(tag, tagColor, text, right, tone, Activity.NONE);
 		}
@@ -83,7 +87,8 @@ public final class TrackerPanelModel {
 				SourceTag tag = SourceTag.of(t.source());
 				Activity act = activity == null ? Activity.NONE : activity.apply(t.id());
 				lines.add(new Line(tag.glyph(), tag.argb(), title(t.source(), label.title(), worldNames),
-						CompactJob.count(r, now), tone(r, near, s.kind()), act == null ? Activity.NONE : act));
+						CompactJob.count(r, now), tone(r, near, s.kind()), act == null ? Activity.NONE : act,
+						JobsPanelModel.progress(r)));
 				if (info != null && info.subs() != null && info.subs().size() > 1) {
 					// One row per objective, its count in the right column: 50% of "Slay 10 Golden Knights" is 5/10.
 					for (ObjectiveInfo.Sub sub : info.subs()) {

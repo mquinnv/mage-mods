@@ -68,7 +68,7 @@ final class CompactJob {
 		return s.length() > max ? s.substring(0, max - 1).trim() + "…" : s;
 	}
 
-	/** "3.1k/4.8k", "~2/2 ✓?", "64/64 ✓", plus "·3h" for old reads. */
+	/** "3,127/4,800", "~2/2 ✓?", "64/64 ✓", plus "·3h" for old reads. */
 	static String count(TrackerRow row, long now) {
 		String c = (row.estimated() ? "~" : "") + number(row.shownCurrent()) + "/" + number(row.shownMax());
 		if (row.complete()) c += " ✓";
@@ -78,10 +78,14 @@ final class CompactJob {
 		return c;
 	}
 
-	/** 950 → "950", 3127 → "3.1k", 12500 → "12.5k", 250000 → "250k", 1_250_000 → "1.3M". */
+	/**
+	 * 950 → "950", 3127 → "3,127" (exact below 10,000, so the last few are visible), 12500 → "12.5k",
+	 * 250000 → "250k", 1_250_000 → "1.3M".
+	 */
 	static String number(double v) {
 		double a = Math.abs(v);
 		if (a < 1_000) return v == Math.rint(v) ? Long.toString(Math.round(v)) : String.format(Locale.ROOT, "%.1f", v);
+		if (a < 10_000) return String.format(Locale.ROOT, "%,d", Math.round(v));
 		if (a < 100_000) return trimZero(String.format(Locale.ROOT, "%.1f", v / 1_000)) + "k";
 		if (a < 1_000_000) return Math.round(v / 1_000) + "k";
 		return trimZero(String.format(Locale.ROOT, "%.1f", v / 1_000_000)) + "M";

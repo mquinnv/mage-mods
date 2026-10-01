@@ -52,10 +52,10 @@ class TrackerPanelModelTest {
 	@Test void compactRowsFromRealNamesWithObjectiveRowsAndNoHeadingForOneGroup() {
 		List<Line> lines = build(store(), 10, WorldInfo.UNKNOWN, Mode.SORT);
 		assertEquals(List.of(
-				"✦ ✪4 Skill Level | 1.9k/2.5k",
+				"✦ ✪4 Skill Level | 1,902/2,500",
 				"✦ ✪9 Party Level 55 | 12/55",
 				"⚑ King of the Jungle | 5/100",
-				"↳ Monsters | 50/2.5k",
+				"↳ Monsters | 50/2,500",
 				"↳ Golden Knights | 5/10",
 				"⚑ Jungle Pursuit | 0/15k"), texts(lines));
 		assertEquals(Tone.DETAIL, lines.get(3).tone());

@@ -56,7 +56,11 @@ public final class JobsPanelModel {
 	 * (an industry heading, or the
 	 * target without verb or world) and {@code right} (a short count, right-aligned). Unused columns are "".
 	 */
-	public record Line(String tag, String text, String right, Tone tone, Rarity rarity, Activity activity) {
+	public record Line(String tag, String text, String right, Tone tone, Rarity rarity, Activity activity, double progress) {
+		public Line(String tag, String text, String right, Tone tone, Rarity rarity, Activity activity) {
+			this(tag, text, right, tone, rarity, activity, -1);
+		}
+
 		public Line(String tag, String text, String right, Tone tone, Rarity rarity) {
 			this(tag, text, right, tone, rarity, Activity.NONE);
 		}
@@ -131,13 +135,19 @@ public final class JobsPanelModel {
 								.findFirst().orElse(null);
 				Activity act = activity == null ? Activity.NONE : activity.apply(it.row().item().id());
 				lines.add(new Line(tag, CompactJob.target(it.text(), worldNames), CompactJob.count(it.row(), now), tone(it),
-						rarity, act == null ? Activity.NONE : act));
+						rarity, act == null ? Activity.NONE : act, progress(it.row())));
 			}
 		}
 		return new Model(crate == null ? TITLE : TITLE + " · " + crate, List.copyOf(lines));
 	}
 
 	private record Item(TrackerRow row, int tier, String text, WorldScope.Relevance rel) {}
+
+	/** An entry's progress meter: 1 when done, else its (estimated) fraction; -1 when it has no target. */
+	static double progress(TrackerRow row) {
+		if (row.complete() || row.atCap()) return 1;
+		return row.shownMax() > 0 ? Math.max(0, Math.min(1, row.fraction())) : -1;
+	}
 
 	private static Tone tone(Item it) {
 		if (it.row().complete()) return Tone.DONE;
