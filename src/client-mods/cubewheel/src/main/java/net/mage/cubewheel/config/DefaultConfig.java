@@ -88,8 +88,19 @@ public final class DefaultConfig {
 			leaf("Sell hand", "minecraft:gold_nugget", "/sell hand"),
 			leaf("Sell all", "minecraft:gold_block", "/sell all")));
 		w.add(ring("Warps", "minecraft:oak_sign",
-			leaf("Crops", "minecraft:wheat", "/warp crops"),
-			leaf("Spawners", "minecraft:spawner", "/warp spawners")));
+			// Server warps from the ManaCube Survival command list (wiki), first so a double-click lands here.
+			ring("Server warps", "minecraft:lodestone",
+				leaf("Pond", "minecraft:water_bucket", "/warp pond"),
+				leaf("Crates", "minecraft:chest", "/warp crates"),
+				leaf("Enchanter", "minecraft:enchanting_table", "/warp enchanter"),
+				leaf("Kilton", "minecraft:skeleton_skull", "/warp kilton"),
+				leaf("Leaderboard", "minecraft:oak_hanging_sign", "/warp leaderboard"),
+				leaf("PvP", "minecraft:iron_sword", "/warp pvp"),
+				leaf("1v1", "minecraft:shield", "/warp 1v1")),
+			// Player warps: crops and spawners are player Sushi's warps, the ones most people want.
+			ring("Player warps", "minecraft:player_head",
+				leaf("Crops (Sushi)", "minecraft:wheat", "/warp crops"),
+				leaf("Spawners (Sushi)", "minecraft:spawner", "/warp spawners"))));
 		w.add(ring("Isles & Bosses", "minecraft:filled_map",
 			leaf("Isles menu", "minecraft:map", "/isles"),
 			leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven"),
