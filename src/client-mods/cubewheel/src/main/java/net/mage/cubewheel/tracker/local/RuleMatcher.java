@@ -14,6 +14,14 @@ public final class RuleMatcher {
 			"sweet berry", "sweet berry bush",
 			"cocoa bean", "cocoa");
 
+	/**
+	 * Blocks ManaCube's mana worlds use in place of a crop: Wolfhaven "wheat" is a hay block you scythe
+	 * (capture 2026-09-30). World scoping still applies through the rule, so a hay bale in the overworld
+	 * doesn't count toward "Harvest … Wolfhaven Wheat".
+	 */
+	private static final java.util.Map<String, java.util.Set<String>> STAND_IN_BLOCKS = java.util.Map.of(
+			"wheat", java.util.Set.of("minecraft:hay_block"));
+
 	private RuleMatcher() {}
 
 	public static boolean matches(CounterRule rule, Signal signal) {
@@ -30,6 +38,9 @@ public final class RuleMatcher {
 
 	private static boolean blockMatches(CounterRule rule, Signal.BlockBroken b) {
 		if (rule.kind() != CounterRule.Kind.BREAK && rule.kind() != CounterRule.Kind.HARVEST) return false;
+		// A stand-in block ManaCube uses for a crop counts whole, with no ripeness to check.
+		if (rule.what() instanceof Named n && b.id() != null
+				&& STAND_IN_BLOCKS.getOrDefault(n.singular(), java.util.Set.of()).contains(b.id())) return true;
 		if (b.crop() && !b.mature()) return false; // unripe crops never count
 		if (rule.kind() == CounterRule.Kind.HARVEST && !b.crop()) return false;
 		// "Resources"/"Blocks": instabreak vegetation is not a resource (plugins count real blocks).
