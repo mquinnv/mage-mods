@@ -36,9 +36,9 @@ public final class TrackerPanelModel {
 		HEADING,
 		/** An objective row under its quest. */
 		DETAIL,
-		/** Read complete. */
+		/** Read complete, or an estimate at its target ("✓?": probably ready to claim). */
 		DONE,
-		/** At or above the near threshold, or an estimate at its target ("✓?"). */
+		/** At or above the near threshold. */
 		NEAR,
 		/** Anything else. */
 		NORMAL,
@@ -158,10 +158,10 @@ public final class TrackerPanelModel {
 		};
 	}
 
-	/** Green only when a menu read says complete; an estimate at the target ("✓?") stays yellow. */
+	/** Green when done or probably done (an estimate at its target, "✓?"); yellow only means "close". */
 	private static Tone tone(TrackerRow r, double near, TrackerStore.HudSection.Kind kind) {
-		if (r.complete()) return Tone.DONE;
-		if (r.atCap() || r.fraction() >= near) return Tone.NEAR;
+		if (r.complete() || r.atCap()) return Tone.DONE;
+		if (r.fraction() >= near) return Tone.NEAR;
 		return kind == TrackerStore.HudSection.Kind.OTHER_WORLDS ? Tone.OTHER_WORLD : Tone.NORMAL;
 	}
 }

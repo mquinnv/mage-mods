@@ -63,7 +63,7 @@ public final class JobsPanel {
 			case CURRENT -> Panel.WHITE;
 			case NEUTRAL -> NEUTRAL_COLOR;
 			case OTHER_WORLD -> OTHER_WORLD_COLOR;
-			case AT_CAP -> Panel.YELLOW;
+			case AT_CAP -> Panel.GREEN; // "✓?": probably ready to claim
 			case DONE -> Panel.GREEN;
 		};
 	}
