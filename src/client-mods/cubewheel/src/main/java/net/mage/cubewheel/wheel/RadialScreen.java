@@ -186,8 +186,7 @@ public final class RadialScreen extends Screen {
 		double[] dirs = directions();
 		hovered = RadialMath.nearest(mouseX - cx, mouseY - cy, dirs, r * 0.25);
 		renderedEdge = ri + half;
-		hoveredTier = hovered < 0 ? 0
-				: RadialMath.tier(Math.hypot(mouseX - cx, mouseY - cy), renderedEdge, TIER_STEP, outerCount(entries.get(hovered)));
+		hoveredTier = hovered < 0 ? 0 : tierAt(entries.get(hovered), Math.hypot(mouseX - cx, mouseY - cy));
 		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + half, ri - half, RING);
 		fillRing(g, cx, cy, hub, 0, HUB);
 		for (int i = 0; i < entries.size(); i++) {
@@ -259,8 +258,7 @@ public final class RadialScreen extends Screen {
 				int slice = RadialMath.nearest(dx, dy, directions(), dead);
 				if (slice >= 0) {
 					WheelNode node = entries.get(slice);
-					int tier = renderedEdge > 0 ? RadialMath.tier(Math.hypot(dx, dy), renderedEdge, TIER_STEP, outerCount(node)) : 0;
-					activate(atTier(node, tier));
+					activate(atTier(node, tierAt(node, Math.hypot(dx, dy))));
 				}
 				else if (Math.hypot(dx, dy) < dead) back();
 				return true;
@@ -368,6 +366,25 @@ public final class RadialScreen extends Screen {
 	private static boolean canPoll(InputConstants.Key key) {
 		if (key.getValue() < 0) return false;
 		return key.getType() == InputConstants.Type.KEYSYM || key.getType() == InputConstants.Type.MOUSE;
+	}
+
+	/** The tier the pointer picks on {@code node}: by distance past the ring, or the outermost while Shift is held. */
+	private int tierAt(WheelNode node, double distance) {
+		int tiers = outerCount(node);
+		if (tiers > 0 && isShiftDown()) return tiers;
+		return renderedEdge > 0 ? RadialMath.tier(distance, renderedEdge, TIER_STEP, tiers) : 0;
+	}
+
+	/** Either Shift key, unless Shift is the wheel's own hold key (then it is always down and means nothing). */
+	private boolean isShiftDown() {
+		if (minecraft == null) return false;
+		if (holdKey != null) {
+			InputConstants.Key bound = KeyMappingHelper.getBoundKeyOf(holdKey);
+			if (bound.getType() == InputConstants.Type.KEYSYM
+					&& (bound.getValue() == GLFW.GLFW_KEY_LEFT_SHIFT || bound.getValue() == GLFW.GLFW_KEY_RIGHT_SHIFT)) return false;
+		}
+		Window window = minecraft.getWindow();
+		return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
 	}
 
 	private boolean isHoldKeyDown() {
