@@ -156,14 +156,15 @@ the previous config keeps working. Numbers outside their range are clamped.
 
 | Key | Meaning | Default |
 |---|---|---|
-| `configVersion` | File format version, managed by the mod. Loading an older file applies one-time upgrades and writes the file back (3: new wheel layout, see [Default layout](#default-layout); 4: the new Jobs panel takes the offset of your lowest top-left panel, see [Jobs panel](#jobs-panel)) | `4` |
+| `configVersion` | File format version, managed by the mod. Loading an older file applies one-time upgrades and writes the file back (3: new wheel layout, see [Default layout](#default-layout); 4: the new Jobs panel takes the offset of your lowest top-left panel, see [Jobs panel](#jobs-panel); 5: the tracker becomes a panel with the Jobs panel's corner and offset, see [Tracker panel](#tracker-panel)) | `5` |
 | `enabled` | Master switch | `true` |
 | `serverHosts` | Host suffixes the mod is active on | `["manacube.com", "manacube.net"]` |
 | `vaultCount` | Number of `/pv` entries in a `vaults` node (your rank decides this), 0–54 | `3` |
 | `listThreshold` | Rings with more entries open as a list, 3–16 | `8` |
 | `tracker.nearThreshold` | Fraction from which HUD entries are highlighted yellow, 0–1 | `0.8` |
 | `tracker.hudMaxLines` | Max HUD lines, 1–20 (an older file with the old default 6 or 8 is upgraded to 10 once, see `configVersion`) | `10` |
-| `tracker.hudVisible` | HUD on/off (saved when you toggle it, see below) | `true` |
+| `tracker.hudVisible` | Tracker panel on/off (saved when you toggle it, see below) | `true` |
+| `tracker.position` | Tracker panel corner and offset; in the Jobs panel's corner it stacks under it (see [Tracker panel](#tracker-panel)) | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `tracker.sources` | Source id -> regex matched against the menu title | see below |
 | `tracker.refreshCommands` | Commands the "Refresh trackers" key sends, one at a time (max 8) | `["/pquests", "/prestige", "/jobs"]` |
 | `tracker.survivalSidebarPattern` | Regex on the sidebar title; menu reading, refresh runs and live estimates only run while it matches (see [Server gate](#server-gate)). `""` switches the check off | `"(?i)survival"` |
@@ -295,7 +296,7 @@ container (never your inventory) and records the entries that show progress. Con
 
 - **Data is only as fresh as the last time you opened that menu** (or pressed the refresh key, or
   a linked sidebar value changed, see below). The HUD shows an age suffix ("now", "5m", ...).
-- **HUD** (top right, below potion icons): pinned entries first, then every other incomplete entry,
+- **HUD** (the [Tracker panel](#tracker-panel), top left under the Jobs panel): pinned entries first, then every other incomplete entry,
   closest to done first, at most `hudMaxLines` lines. Entries at or above `nearThreshold` are yellow,
   estimated ones keep their `~`. Complete entries only show when pinned (green). Hidden entries never
   show. F1 hides it. In a world, entries for that world move up (see below). While the
@@ -485,12 +486,11 @@ are ignored.
 
 ## HUD panels
 
-Besides the tracker (top right), CubeWheel draws small panels: events, boosters, item cooldowns and jobs,
-stacked in that order. Each has a
+CubeWheel draws small panels: events, boosters, item cooldowns, jobs and the tracker, stacked in that order. Each has a
 `position` in the config: a corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) and an `x`/`y`
 offset from it in GUI pixels. Panels in the same corner stack instead of overlapping (in a top corner, the
 first one is `y` pixels from the top and the next one goes below it); a panel in the top-right corner goes
-below the tracker HUD and the potion icons. All default to the top left, which vanilla leaves empty. F1 hides
+below the potion icons. All default to the top left, which vanilla leaves empty. F1 hides
 them. They are shown only in ManaCube Survival (host and sidebar gate, see [Server gate](#server-gate)).
 All of them are passive: they read chat, the clock and your own clicks, and never send or click anything.
 
@@ -517,10 +517,41 @@ Jobs · Golden Crate 4/5
   white, those naming no world light grey and those naming another world dark grey (`hide` does not drop
   them here).
 - Entries hidden in the picker (right-click) stay hidden here too.
-- While the panel is on, the tracker HUD shows no job entries, pinned or not; turn it off (`tracker.jobsPanel.enabled`
+- While the panel is on, the Tracker panel shows no job entries, pinned or not; turn it off (`tracker.jobsPanel.enabled`
   or the "Toggle jobs panel" key) to get them back there.
 - Loading a config older than version 4 gives the panel the offset of your lowest top-left panel, so with
   panels moved down (say `"y": 80`) it stacks below them instead of above.
+
+### Tracker panel
+
+The tracker (formerly a separate top-right overlay) is a **Tracker** panel registered after the Jobs panel, so in
+the same corner (`tracker.position`, default top left) it stacks right under it, at the same width:
+
+```
+Tracker
+— Pinned
+⚑ Jungle Pursuit            0/15k
+— Anywhere
+✦ ✪4 Skill Level        1.9k/2.5k
+⚑ King of the Jungle        5/100
+ ↳ 0% Jungle Zombies
+ ↳ 10% Golden Knights
+```
+
+- The left column is the source's marker: ⚒ jobs, ✦ prestige, ⚑ party quests, ★ challenges, • other.
+- Short titles: a prestige rank "Rank [✪4] · Reach 2,500 Skill Level" reads "✪4 Skill Level" (verb and amount
+  dropped, the count shows them); a party quest keeps its name ("Jungle Pursuit"); a job listing (with the Jobs
+  panel off) shows its target ("Cherry Logs"). Titles are cut at 18 characters with "…".
+- Counts as on the Jobs panel: "1.9k/2.5k", `~` for live estimates, `✓?` at an estimated target, `✓` read
+  complete, "·3h" only for reads at least an hour old.
+- A quest with several objectives gets one grey "↳ 10% Golden Knights" row per objective (they do not count
+  against `hudMaxLines`).
+- Grey "— Pinned", "— This world", "— Anywhere", "— Other worlds" headings appear only when more than one group
+  is shown; entries in "Other worlds" are dark grey.
+- Green: read complete; yellow: at or above `nearThreshold` or `✓?`; white otherwise.
+- `tracker.hudVisible` and the "Toggle tracker HUD" key show or hide it; `hudMaxLines`, `worldFilter`, pins and
+  hidden entries work as before. While the Jobs panel is on, job entries are left out.
+- Loading a config older than version 5 gives the panel the Jobs panel's corner and offset.
 
 ### Event timer
 

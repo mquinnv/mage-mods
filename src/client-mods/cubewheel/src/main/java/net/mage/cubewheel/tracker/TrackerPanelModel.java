@@ -1,0 +1,130 @@
+package net.mage.cubewheel.tracker;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import net.mage.cubewheel.tracker.local.ObjectiveInfo;
+
+/**
+ * The "Tracker" HUD panel, in the left-hand column under the Jobs panel and in its compact style: the source's
+ * marker (⚒ ✦ ⚑ ★ •) in the tag column, a short title ("✪4 Skill Level", "King of the Jungle") and a short count
+ * on the right ("1.9k/2.5k", "~", "✓?", "·3h"). Built from {@link TrackerStore#hudSections}, so pinning, hiding,
+ * the line cap and the world filter work as before; a grey "— Pinned" / "— This world" … heading starts each group
+ * when there is more than one. A quest with several objectives gets an indented "↳ 10% Golden Knights" row per
+ * objective. Pure: no Minecraft/Fabric imports.
+ */
+public final class TrackerPanelModel {
+	public static final String TITLE = "Tracker";
+	/** Longest title shown; longer ones are cut with "…". */
+	static final int MAX_TITLE = 18;
+	/** Longest objective row (it may run across the whole panel width). */
+	static final int MAX_DETAIL = 26;
+	static final String DETAIL_INDENT = " ↳ ";
+	static final String HEADING_MARK = "— ";
+
+	/** "Rank [✪4]" → "✪4". */
+	private static final Pattern RANK = Pattern.compile("(?i)^rank\\s*\\[([^\\]]+)]$");
+	/** An objective row from {@link EntryLabel}: "10% Slay Golden Knights". */
+	private static final Pattern DETAIL = Pattern.compile("^(\\d+%)\\s+(.*)$");
+
+	/** How a line is drawn; the adapter picks the colours. */
+	public enum Tone {
+		/** A group heading ("— Pinned"). */
+		HEADING,
+		/** An objective row under its quest. */
+		DETAIL,
+		/** Read complete. */
+		DONE,
+		/** At or above the near threshold, or an estimate at its target ("✓?"). */
+		NEAR,
+		/** Anything else. */
+		NORMAL,
+		/** An entry in the "Other worlds" group. */
+		OTHER_WORLD
+	}
+
+	/**
+	 * One panel row: {@code tag} (the source's marker, "" for headings and objective rows) in {@code tagColor},
+	 * {@code text} and {@code right} (a short count, "" for headings and objective rows).
+	 */
+	public record Line(String tag, int tagColor, String text, String right, Tone tone) {}
+
+	private TrackerPanelModel() {}
+
+	/**
+	 * Lines for {@code sections} (see {@link TrackerStore#hudSections}); {@code objectives} gives an entry's stored
+	 * objective (may return null), {@code near} is {@code tracker.nearThreshold}. Empty = nothing to show.
+	 */
+	public static List<Line> build(List<TrackerStore.HudSection> sections, Function<String, ObjectiveInfo> objectives,
+			double near, Collection<String> worldNames, long now) {
+		List<Line> lines = new ArrayList<>();
+		if (sections == null) return lines;
+		boolean headings = sections.size() > 1;
+		for (TrackerStore.HudSection s : sections) {
+			if (s.rows().isEmpty()) continue;
+			if (headings) lines.add(new Line("", 0, HEADING_MARK + label(s.kind()), "", Tone.HEADING));
+			for (TrackerRow r : s.rows()) {
+				Trackable t = r.item();
+				ObjectiveInfo info = objectives == null ? null : objectives.apply(t.id());
+				EntryLabel label = EntryLabel.of(t.name(), info);
+				SourceTag tag = SourceTag.of(t.source());
+				lines.add(new Line(tag.glyph(), tag.argb(), title(t.source(), label.title(), worldNames),
+						CompactJob.count(r, now), tone(r, near, s.kind())));
+				for (String d : label.details()) {
+					lines.add(new Line("", 0, detail(d, worldNames), "", Tone.DETAIL));
+				}
+			}
+		}
+		return List.copyOf(lines);
+	}
+
+	/**
+	 * A short title: "Rank [✪4] · Reach 2,500 Skill Level" → "✪4 Skill Level"; a job listing "Farming Heavy ·
+	 * Harvest Cherry Logs" → "Cherry Logs"; any other "Name · objective" keeps its name ("Jungle Pursuit"), the
+	 * count says how far along it is. Cut at {@link #MAX_TITLE} characters.
+	 */
+	static String title(String source, String title, Collection<String> worldNames) {
+		String t = CompactJob.clean(title);
+		int dot = t.indexOf(" · ");
+		String name = dot < 0 ? t : t.substring(0, dot).trim();
+		String objective = dot < 0 ? "" : t.substring(dot + 3).trim();
+		Matcher rank = RANK.matcher(name);
+		String out;
+		if (rank.matches()) {
+			String r = rank.group(1).trim();
+			out = objective.isEmpty() ? r : r + " " + CompactJob.objective(objective, worldNames);
+		} else if (JobsPanelModel.SOURCE.equals(source) && !objective.isEmpty()) {
+			out = CompactJob.objective(objective, worldNames);
+		} else {
+			out = name.isEmpty() ? CompactJob.objective(objective, worldNames) : name;
+		}
+		return CompactJob.cut(out, MAX_TITLE);
+	}
+
+	/** "10% Slay Golden Knights" → " ↳ 10% Golden Knights", cut to fit. */
+	static String detail(String d, Collection<String> worldNames) {
+		Matcher m = DETAIL.matcher(d);
+		String text = m.matches() ? m.group(1) + " " + CompactJob.objective(m.group(2), worldNames)
+				: CompactJob.objective(d, worldNames);
+		return DETAIL_INDENT + CompactJob.cut(text, MAX_DETAIL);
+	}
+
+	static String label(TrackerStore.HudSection.Kind kind) {
+		return switch (kind) {
+			case PINNED -> "Pinned";
+			case THIS_WORLD -> "This world";
+			case ANYWHERE -> "Anywhere";
+			case OTHER_WORLDS -> "Other worlds";
+		};
+	}
+
+	/** Green only when a menu read says complete; an estimate at the target ("✓?") stays yellow. */
+	private static Tone tone(TrackerRow r, double near, TrackerStore.HudSection.Kind kind) {
+		if (r.complete()) return Tone.DONE;
+		if (r.atCap() || r.fraction() >= near) return Tone.NEAR;
+		return kind == TrackerStore.HudSection.Kind.OTHER_WORLDS ? Tone.OTHER_WORLD : Tone.NORMAL;
+	}
+}

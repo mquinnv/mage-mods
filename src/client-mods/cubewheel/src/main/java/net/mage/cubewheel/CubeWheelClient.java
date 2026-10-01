@@ -22,6 +22,7 @@ import net.mage.cubewheel.tracker.ContainerHook;
 import net.mage.cubewheel.tracker.JobsPanel;
 import net.mage.cubewheel.tracker.RefreshController;
 import net.mage.cubewheel.tracker.TrackerHud;
+import net.mage.cubewheel.tracker.TrackerPanel;
 import net.mage.cubewheel.tracker.TrackerScreen;
 import net.mage.cubewheel.tracker.TrackerStore;
 import net.mage.cubewheel.tracker.local.mc.LocalSignals;
@@ -111,7 +112,8 @@ public final class CubeWheelClient implements ClientModInitializer {
 		PanelsHud.add(EventHud::panel);
 		PanelsHud.add(BoosterWatcher::panel);
 		PanelsHud.add(CooldownWatcher::panel);
-		PanelsHud.add(JobsPanel::panel); // last: in a shared corner it stacks below the small panels
+		PanelsHud.add(JobsPanel::panel); // in a shared corner it stacks below the small panels
+		PanelsHud.add(TrackerPanel::panel); // last: under the Jobs panel
 		PanelsHud.register();
 		SvaClient.init(configDir);
 		Keybinds.register();

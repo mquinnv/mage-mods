@@ -146,6 +146,8 @@ public final class CubeWheelConfig {
 		public Local local = new Local();
 		/** The left-hand "Jobs" panel; while on, job entries leave the tracker HUD. */
 		public JobsPanel jobsPanel = new JobsPanel();
+		/** Where the "Tracker" panel sits; in the Jobs panel's corner it stacks under it. */
+		public Position position = DefaultConfig.trackerPosition();
 	}
 
 	public static final class JobsPanel {

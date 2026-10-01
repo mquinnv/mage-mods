@@ -106,6 +106,8 @@ public final class ConfigStore {
 	 * wheel is replaced by the new default layout; leaves you added are kept under More › Custom (reported in
 	 * {@code notes}, which end up in {@link #warnings()} and the log). Version 4: the new Jobs panel takes the
 	 * offset of your top-left panels (the lowest one), so it stacks below them instead of sitting above them.
+	 * Version 5: the tracker leaves the top right for a panel that takes the Jobs panel's corner and offset, so it
+	 * stacks under it.
 	 */
 	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
@@ -123,6 +125,10 @@ public final class ConfigStore {
 		if (c.configVersion < 4 && c.tracker != null) {
 			if (c.tracker.jobsPanel == null) c.tracker.jobsPanel = new CubeWheelConfig.JobsPanel();
 			c.tracker.jobsPanel.position = jobsPanelPosition(c);
+		}
+		if (c.configVersion < 5 && c.tracker != null) {
+			CubeWheelConfig.Position j = c.tracker.jobsPanel == null ? null : c.tracker.jobsPanel.position;
+			c.tracker.position = j == null ? DefaultConfig.trackerPosition() : new CubeWheelConfig.Position(j.corner, j.x, j.y);
 		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;
@@ -167,6 +173,7 @@ public final class ConfigStore {
 		if (c.tracker.local == null) c.tracker.local = DefaultConfig.local();
 		if (c.tracker.jobsPanel == null) c.tracker.jobsPanel = new CubeWheelConfig.JobsPanel();
 		c.tracker.jobsPanel.position = normalizePosition(c.tracker.jobsPanel.position, DefaultConfig.jobsPanelPosition());
+		c.tracker.position = normalizePosition(c.tracker.position, DefaultConfig.trackerPosition());
 		c.tracker.local.worlds = c.tracker.local.worlds == null ? DefaultConfig.manaWorlds() : normalizeWords(c.tracker.local.worlds);
 		c.tracker.local.specialWorlds = c.tracker.local.specialWorlds == null
 				? DefaultConfig.manaWorlds() : normalizeWords(c.tracker.local.specialWorlds);

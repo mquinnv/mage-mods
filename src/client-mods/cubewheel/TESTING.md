@@ -60,13 +60,13 @@ Bind "Toggle tracker HUD", "Open tracker picker" and "Toggle capture mode" under
 - [ ] Open `/jobs`, wait a second, close it: the picker lists the jobs that show progress (e.g. `1,200 / 1,500`) under a "jobs" header, sorted by percentage; decorative items without progress are absent.
 - [ ] The mod never clicks in, opens or closes a menu itself, and sends no command while tracking.
 - [ ] Items from your own inventory (bottom half of the menu) never appear in the picker.
-- [ ] Click an entry in the picker: its ☆ becomes ★ and the top-right HUD shows it with an age suffix ("now", later "5m"). Click again to unpin.
+- [ ] Click an entry in the picker: its ☆ becomes ★ and the Tracker panel (top left, under the Jobs panel) shows it with an age suffix ("now", later "5m"). Click again to unpin.
 - [ ] The HUD shows pinned entries first, then every other incomplete entry, closest to done first (not only those at ≥80%); at most 10 lines (`tracker.hudMaxLines`; an older config file with 6 or 8 is upgraded to 10 once on load and gets `"configVersion": 2`; set it back to 6, reload: it stays 6). Entries at ≥80% are yellow, the rest white; complete entries appear only when pinned (green).
 - [ ] "Haven Harvester" (Progress: 67% of "Harvest or Mine 10,000 Wolfhaven Resources") shows `6,700 / 10,000 (67%)` on the HUD and in the picker, without `~`; "Discoverer" (two objectives) still shows `70 / 100 (70%)`.
 - [ ] Hold the capture key for two seconds: capture toggles once ("Capture ON"), not on and off again. Same for the HUD key.
 - [ ] Estimated entries on the HUD keep their `~` (and `✓?` at the target) and move up the list as they are counted.
 - [ ] The picker's top line reads "Left-click: pin to HUD   Right-click: hide from HUD". Right-click an entry: it turns dark grey with "(hidden)" and disappears from the HUD, even if pinned. Right-click again: back on the HUD. Hidden entries survive a restart (`hidden` in `config/cubewheel-tracker.json`).
-- [ ] With a potion effect active, the HUD sits below the effect icons.
+- [ ] With a potion effect active, nothing is drawn top right any more (the tracker is a panel on the left).
 - [ ] World filter (`tracker.worldFilter` = `"sort"`, default): track "Slay N Tigers in Tangleroots", a Wolfhaven quest and "Mine N Stone", none pinned. In Tangleroots the tiger job is the first unpinned line and the Wolfhaven quest the last; in Wolfhaven the order flips; at spawn both world entries sit below "Mine N Stone". Set `"hide"` and reload: in Tangleroots the Wolfhaven quest is gone from the HUD (still in the picker) unless pinned. `"off"`: the usual closest-to-done order everywhere.
 - [ ] The toggle-HUD key hides/shows the HUD ("Tracker HUD OFF/ON" on the action bar) and the setting survives a restart (`tracker.hudVisible` in `config/cubewheel.json`).
 - [ ] Break `config/cubewheel.json` (delete a brace), press the reload key (red error), then the toggle-HUD key: the HUD toggles, the action bar says "CubeWheel: HUD toggled for this session (config has errors, not saved)", and the broken file on disk is unchanged. Fix the file and reload: toggling saves again.
@@ -123,12 +123,23 @@ Bind "Refresh trackers" under Options > Controls > Key Binds > CubeWheel first.
 
 - [ ] With listings of several industries read: a "Jobs" panel at the top left, below the Events/Boosters/Cooldowns panels (none overlap; with their `y` set to 80, it stays below them), lists every listing grouped "⚒ Farming", "⚒ Hunting", … with Beginner, Experienced, Heavy in that order, even with more than `hudMaxLines` listings.
 - [ ] Title reads "Jobs · Golden Crate 4/5" after the main `/jobs` menu was read.
-- [ ] The tracker HUD (top right) shows no job entries, also pinned ones; "Toggle jobs panel" hides the panel ("Jobs panel OFF …" on the action bar) and the job entries are back on the tracker HUD; the setting survives a restart.
+- [ ] The Tracker panel shows no job entries, also pinned ones; "Toggle jobs panel" hides the panel ("Jobs panel OFF …" on the action bar) and the job entries are back on the Tracker panel; the setting survives a restart.
 - [ ] A finished listing stays green with "· hand in" until the industry page no longer offers it.
 - [ ] Breaking cherry logs moves "Heavy · Harvest Cherry Logs" live with "~".
 - [ ] In Tangleroots, "Slay Tigers in Tangleroots" is white, "… in Sandara" dark grey, unscoped ones light grey.
 - [ ] Hide a listing in the picker (right-click): it leaves the panel.
-- [ ] An existing config with `"configVersion": 3` and events at `"y": 80`: after loading, `tracker.jobsPanel.position` is `{"corner": "top_left", "x": 4, "y": 80}` and `configVersion` is 4.
+- [ ] An existing config with `"configVersion": 3` and events at `"y": 80`: after loading, `tracker.jobsPanel.position` is `{"corner": "top_left", "x": 4, "y": 80}` and `configVersion` is 4 (then 5).
+
+## Tracker panel
+
+- [ ] No tracker overlay top right any more; a "Tracker" panel sits directly under the Jobs panel on the left, exactly as wide (both panels' right edges line up), never overlapping it.
+- [ ] Rows read marker, short title, count: "✦ ✪4 Skill Level 1.9k/2.5k", "✦ ✪9 Party Level 55 …/55", "⚑ Jungle Pursuit 0/15k"; counts line up on the right edge.
+- [ ] "King of the Jungle" (two objectives) has two grey rows under it: "↳ 0% …", "↳ 10% Golden Knights".
+- [ ] Pin one entry: grey "— Pinned" and "— Anywhere" headings appear; unpin it: with one group, no heading.
+- [ ] An entry read over an hour ago ends in "·1h" (or more); newer ones show no age.
+- [ ] "Toggle tracker HUD" hides/shows the panel; with `tracker.hudMaxLines` 2 only two entries show (objective rows do not count).
+- [ ] "Toggle jobs panel" off: the Jobs panel goes, job entries (⚒ target) appear in the Tracker panel, which moves up.
+- [ ] An existing config with `"configVersion": 4` and `tracker.jobsPanel.position` `{"corner": "top_left", "x": 6, "y": 80}`: after loading, `tracker.position` is the same and `configVersion` is 5.
 
 ## Live estimates (local counting)
 
@@ -204,7 +215,7 @@ Bind "Toggle event HUD" under Options > Controls > Key Binds > CubeWheel first.
 - [ ] Two different boosters are listed soonest-ending first.
 - [ ] Quit and restart (or reconnect) mid-booster: the panel shows the right remaining time (`config/cubewheel-boosters.json` holds `endsAt`).
 - [ ] Another player typing "You have received a 2x Sell Boost for 30m" in chat (or `[SHOUT]`) adds nothing.
-- [ ] Pin a tracker entry and have a potion effect active, then set `boosters.position` to `{"corner": "top_right", "x": 4, "y": 4}` and reload: the panel sits below the tracker HUD, never on top of it or the effect icons.
+- [ ] Pin a tracker entry and have a potion effect active, then set `boosters.position` to `{"corner": "top_right", "x": 4, "y": 4}` and reload: the panel sits below the effect icons, never on top of them.
 - [ ] `"boosters": {"enabled": false}` + reload: no panel, and new booster messages are ignored.
 - [ ] On another ManaCube gamemode or the hub, or a non-ManaCube server: no panel.
 

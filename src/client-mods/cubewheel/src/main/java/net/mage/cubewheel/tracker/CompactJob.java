@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-/** Short forms for the Jobs panel's narrow columns. Pure: no Minecraft/Fabric imports. */
+/** Short forms for the Jobs and Tracker panels' narrow columns. Pure: no Minecraft/Fabric imports. */
 final class CompactJob {
 	/** Longest target shown; longer ones are cut with "…". */
 	static final int MAX_TARGET = 16;
@@ -12,7 +12,9 @@ final class CompactJob {
 	static final long SHOW_AGE_MS = 3_600_000L;
 
 	private static final Pattern VERB = Pattern.compile("(?i)^(?:harvest or mine|harvest|mine|break|chop|dig|gather|"
-			+ "kill|slay|slaughter|defeat|catch|fish|shear|cook|collect|craft|smelt|brew|complete|deliver|obtain|get)\\s+");
+			+ "kill|slay|slaughter|defeat|catch|fish|shear|cook|collect|craft|smelt|brew|complete|deliver|obtain|get|reach)\\s+");
+	/** A leading amount ("2,500 Skill Level", "15,000 Tangleroots Resources"); the count column shows it. */
+	private static final Pattern LEADING_NUMBER = Pattern.compile("^\\d[\\d,.]*[kKmM]?\\s+");
 	private static final Pattern IN_WORLD = Pattern.compile("(?i)\\s+(?:in|at|from)\\s+\\S.*$");
 	private static final Pattern WHILE = Pattern.compile("(?i)\\s+while\\s+\\w+.*$");
 	private static final Pattern PRIVATE_USE = Pattern.compile("[\\uE000-\\uF8FF]");
@@ -38,13 +40,32 @@ final class CompactJob {
 
 	/** "Harvest or Mine Wolfhaven Resources" → "Resources"; "Slay Tigers in Tangleroots" → "Tigers". */
 	static String target(String objective, Collection<String> worldNames) {
-		String t = PRIVATE_USE.matcher(objective == null ? "" : objective).replaceAll(" ").replaceAll("\\s+", " ").trim();
+		return cut(objective(objective, worldNames), MAX_TARGET);
+	}
+
+	/**
+	 * {@link #target} without the cut: "Mine 15,000 Tangleroots Resources" → "Resources", "Reach 2,500 Skill Level"
+	 * → "Skill Level", "Reach Party Level 55" → "Party Level 55". Falls back to the cleaned text if nothing is left.
+	 */
+	static String objective(String objective, Collection<String> worldNames) {
+		String t = clean(objective);
+		String full = t;
 		t = VERB.matcher(t).replaceFirst("");
+		t = LEADING_NUMBER.matcher(t).replaceFirst("");
 		t = WHILE.matcher(t).replaceFirst("");
 		t = IN_WORLD.matcher(t).replaceFirst("");
 		t = dropLeadingWorld(t, worldNames);
-		if (t.length() > MAX_TARGET) t = t.substring(0, MAX_TARGET - 1).trim() + "…";
-		return t;
+		return t.isBlank() ? full : t;
+	}
+
+	/** Private-use glyphs (server icons) dropped, spaces collapsed. */
+	static String clean(String s) {
+		return PRIVATE_USE.matcher(s == null ? "" : s).replaceAll(" ").replaceAll("\\s+", " ").trim();
+	}
+
+	/** {@code s} cut to {@code max} characters, ending in "…" when cut. */
+	static String cut(String s, int max) {
+		return s.length() > max ? s.substring(0, max - 1).trim() + "…" : s;
 	}
 
 	/** "3.1k/4.8k", "~2/2 ✓?", "64/64 ✓", plus "·3h" for old reads. */

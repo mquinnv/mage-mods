@@ -289,4 +289,26 @@ class ConfigStoreTest {
 		assertEquals("bottom_left", s.current().tracker.jobsPanel.position.corner);
 		assertEquals(10, s.current().tracker.jobsPanel.position.y);
 	}
+
+	@Test void trackerPanelDefaultsTopLeftAndTakesTheJobsPanelOffsetOnUpgrade() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals("top_left", s.current().tracker.position.corner);
+		assertEquals(4, s.current().tracker.position.y);
+		Files.writeString(f, "{\"configVersion\": 4, \"tracker\": {\"jobsPanel\": {\"position\": "
+				+ "{\"corner\": \"top_left\", \"x\": 6, \"y\": 80}}}}");
+		assertNull(s.reload());
+		assertEquals(DefaultConfig.CONFIG_VERSION, s.current().configVersion);
+		CubeWheelConfig.Position p = s.current().tracker.position;
+		assertEquals("top_left", p.corner);
+		assertEquals(6, p.x);
+		assertEquals(80, p.y);
+		// Once: a later edit survives.
+		Files.writeString(f, "{\"configVersion\": " + DefaultConfig.CONFIG_VERSION
+				+ ", \"tracker\": {\"position\": {\"corner\": \"bottom_right\", \"y\": 10}}}");
+		assertNull(s.reload());
+		assertEquals("bottom_right", s.current().tracker.position.corner);
+		assertEquals(10, s.current().tracker.position.y);
+	}
 }

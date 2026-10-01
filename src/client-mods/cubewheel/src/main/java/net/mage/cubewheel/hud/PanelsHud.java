@@ -15,9 +15,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 
 /**
- * Draws CubeWheel's small panels (events, boosters, cooldowns, jobs) in one HUD element so panels sharing a corner
- * can stack (see {@link HudLayout}). Attached right after the tracker HUD, whose drawn height it reserves in
- * the top-right corner so nothing overlaps it. Each source is asked every frame; it must be cheap and return
+ * Draws CubeWheel's small panels (events, boosters, cooldowns, jobs, tracker) in one HUD element so panels sharing
+ * a corner can stack (see {@link HudLayout}). Attached right after {@link TrackerHud}, which reports the vanilla
+ * effect icons' height; that is reserved in the top-right corner so nothing overlaps them. Each source is asked every frame; it must be cheap and return
  * empty when it has nothing to show or is gated off. A failing source is logged once and skipped.
  */
 public final class PanelsHud implements HudElement {
