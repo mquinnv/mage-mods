@@ -101,10 +101,10 @@ public final class McmmoWatcher {
 			if (!active()) return out;
 			for (McmmoCooldowns.Row r : cooldowns.rows(now)) {
 				if (r.ready()) {
-					out.add(new Panel.Line(r.ability().label + " · ready", Panel.GREEN));
+					out.add(Panel.Line.split(r.ability().label, "ready", Panel.GREEN));
 				} else {
 					long left = r.endsAt() - now;
-					out.add(new Panel.Line(r.ability().label + " · " + Durations.shortCountdown(left),
+					out.add(Panel.Line.split(r.ability().label, Durations.shortCountdown(left),
 							left < ENDING_SOON_MS ? Panel.YELLOW : Panel.WHITE));
 				}
 			}

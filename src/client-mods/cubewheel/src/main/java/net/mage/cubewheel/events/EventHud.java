@@ -86,7 +86,7 @@ public final class EventHud {
 		List<Panel.Line> lines = new ArrayList<>(upcoming.size());
 		for (EventTimer.Occurrence o : upcoming) {
 			long left = o.start().toEpochMilli() - now;
-			lines.add(new Panel.Line(o.name() + " · " + Durations.countdown(left), left <= SOON_MS ? Panel.YELLOW : Panel.WHITE));
+			lines.add(Panel.Line.split(o.name(), Durations.countdown(left), left <= SOON_MS ? Panel.YELLOW : Panel.WHITE));
 		}
 		CubeWheelConfig.Position p = cfg.events.position;
 		return Optional.of(new Panel("Events", lines, HudLayout.Corner.parse(p.corner), p.x, p.y));

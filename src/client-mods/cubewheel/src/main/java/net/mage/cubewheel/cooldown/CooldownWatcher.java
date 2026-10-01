@@ -171,7 +171,7 @@ public final class CooldownWatcher {
 		if (items) {
 			for (CooldownTracker.Entry e : tracker.active(now)) {
 				long left = e.endsAt() - now;
-				lines.add(new Panel.Line(e.label() + " · " + Durations.shortCountdown(left), left < ENDING_SOON_MS ? Panel.YELLOW : Panel.WHITE));
+				lines.add(Panel.Line.split(e.label(), Durations.shortCountdown(left), left < ENDING_SOON_MS ? Panel.YELLOW : Panel.WHITE));
 			}
 		}
 		lines.addAll(McmmoWatcher.lines(now));

@@ -20,5 +20,10 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 		public Line(String text, int color) {
 			this("", 0, text, color, "");
 		}
+
+		/** A name on the left and its value (a countdown) pinned to the panel's right edge. */
+		public static Line split(String left, String right, int color) {
+			return new Line("", 0, left, color, right);
+		}
 	}
 }

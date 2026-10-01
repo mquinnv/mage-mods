@@ -51,18 +51,43 @@ public final class PanelsHud implements HudElement {
 		long now = System.currentTimeMillis();
 		HudLayout layout = new HudLayout(g.guiWidth(), g.guiHeight());
 		layout.reserve(HudLayout.Corner.TOP_RIGHT, TrackerHud.lastBottom());
+		List<Panel> panels = new ArrayList<>();
 		for (int i = 0; i < SOURCES.size(); i++) {
 			try {
 				Optional<Panel> p = SOURCES.get(i).apply(now);
-				if (p.isPresent() && !p.get().lines().isEmpty()) draw(g, mc.font, layout, p.get());
+				if (p.isPresent() && !p.get().lines().isEmpty()) panels.add(p.get());
 			} catch (RuntimeException e) {
 				if (!FAILED.get(i)) CubeWheelClient.LOG.error("[cubewheel] HUD panel failed", e);
 				FAILED.set(i, true);
 			}
 		}
+		// Panels stacked in one corner share the widest one's width, so they line up as one column.
+		java.util.Map<HudLayout.Corner, Integer> cornerWidth = new java.util.EnumMap<>(HudLayout.Corner.class);
+		for (Panel p : panels) cornerWidth.merge(p.corner(), width(mc.font, p), Math::max);
+		for (Panel p : panels) {
+			try {
+				draw(g, mc.font, layout, p, cornerWidth.get(p.corner()));
+			} catch (RuntimeException e) {
+				CubeWheelClient.LOG.error("[cubewheel] HUD panel draw failed", e);
+			}
+		}
 	}
 
-	private static void draw(GuiGraphicsExtractor g, Font font, HudLayout layout, Panel p) {
+	/** Content width of {@code p}'s columns (see {@link #draw}). */
+	private static int width(Font font, Panel p) {
+		int tagW = 0, textW = 0, rightW = 0;
+		for (Panel.Line l : p.lines()) {
+			if (!l.tag().isEmpty()) tagW = Math.max(tagW, font.width(l.tag()) + COLUMN_GAP);
+			if (!l.right().isEmpty()) rightW = Math.max(rightW, font.width(l.right()) + COLUMN_GAP);
+		}
+		for (Panel.Line l : p.lines()) {
+			boolean heading = l.tag().isEmpty() && l.right().isEmpty();
+			textW = Math.max(textW, font.width(l.text()) - (heading ? tagW + rightW : 0));
+		}
+		return Math.max(font.width(p.title()), tagW + textW + rightW);
+	}
+
+	private static void draw(GuiGraphicsExtractor g, Font font, HudLayout layout, Panel p, int width) {
 		// Columns: tag (aligned), text, right-aligned part.
 		int tagW = 0, textW = 0, rightW = 0;
 		for (Panel.Line l : p.lines()) {
@@ -74,7 +99,7 @@ public final class PanelsHud implements HudElement {
 			boolean heading = l.tag().isEmpty() && l.right().isEmpty();
 			textW = Math.max(textW, font.width(l.text()) - (heading ? tagW + rightW : 0));
 		}
-		int w = Math.max(font.width(p.title()), tagW + textW + rightW);
+		int w = Math.max(width, Math.max(font.width(p.title()), tagW + textW + rightW));
 		int lh = font.lineHeight + 1;
 		int h = lh * (p.lines().size() + 1);
 		HudLayout.Box box = layout.place(p.corner(), p.x(), p.y(), w + 2 * PAD, h + 2 * PAD);

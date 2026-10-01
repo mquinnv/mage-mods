@@ -62,7 +62,7 @@ public final class BoosterWatcher {
 		List<Panel.Line> lines = new ArrayList<>(active.size());
 		for (BoosterStore.Booster b : active) {
 			long left = b.endsAt() - now;
-			lines.add(new Panel.Line(b.label() + " · " + Durations.countdown(left),
+			lines.add(Panel.Line.split(b.label(), Durations.countdown(left),
 					left < ENDING_SOON_MS ? Panel.YELLOW : Panel.WHITE));
 		}
 		CubeWheelConfig.Position p = cfg.boosters.position;
