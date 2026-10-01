@@ -19,6 +19,20 @@ public final class WheelNode {
 	public String command;
 	public List<WheelNode> children;
 	public String dynamic;
+	/**
+	 * An optional second entry on the same slice, drawn just outside the ring: point further from the centre to
+	 * take it (e.g. Crops on the ring, Spawners outside it). An outer entry may have its own outer, further out
+	 * still (Sell menu → hand → all), up to {@link #MAX_OUTER} beyond the ring.
+	 */
+	public WheelNode outer;
+	/** Tiers beyond the ring a slice may have. */
+	public static final int MAX_OUTER = 2;
+
+	/** This node with {@code outer} as its outer entry; returns this for chaining. */
+	public WheelNode withOuter(WheelNode outer) {
+		this.outer = outer;
+		return this;
+	}
 
 	public boolean isLeaf() { return command != null; }
 

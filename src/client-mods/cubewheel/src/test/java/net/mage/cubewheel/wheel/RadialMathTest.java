@@ -54,6 +54,16 @@ class RadialMathTest {
 		assertEquals(-1, RadialMath.nearest(0, -50, new double[0], 10));
 	}
 
+	@Test void tiersBeyondTheRing() {
+		// Ring edge at 100, each outer tier 30 deep; Sell has two outer entries (hand, all).
+		assertEquals(0, RadialMath.tier(80, 100, 30, 2));   // on the ring: Sell menu
+		assertEquals(0, RadialMath.tier(100, 100, 30, 2));
+		assertEquals(1, RadialMath.tier(110, 100, 30, 2));  // just outside: Sell hand
+		assertEquals(2, RadialMath.tier(135, 100, 30, 2));  // further: Sell all
+		assertEquals(2, RadialMath.tier(400, 100, 30, 2));  // far beyond still the last tier
+		assertEquals(0, RadialMath.tier(400, 100, 30, 0));  // a slice with no outer entries
+	}
+
 	@Test void centersAndOffset() {
 		assertEquals(90.0, RadialMath.sliceCenterDegrees(1, 4), 1e-9);
 		double[] o = RadialMath.offset(90, 10); assertEquals(10, o[0], 1e-9); assertEquals(0, o[1], 1e-9);

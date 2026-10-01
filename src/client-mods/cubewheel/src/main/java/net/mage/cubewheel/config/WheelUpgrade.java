@@ -65,7 +65,7 @@ public final class WheelUpgrade {
 		return more;
 	}
 
-	/** Every node of the tree, rings' and dynamic nodes' children included. */
+	/** Every node of the tree: rings' and dynamic nodes' children and slices' outer tiers included. */
 	static List<WheelNode> walk(List<WheelNode> roots) {
 		List<WheelNode> out = new ArrayList<>();
 		Deque<WheelNode> q = new ArrayDeque<>();
@@ -74,6 +74,7 @@ public final class WheelUpgrade {
 			WheelNode n = q.poll();
 			out.add(n);
 			if (n.children != null) for (WheelNode c : n.children) if (c != null) q.add(c);
+			if (n.outer != null) q.add(n.outer); // a slice's outer tiers count as part of the tree
 		}
 		return out;
 	}

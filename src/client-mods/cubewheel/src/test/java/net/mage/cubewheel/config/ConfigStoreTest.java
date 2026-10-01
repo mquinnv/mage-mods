@@ -14,6 +14,24 @@ import org.junit.jupiter.api.io.TempDir;
 class ConfigStoreTest {
 	@TempDir Path dir;
 
+	@Test void outerEntriesAreKeptValidatedAndAtMostTwoDeep() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, """
+		  {"configVersion": 5, "wheel": [
+		    {"label":"Sell","command":"sell","outer":{"label":"Hand","command":"/sell hand",
+		      "outer":{"label":"All","command":"/sell all","outer":{"label":"Too far","command":"/x"}}}},
+		    {"label":"Bad outer","command":"/a","outer":{"label":"","command":"/b"}}
+		  ]}""");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		WheelNode sell = s.current().wheel.get(0);
+		assertEquals("/sell", sell.command);
+		assertEquals("/sell hand", sell.outer.command);
+		assertEquals("/sell all", sell.outer.outer.command);
+		assertNull(sell.outer.outer.outer); // three tiers at most
+		assertNull(s.current().wheel.get(1).outer);
+	}
+
 	@Test void missingFileWritesDefaults() throws Exception {
 		Path f = dir.resolve("cubewheel.json");
 		ConfigStore s = new ConfigStore(f);
@@ -83,7 +101,7 @@ class ConfigStoreTest {
 		CubeWheelConfig c = DefaultConfig.create();
 		List<String> all = new ArrayList<>();
 		Deque<WheelNode> q = new ArrayDeque<>(c.wheel);
-		while (!q.isEmpty()) { WheelNode n = q.pop(); if (n.command != null) all.add(n.command); if (n.children != null) q.addAll(n.children); }
+		while (!q.isEmpty()) { WheelNode n = q.pop(); if (n.command != null) all.add(n.command); if (n.children != null) q.addAll(n.children); if (n.outer != null) q.add(n.outer); }
 		for (String cmd : List.of("/sell", "/kilton", "/alchemist", "/enchanter", "/warp crops", "/warp spawners", "/warp wolfhaven", "/warp tangleroots", "/warp morend", "/warp boss", "/rtp", "/jobs", "/pquests", "/prestige"))
 			assertTrue(all.contains(cmd), cmd);
 		assertTrue(WheelUpgrade.walk(c.wheel).stream().anyMatch(n -> "homes".equals(n.dynamic)));

@@ -87,15 +87,22 @@ public final class DefaultConfig {
 	public static List<WheelNode> wheel() {
 		List<WheelNode> w = new ArrayList<>();
 		// Player warps: crops and spawners are player Sushi's warps, the ones most people want.
-		w.add(leaf("Crops (Sushi)", "minecraft:wheat", "/warp crops"));
-		w.add(leaf("Spawners (Sushi)", "minecraft:spawner", "/warp spawners"));
+		// Two tiers on one slice: Crops on the ring, Spawners just outside it (point further out).
+		w.add(leaf("Crops (Sushi)", "minecraft:wheat", "/warp crops")
+			.withOuter(leaf("Spawners (Sushi)", "minecraft:spawner", "/warp spawners")));
 		w.add(dynamic("Homes", "minecraft:red_bed", "homes"));
+		w.add(ring("Travel", "minecraft:compass",
+			leaf("Spawn", "minecraft:red_bed", "/spawn"),
+			leaf("Random TP menu", "minecraft:grass_block", "/rtp"),
+			leaf("Teleporter", "minecraft:ender_pearl", "/teleporter"),
+			leaf("Warps menu", "minecraft:oak_sign", "/warp"),
+			leaf("Back", "minecraft:arrow", "/back")));
 		w.add(leaf("Jobs", "minecraft:iron_pickaxe", "/jobs"));
 		w.add(leaf("Kilton", "minecraft:skeleton_skull", "/kilton"));
-		w.add(ring("Sell", "minecraft:gold_ingot",
-			leaf("Sell menu", "minecraft:gold_ingot", "/sell"),
-			leaf("Sell hand", "minecraft:gold_nugget", "/sell hand"),
-			leaf("Sell all", "minecraft:gold_block", "/sell all")));
+		// Three tiers: the sell menu on the ring, sell hand outside it, sell all furthest out.
+		w.add(leaf("Sell", "minecraft:gold_ingot", "/sell")
+			.withOuter(leaf("Sell hand", "minecraft:gold_nugget", "/sell hand")
+				.withOuter(leaf("Sell all", "minecraft:gold_block", "/sell all"))));
 		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
 			leaf("Ender chest", "minecraft:ender_chest", "/ec"),
 			leaf("Party vault", "minecraft:barrel", "/p vault")));
@@ -135,12 +142,6 @@ public final class DefaultConfig {
 				ring("Bosses", "minecraft:wither_skeleton_skull",
 					leaf("Boss arena", "minecraft:wither_skeleton_skull", "/warp boss"),
 					leaf("Bosses", "minecraft:nether_star", "/bosses"))),
-			ring("Travel", "minecraft:compass",
-				leaf("Spawn", "minecraft:red_bed", "/spawn"),
-				leaf("Random TP menu", "minecraft:grass_block", "/rtp"),
-				leaf("Teleporter", "minecraft:ender_pearl", "/teleporter"),
-				leaf("Warps menu", "minecraft:oak_sign", "/warp"),
-				leaf("Back", "minecraft:arrow", "/back")),
 			ring("Party", "minecraft:white_banner",
 				leaf("Party menu", "minecraft:white_banner", "/p"),
 				leaf("Party home", "minecraft:white_banner", "/p home"),

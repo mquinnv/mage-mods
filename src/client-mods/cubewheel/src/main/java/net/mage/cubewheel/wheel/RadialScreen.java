@@ -28,6 +28,10 @@ public final class RadialScreen extends Screen {
 	private static final int GREY = 0xFFAAAAAA;
 	/** Widest gap between neighbouring entries of a sub-ring, in degrees. */
 	private static final double SUB_RING_STEP = 45;
+	/** Depth of each tier beyond the ring (one icon + label block plus padding). */
+	private static final int TIER_STEP = 34;
+	/** Background disc behind an outer entry. */
+	private static final int OUTER_DISC = 16;
 	/** Light dim over the world, so it stays visible behind the wheel. */
 	private static final int BACKDROP = 0x33000000;
 	/** Translucent charcoal band the slices sit on. */
@@ -70,6 +74,10 @@ public final class RadialScreen extends Screen {
 	private final KeyMapping holdKey;
 	private List<WheelNode> entries;
 	private int hovered = -1;
+	/** Tier of the hovered slice: 0 = the ring entry, 1+ = its outer entries (further from the centre). */
+	private int hoveredTier;
+	/** The ring's outer edge as last drawn; beyond it the outer tiers start. */
+	private double renderedEdge;
 	private boolean keyStillHeld;
 
 	public RadialScreen(WheelNode root, KeyMapping holdKey) {
@@ -87,6 +95,20 @@ public final class RadialScreen extends Screen {
 	 */
 	private double[] directions() {
 		return RadialMath.fan(entries.size(), start(), path.size() <= 1 ? 360 : SUB_RING_STEP);
+	}
+
+	/** How many outer entries a slice has (0 for a plain slice). */
+	private static int outerCount(WheelNode node) {
+		int n = 0;
+		for (WheelNode o = node == null ? null : node.outer; o != null; o = o.outer) n++;
+		return n;
+	}
+
+	/** The slice's entry at {@code tier}: 0 = itself, 1 = its outer entry, 2 = that one's outer … */
+	private static WheelNode atTier(WheelNode node, int tier) {
+		WheelNode at = node;
+		for (int t = 0; t < tier && at.outer != null; t++) at = at.outer;
+		return at;
 	}
 
 	private double start() {
@@ -163,6 +185,9 @@ public final class RadialScreen extends Screen {
 		int hub = Math.min((int) Math.round(r * HUB_FRACTION), ri - half - HUB_GAP);
 		double[] dirs = directions();
 		hovered = RadialMath.nearest(mouseX - cx, mouseY - cy, dirs, r * 0.25);
+		renderedEdge = ri + half;
+		hoveredTier = hovered < 0 ? 0
+				: RadialMath.tier(Math.hypot(mouseX - cx, mouseY - cy), renderedEdge, TIER_STEP, outerCount(entries.get(hovered)));
 		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + half, ri - half, RING);
 		fillRing(g, cx, cy, hub, 0, HUB);
 		for (int i = 0; i < entries.size(); i++) {
@@ -170,7 +195,7 @@ public final class RadialScreen extends Screen {
 			double[] o = RadialMath.offset(dirs[i], r);
 			int x = cx + (int) Math.round(o[0]);
 			int y = cy + (int) Math.round(o[1]);
-			boolean hot = i == hovered;
+			boolean hot = i == hovered && hoveredTier == 0;
 			if (hot) fillRing(g, x, y, HOVER_RADIUS, 0, HOVER);
 			// Icon and label are stacked as one block centred on the slice point.
 			int top = y - BLOCK_HEIGHT / 2;
@@ -179,6 +204,19 @@ public final class RadialScreen extends Screen {
 			SliceViews.View view = views[i];
 			int colour = view != null && view.colour() != null ? view.colour() : hot ? WHITE : GREY;
 			g.centeredText(font, SliceViews.label(node, view), x, top + 18, colour);
+			// Outer tiers: the same slice, further out (e.g. Sell hand, then Sell all).
+			WheelNode outer = node.outer;
+			for (int tier = 1; outer != null; tier++, outer = outer.outer) {
+				double[] oo = RadialMath.offset(dirs[i], renderedEdge + (tier - 0.5) * TIER_STEP);
+				int ox = cx + (int) Math.round(oo[0]);
+				int oy = cy + (int) Math.round(oo[1]);
+				boolean outerHot = i == hovered && hoveredTier == tier;
+				fillRing(g, ox, oy, OUTER_DISC, 0, outerHot ? HOVER : RING);
+				int otop = oy - BLOCK_HEIGHT / 2;
+				ItemStack oicon = Icons.stack(outer.icon);
+				if (!oicon.isEmpty()) g.item(oicon, ox - 8, otop);
+				g.centeredText(font, outer.label == null ? "" : outer.label, ox, otop + 18, outerHot ? WHITE : GREY);
+			}
 		}
 		WheelNode current = path.peekLast();
 		g.centeredText(font, current.label == null ? "" : current.label, cx, cy - font.lineHeight / 2, WHITE);
@@ -201,7 +239,7 @@ public final class RadialScreen extends Screen {
 			}
 			if (isHoldKeyDown()) return;
 			keyStillHeld = false;
-			if (hovered >= 0 && hovered < entries.size()) activate(entries.get(hovered));
+			if (hovered >= 0 && hovered < entries.size()) activate(atTier(entries.get(hovered), hoveredTier));
 			else onClose();
 		} catch (RuntimeException e) {
 			fail("tick", e);
@@ -219,7 +257,11 @@ public final class RadialScreen extends Screen {
 			double dead = (renderedRadius > 0 ? renderedRadius : radius()) * 0.25;
 			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 				int slice = RadialMath.nearest(dx, dy, directions(), dead);
-				if (slice >= 0) activate(entries.get(slice));
+				if (slice >= 0) {
+					WheelNode node = entries.get(slice);
+					int tier = renderedEdge > 0 ? RadialMath.tier(Math.hypot(dx, dy), renderedEdge, TIER_STEP, outerCount(node)) : 0;
+					activate(atTier(node, tier));
+				}
 				else if (Math.hypot(dx, dy) < dead) back();
 				return true;
 			}

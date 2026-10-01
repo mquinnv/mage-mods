@@ -320,6 +320,7 @@ public final class ConfigStore {
 				if (hasCommand) continue;
 				n.command = null;
 				n.children = null; // a live slice never opens a ring
+				n.outer = normalizeOuter(n.outer, WheelNode.MAX_OUTER);
 				out.add(n);
 				continue;
 			}
@@ -339,8 +340,25 @@ public final class ConfigStore {
 					n.children = normalizeNodes(n.children);
 				}
 			}
+			n.outer = normalizeOuter(n.outer, WheelNode.MAX_OUTER);
 			out.add(n);
 		}
 		return out;
+	}
+
+	/**
+	 * A slice's chain of outer entries, each validated like any node; an invalid one ends the chain, and it is
+	 * cut after {@code depth} entries.
+	 */
+	private static WheelNode normalizeOuter(WheelNode outer, int depth) {
+		if (outer == null || depth <= 0) return null;
+		WheelNode next = outer.outer;
+		outer.outer = null;
+		List<WheelNode> one = new ArrayList<>();
+		one.add(outer);
+		List<WheelNode> ok = normalizeNodes(one);
+		if (ok.isEmpty()) return null;
+		ok.get(0).outer = normalizeOuter(next, depth - 1);
+		return ok.get(0);
 	}
 }

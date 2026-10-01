@@ -63,6 +63,15 @@ public final class RadialMath {
 		return out;
 	}
 
+	/**
+	 * Which tier of a slice the pointer is on: 0 inside the ring's outer edge ({@code edge}), then 1, 2 … for each
+	 * {@code step} beyond it, capped at {@code tiers} (how many outer entries the slice has).
+	 */
+	public static int tier(double distance, double edge, double step, int tiers) {
+		if (tiers <= 0 || distance <= edge || step <= 0) return 0;
+		return (int) Math.min(tiers, 1 + Math.floor((distance - edge) / step));
+	}
+
 	/** Index of the entry whose direction is closest to (dx, dy), or -1 inside the dead zone / with no entries. */
 	public static int nearest(double dx, double dy, double[] directions, double deadZone) {
 		if (directions == null || directions.length == 0 || Math.hypot(dx, dy) < deadZone) return -1;
