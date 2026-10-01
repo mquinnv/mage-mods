@@ -183,6 +183,8 @@ public final class ConfigStore {
 		if (c.cooldowns == null) c.cooldowns = new CubeWheelConfig.Cooldowns();
 		c.cooldowns.position = normalizePosition(c.cooldowns.position, DefaultConfig.cooldownsPosition());
 		if (c.svas == null) c.svas = new CubeWheelConfig.Svas();
+		if (c.status == null) c.status = new CubeWheelConfig.Status();
+		c.status.position = normalizePosition(c.status.position, DefaultConfig.statusPosition());
 		normalizeDailyReward(c, warnings);
 		c.wheel = c.wheel == null ? DefaultConfig.wheel() : normalizeNodes(c.wheel);
 		c.vaultCount = Math.max(0, Math.min(54, c.vaultCount));

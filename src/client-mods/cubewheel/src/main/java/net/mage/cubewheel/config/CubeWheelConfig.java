@@ -24,6 +24,16 @@ public final class CubeWheelConfig {
 	public Svas svas = new Svas();
 	/** The "Daily reward" (/cow) slice badge. */
 	public DailyReward dailyReward = new DailyReward();
+	/** The "Status" panel: armor set, coordinates, biome, light, FPS, speed and time. */
+	public Status status = new Status();
+
+	public static final class Status {
+		public boolean enabled = true;
+		/** Show the worn armor set ("Phoenix 4/4") as the panel's first line. */
+		public boolean armor = true;
+		/** Top left; registered first, so the Jobs and Tracker panels stack under it. */
+		public Position position = DefaultConfig.statusPosition();
+	}
 	public List<WheelNode> wheel;
 
 	public static final class Svas {

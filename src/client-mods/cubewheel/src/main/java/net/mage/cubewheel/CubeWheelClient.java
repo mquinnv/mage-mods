@@ -111,6 +111,8 @@ public final class CubeWheelClient implements ClientModInitializer {
 		TrackerHud.register();
 		// Panels in one corner stack in this order. The ones that come and go (boosters, cooldowns) go last so
 		// they don't push the always-present Jobs/Tracker panels up and down.
+		net.mage.cubewheel.status.StatusPanel.register();
+		PanelsHud.add(net.mage.cubewheel.status.StatusPanel::panel); // top left, above Jobs
 		PanelsHud.add(EventHud::panel);
 		PanelsHud.add(JobsPanel::panel);
 		PanelsHud.add(TrackerPanel::panel); // under the Jobs panel

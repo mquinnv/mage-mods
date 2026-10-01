@@ -245,6 +245,11 @@ public final class DefaultConfig {
 		return new CubeWheelConfig.Position("top_left", 4, 4);
 	}
 
+	/** The Status panel: top left, first, so Jobs and Tracker stack under it. */
+	public static CubeWheelConfig.Position statusPosition() {
+		return new CubeWheelConfig.Position("top_left", 4, 4);
+	}
+
 	/** Registered after the other panels, so in the same corner it stacks below them. */
 	public static CubeWheelConfig.Position jobsPanelPosition() {
 		return new CubeWheelConfig.Position("top_left", 4, 4);
