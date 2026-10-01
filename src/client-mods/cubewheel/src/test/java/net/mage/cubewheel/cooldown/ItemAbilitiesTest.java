@@ -11,6 +11,15 @@ import org.junit.jupiter.api.Test;
 
 /** Lore shapes follow ManaCube Survival items (plain text as Component.getString() returns it). */
 class ItemAbilitiesTest {
+	@Test void championPotionIsAConsumeCooldown() {
+		ItemAbilities a = ItemAbilities.parse(java.util.List.of("Champion Potion", "Infinite Uses", "",
+				"ITEM EFFECTS (When Consumed)", "\u279F Absorption 3 (20s)", "\u279F Regeneration II (10s)",
+				"\u279F Resistance III (8s)", "\u279F Weakness II (10s)", "", "Cooldown: 240s"));
+		org.junit.jupiter.api.Assertions.assertEquals(1, a.abilities().size());
+		org.junit.jupiter.api.Assertions.assertEquals(ItemAbilities.Action.CONSUME, a.abilities().get(0).action());
+		org.junit.jupiter.api.Assertions.assertEquals(240_000, a.abilities().get(0).cooldownMs());
+	}
+
 	@Test void rightClickSection() {
 		ItemAbilities a = ItemAbilities.parse(List.of(
 				"Gjallarhorn", "", "ITEM EFFECTS: (Right-Click)", "➟ Duplicate a Monster", "", "Amount: 3 - 6", "Cooldown: 60s", "",

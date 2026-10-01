@@ -52,6 +52,15 @@ public final class CooldownWatcher {
 	private static String heldUses;
 	private static ItemStack usingRef;
 	private static ItemStack usingCopy;
+	/**
+	 * A right-click with an item that has a "When Consumed" cooldown, waiting to see if it was consumed at once
+	 * (ManaCube's "Infinite Uses" potions apply on the click, with no drinking): a potion effect gained or
+	 * refreshed within {@link #INSTANT_CONSUME_MS} counts as the consumption.
+	 */
+	private static ItemStack instantItem;
+	private static long instantUntil;
+	private static java.util.Map<Object, Integer> instantEffects = java.util.Map.of();
+	private static final long INSTANT_CONSUME_MS = 2_500;
 
 	private CooldownWatcher() {}
 
@@ -88,10 +97,32 @@ public final class CooldownWatcher {
 	private static void onUse(Player player, Level level, InteractionHand hand) {
 		try {
 			if (!level.isClientSide() || player != Minecraft.getInstance().player || !active() || player.isSpectator()) return;
-			trigger(player.getItemInHand(hand), Action.USE, player.isShiftKeyDown());
+			ItemStack stack = player.getItemInHand(hand);
+			trigger(stack, Action.USE, player.isShiftKeyDown());
+			if (!stack.isEmpty() && ItemAbilities.parse(lore(stack)).abilities().stream().anyMatch(a -> a.action() == Action.CONSUME)) {
+				instantItem = stack.copyWithCount(1);
+				instantUntil = System.currentTimeMillis() + INSTANT_CONSUME_MS;
+				instantEffects = effects(player);
+			}
 		} catch (RuntimeException e) {
 			fail(e);
 		}
+	}
+
+	/** The player's effects and their remaining ticks, keyed by effect. */
+	private static java.util.Map<Object, Integer> effects(Player player) {
+		java.util.Map<Object, Integer> out = new java.util.HashMap<>();
+		for (net.minecraft.world.effect.MobEffectInstance e : player.getActiveEffects()) out.put(e.getEffect(), e.getDuration());
+		return out;
+	}
+
+	/** Did the player gain an effect, or one get longer (refreshed), since {@code before}? */
+	private static boolean gainedEffect(Player player, java.util.Map<Object, Integer> before) {
+		for (net.minecraft.world.effect.MobEffectInstance e : player.getActiveEffects()) {
+			Integer old = before.get(e.getEffect());
+			if (old == null || e.getDuration() > old + 5) return true;
+		}
+		return false;
 	}
 
 	private static void onAttack(LocalPlayer player) {
@@ -122,6 +153,13 @@ public final class CooldownWatcher {
 				usingCopy = using.copy();
 			}
 			if (!consuming) usingRef = null;
+			if (instantItem != null) {
+				if (System.currentTimeMillis() > instantUntil) instantItem = null;
+				else if (gainedEffect(p, instantEffects)) {
+					trigger(instantItem, Action.CONSUME, false); // a running countdown is never restarted
+					instantItem = null;
+				}
+			}
 			ItemStack eaten = eating.tick(consuming, consuming ? p.getUseItemRemainingTicks() : 0, consuming ? usingCopy : null);
 			if (eaten != null) trigger(eaten, Action.CONSUME, false);
 			if (sneakEdge.rose(p.isShiftKeyDown()) && mc.gui.screen() == null) trigger(p.getMainHandItem(), Action.SNEAK, true);
