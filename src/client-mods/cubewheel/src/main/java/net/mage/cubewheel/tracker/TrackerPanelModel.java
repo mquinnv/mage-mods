@@ -50,7 +50,11 @@ public final class TrackerPanelModel {
 	 * One panel row: {@code tag} (the source's marker, "" for headings and objective rows) in {@code tagColor},
 	 * {@code text} and {@code right} (a short count, "" for headings and objective rows).
 	 */
-	public record Line(String tag, int tagColor, String text, String right, Tone tone) {}
+	public record Line(String tag, int tagColor, String text, String right, Tone tone, Activity activity) {
+		public Line(String tag, int tagColor, String text, String right, Tone tone) {
+			this(tag, tagColor, text, right, tone, Activity.NONE);
+		}
+	}
 
 	private TrackerPanelModel() {}
 
@@ -60,6 +64,12 @@ public final class TrackerPanelModel {
 	 */
 	public static List<Line> build(List<TrackerStore.HudSection> sections, Function<String, ObjectiveInfo> objectives,
 			double near, Collection<String> worldNames, long now) {
+		return build(sections, objectives, near, worldNames, now, null);
+	}
+
+	/** As above; {@code activity} says how recently each entry (by id) made progress (null: none marked). */
+	public static List<Line> build(List<TrackerStore.HudSection> sections, Function<String, ObjectiveInfo> objectives,
+			double near, Collection<String> worldNames, long now, Function<String, Activity> activity) {
 		List<Line> lines = new ArrayList<>();
 		if (sections == null) return lines;
 		boolean headings = sections.size() > 1;
@@ -71,8 +81,9 @@ public final class TrackerPanelModel {
 				ObjectiveInfo info = objectives == null ? null : objectives.apply(t.id());
 				EntryLabel label = EntryLabel.of(t.name(), info);
 				SourceTag tag = SourceTag.of(t.source());
+				Activity act = activity == null ? Activity.NONE : activity.apply(t.id());
 				lines.add(new Line(tag.glyph(), tag.argb(), title(t.source(), label.title(), worldNames),
-						CompactJob.count(r, now), tone(r, near, s.kind())));
+						CompactJob.count(r, now), tone(r, near, s.kind()), act == null ? Activity.NONE : act));
 				if (info != null && info.subs() != null && info.subs().size() > 1) {
 					// One row per objective, its count in the right column: 50% of "Slay 10 Golden Knights" is 5/10.
 					for (ObjectiveInfo.Sub sub : info.subs()) {

@@ -33,17 +33,28 @@ public final class JobsPanel {
 		List<String> worlds = cfg.tracker.local.worlds;
 		JobsPanelModel.Model m = JobsPanelModel.build(store.rows(cfg.tracker.local.enabled), store::isHidden,
 				id -> store.objective(id).orElse(null),
-				t -> WorldScope.relevance(WorldScope.of(t.name(), store.objective(t.id()).orElse(null), worlds), at), worlds, now);
+				t -> WorldScope.relevance(WorldScope.of(t.name(), store.objective(t.id()).orElse(null), worlds), at), worlds, now,
+				id -> store.activity(id, now));
 		if (m.lines().isEmpty()) return Optional.empty();
 		List<Panel.Line> lines = new ArrayList<>(m.lines().size());
 		for (JobsPanelModel.Line l : m.lines()) {
 			// A fish target takes its rarity colour (as the server draws it); the count keeps the progress colour.
 			int progress = color(l.tone());
 			int text = l.rarity() != null && l.tone() != JobsPanelModel.Tone.DONE ? l.rarity().argb : progress;
-			lines.add(new Panel.Line(l.tag(), worldTagColor(l.tag()), l.text(), text, l.right(), progress));
+			lines.add(new Panel.Line(l.tag(), worldTagColor(l.tag()), l.text(), text, l.right(), progress)
+					.withAccent(accent(l.activity())));
 		}
 		CubeWheelConfig.Position p = cfg.tracker.jobsPanel.position;
 		return Optional.of(new Panel(m.title(), lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
+	}
+
+	/** The bar marking an entry you made progress on: bright for the last couple of minutes, dim for a while after. */
+	static int accent(Activity a) {
+		return switch (a) {
+			case ACTIVE -> 0xFF55FFFF;
+			case RECENT -> 0x9055FFFF;
+			case NONE -> 0;
+		};
 	}
 
 	/** World tags in each mana world's colour. */

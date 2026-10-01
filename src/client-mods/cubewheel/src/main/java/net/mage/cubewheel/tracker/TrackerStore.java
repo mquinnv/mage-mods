@@ -66,6 +66,8 @@ public final class TrackerStore {
 	private Map<String, ObjectiveInfo> objectives = new LinkedHashMap<>();
 	private Map<String, Estimate> estimates = new LinkedHashMap<>();
 	private final Map<String, Accuracy> accuracy = new HashMap<>();
+	/** Not persisted: when each entry last made progress this session (local count or a higher server value). */
+	private final Map<String, Long> progressAt = new HashMap<>();
 	private BiConsumer<String, Accuracy> snapBackListener;
 
 	// Rule caches, rebuilt after any change to items or objectives.
@@ -100,6 +102,7 @@ public final class TrackerStore {
 				&& now - old.seenAt() < SEEN_REFRESH_MS) {
 			return snapped || unpinned;
 		}
+		if (old != null && p.current() > old.current()) progressAt.put(id, now);
 		items.put(id, new Trackable(id, source, name, p.current(), p.max(), now));
 		rulesDirty = true;
 		return true;
@@ -124,6 +127,7 @@ public final class TrackerStore {
 			Trackable t = e.getValue();
 			if (t.complete() || t.name() == null || !names.matcher(t.name()).find()) continue;
 			double current = Math.max(t.current(), value);
+			if (current > t.current()) progressAt.put(t.id(), now);
 			snapBack(t.id(), current);
 			Trackable updated = new Trackable(t.id(), t.source(), t.name(), current, t.max(), now);
 			e.setValue(updated);
@@ -232,6 +236,7 @@ public final class TrackerStore {
 		Trackable t = items.get(id);
 		if (t == null || t.complete() || units <= 0) return false;
 		Estimate old = estimates.get(id);
+		progressAt.put(id, now);
 		estimates.put(id, old == null
 				? new Estimate(units, t.current(), now, now)
 				: new Estimate(old.count() + units, old.baseline(), old.since(), now));
@@ -246,6 +251,12 @@ public final class TrackerStore {
 		if (left <= 0) estimates.remove(id);
 		else estimates.put(id, new Estimate(left, old.baseline(), old.since(), old.lastAt()));
 		return true;
+	}
+
+	/** How recently {@code id} made progress this session (see {@link Activity}). */
+	public Activity activity(String id, long now) {
+		Long at = progressAt.get(id);
+		return at == null ? Activity.NONE : Activity.of(at, now);
 	}
 
 	public Optional<Estimate> estimate(String id) {

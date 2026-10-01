@@ -110,6 +110,8 @@ public final class PanelsHud implements HudElement {
 			Panel.Line l = p.lines().get(i);
 			int ly = y + lh * (i + 1);
 			boolean heading = l.tag().isEmpty() && l.right().isEmpty();
+			// An accent bar in the left padding (e.g. an entry you made progress on just now).
+			if (l.accent() != 0) g.fill(box.x(), ly - 1, box.x() + PAD, ly + lh - 1, l.accent());
 			if (!l.tag().isEmpty()) g.text(font, l.tag(), x, ly, l.tagColor());
 			g.text(font, l.text(), heading ? x : x + tagW, ly, l.color());
 			if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), ly, l.rightColor());

@@ -56,7 +56,11 @@ public final class JobsPanelModel {
 	 * (an industry heading, or the
 	 * target without verb or world) and {@code right} (a short count, right-aligned). Unused columns are "".
 	 */
-	public record Line(String tag, String text, String right, Tone tone, Rarity rarity) {
+	public record Line(String tag, String text, String right, Tone tone, Rarity rarity, Activity activity) {
+		public Line(String tag, String text, String right, Tone tone, Rarity rarity) {
+			this(tag, text, right, tone, rarity, Activity.NONE);
+		}
+
 		/** A row without a rarity (headings, non-fish targets). */
 		public Line(String tag, String text, String right, Tone tone) {
 			this(tag, text, right, tone, null);
@@ -80,6 +84,13 @@ public final class JobsPanelModel {
 	 */
 	public static Model build(List<TrackerRow> rows, Predicate<String> hidden, Function<String, ObjectiveInfo> objectives,
 			Function<Trackable, WorldScope.Relevance> relevance, java.util.Collection<String> worldNames, long now) {
+		return build(rows, hidden, objectives, relevance, worldNames, now, null);
+	}
+
+	/** As above; {@code activity} says how recently each entry (by id) made progress (null: none marked). */
+	public static Model build(List<TrackerRow> rows, Predicate<String> hidden, Function<String, ObjectiveInfo> objectives,
+			Function<Trackable, WorldScope.Relevance> relevance, java.util.Collection<String> worldNames, long now,
+			Function<String, Activity> activity) {
 		String crate = null;
 		Map<String, List<Item>> groups = new LinkedHashMap<>();
 		for (TrackerRow r : rows) {
@@ -118,8 +129,9 @@ public final class JobsPanelModel {
 				Rarity rarity = obj == null || obj.subs() == null ? null
 						: obj.subs().stream().map(sub -> Rarity.inText(sub.text())).flatMap(java.util.Optional::stream)
 								.findFirst().orElse(null);
+				Activity act = activity == null ? Activity.NONE : activity.apply(it.row().item().id());
 				lines.add(new Line(tag, CompactJob.target(it.text(), worldNames), CompactJob.count(it.row(), now), tone(it),
-						rarity));
+						rarity, act == null ? Activity.NONE : act));
 			}
 		}
 		return new Model(crate == null ? TITLE : TITLE + " · " + crate, List.copyOf(lines));

@@ -30,11 +30,12 @@ public final class TrackerPanel {
 				mode == WorldScope.Mode.OFF ? null : LocalSignals.currentWorld(), cfg.tracker.local.worlds, mode,
 				cfg.tracker.jobsPanel.enabled ? JobsPanelModel::isJob : null); // the Jobs panel shows those
 		List<TrackerPanelModel.Line> model = TrackerPanelModel.build(sections, id -> store.objective(id).orElse(null),
-				cfg.tracker.nearThreshold, cfg.tracker.local.worlds, now);
+				cfg.tracker.nearThreshold, cfg.tracker.local.worlds, now, id -> store.activity(id, now));
 		if (model.isEmpty()) return Optional.empty();
 		List<Panel.Line> lines = new ArrayList<>(model.size());
 		for (TrackerPanelModel.Line l : model) {
-			lines.add(new Panel.Line(l.tag(), l.tagColor(), l.text(), color(l.tone()), l.right()));
+			lines.add(new Panel.Line(l.tag(), l.tagColor(), l.text(), color(l.tone()), l.right())
+					.withAccent(JobsPanel.accent(l.activity())));
 		}
 		CubeWheelConfig.Position p = cfg.tracker.position;
 		return Optional.of(new Panel(TrackerPanelModel.TITLE, lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
