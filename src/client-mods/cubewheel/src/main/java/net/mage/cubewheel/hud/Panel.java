@@ -12,6 +12,28 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 	public static final int GRAY = 0xFFAAAAAA;
 	public static final int GREEN = 0xFF55FF55;
 
+	/** How opaque a full progress bar behind a row gets (text stays readable on top). */
+	static final int METER_ALPHA = 0x80;
+
+	/**
+	 * The colour of a row's progress bar at {@code fraction}: it heats up from clear through yellow (half way) to red
+	 * (nearly there), and is green once done (1).
+	 */
+	public static int meterColor(double fraction) {
+		double f = Math.max(0, Math.min(1, fraction));
+		if (f >= 1) return argb(METER_ALPHA, 0x55, 0xFF, 0x55);
+		if (f < 0.5) {
+			double t = f / 0.5; // clear -> yellow
+			return argb((int) Math.round(METER_ALPHA * t), 0xFF, 0xDD, 0x33);
+		}
+		double t = (f - 0.5) / 0.5; // yellow -> red
+		return argb(METER_ALPHA, 0xFF, (int) Math.round(0xDD + (0x33 - 0xDD) * t), 0x33);
+	}
+
+	private static int argb(int a, int r, int g, int b) {
+		return (a & 0xFF) << 24 | (r & 0xFF) << 16 | (g & 0xFF) << 8 | (b & 0xFF);
+	}
+
 	/**
 	 * A row: an optional short {@code tag} in its own coloured column, the {@code text}, and an optional
 	 * {@code right} part aligned to the panel's right edge (so counts line up in a proportional font).

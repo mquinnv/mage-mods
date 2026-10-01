@@ -29,10 +29,8 @@ public final class PanelsHud implements HudElement {
 	private static final int COLUMN_GAP = 4;
 	/** An item icon before a line's text: drawn at half size (8 px) plus a gap. */
 	private static final int ICON_W = 10;
-	/** Progress meter under a row: empty track, filling, full. */
-	private static final int METER_TRACK = 0x40FFFFFF;
-	private static final int METER_FILL = 0xFF4FA3FF;
-	private static final int METER_DONE = 0xFF55FF55;
+	/** The empty part of a row's progress bar. */
+	private static final int METER_TRACK = 0x18FFFFFF;
 
 	/** A panel source, given the current time in epoch ms. */
 	public interface Source extends Function<Long, Optional<Panel>> {}
@@ -127,12 +125,12 @@ public final class PanelsHud implements HudElement {
 			if (!l.tag().isEmpty()) g.text(font, l.tag(), x, ly, l.tagColor());
 			int tx = heading ? x : x + tagW;
 			if (l.progress() >= 0) {
-				// A 1 px meter in the gap under the row, across the text and count columns.
-				int my = ly + font.lineHeight;
-				int end = x + w;
-				int fill = tx + (int) Math.round((end - tx) * Math.min(1, l.progress()));
-				g.fill(tx, my, end, my + 1, METER_TRACK);
-				if (fill > tx) g.fill(tx, my, fill, my + 1, l.progress() >= 1 ? METER_DONE : METER_FILL);
+				// The row itself is the bar: filled behind the text and count, heating up as it goes (see Panel.meterColor).
+				int left = tx - 1;
+				int end = x + w + 1;
+				int fill = left + (int) Math.round((end - left) * Math.min(1, l.progress()));
+				g.fill(left, ly - 1, end, ly + lh - 1, METER_TRACK);
+				if (fill > left) g.fill(left, ly - 1, fill, ly + lh - 1, Panel.meterColor(l.progress()));
 			}
 			if (l.icon() instanceof ItemStack stack && !stack.isEmpty()) {
 				g.pose().pushMatrix();
