@@ -27,6 +27,8 @@ public final class RadialScreen extends Screen {
 	private static final int WHITE = 0xFFFFFFFF;
 	private static final int GREY = 0xFFAAAAAA;
 	private static final int FLY_ON = 0xFF55FF55;
+	/** Widest gap between neighbouring entries of a sub-ring, in degrees. */
+	private static final double SUB_RING_STEP = 45;
 	private static final int FLY_OFF = 0xFFFF7777;
 	/** Light dim over the world, so it stays visible behind the wheel. */
 	private static final int BACKDROP = 0x33000000;
@@ -79,6 +81,14 @@ public final class RadialScreen extends Screen {
 		path.addLast(root);
 		starts.addLast(0.0);
 		entries = resolve(root, false);
+	}
+
+	/**
+	 * Where each current entry sits: the top ring evenly spread; a sub-ring fanned out beside its default
+	 * (at most {@link #SUB_RING_STEP} degrees apart) so switching options is a short flick.
+	 */
+	private double[] directions() {
+		return RadialMath.fan(entries.size(), start(), path.size() <= 1 ? 360 : SUB_RING_STEP);
 	}
 
 	private double start() {
@@ -148,12 +158,13 @@ public final class RadialScreen extends Screen {
 		renderedRadius = r;
 		int ri = (int) Math.round(r);
 		int hub = Math.min((int) Math.round(r * HUB_FRACTION), ri - half - HUB_GAP);
-		hovered = RadialMath.sliceAt(mouseX - cx, mouseY - cy, entries.size(), r * 0.25, start());
+		double[] dirs = directions();
+		hovered = RadialMath.nearest(mouseX - cx, mouseY - cy, dirs, r * 0.25);
 		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + half, ri - half, RING);
 		fillRing(g, cx, cy, hub, 0, HUB);
 		for (int i = 0; i < entries.size(); i++) {
 			WheelNode node = entries.get(i);
-			double[] o = RadialMath.offset(RadialMath.sliceCenterDegrees(i, entries.size(), start()), r);
+			double[] o = RadialMath.offset(dirs[i], r);
 			int x = cx + (int) Math.round(o[0]);
 			int y = cy + (int) Math.round(o[1]);
 			boolean hot = i == hovered;
@@ -204,7 +215,7 @@ public final class RadialScreen extends Screen {
 			double dy = event.y() - cy;
 			double dead = (renderedRadius > 0 ? renderedRadius : radius()) * 0.25;
 			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
-				int slice = RadialMath.sliceAt(dx, dy, entries.size(), dead, start());
+				int slice = RadialMath.nearest(dx, dy, directions(), dead);
 				if (slice >= 0) activate(entries.get(slice));
 				else if (Math.hypot(dx, dy) < dead) back();
 				return true;
@@ -241,7 +252,8 @@ public final class RadialScreen extends Screen {
 			// Rotate the sub-ring so its first (default) entry sits under the slice just chosen:
 			// clicking the same spot again takes the default (Vaults → Vault 1).
 			int index = entries.indexOf(node);
-			double childStart = index < 0 ? start() : RadialMath.sliceCenterDegrees(index, entries.size(), start());
+			double[] dirs = directions();
+			double childStart = index < 0 || index >= dirs.length ? start() : dirs[index];
 			path.addLast(node);
 			starts.addLast(childStart);
 			entries = children;

@@ -44,6 +44,43 @@ public final class RadialMath {
 		return sliceCenterDegrees(index, count, 0);
 	}
 
+	/**
+	 * Entry directions for a ring of {@code count} entries whose first entry sits at {@code startDegrees}.
+	 * Entries are {@code min(360/count, maxStep)} apart; when that doesn't fill the circle they fan out
+	 * alternately beside the first (right, left, further right …), so a small sub-ring keeps every option
+	 * a short flick from where it was opened. A full ring is evenly spread clockwise.
+	 */
+	public static double[] fan(int count, double startDegrees, double maxStep) {
+		if (count <= 0) return new double[0];
+		double step = Math.min(360.0 / count, maxStep);
+		boolean full = step * count >= 360 - 1e-9;
+		double[] out = new double[count];
+		for (int i = 0; i < count; i++) {
+			int offset = full ? i : (i % 2 == 1 ? (i + 1) / 2 : -(i / 2));
+			double deg = startDegrees + offset * step;
+			out[i] = ((deg % 360) + 360) % 360;
+		}
+		return out;
+	}
+
+	/** Index of the entry whose direction is closest to (dx, dy), or -1 inside the dead zone / with no entries. */
+	public static int nearest(double dx, double dy, double[] directions, double deadZone) {
+		if (directions == null || directions.length == 0 || Math.hypot(dx, dy) < deadZone) return -1;
+		double deg = Math.toDegrees(Math.atan2(dx, -dy));
+		deg = ((deg % 360) + 360) % 360;
+		int best = -1;
+		double bestDist = Double.MAX_VALUE;
+		for (int i = 0; i < directions.length; i++) {
+			double d = Math.abs(deg - directions[i]) % 360;
+			d = Math.min(d, 360 - d);
+			if (d < bestDist) {
+				bestDist = d;
+				best = i;
+			}
+		}
+		return best;
+	}
+
 	/** Centre of slice {@code index} in a ring whose slice 0 sits at {@code startDegrees}; in [0, 360). */
 	public static double sliceCenterDegrees(int index, int count, double startDegrees) {
 		double deg = startDegrees + index * 360.0 / count;

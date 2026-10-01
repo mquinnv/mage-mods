@@ -2,6 +2,7 @@ package net.mage.cubewheel.wheel;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class RadialMathTest {
@@ -30,6 +31,27 @@ class RadialMathTest {
 	@Test void unrotatedOverloadsMatchStartZero() {
 		for (int i = 0; i < 8; i++) assertEquals(RadialMath.sliceCenterDegrees(i, 8), RadialMath.sliceCenterDegrees(i, 8, 0), 1e-9);
 		assertEquals(RadialMath.sliceAt(-50, 5, 8, 10), RadialMath.sliceAt(-50, 5, 8, 10, 0));
+	}
+
+	@Test void smallSubRingFansOutBesideTheDefault() {
+		// Two entries opened from the slice at 225°: default there, the second one step clockwise, not opposite.
+		assertArrayEquals(new double[] {225, 270}, RadialMath.fan(2, 225, 45), 1e-9);
+		// Alternating: default, right, left, further right, further left.
+		assertArrayEquals(new double[] {0, 45, 315, 90, 270}, RadialMath.fan(5, 0, 45), 1e-9);
+	}
+
+	@Test void fullRingsStayEvenlySpread() {
+		assertArrayEquals(new double[] {0, 36, 72, 108, 144, 180, 216, 252, 288, 324}, RadialMath.fan(10, 0, 360), 1e-9);
+		assertArrayEquals(new double[] {90, 135, 180, 225, 270, 315, 0, 45}, RadialMath.fan(8, 90, 45), 1e-9);
+	}
+
+	@Test void pointingPicksTheNearestEntryEvenInTheEmptyPartOfAFan() {
+		double[] fan = RadialMath.fan(2, 225, 45); // 225 (down-left), 270 (left)
+		assertEquals(1, RadialMath.nearest(-50, 0, fan, 10));   // left → 270
+		assertEquals(0, RadialMath.nearest(-35, 35, fan, 10));  // down-left → 225
+		assertEquals(1, RadialMath.nearest(0, -50, fan, 10));   // up (0°) is nearer 270 than 225
+		assertEquals(-1, RadialMath.nearest(1, 1, fan, 10));    // dead zone
+		assertEquals(-1, RadialMath.nearest(0, -50, new double[0], 10));
 	}
 
 	@Test void centersAndOffset() {
