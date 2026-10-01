@@ -16,7 +16,11 @@ public final class CooldownTracker {
 	 * A running countdown: the item's name, kept short ({@link #MAX_NAME}), and what set it off — {@code trigger}
 	 * "R" (right-click), "L" (attack), "Eat", "Snk", with "⇧" for a sneak-only variant ("⇧R").
 	 */
-	public record Entry(String label, long endsAt, String trigger) {}
+	public record Entry(String label, long endsAt, String trigger, Object icon) {
+		public Entry(String label, long endsAt, String trigger) {
+			this(label, endsAt, trigger, null);
+		}
+	}
 
 	/** Longest item name shown; longer ones are cut with "…" so the panel keeps its width. */
 	public static final int MAX_NAME = 14;
@@ -30,6 +34,11 @@ public final class CooldownTracker {
 	 * true if a countdown started.
 	 */
 	public boolean trigger(String name, List<Ability> abilities, Action action, boolean sneaking, long now) {
+		return trigger(name, abilities, action, sneaking, now, null);
+	}
+
+	/** As above; {@code icon} is the adapter's picture of the item (an ItemStack copy), kept with the countdown. */
+	public boolean trigger(String name, List<Ability> abilities, Action action, boolean sneaking, long now, Object icon) {
 		if (name == null || name.isBlank() || abilities == null || abilities.isEmpty()) return false;
 		Ability chosen = null;
 		for (Ability a : abilities) {
@@ -44,7 +53,7 @@ public final class CooldownTracker {
 		running.values().removeIf(e -> e.endsAt() <= now);
 		String key = name + "|" + chosen.action() + "|" + chosen.sneak() + "|" + chosen.section();
 		if (running.containsKey(key)) return false;
-		running.put(key, new Entry(shortName(name), now + chosen.cooldownMs(), trigger(chosen)));
+		running.put(key, new Entry(shortName(name), now + chosen.cooldownMs(), trigger(chosen), icon));
 		return true;
 	}
 

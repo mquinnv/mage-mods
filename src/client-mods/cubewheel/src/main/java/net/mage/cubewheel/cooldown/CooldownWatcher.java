@@ -139,7 +139,7 @@ public final class CooldownWatcher {
 		ItemAbilities a = ItemAbilities.parse(lore(stack));
 		if (a.abilities().isEmpty()) return;
 		String name = stack.getHoverName().getString().replaceAll("§.", "").trim();
-		if (tracker.trigger(name, a.abilities(), action, sneaking, System.currentTimeMillis())) {
+		if (tracker.trigger(name, a.abilities(), action, sneaking, System.currentTimeMillis(), stack.copyWithCount(1))) {
 			CubeWheelClient.LOG.debug("[cubewheel] cooldown started: {} ({})", name, action);
 		}
 	}
@@ -173,7 +173,8 @@ public final class CooldownWatcher {
 				long left = e.endsAt() - now;
 				int color = left < ENDING_SOON_MS ? Panel.YELLOW : Panel.WHITE;
 				// "R  Phoenix Staff   12s": the trigger in the tag column, a short name, the time on the right.
-				lines.add(new Panel.Line(e.trigger(), Panel.GRAY, e.label(), color, Durations.shortCountdown(left)));
+				lines.add(new Panel.Line(e.trigger(), Panel.GRAY, e.label(), color, Durations.shortCountdown(left))
+						.withIcon(e.icon()));
 			}
 		}
 		lines.addAll(McmmoWatcher.lines(now));

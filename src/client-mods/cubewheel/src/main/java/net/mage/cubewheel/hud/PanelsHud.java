@@ -13,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Draws CubeWheel's small panels (events, boosters, cooldowns, jobs, tracker) in one HUD element so panels sharing
@@ -26,6 +27,8 @@ public final class PanelsHud implements HudElement {
 	private static final int PAD = 2;
 	/** Space between a panel's columns. */
 	private static final int COLUMN_GAP = 4;
+	/** An item icon before a line's text: drawn at half size (8 px) plus a gap. */
+	private static final int ICON_W = 10;
 
 	/** A panel source, given the current time in epoch ms. */
 	public interface Source extends Function<Long, Optional<Panel>> {}
@@ -73,6 +76,11 @@ public final class PanelsHud implements HudElement {
 		}
 	}
 
+	/** A line's text width, its icon included. */
+	private static int textWidth(Font font, Panel.Line l) {
+		return font.width(l.text()) + (l.icon() instanceof ItemStack s && !s.isEmpty() ? ICON_W : 0);
+	}
+
 	/** Content width of {@code p}'s columns (see {@link #draw}). */
 	private static int width(Font font, Panel p) {
 		int tagW = 0, textW = 0, rightW = 0;
@@ -82,7 +90,7 @@ public final class PanelsHud implements HudElement {
 		}
 		for (Panel.Line l : p.lines()) {
 			boolean heading = l.tag().isEmpty() && l.right().isEmpty();
-			textW = Math.max(textW, font.width(l.text()) - (heading ? tagW + rightW : 0));
+			textW = Math.max(textW, textWidth(font, l) - (heading ? tagW + rightW : 0));
 		}
 		return Math.max(font.width(p.title()), tagW + textW + rightW);
 	}
@@ -97,7 +105,7 @@ public final class PanelsHud implements HudElement {
 		for (Panel.Line l : p.lines()) {
 			// Headings (no tag, no right part) may run across the whole width.
 			boolean heading = l.tag().isEmpty() && l.right().isEmpty();
-			textW = Math.max(textW, font.width(l.text()) - (heading ? tagW + rightW : 0));
+			textW = Math.max(textW, textWidth(font, l) - (heading ? tagW + rightW : 0));
 		}
 		int w = Math.max(width, Math.max(font.width(p.title()), tagW + textW + rightW));
 		int lh = font.lineHeight + 1;
@@ -113,7 +121,16 @@ public final class PanelsHud implements HudElement {
 			// An accent bar in the left padding (e.g. an entry you made progress on just now).
 			if (l.accent() != 0) g.fill(box.x(), ly - 1, box.x() + PAD, ly + lh - 1, l.accent());
 			if (!l.tag().isEmpty()) g.text(font, l.tag(), x, ly, l.tagColor());
-			g.text(font, l.text(), heading ? x : x + tagW, ly, l.color());
+			int tx = heading ? x : x + tagW;
+			if (l.icon() instanceof ItemStack stack && !stack.isEmpty()) {
+				g.pose().pushMatrix();
+				g.pose().translate(tx, ly - 0.5f);
+				g.pose().scale(0.5f, 0.5f);
+				g.item(stack, 0, 0);
+				g.pose().popMatrix();
+				tx += ICON_W;
+			}
+			g.text(font, l.text(), tx, ly, l.color());
 			if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), ly, l.rightColor());
 		}
 	}

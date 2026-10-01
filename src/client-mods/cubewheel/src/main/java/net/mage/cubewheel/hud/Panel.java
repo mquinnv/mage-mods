@@ -16,15 +16,21 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 	 * A row: an optional short {@code tag} in its own coloured column, the {@code text}, and an optional
 	 * {@code right} part aligned to the panel's right edge (so counts line up in a proportional font).
 	 */
-	public record Line(String tag, int tagColor, String text, int color, String right, int rightColor, int accent) {
-		/** No accent bar. */
+	public record Line(String tag, int tagColor, String text, int color, String right, int rightColor, int accent,
+			Object icon) {
+		/** No accent bar, no icon. */
 		public Line(String tag, int tagColor, String text, int color, String right, int rightColor) {
-			this(tag, tagColor, text, color, right, rightColor, 0);
+			this(tag, tagColor, text, color, right, rightColor, 0, null);
 		}
 
 		/** This line with a bar in {@code argb} along the panel's left edge (0 = none). */
 		public Line withAccent(int argb) {
-			return new Line(tag, tagColor, text, color, right, rightColor, argb);
+			return new Line(tag, tagColor, text, color, right, rightColor, argb, icon);
+		}
+
+		/** This line with a small item picture before its text ({@code icon}: an ItemStack; null = none). */
+		public Line withIcon(Object icon) {
+			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon);
 		}
 
 		/** The right part in the text's colour. */
