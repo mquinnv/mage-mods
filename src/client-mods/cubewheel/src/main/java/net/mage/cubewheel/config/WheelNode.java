@@ -37,6 +37,18 @@ public final class WheelNode {
 		return this;
 	}
 
+	/**
+	 * For a ring or live ring (e.g. Homes): while hovered, also fan its entries out as an arc beyond the ring, so one
+	 * can be taken without opening the sub-ring. Clicking the slice itself still opens the sub-ring.
+	 */
+	public boolean asArc;
+
+	/** This node with {@link #asArc} set; returns this for chaining. */
+	public WheelNode shownAsArc() {
+		this.asArc = true;
+		return this;
+	}
+
 	/** Tiers beyond the ring a slice may have. */
 	public static final int MAX_OUTER = 4;
 

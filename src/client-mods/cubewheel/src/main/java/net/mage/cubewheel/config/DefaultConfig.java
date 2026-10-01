@@ -96,7 +96,8 @@ public final class DefaultConfig {
 		// Two tiers on one slice: Crops on the ring, Spawners just outside it (point further out).
 		w.add(leaf("Sushi", "minecraft:wheat", "/warp crops")
 			.withOuter(leaf("Spawners", "minecraft:spawner", "/warp spawners")));
-		w.add(dynamic("Homes", "minecraft:red_bed", "homes"));
+		// Homes: click for the full homes ring; hover to fan the (cached) homes out in an arc.
+		w.add(dynamic("Homes", "minecraft:red_bed", "homes").shownAsArc());
 		// Travel as one slice: Spawn on the ring, then outward (or scroll) Random TP, Teleporter, Warps menu, Back.
 		w.add(chain(
 			leaf("Spawn", "minecraft:compass", "/spawn"),
