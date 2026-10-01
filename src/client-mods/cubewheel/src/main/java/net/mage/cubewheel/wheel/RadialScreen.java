@@ -32,6 +32,8 @@ public final class RadialScreen extends Screen {
 	private static final int TIER_STEP = 34;
 	/** Closest tiers may be squeezed when the screen edge is near (icons still clear each other). */
 	private static final int MIN_TIER_STEP = 20;
+	/** How far a chain must lean sideways (sine of its angle) before its labels move beside the icons. */
+	private static final double SIDEWAYS = 0.35;
 	/** How far above the screen centre the wheel sits. */
 	private static final int LIFT = 30;
 	/** Background disc behind an outer entry. */
@@ -49,12 +51,15 @@ public final class RadialScreen extends Screen {
 	/** Space between a slice block and the band's edges. */
 	private static final int BAND_PADDING = 5;
 	private static final int HOVER_RADIUS = 17;
-	private static final double HUB_FRACTION = 0.45;
+	/** The hub is the dead zone: inside it nothing is selected (and a click goes back). */
+	private static final double HUB_FRACTION = 0.32;
 	private static final int MIN_HUB_RADIUS = 22;
 	private static final int HUB_GAP = 4;
 
 	/** Radius used by the last frame, so clicks hit-test against what was drawn. */
 	private double renderedRadius;
+	/** Hub radius as last drawn: the selection cutoff. */
+	private double renderedHub;
 
 	/**
 	 * Resolves a ring/dynamic node's children. {@code userInitiated} is true only for a direct user
@@ -192,7 +197,8 @@ public final class RadialScreen extends Screen {
 		int ri = (int) Math.round(r);
 		int hub = Math.min((int) Math.round(r * HUB_FRACTION), ri - half - HUB_GAP);
 		double[] dirs = directions();
-		hovered = RadialMath.nearest(mouseX - cx, mouseY - cy, dirs, r * 0.25);
+		renderedHub = hub;
+		hovered = RadialMath.nearest(mouseX - cx, mouseY - cy, dirs, hub);
 		renderedEdge = ri + half;
 		tierSteps = new double[entries.size()];
 		for (int i = 0; i < entries.size(); i++) {
@@ -233,7 +239,7 @@ public final class RadialScreen extends Screen {
 				int otop = oy - BLOCK_HEIGHT / 2;
 				ItemStack oicon = Icons.stack(outer.icon);
 				if (!oicon.isEmpty()) g.item(oicon, ox - 8, otop);
-				if (roomy || outerHot) g.centeredText(font, outer.label == null ? "" : outer.label, ox, otop + 18, outerHot ? WHITE : GREY);
+				if (roomy || outerHot) outerLabel(g, outer.label == null ? "" : outer.label, ox, oy, dirs[i], outerHot ? WHITE : GREY);
 			}
 		}
 		WheelNode current = path.peekLast();
@@ -272,7 +278,7 @@ public final class RadialScreen extends Screen {
 			int cy = centerY();
 			double dx = event.x() - cx;
 			double dy = event.y() - cy;
-			double dead = (renderedRadius > 0 ? renderedRadius : radius()) * 0.25;
+			double dead = renderedHub > 0 ? renderedHub : radius() * HUB_FRACTION;
 			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 				int slice = RadialMath.nearest(dx, dy, directions(), dead);
 				if (slice >= 0) {
@@ -404,6 +410,21 @@ public final class RadialScreen extends Screen {
 	private static boolean canPoll(InputConstants.Key key) {
 		if (key.getValue() < 0) return false;
 		return key.getType() == InputConstants.Type.KEYSYM || key.getType() == InputConstants.Type.MOUSE;
+	}
+
+	/**
+	 * An outer tier's label, set beside its icon on the side away from the wheel so a chain's labels don't run into
+	 * the next circle: right of the icon on the right half, left of it on the left; low on a chain going up, high on
+	 * one going down. A chain going straight up keeps the label centred under the icon.
+	 */
+	private void outerLabel(GuiGraphicsExtractor g, String label, int ox, int oy, double direction, int colour) {
+		double[] d = RadialMath.offset(direction, 1);
+		int w = font.width(label);
+		int y = d[1] < 0 ? oy + 2 : oy - 2 - font.lineHeight;
+		if (d[0] > SIDEWAYS) g.text(font, label, ox + 10, y, colour);
+		else if (d[0] < -SIDEWAYS) g.text(font, label, ox - 10 - w, y, colour);
+		else if (d[1] < 0) g.centeredText(font, label, ox, oy - BLOCK_HEIGHT / 2 + 18, colour);
+		else g.text(font, label, ox + 10, oy - font.lineHeight / 2, colour);
 	}
 
 	/** The tier the pointer's distance past the ring picks on slice {@code index}. */

@@ -110,9 +110,12 @@ public final class DefaultConfig {
 		w.add(leaf("Sell", "minecraft:gold_ingot", "/sell")
 			.withOuter(leaf("Sell hand", "minecraft:gold_nugget", "/sell hand")
 				.withOuter(leaf("Sell all", "minecraft:gold_block", "/sell all"))));
-		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
-			leaf("Ender chest", "minecraft:ender_chest", "/ec"),
-			leaf("Party vault", "minecraft:barrel", "/p vault")));
+		// Vaults as one slice: PV 1 on the ring, then PV 2, the party vault, and the full vault menu.
+		w.add(chain(
+			leaf("PV 1", "minecraft:ender_chest", "/pv 1"),
+			leaf("PV 2", "minecraft:ender_chest", "/pv 2"),
+			leaf("Party vault", "minecraft:barrel", "/p vault"),
+			leaf("All vaults", "minecraft:chest", "/pv")));
 		w.add(leaf("Fly", "minecraft:feather", "/fly"));
 		w.add(ring("Isles", "minecraft:filled_map",
 			leaf("Isles menu", "minecraft:map", "/isles"),
@@ -155,7 +158,8 @@ public final class DefaultConfig {
 				leaf("Party warps", "minecraft:lodestone", "/p warps"),
 				leaf("Claim", "minecraft:golden_shovel", "/p claim"),
 				leaf("Map", "minecraft:map", "/p map"),
-				leaf("Party vault", "minecraft:barrel", "/p vault"))));
+				leaf("Party vault", "minecraft:barrel", "/p vault")),
+			leaf("Ender chest", "minecraft:ender_chest", "/ec")));
 		return w;
 	}
 
