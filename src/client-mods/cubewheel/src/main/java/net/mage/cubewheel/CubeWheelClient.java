@@ -109,11 +109,13 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ClientReceiveMessageEvents.ALLOW_GAME.register(LocalSignals::onGameMessage);
 		CooldownWatcher.register();
 		TrackerHud.register();
+		// Panels in one corner stack in this order. The ones that come and go (boosters, cooldowns) go last so
+		// they don't push the always-present Jobs/Tracker panels up and down.
 		PanelsHud.add(EventHud::panel);
+		PanelsHud.add(JobsPanel::panel);
+		PanelsHud.add(TrackerPanel::panel); // under the Jobs panel
 		PanelsHud.add(BoosterWatcher::panel);
 		PanelsHud.add(CooldownWatcher::panel);
-		PanelsHud.add(JobsPanel::panel); // in a shared corner it stacks below the small panels
-		PanelsHud.add(TrackerPanel::panel); // last: under the Jobs panel
 		PanelsHud.register();
 		SvaClient.init(configDir);
 		Keybinds.register();
