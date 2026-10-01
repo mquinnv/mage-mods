@@ -38,6 +38,9 @@ public final class RadialScreen extends Screen {
 	private static final int LIFT = 60;
 	/** Distance between neighbouring arc entries (one disc plus a gap). */
 	private static final int ARC_SPACING = 40;
+	/** At most this many "more" dots past a slice. */
+	private static final int MAX_DOTS = 4;
+	private static final int DOT = 0xB0AAAAAA;
 	/** Background disc behind an outer entry. */
 	private static final int OUTER_DISC = 16;
 	/** Light dim over the world, so it stays visible behind the wheel. */
@@ -215,21 +218,33 @@ public final class RadialScreen extends Screen {
 					outerCount(entries.get(i)), OUTER_DISC + font.lineHeight, MIN_TIER_STEP, TIER_STEP);
 		}
 		// An open arc keeps the pointer while it is on one of the arc's entries, wherever the ring's nearest slice is.
-		hoveredArc = -1;
+		// The arc's entries count as the arc slice's tiers (tier 1 = first entry), so pointing, scrolling and Shift
+		// all work the same on both.
+		double mdx = mouseX - cx;
+		double mdy = mouseY - cy;
+		int onArc = -1;
 		if (arcOpen >= entries.size() || arcOpen >= 0 && entries.get(arcOpen).arc == null) arcOpen = -1;
 		if (arcOpen >= 0) {
 			layoutArc(cx, cy, dirs[arcOpen], entries.get(arcOpen).arc.size());
-			double slack = ArcLayout.step(renderedEdge + ARC_SPACING / 2.0, ARC_SPACING) * 0.75;
-			hoveredArc = ArcLayout.pick(mouseX - cx, mouseY - cy, renderedEdge, arcAngles, slack);
-			if (hoveredArc >= 0) hovered = arcOpen;
+			onArc = ArcLayout.pick(mdx, mdy, renderedEdge, arcAngles, arcSlack());
+			if (onArc >= 0) hovered = arcOpen; // an open arc keeps the pointer wherever the ring's nearest slice is
 		}
-		if (hoveredArc < 0) {
+		if (onArc < 0) {
 			arcOpen = hovered >= 0 && entries.get(hovered).arc != null ? hovered : -1;
 			if (arcOpen >= 0) layoutArc(cx, cy, dirs[arcOpen], entries.get(arcOpen).arc.size());
 		}
-		WheelNode hoveredNode = hovered < 0 || hoveredArc >= 0 ? null : entries.get(hovered);
-		hoveredTier = tiers.pick(hoveredNode, hoveredNode == null ? 0 : distanceTier(hovered, Math.hypot(mouseX - cx, mouseY - cy)),
-				outerCount(hoveredNode), isShiftDown());
+		WheelNode hoveredNode = hovered < 0 ? null : entries.get(hovered);
+		boolean shift = isShiftDown();
+		if (arcOpen >= 0 && hovered == arcOpen) {
+			int n = arcAngles.length;
+			hoveredTier = tiers.pick(hoveredNode, onArc + 1, n, false);
+			if (shift) hoveredTier = 1 + ArcLayout.pick(mdx, mdy, -1, arcAngles, 360); // the arc entry nearest the pointer
+			hoveredArc = hoveredTier - 1;
+		} else {
+			hoveredTier = tiers.pick(hoveredNode, hoveredNode == null ? 0 : distanceTier(hovered, Math.hypot(mdx, mdy)),
+					outerCount(hoveredNode), shift);
+			hoveredArc = -1;
+		}
 		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + half, ri - half, RING);
 		fillRing(g, cx, cy, hub, 0, HUB);
 		for (int i = 0; i < entries.size(); i++) {
@@ -249,7 +264,11 @@ public final class RadialScreen extends Screen {
 			// Outer tiers: the same slice, further out (e.g. Sell hand, then Sell all). A long chain shows only its
 			// first outer tier until hovered; squeezed tiers label only the selected one.
 			int count = outerCount(node);
-			int shown = i == hovered || count <= 2 ? count : 1;
+			// Short chains stay visible; long ones show their first tier until hovered. An open arc hides the tiers
+			// of the slices it covers (dots mark that they are there).
+			boolean coveredByArc = i != arcOpen && underArc(dirs[i]);
+			int shown = i == hovered ? count : coveredByArc ? 0 : count <= 2 ? count : 1;
+			if (shown == 0 && count > 0) moreDots(g, cx, cy, dirs[i], count);
 			boolean roomy = tierSteps[i] >= TIER_STEP - 0.5;
 			WheelNode outer = node.outer;
 			for (int tier = 1; outer != null && tier <= shown; tier++, outer = outer.outer) {
@@ -258,7 +277,7 @@ public final class RadialScreen extends Screen {
 				int oy = cy + (int) Math.round(oo[1]);
 				boolean outerHot = i == hovered && hoveredTier == tier;
 				fillRing(g, ox, oy, OUTER_DISC, 0, outerHot ? HOVER : RING);
-				int otop = oy - BLOCK_HEIGHT / 2;
+				int otop = oy - 8; // icon centred in its disc; the label sits beside it
 				ItemStack oicon = Icons.stack(outer.icon);
 				if (!oicon.isEmpty()) g.item(oicon, ox - 8, otop);
 				if (roomy || outerHot) outerLabel(g, outer.label == null ? "" : outer.label, ox, oy, dirs[i], outerHot ? WHITE : GREY);
@@ -455,6 +474,30 @@ public final class RadialScreen extends Screen {
 		else g.text(font, label, ox + 10, oy - font.lineHeight / 2, colour);
 	}
 
+	/** Whether direction {@code deg} lies under the open arc (between its end entries, plus half a step). */
+	private boolean underArc(double deg) {
+		if (arcOpen < 0 || arcAngles.length == 0) return false;
+		double centre = directions()[arcOpen];
+		double half = ArcLayout.step(renderedEdge + ARC_SPACING / 2.0, ARC_SPACING) * arcAngles.length / 2.0;
+		double d = Math.abs(deg - centre) % 360;
+		return Math.min(d, 360 - d) <= half;
+	}
+
+	/** How far (degrees) from an arc entry the pointer may stray and still be on it. */
+	private double arcSlack() {
+		return ArcLayout.step(renderedEdge + ARC_SPACING / 2.0, ARC_SPACING) * 0.75;
+	}
+
+	/** Small dots just past the ring hinting that a slice has more (outer tiers or an arc) when hovered. */
+	private void moreDots(GuiGraphicsExtractor g, int cx, int cy, double direction, int count) {
+		for (int k = 0; k < Math.min(count, MAX_DOTS); k++) {
+			double[] o = RadialMath.offset(direction, renderedEdge + 5 + k * 6);
+			int x = cx + (int) Math.round(o[0]);
+			int y = cy + (int) Math.round(o[1]);
+			g.fill(x - 1, y - 1, x + 2, y + 2, DOT);
+		}
+	}
+
 	/** Places {@code count} arc entries around {@code centre}, pulled in where the screen edge is near. */
 	private void layoutArc(int cx, int cy, double centre, int count) {
 		double radius = renderedEdge + ARC_SPACING / 2.0;
@@ -499,7 +542,10 @@ public final class RadialScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		if (hovered >= 0 && hovered < entries.size()) tiers.scroll(scrollY, outerCount(entries.get(hovered)));
+		if (hovered >= 0 && hovered < entries.size()) {
+			WheelNode node = entries.get(hovered);
+			tiers.scroll(scrollY, node.arc != null ? node.arc.size() : outerCount(node));
+		}
 		return true;
 	}
 
