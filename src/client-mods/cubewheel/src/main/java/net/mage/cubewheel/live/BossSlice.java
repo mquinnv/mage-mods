@@ -18,6 +18,11 @@ public final class BossSlice {
 	/** The last sign the boss is still up: its spawn, or a player it killed ("X was slain by Mana Golem [axes]"). */
 	private long aliveAt;
 
+	/** Set when ManaCube announces the latest boss's death: the slice then shows the placeholder at once. */
+	private boolean dead;
+	/** "BOSSES » 9 teamed up to take down a MANA GOLEM BOSS" (also "… a LAVA BEAST", no "BOSS"). */
+	private static final java.util.regex.Pattern DEFEATED = java.util.regex.Pattern.compile(
+			"(?i)teamed up to (?:take down|defeat|kill) (?:a |an |the )?(.+?)(?:\\s+BOSS)?\\s*!?\\s*$");
 	private static final java.util.regex.Pattern SLAIN = java.util.regex.Pattern.compile("(?i)\\bwas slain by (.+)$");
 
 	public void spawned(BossParser.Spawn spawn, long now) {
@@ -25,6 +30,7 @@ public final class BossSlice {
 		latest = spawn;
 		at = now;
 		aliveAt = now;
+		dead = false;
 	}
 
 	/**
@@ -33,7 +39,14 @@ public final class BossSlice {
 	 */
 	public boolean onChat(String text, long now) {
 		if (latest == null || text == null) return false;
-		java.util.regex.Matcher m = SLAIN.matcher(text.replaceAll("§.", "").trim());
+		String clean = text.replaceAll("§.", "").trim();
+		java.util.regex.Matcher d = DEFEATED.matcher(clean);
+		if (d.find()) {
+			if (!d.group(1).trim().equalsIgnoreCase(latest.boss().trim())) return false;
+			dead = true;
+			return true;
+		}
+		java.util.regex.Matcher m = SLAIN.matcher(clean);
 		if (!m.find() || !m.group(1).toLowerCase(java.util.Locale.ROOT).contains(latest.boss().toLowerCase(java.util.Locale.ROOT))) {
 			return false;
 		}
@@ -63,7 +76,7 @@ public final class BossSlice {
 	 * else the placeholder. ManaCube announces no deaths, so this is a best guess; bosses usually fall in minutes.
 	 */
 	public SliceViews.View view(Map<String, String> warps, long maxAgeMs, long now) {
-		if (latest == null || now - aliveAt > maxAgeMs || now < at - 60_000) {
+		if (latest == null || dead || now - aliveAt > maxAgeMs || now < at - 60_000) {
 			return new SliceViews.View(NONE, SliceViews.DIM, null, true);
 		}
 		String label = latest.boss() + " · " + LiveFormat.compact(now - at);

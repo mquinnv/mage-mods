@@ -64,6 +64,20 @@ class BossTest {
 		assertNull(SliceViews.command(node, unmapped));
 	}
 
+	@Test void deathAnnouncementClearsTheSlice() {
+		BossSlice s = new BossSlice();
+		Map<String, String> w = DefaultConfig.bossWarps();
+		s.spawned(BossParser.parse(GOLEM).orElseThrow(), 0);
+		assertFalse(s.onChat("\nBOSSES \u00BB 11 teamed up to take down a SAHUAGIN BOSS\n", MIN)); // another boss
+		assertTrue(s.view(w, 5 * MIN, MIN).label().startsWith("Mana Golem"));
+		assertTrue(s.onChat("\nBOSSES \u00BB 9 teamed up to take down a MANA GOLEM BOSS\n", 2 * MIN));
+		assertEquals(BossSlice.NONE, s.view(w, 5 * MIN, 2 * MIN).label());
+		s.spawned(new BossParser.Spawn("Lava Beast", "Tangleroot Volcano", false), 3 * MIN);
+		assertTrue(s.view(w, 5 * MIN, 3 * MIN).label().startsWith("Lava Beast")); // a new spawn shows again
+		assertTrue(s.onChat("BOSSES \u00BB 7 teamed up to take down a LAVA BEAST", 4 * MIN));
+		assertEquals(BossSlice.NONE, s.view(w, 5 * MIN, 4 * MIN).label());
+	}
+
 	@Test void killsByTheBossKeepItUpOthersDoNot() {
 		BossSlice s = new BossSlice();
 		Map<String, String> w = DefaultConfig.bossWarps();
