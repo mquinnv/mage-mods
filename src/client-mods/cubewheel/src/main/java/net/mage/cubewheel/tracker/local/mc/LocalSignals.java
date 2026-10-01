@@ -514,6 +514,7 @@ public final class LocalSignals {
 
 	/** Mixin, Hud.setOverlayMessage HEAD: an action-bar message being shown. */
 	public static void onOverlayMessage(Component message) {
+		if (message != null) net.mage.cubewheel.cooldown.CooldownWatcher.onActionBar(message.getString());
 		McmmoWatcher.onActionBarEvent(ActionBarFeed.Source.HUD, message);
 		onActionBarEvent(ActionBarFeed.Source.HUD, message);
 	}

@@ -85,6 +85,34 @@ class CooldownTrackerTest {
 		assertEquals("Phoenix Staff", t.active(0).get(0).label());
 	}
 
+	@Test void serverNoticeCorrectsTheRunningCountdown() {
+		CooldownTracker t = new CooldownTracker();
+		t.trigger("PHOENIX STAFF", RIGHT, Action.USE, false, 0); // 30 s from the click
+		t.sync("Phoenix Staff", 7_500, 10_000, null, null);      // the server: 7 s left
+		assertEquals(1, t.active(10_000).size());
+		assertEquals(17_500, t.active(10_000).get(0).endsAt());
+		assertEquals("R", t.active(10_000).get(0).trigger());
+	}
+
+	@Test void serverNoticeStartsAMissedCountdown() {
+		CooldownTracker t = new CooldownTracker();
+		Ability drink = new Ability(Action.CONSUME, false, 240_000, "When Consumed");
+		t.sync("CHAMPION POTION", 200_500, 0, drink, null);
+		assertEquals("Champion Potion", t.active(0).get(0).label());
+		assertEquals("Eat", t.active(0).get(0).trigger());
+		// The same ability used later is the same countdown, not a second one.
+		assertFalse(t.trigger("CHAMPION POTION", List.of(drink), Action.CONSUME, false, 1_000));
+		assertEquals(1, t.active(1_000).size());
+	}
+
+	@Test void serverNoticeLines() {
+		assertEquals(List.of(new CooldownBar.Notice("PHOENIX STAFF", 7)), CooldownBar.parse("PHOENIX STAFF CD: \u2B1B\u2B1B\u2B1B (7s)"));
+		assertEquals(List.of(new CooldownBar.Notice("SAMURAI KATANA", 5)),
+				CooldownBar.parse("+5 Mana | +2  Kangaroo Meat | SAMURAI KATANA CD: \u2B1B\u2B1B (5s)"));
+		assertTrue(CooldownBar.parse("dragonfire: what means enderpearl CD:Ready?").isEmpty());
+		assertTrue(CooldownBar.parse("+5 Mana").isEmpty());
+	}
+
 	@Test void plainAbilityAlsoFiresWhileSneakingWhenThereIsNoSneakVariant() {
 		CooldownTracker t = new CooldownTracker();
 		assertTrue(t.trigger("Wand", RIGHT, Action.USE, true, 0));

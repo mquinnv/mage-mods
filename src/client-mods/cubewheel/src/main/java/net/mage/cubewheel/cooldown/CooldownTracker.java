@@ -23,7 +23,7 @@ public final class CooldownTracker {
 	}
 
 	/** Longest item name shown; longer ones are cut with "…" so the panel keeps its width. */
-	public static final int MAX_NAME = 14;
+	public static final int MAX_NAME = 16;
 
 	private final Map<String, Entry> running = new LinkedHashMap<>();
 
@@ -51,10 +51,43 @@ public final class CooldownTracker {
 		}
 		if (chosen == null) return false;
 		running.values().removeIf(e -> e.endsAt() <= now);
-		String key = name + "|" + chosen.action() + "|" + chosen.sneak() + "|" + chosen.section();
+		String key = key(name, chosen);
 		if (running.containsKey(key)) return false;
 		running.put(key, new Entry(shortName(name), now + chosen.cooldownMs(), trigger(chosen), icon));
 		return true;
+	}
+
+	private static String key(String name, Ability a) {
+		return name + "|" + a.action() + "|" + a.sneak() + "|" + a.section();
+	}
+
+	/**
+	 * The server said item {@code name} has {@code remainingMs} left (its "still cooling down" notice). Of that
+	 * item's running countdowns (any case), the one closest to that is set to it; with none running, a countdown
+	 * starts for {@code guess} (the item's ability, if known; null: a generic one) with {@code icon}.
+	 */
+	public void sync(String name, long remainingMs, long now, Ability guess, Object icon) {
+		if (name == null || name.isBlank() || remainingMs <= 0) return;
+		running.values().removeIf(e -> e.endsAt() <= now);
+		long endsAt = now + remainingMs;
+		String best = null;
+		long bestDiff = Long.MAX_VALUE;
+		for (Map.Entry<String, Entry> e : running.entrySet()) {
+			String item = e.getKey().substring(0, e.getKey().indexOf('|'));
+			if (!item.equalsIgnoreCase(name.trim())) continue;
+			long diff = Math.abs(e.getValue().endsAt() - endsAt);
+			if (diff < bestDiff) {
+				bestDiff = diff;
+				best = e.getKey();
+			}
+		}
+		if (best != null) {
+			Entry old = running.get(best);
+			running.put(best, new Entry(old.label(), endsAt, old.trigger(), old.icon() != null ? old.icon() : icon));
+			return;
+		}
+		String key = guess != null ? key(name.trim(), guess) : name.trim() + "|server";
+		running.put(key, new Entry(shortName(name), endsAt, guess != null ? trigger(guess) : "", icon));
 	}
 
 	/** "R", "L", "Eat", "Snk"; "⇧" in front for an ability that only fires while sneaking. */

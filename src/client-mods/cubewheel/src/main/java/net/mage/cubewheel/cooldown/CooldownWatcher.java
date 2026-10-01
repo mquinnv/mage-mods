@@ -109,6 +109,40 @@ public final class CooldownWatcher {
 		}
 	}
 
+	/**
+	 * An action-bar message: a "still cooling down" notice ("PHOENIX STAFF CD: ⬛⬛ (7s)") corrects that item's
+	 * countdown, or starts one if none was running.
+	 */
+	public static void onActionBar(String text) {
+		try {
+			if (!active()) return;
+			List<CooldownBar.Notice> notices = CooldownBar.parse(text);
+			if (notices.isEmpty()) return;
+			LocalPlayer p = Minecraft.getInstance().player;
+			long now = System.currentTimeMillis();
+			for (CooldownBar.Notice n : notices) {
+				// "(7s)" counts down whole seconds: take the middle of that second.
+				ItemStack held = p == null ? ItemStack.EMPTY : heldNamed(p, n.item());
+				ItemAbilities.Ability guess = null;
+				if (!held.isEmpty()) {
+					List<ItemAbilities.Ability> abilities = ItemAbilities.parse(lore(held)).abilities();
+					if (abilities.size() == 1) guess = abilities.get(0);
+				}
+				tracker.sync(n.item(), n.seconds() * 1000 + 500, now, guess, held.isEmpty() ? null : held.copyWithCount(1));
+			}
+		} catch (RuntimeException e) {
+			fail(e);
+		}
+	}
+
+	/** The main- or off-hand item called {@code name} (any case), else empty. */
+	private static ItemStack heldNamed(LocalPlayer p, String name) {
+		for (ItemStack s : List.of(p.getMainHandItem(), p.getOffhandItem())) {
+			if (!s.isEmpty() && s.getHoverName().getString().replaceAll("§.", "").trim().equalsIgnoreCase(name)) return s;
+		}
+		return ItemStack.EMPTY;
+	}
+
 	/** The player's effects and their remaining ticks, keyed by effect. */
 	private static java.util.Map<Object, Integer> effects(Player player) {
 		java.util.Map<Object, Integer> out = new java.util.HashMap<>();
