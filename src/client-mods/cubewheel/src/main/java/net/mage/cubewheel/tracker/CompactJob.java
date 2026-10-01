@@ -8,8 +8,6 @@ import java.util.regex.Pattern;
 final class CompactJob {
 	/** Longest target shown; longer ones are cut with "…". */
 	static final int MAX_TARGET = 16;
-	/** Reads at least this old show their age ("·3h"). */
-	static final long SHOW_AGE_MS = 3_600_000L;
 
 	private static final Pattern VERB = Pattern.compile("(?i)^(?:harvest or mine|harvest|mine|break|chop|dig|gather|"
 			+ "kill|slay|slaughter|defeat|catch|fish|shear|milk|cook|collect|craft|smelt|brew|complete|deliver|obtain|get|reach)\\s+");
@@ -68,13 +66,14 @@ final class CompactJob {
 		return s.length() > max ? s.substring(0, max - 1).trim() + "…" : s;
 	}
 
-	/** "3,127/4,800", "~2/2 ✓?", "64/64 ✓", plus "·3h" for old reads. */
+	/**
+	 * "3,127/4,800", "~2/2 ✓?", "64/64 ✓". How old the last read is shows only in the Tracker screen: on the HUD a
+	 * trailing "·3h" read as a countdown.
+	 */
 	static String count(TrackerRow row, long now) {
 		String c = (row.estimated() ? "~" : "") + number(row.shownCurrent()) + "/" + number(row.shownMax());
 		if (row.complete()) c += " ✓";
 		else if (row.atCap()) c += " ✓?";
-		long age = now - row.item().seenAt();
-		if (age >= SHOW_AGE_MS) c += " ·" + TrackerFormat.age(age);
 		return c;
 	}
 

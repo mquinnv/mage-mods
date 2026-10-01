@@ -99,7 +99,7 @@ class TrackerPanelModelTest {
 				TrackerRow.plain(new Trackable("challenges:Miner", "challenges", "Miner", 1, 10, 0)));
 		List<Line> lines = TrackerPanelModel.build(List.of(new TrackerStore.HudSection(TrackerStore.HudSection.Kind.ANYWHERE,
 				rows)), id -> null, 0.8, WORLDS, 3 * 3_600_000L);
-		assertEquals(List.of("⚑ Haven Harvester | 10/10 ✓ ·3h", "★ Fisher | 9/10 ·3h", "★ Miner | 1/10 ·3h"), texts(lines));
+		assertEquals(List.of("⚑ Haven Harvester | 10/10 ✓", "★ Fisher | 9/10", "★ Miner | 1/10"), texts(lines));
 		assertEquals(List.of(Tone.DONE, Tone.NEAR, Tone.NORMAL), lines.stream().map(Line::tone).toList());
 	}
 

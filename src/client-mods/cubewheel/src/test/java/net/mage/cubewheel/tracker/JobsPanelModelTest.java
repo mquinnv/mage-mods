@@ -103,13 +103,13 @@ class JobsPanelModelTest {
 		assertEquals(Tone.AT_CAP, cook.tone());
 	}
 
-	@Test void longTargetsAreCutAndOldReadsShowTheirAge() {
+	@Test void longTargetsAreCutAndOldReadsShowNoAge() {
 		TrackerStore s = new TrackerStore(dir.resolve("l.json"));
 		s.update("jobs", "Fishing Experienced · Catch   YellowSeaShroom while fishing", new ProgressExtractor.Progress(0, 9), 0);
 		s.update("jobs", "Mining Heavy · Mine Polished Blackstone Bricks", new ProgressExtractor.Progress(12_500, 250_000), 0);
 		Model m = build(s, WorldInfo.UNKNOWN, 3 * 3_600_000L);
-		assertEquals(List.of("⚒ Fishing |", "YellowSeaShroom | 0/9 ·3h", "⚒ Mining |",
-				"Polished Blacks… | 12.5k/250k ·3h"), texts(m));
+		assertEquals(List.of("⚒ Fishing |", "YellowSeaShroom | 0/9", "⚒ Mining |",
+				"Polished Blacks… | 12.5k/250k"), texts(m));
 	}
 
 	@Test void nonListingJobEntriesGoToOtherLast() {

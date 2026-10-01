@@ -11,7 +11,7 @@ import net.mage.cubewheel.tracker.local.ObjectiveInfo;
 /**
  * The "Tracker" HUD panel, in the left-hand column under the Jobs panel and in its compact style: the source's
  * marker (⚒ ✦ ⚑ ★ •) in the tag column, a short title ("✪4 Skill Level", "King of the Jungle") and a short count
- * on the right ("1.9k/2.5k", "~", "✓?", "·3h"). Built from {@link TrackerStore#hudSections}, so pinning, hiding,
+ * on the right ("1,902/2,500", "~", "✓?"). Built from {@link TrackerStore#hudSections}, so pinning, hiding,
  * the line cap and the world filter work as before; a grey "— Pinned" / "— This world" … heading starts each group
  * when there is more than one. A quest with several objectives gets an indented "↳ 10% Golden Knights" row per
  * objective. Pure: no Minecraft/Fabric imports.
