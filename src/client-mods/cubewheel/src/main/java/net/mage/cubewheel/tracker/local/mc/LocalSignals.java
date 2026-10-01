@@ -21,6 +21,7 @@ import net.mage.cubewheel.tracker.local.LocalCounter;
 import net.mage.cubewheel.tracker.local.LootLine;
 import net.mage.cubewheel.tracker.local.LootMatch;
 import net.mage.cubewheel.tracker.local.PendingBreaks;
+import net.mage.cubewheel.tracker.local.PendingMilk;
 import net.mage.cubewheel.tracker.local.PendingShears;
 import net.mage.cubewheel.tracker.local.ShearTool;
 import net.mage.cubewheel.tracker.local.PlacedBlocks;
@@ -55,7 +56,10 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.Shearable;
+import net.minecraft.world.entity.animal.cow.AbstractCow;
+import net.minecraft.world.entity.animal.goat.Goat;
 import net.minecraft.world.entity.animal.sheep.Sheep;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.FishingRodItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShearsItem;
@@ -77,7 +81,7 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public final class LocalSignals {
 	/** Hook kinds that can fail independently. */
-	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, LOOT_POLL, FISH, SHEAR, TICK, LEVEL, AREA }
+	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, LOOT_POLL, FISH, SHEAR, MILK, TICK, LEVEL, AREA }
 
 	private static final int MAX_FAILURES = 10;
 	private static final long SAVE_INTERVAL_MS = 30_000;
@@ -91,6 +95,7 @@ public final class LocalSignals {
 	private static final StackWatch stacks = new StackWatch();
 	private static final RemovalKills removals = new RemovalKills();
 	private static final PendingShears shears = new PendingShears();
+	private static final PendingMilk milkings = new PendingMilk();
 	private static final AreaBreaks areas = new AreaBreaks();
 	private static final FishDedup fishDedup = new FishDedup();
 	/** Unsheared shearables within this many blocks of a sheared one wait for an area shear. */
@@ -143,6 +148,11 @@ public final class LocalSignals {
 				onShearUse(player, level.isClientSide(), entity, player.getItemInHand(hand));
 			} catch (Throwable t) {
 				fail(Hook.SHEAR, t);
+			}
+			try {
+				onMilkUse(player, level.isClientSide(), entity, player.getItemInHand(hand));
+			} catch (Throwable t) {
+				fail(Hook.MILK, t);
 			}
 			return InteractionResult.PASS;
 		});
@@ -679,6 +689,53 @@ public final class LocalSignals {
 		}
 	}
 
+	/**
+	 * UseEntityCallback (client side): an empty bucket used on a grown cow, mooshroom or goat. Records it with the
+	 * empty buckets held just before; {@link #checkMilk} counts it once the server has kept the swap.
+	 */
+	private static void onMilkUse(Player player, boolean clientSide, Entity target, ItemStack held) {
+		if (!clientSide || !enabled(Hook.MILK) || !local().milk) return;
+		Minecraft mc = Minecraft.getInstance();
+		if (player != mc.player || !survivalMode(player) || !held.is(Items.BUCKET)) return;
+		if (!(target instanceof AbstractCow || target instanceof Goat) || !target.isAlive()) return;
+		if (target instanceof net.minecraft.world.entity.AgeableMob a && a.isBaby()) return;
+		milkings.use(tick, emptyBuckets(player), target.typeHolder().getRegisteredName(), rawName(target));
+		captureEntity("use", target, "bucket; milking pending");
+	}
+
+	/** Each client tick while milkings are pending: count those whose bucket stayed gone. */
+	private static void checkMilk(Minecraft mc) {
+		if (!enabled(Hook.MILK)) return;
+		try {
+			for (PendingMilk.Outcome o : milkings.tick(tick, emptyBuckets(mc.player))) {
+				if (o.confirmed() && local().milk) {
+					Signal.Milked signal = new Signal.Milked(o.typeId(), o.name(), world());
+					capture("milk", signal.typeId(), signal.name(), "confirmed", signal.world(), count(signal));
+				} else {
+					CaptureLog capture = CubeWheelClient.capture();
+					if (capture != null && capture.enabled()) {
+						capture.local("milk", o.typeId(), o.name(), "not counted: bucket came back",
+								new ArrayList<>(world().tokens()), List.of(), 0, System.currentTimeMillis());
+					}
+				}
+			}
+		} catch (Throwable t) {
+			fail(Hook.MILK, t);
+		}
+	}
+
+	/** Empty buckets anywhere in the player's inventory (hands included). */
+	private static int emptyBuckets(Player player) {
+		if (player == null) return 0;
+		int n = 0;
+		var inv = player.getInventory();
+		for (int i = 0; i < inv.getContainerSize(); i++) {
+			ItemStack s = inv.getItem(i);
+			if (s.is(Items.BUCKET)) n += s.getCount();
+		}
+		return n;
+	}
+
 	/** Can shears act on it now: a sheep that is alive, unsheared and grown; other shearables by their own test. */
 	private static boolean readyForShears(Entity e) {
 		if (e == null || !e.isAlive()) return false;
@@ -702,6 +759,7 @@ public final class LocalSignals {
 	private static void onLevelChange() {
 		try {
 			shears.clear();
+			milkings.clear();
 			areas.clear();
 			pending.clear();
 			placed.clear();
@@ -727,6 +785,8 @@ public final class LocalSignals {
 			stacks.retainRoots(kills::tracks);
 			if (!active) shears.clear();
 			else if (!shears.isEmpty()) checkShears(mc);
+			if (!active) milkings.clear();
+			else if (!milkings.isEmpty()) checkMilk(mc);
 			if (active) pollActionBar(mc); // before expiry: a line that just arrived still names a waiting removal
 			if (removals.awaitingLoot()) {
 				for (RemovalKills.Removed r : removals.expire(System.currentTimeMillis())) {

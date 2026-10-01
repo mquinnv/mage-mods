@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  */
 public final class ObjectiveParser {
 	private static final Pattern GRAMMAR = Pattern.compile(
-			"^(?<verb>harvest or mine|harvest|mine|break|chop|dig|gather|kill|slay|slaughter|defeat|catch|fish|shear)"
+			"^(?<verb>harvest or mine|harvest|mine|break|chop|dig|gather|kill|slay|slaughter|defeat|catch|fish|shear|milk)"
 			// A /jobs listing embeds its counter: "Harvest 3,127/4,773 Cherry Logs"; the target is the max.
 			+ "\\s+(?:\\d[\\d,]*\\s*/\\s*)?(?<n>\\d[\\d,]*)\\s+(?<noun>.+?)(?:\\s+in\\s+(?<in>.+))?$",
 			Pattern.CASE_INSENSITIVE);
@@ -108,6 +108,8 @@ public final class ObjectiveParser {
 			case "fish" -> Kind.FISH;
 			// "Shear 84 Sheep", "Shear 10/84 Sheep": a shearable mob, matched by type id or name like a kill.
 			case "shear" -> Kind.SHEAR;
+			// "Milk 15/25 Cows": an empty bucket used on the mob, matched by type id or name.
+			case "milk" -> Kind.MILK;
 			default -> Kind.BREAK;
 		};
 		// A specific fish ("Catch 9 YellowSeaShroom while fishing") is matched by species from the catch chat line.

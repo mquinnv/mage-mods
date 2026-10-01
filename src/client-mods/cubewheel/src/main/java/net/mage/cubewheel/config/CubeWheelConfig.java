@@ -164,6 +164,8 @@ public final class CubeWheelConfig {
 		public boolean fish = true;
 		/** Count shears used on sheep (and other shearables) once the server confirms the shear. */
 		public boolean shear = true;
+		/** Count empty buckets used on cows (and other milkable mobs) once the server keeps the milk bucket. */
+		public boolean milk = true;
 		/**
 		 * Count blocks the server breaks for you (mcMMO Tree Feller, harvester/hammer area tools): server block
 		 * updates to air right after your own break, near it. Needs {@code blocks}.

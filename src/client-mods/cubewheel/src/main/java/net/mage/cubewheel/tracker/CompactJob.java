@@ -12,7 +12,7 @@ final class CompactJob {
 	static final long SHOW_AGE_MS = 3_600_000L;
 
 	private static final Pattern VERB = Pattern.compile("(?i)^(?:harvest or mine|harvest|mine|break|chop|dig|gather|"
-			+ "kill|slay|slaughter|defeat|catch|fish|shear|cook|collect|craft|smelt|brew|complete|deliver|obtain|get|reach)\\s+");
+			+ "kill|slay|slaughter|defeat|catch|fish|shear|milk|cook|collect|craft|smelt|brew|complete|deliver|obtain|get|reach)\\s+");
 	/** A leading amount ("2,500 Skill Level", "15,000 Tangleroots Resources"); the count column shows it. */
 	private static final Pattern LEADING_NUMBER = Pattern.compile("^\\d[\\d,.]*[kKmM]?\\s+");
 	private static final Pattern IN_WORLD = Pattern.compile("(?i)\\s+(?:in|at|from)\\s+\\S.*$");

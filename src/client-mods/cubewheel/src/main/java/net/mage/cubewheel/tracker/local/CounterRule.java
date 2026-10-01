@@ -5,7 +5,7 @@ package net.mage.cubewheel.tracker.local;
  * what must be acted on and where. Pure: no Minecraft/Fabric imports.
  */
 public record CounterRule(Kind kind, long target, Target what, World world) {
-	public enum Kind { BREAK, HARVEST, KILL, FISH, SHEAR }
+	public enum Kind { BREAK, HARVEST, KILL, FISH, SHEAR, MILK }
 
 	public sealed interface Target permits Any, Group, Named {}
 

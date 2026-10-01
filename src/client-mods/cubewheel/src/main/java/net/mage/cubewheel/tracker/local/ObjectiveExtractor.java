@@ -12,7 +12,7 @@ public final class ObjectiveExtractor {
 	private static final Pattern ARROW = Pattern.compile("^\\s*(?:(\\d{1,3}(?:\\.\\d+)?)%\\s*)?→\\s*(.+)$");
 	/** Menus without an arrow or OBJECTIVE heading: a line that starts with a counting verb and holds a number. */
 	private static final Pattern VERB_LINE = Pattern.compile(
-			"(?i)^\\s*(harvest|mine|break|chop|dig|gather|kill|slay|slaughter|defeat|catch|fish|shear)\\b.*\\d.*$");
+			"(?i)^\\s*(harvest|mine|break|chop|dig|gather|kill|slay|slaughter|defeat|catch|fish|shear|milk)\\b.*\\d.*$");
 	private static final Pattern FORMATTING = Pattern.compile("§.");
 
 	private ObjectiveExtractor() {}

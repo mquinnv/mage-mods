@@ -33,6 +33,8 @@ public final class RuleMatcher {
 			case Signal.FishCaught f -> rule.kind() == CounterRule.Kind.FISH && fishMatches(rule.what(), f.species());
 			case Signal.Sheared s -> rule.kind() == CounterRule.Kind.SHEAR
 					&& targetMatches(rule.what(), s.typeId(), s.name(), java.util.Set.of("mob"));
+			case Signal.Milked m -> rule.kind() == CounterRule.Kind.MILK
+					&& targetMatches(rule.what(), m.typeId(), m.name(), java.util.Set.of("mob"));
 		};
 	}
 

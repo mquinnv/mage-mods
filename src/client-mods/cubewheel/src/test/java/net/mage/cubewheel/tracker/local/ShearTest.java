@@ -46,10 +46,10 @@ class ShearTest {
 		assertEquals(List.of(new ObjectiveInfo.Sub("Shear 10/84 Sheep", null)),
 				ObjectiveExtractor.extract("Experienced Objective", lore).subs());
 		// An unknown verb on a listing is still stored (it just gets no rule).
-		List<String> odd = List.of("Milk 3/40 Cows", "", "㎋ Click to complete job");
+		List<String> odd = List.of("Tame 3/40 Wolves", "", "㎋ Click to complete job");
 		assertTrue(ObjectiveExtractor.extract("Beginner Objective", odd).subs().isEmpty());
-		assertEquals(List.of(new ObjectiveInfo.Sub("Milk 3/40 Cows", null)),
-				ObjectiveExtractor.extract("Beginner Objective", odd, "Milk 3/40 Cows").subs());
+		assertEquals(List.of(new ObjectiveInfo.Sub("Tame 3/40 Wolves", null)),
+				ObjectiveExtractor.extract("Beginner Objective", odd, "Tame 3/40 Wolves").subs());
 		// Something found in the lore wins over the fallback.
 		assertEquals("Shear 10/84 Sheep", ObjectiveExtractor.extract("Experienced Objective", lore, "x").subs().get(0).text());
 	}

@@ -7,7 +7,7 @@ import java.util.Set;
  * names without decorations, groups are "crop", "ore", "logs" (blocks) or "mob", "monster", "player"
  * (entities). Pure: no Minecraft/Fabric imports.
  */
-public sealed interface Signal permits Signal.BlockBroken, Signal.MobKilled, Signal.FishCaught, Signal.Sheared {
+public sealed interface Signal permits Signal.BlockBroken, Signal.MobKilled, Signal.FishCaught, Signal.Sheared, Signal.Milked {
 	WorldInfo world();
 
 	/**
@@ -47,4 +47,7 @@ public sealed interface Signal permits Signal.BlockBroken, Signal.MobKilled, Sig
 
 	/** A shearable entity the player sheared (the server confirmed it: its sheared flag synced to true). */
 	record Sheared(String typeId, String name, WorldInfo world) implements Signal {}
+
+	/** A mob the player milked with an empty bucket (the server kept the swap). */
+	record Milked(String typeId, String name, WorldInfo world) implements Signal {}
 }
