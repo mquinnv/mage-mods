@@ -7,11 +7,11 @@ import net.mage.cubewheel.wheel.SliceViews;
 
 /**
  * The latest boss spawn and the "Boss event" slice built from it: "Mana Golem · 2m" (gold) that sends the
- * warp mapped from its location, or an inert "No boss event". Nothing is ever sent automatically. Pure: no
+ * warp mapped from its location, or an inert "No boss". Nothing is ever sent automatically. Pure: no
  * Minecraft/Fabric imports.
  */
 public final class BossSlice {
-	public static final String NONE = "No boss event";
+	public static final String NONE = "No boss";
 
 	private BossParser.Spawn latest;
 	private long at;

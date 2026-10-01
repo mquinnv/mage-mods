@@ -30,6 +30,8 @@ public final class RadialScreen extends Screen {
 	private static final double SUB_RING_STEP = 45;
 	/** Depth of each tier beyond the ring (one icon + label block plus padding). */
 	private static final int TIER_STEP = 34;
+	/** How far above the screen centre the wheel sits. */
+	private static final int LIFT = 30;
 	/** Background disc behind an outer entry. */
 	private static final int OUTER_DISC = 16;
 	/** Light dim over the world, so it stays visible behind the wheel. */
@@ -76,6 +78,8 @@ public final class RadialScreen extends Screen {
 	private int hovered = -1;
 	/** Tier of the hovered slice: 0 = the ring entry, 1+ = its outer entries (further from the centre). */
 	private int hoveredTier;
+	private final TierPicker tiers = new TierPicker();
+	private boolean cursorPlaced;
 	/** The ring's outer edge as last drawn; beyond it the outer tiers start. */
 	private double renderedEdge;
 	private boolean keyStillHeld;
@@ -168,7 +172,7 @@ public final class RadialScreen extends Screen {
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partial) {
 		super.extractRenderState(g, mouseX, mouseY, partial);
 		int cx = width / 2;
-		int cy = height / 2;
+		int cy = centerY();
 		// The band must hold each icon+label block wherever it sits on the ring: at 3 and 9 o'clock a
 		// label spans the band's thickness horizontally, so the widest label sets the thickness.
 		long now = System.currentTimeMillis();
@@ -186,7 +190,9 @@ public final class RadialScreen extends Screen {
 		double[] dirs = directions();
 		hovered = RadialMath.nearest(mouseX - cx, mouseY - cy, dirs, r * 0.25);
 		renderedEdge = ri + half;
-		hoveredTier = hovered < 0 ? 0 : tierAt(entries.get(hovered), Math.hypot(mouseX - cx, mouseY - cy));
+		WheelNode hoveredNode = hovered < 0 ? null : entries.get(hovered);
+		hoveredTier = tiers.pick(hoveredNode, hoveredNode == null ? 0 : distanceTier(hoveredNode, Math.hypot(mouseX - cx, mouseY - cy)),
+				outerCount(hoveredNode), isShiftDown());
 		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + half, ri - half, RING);
 		fillRing(g, cx, cy, hub, 0, HUB);
 		for (int i = 0; i < entries.size(); i++) {
@@ -250,7 +256,7 @@ public final class RadialScreen extends Screen {
 		try {
 			keyStillHeld = false; // any mouse-driven action ends hold mode; a later release must not commit
 			int cx = width / 2;
-			int cy = height / 2;
+			int cy = centerY();
 			double dx = event.x() - cx;
 			double dy = event.y() - cy;
 			double dead = (renderedRadius > 0 ? renderedRadius : radius()) * 0.25;
@@ -258,7 +264,9 @@ public final class RadialScreen extends Screen {
 				int slice = RadialMath.nearest(dx, dy, directions(), dead);
 				if (slice >= 0) {
 					WheelNode node = entries.get(slice);
-					activate(atTier(node, tierAt(node, Math.hypot(dx, dy))));
+					int tier = slice == hovered ? hoveredTier
+							: isShiftDown() ? outerCount(node) : distanceTier(node, Math.hypot(dx, dy));
+					activate(atTier(node, tier));
 				}
 				else if (Math.hypot(dx, dy) < dead) back();
 				return true;
@@ -282,7 +290,7 @@ public final class RadialScreen extends Screen {
 				CommandSender.send(command); // one command per activation
 				return;
 			}
-			if (!SliceViews.opens(node)) return; // e.g. "Loading…", "No boss event": not actionable
+			if (!SliceViews.opens(node)) return; // e.g. "Loading…", "No boss": not actionable
 			if (HomesFetcher.isRefreshEntry(node)) {
 				resolve(node, true); // user click: may force one /homes (rate-limited)
 				refresh(); // re-resolve the current ring in place, without sending
@@ -351,6 +359,23 @@ public final class RadialScreen extends Screen {
 		return CubeWheelClient.config().current().listThreshold;
 	}
 
+	/** Minecraft parks the cursor at the screen centre; move it onto the (lifted) hub so nothing starts selected. */
+	@Override
+	protected void init() {
+		super.init();
+		if (cursorPlaced || minecraft == null) return;
+		cursorPlaced = true;
+		Window window = minecraft.getWindow();
+		double sx = window.getScreenWidth() / (double) Math.max(1, width);
+		double sy = window.getScreenHeight() / (double) Math.max(1, height);
+		GLFW.glfwSetCursorPos(window.handle(), width / 2 * sx, centerY() * sy);
+	}
+
+	/** The wheel sits a little above the screen centre so its lower tiers clear HUDs below the crosshair. */
+	private int centerY() {
+		return height / 2 - Math.min(LIFT, height / 10);
+	}
+
 	private double radius() {
 		return Math.max(48, Math.min(100, Math.min(width, height) * 0.22));
 	}
@@ -368,11 +393,15 @@ public final class RadialScreen extends Screen {
 		return key.getType() == InputConstants.Type.KEYSYM || key.getType() == InputConstants.Type.MOUSE;
 	}
 
-	/** The tier the pointer picks on {@code node}: by distance past the ring, or the outermost while Shift is held. */
-	private int tierAt(WheelNode node, double distance) {
-		int tiers = outerCount(node);
-		if (tiers > 0 && isShiftDown()) return tiers;
-		return renderedEdge > 0 ? RadialMath.tier(distance, renderedEdge, TIER_STEP, tiers) : 0;
+	/** The tier the pointer's distance past the ring picks on {@code node}. */
+	private int distanceTier(WheelNode node, double distance) {
+		return renderedEdge > 0 ? RadialMath.tier(distance, renderedEdge, TIER_STEP, outerCount(node)) : 0;
+	}
+
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+		if (hovered >= 0 && hovered < entries.size()) tiers.scroll(scrollY, outerCount(entries.get(hovered)));
+		return true;
 	}
 
 	/** Either Shift key, unless Shift is the wheel's own hold key (then it is always down and means nothing). */

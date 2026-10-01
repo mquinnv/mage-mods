@@ -26,7 +26,7 @@ public final class SliceViews {
 	 * @param label   text under the icon
 	 * @param colour  ARGB label colour, or null for the normal hover white / idle grey
 	 * @param command command to send instead of the node's own, or null to keep the node's
-	 * @param inert   true: clicking does nothing (a placeholder such as "No boss event")
+	 * @param inert   true: clicking does nothing (a placeholder such as "No boss")
 	 */
 	public record View(String label, Integer colour, String command, boolean inert) {}
 

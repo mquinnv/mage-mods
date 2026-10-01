@@ -23,7 +23,7 @@ class WheelUpgradeTest {
 
 	@Test void newDefaultTopLevelOrder() {
 		List<WheelNode> w = DefaultConfig.wheel();
-		assertEquals(List.of("Crops (Sushi)", "Homes", "Travel", "Jobs", "Kilton", "Sell", "Vaults", "Fly",
+		assertEquals(List.of("Sushi", "Homes", "Travel", "Jobs", "Kilton", "Sell", "Vaults", "Fly",
 				"Isles", "Progress", "Daily reward", "Boss event", "More"), labels(w));
 		assertEquals("/warp spawners", w.get(0).outer.command);
 		assertEquals("/sell hand", w.get(5).outer.command);
@@ -88,7 +88,7 @@ class WheelUpgradeTest {
 		assertNull(s.reload());
 		assertEquals(DefaultConfig.CONFIG_VERSION, s.current().configVersion);
 		assertEquals(5, s.current().vaultCount); // other settings kept
-		assertEquals("Crops (Sushi)", s.current().wheel.get(0).label);
+		assertEquals("Sushi", s.current().wheel.get(0).label);
 		assertTrue(s.warnings().stream().anyMatch(w -> w.contains("Island (/is)")), s.warnings().toString());
 		assertTrue(Files.readString(f).contains("\"configVersion\": " + DefaultConfig.CONFIG_VERSION));
 		// Once: an edit made afterwards (removing Kilton) survives the next load.

@@ -88,8 +88,8 @@ public final class DefaultConfig {
 		List<WheelNode> w = new ArrayList<>();
 		// Player warps: crops and spawners are player Sushi's warps, the ones most people want.
 		// Two tiers on one slice: Crops on the ring, Spawners just outside it (point further out).
-		w.add(leaf("Crops (Sushi)", "minecraft:wheat", "/warp crops")
-			.withOuter(leaf("Spawners (Sushi)", "minecraft:spawner", "/warp spawners")));
+		w.add(leaf("Sushi", "minecraft:wheat", "/warp crops")
+			.withOuter(leaf("Spawners", "minecraft:spawner", "/warp spawners")));
 		w.add(dynamic("Homes", "minecraft:red_bed", "homes"));
 		w.add(ring("Travel", "minecraft:compass",
 			leaf("Spawn", "minecraft:red_bed", "/spawn"),
