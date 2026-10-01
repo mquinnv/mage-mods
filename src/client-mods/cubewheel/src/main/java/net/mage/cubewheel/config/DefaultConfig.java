@@ -92,6 +92,10 @@ public final class DefaultConfig {
 		w.add(dynamic("Homes", "minecraft:red_bed", "homes"));
 		w.add(leaf("Jobs", "minecraft:iron_pickaxe", "/jobs"));
 		w.add(leaf("Kilton", "minecraft:skeleton_skull", "/kilton"));
+		w.add(ring("Sell", "minecraft:gold_ingot",
+			leaf("Sell menu", "minecraft:gold_ingot", "/sell"),
+			leaf("Sell hand", "minecraft:gold_nugget", "/sell hand"),
+			leaf("Sell all", "minecraft:gold_block", "/sell all")));
 		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
 			leaf("Ender chest", "minecraft:ender_chest", "/ec"),
 			leaf("Party vault", "minecraft:barrel", "/p vault")));
@@ -111,10 +115,6 @@ public final class DefaultConfig {
 		w.add(leaf("Daily reward", "minecraft:milk_bucket", "/cow"));
 		w.add(slice("Boss event", "minecraft:wither_skeleton_skull", "boss"));
 		w.add(ring(MORE, "minecraft:chest",
-			ring("Sell", "minecraft:gold_ingot",
-				leaf("Sell menu", "minecraft:gold_ingot", "/sell"),
-				leaf("Sell hand", "minecraft:gold_nugget", "/sell hand"),
-				leaf("Sell all", "minecraft:gold_block", "/sell all")),
 			ring("Shops", "minecraft:emerald",
 				leaf("Alchemist", "minecraft:brewing_stand", "/alchemist"),
 				leaf("Enchanter", "minecraft:enchanting_table", "/enchanter"),
