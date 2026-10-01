@@ -89,12 +89,21 @@ public final class DefaultConfig {
 		// Player warps: crops and spawners are player Sushi's warps, the ones most people want.
 		w.add(leaf("Crops (Sushi)", "minecraft:wheat", "/warp crops"));
 		w.add(leaf("Spawners (Sushi)", "minecraft:spawner", "/warp spawners"));
+		w.add(dynamic("Homes", "minecraft:red_bed", "homes"));
 		w.add(leaf("Jobs", "minecraft:iron_pickaxe", "/jobs"));
 		w.add(leaf("Kilton", "minecraft:skeleton_skull", "/kilton"));
 		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
 			leaf("Ender chest", "minecraft:ender_chest", "/ec"),
 			leaf("Party vault", "minecraft:barrel", "/p vault")));
 		w.add(leaf("Fly", "minecraft:feather", "/fly"));
+		w.add(ring("Isles", "minecraft:filled_map",
+			leaf("Isles menu", "minecraft:map", "/isles"),
+			leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven"),
+			leaf("Tangleroots", "minecraft:vine", "/warp tangleroots"),
+			leaf("Sandara", "minecraft:sand", "/warp sandara"),
+			leaf("Icehaven", "minecraft:packed_ice", "/warp icehaven"),
+			leaf("Morend", "minecraft:end_stone", "/warp morend"),
+			leaf("Burninglands", "minecraft:magma_block", "/warp burninglands")));
 		w.add(ring("Progress", "minecraft:experience_bottle",
 			leaf("Party quests", "minecraft:writable_book", "/pquests"),
 			leaf("Prestige", "minecraft:nether_star", "/prestige"),
@@ -102,7 +111,6 @@ public final class DefaultConfig {
 		w.add(leaf("Daily reward", "minecraft:milk_bucket", "/cow"));
 		w.add(slice("Boss event", "minecraft:wither_skeleton_skull", "boss"));
 		w.add(ring(MORE, "minecraft:chest",
-			dynamic("Homes", "minecraft:red_bed", "homes"),
 			ring("Sell", "minecraft:gold_ingot",
 				leaf("Sell menu", "minecraft:gold_ingot", "/sell"),
 				leaf("Sell hand", "minecraft:gold_nugget", "/sell hand"),
@@ -124,15 +132,6 @@ public final class DefaultConfig {
 					leaf("Leaderboard", "minecraft:oak_hanging_sign", "/warp leaderboard"),
 					leaf("PvP", "minecraft:iron_sword", "/warp pvp"),
 					leaf("1v1", "minecraft:shield", "/warp 1v1")),
-				ring("Isles", "minecraft:filled_map",
-					leaf("Isles menu", "minecraft:map", "/isles"),
-					leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven"),
-					leaf("Tangleroots", "minecraft:vine", "/warp tangleroots"),
-					leaf("Sandara", "minecraft:sand", "/warp sandara"),
-					leaf("Icehaven", "minecraft:packed_ice", "/warp icehaven"),
-					leaf("Morend", "minecraft:end_stone", "/warp morend"),
-					leaf("Burninglands", "minecraft:magma_block", "/warp burninglands")),
-				// The Isles list has 9 entries with these two: split so every ring stays a wheel.
 				ring("Bosses", "minecraft:wither_skeleton_skull",
 					leaf("Boss arena", "minecraft:wither_skeleton_skull", "/warp boss"),
 					leaf("Bosses", "minecraft:nether_star", "/bosses"))),
