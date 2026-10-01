@@ -161,7 +161,7 @@ public final class CooldownWatcher {
 	}
 
 	/**
-	 * The "Cooldowns" panel: "Samurai Katana · 4.5s", soonest first, then mcMMO abilities
+	 * The "Cooldowns" panel: "R Samurai Katana 4.5s", soonest first, then mcMMO abilities
 	 * ({@link McmmoWatcher#lines}), then the held item's "Uses: N".
 	 */
 	public static Optional<Panel> panel(long now) {
@@ -171,7 +171,9 @@ public final class CooldownWatcher {
 		if (items) {
 			for (CooldownTracker.Entry e : tracker.active(now)) {
 				long left = e.endsAt() - now;
-				lines.add(Panel.Line.split(e.label(), Durations.shortCountdown(left), left < ENDING_SOON_MS ? Panel.YELLOW : Panel.WHITE));
+				int color = left < ENDING_SOON_MS ? Panel.YELLOW : Panel.WHITE;
+				// "R  Phoenix Staff   12s": the trigger in the tag column, a short name, the time on the right.
+				lines.add(new Panel.Line(e.trigger(), Panel.GRAY, e.label(), color, Durations.shortCountdown(left)));
 			}
 		}
 		lines.addAll(McmmoWatcher.lines(now));

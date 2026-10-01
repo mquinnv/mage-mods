@@ -19,6 +19,7 @@ class CooldownTrackerTest {
 		List<CooldownTracker.Entry> a = t.active(1_000);
 		assertEquals(1, a.size());
 		assertEquals("Samurai Katana", a.get(0).label());
+		assertEquals("R", a.get(0).trigger());
 		assertEquals(31_000, a.get(0).endsAt());
 		assertTrue(t.active(31_000).isEmpty());
 	}
@@ -47,11 +48,12 @@ class CooldownTrackerTest {
 		CooldownTracker t = new CooldownTracker();
 		t.trigger("Axe", both, Action.USE, true, 0);
 		assertEquals(1, t.active(0).size());
-		assertEquals("Axe (Shift + Right Click)", t.active(0).get(0).label());
+		assertEquals("Axe", t.active(0).get(0).label());
+		assertEquals("\u21E7R", t.active(0).get(0).trigger());
 		assertEquals(45_000, t.active(0).get(0).endsAt());
 		t.trigger("Axe", both, Action.USE, false, 0);
 		assertEquals(2, t.active(0).size());
-		assertEquals("Axe (Right-Click)", t.active(0).get(0).label()); // soonest first
+		assertEquals("R", t.active(0).get(0).trigger()); // soonest first
 	}
 
 	@Test void sneakOnlyAbilityNeedsSneaking() {
@@ -59,7 +61,17 @@ class CooldownTrackerTest {
 		CooldownTracker t = new CooldownTracker();
 		assertFalse(t.trigger("Pick", sneakOnly, Action.USE, false, 0));
 		assertTrue(t.trigger("Pick", sneakOnly, Action.USE, true, 0));
-		assertEquals("Pick", t.active(0).get(0).label()); // one triggerable ability: no section suffix
+		assertEquals("Pick", t.active(0).get(0).label());
+	}
+
+	@Test void longNamesAreCutAndAttacksAreL() {
+		CooldownTracker t = new CooldownTracker();
+		t.trigger("Phoenix Staff of Eternal Flame", List.of(new Ability(Action.ATTACK, false, 5_000,
+				"Shoot a Flame that sets enemies ablaze")), Action.ATTACK, false, 0);
+		CooldownTracker.Entry e = t.active(0).get(0);
+		assertEquals("L", e.trigger());
+		assertEquals(CooldownTracker.MAX_NAME, e.label().length());
+		assertTrue(e.label().endsWith("\u2026"));
 	}
 
 	@Test void plainAbilityAlsoFiresWhileSneakingWhenThereIsNoSneakVariant() {

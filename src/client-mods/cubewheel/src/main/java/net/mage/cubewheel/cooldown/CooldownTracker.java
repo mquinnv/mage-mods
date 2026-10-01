@@ -12,8 +12,14 @@ import java.util.Map;
  * Item ability countdowns, keyed by item name and ability. Pure: no Minecraft/Fabric imports.
  */
 public final class CooldownTracker {
-	/** A running countdown: "Samurai Katana" or, for items with several abilities, "Axe (Shift + Right Click)". */
-	public record Entry(String label, long endsAt) {}
+	/**
+	 * A running countdown: the item's name, kept short ({@link #MAX_NAME}), and what set it off — {@code trigger}
+	 * "R" (right-click), "L" (attack), "Eat", "Snk", with "⇧" for a sneak-only variant ("⇧R").
+	 */
+	public record Entry(String label, long endsAt, String trigger) {}
+
+	/** Longest item name shown; longer ones are cut with "…" so the panel keeps its width. */
+	public static final int MAX_NAME = 14;
 
 	private final Map<String, Entry> running = new LinkedHashMap<>();
 
@@ -38,9 +44,25 @@ public final class CooldownTracker {
 		running.values().removeIf(e -> e.endsAt() <= now);
 		String key = name + "|" + chosen.action() + "|" + chosen.sneak() + "|" + chosen.section();
 		if (running.containsKey(key)) return false;
-		boolean several = abilities.size() > 1 && !chosen.section().isEmpty();
-		running.put(key, new Entry(several ? name + " (" + chosen.section() + ")" : name, now + chosen.cooldownMs()));
+		running.put(key, new Entry(shortName(name), now + chosen.cooldownMs(), trigger(chosen)));
 		return true;
+	}
+
+	/** "R", "L", "Eat", "Snk"; "⇧" in front for an ability that only fires while sneaking. */
+	static String trigger(Ability a) {
+		String base = switch (a.action()) {
+			case USE -> "R";
+			case ATTACK -> "L";
+			case CONSUME -> "Eat";
+			case SNEAK -> "Snk";
+		};
+		return a.sneak() && a.action() != Action.SNEAK ? "\u21E7" + base : base;
+	}
+
+	/** {@code name} cut to {@link #MAX_NAME} characters ("Bottomless Firefly Bottle" -> "Bottomless Fir…"). */
+	static String shortName(String name) {
+		String n = name.trim();
+		return n.length() <= MAX_NAME ? n : n.substring(0, MAX_NAME - 1).trim() + "\u2026";
 	}
 
 	/** Running countdowns, soonest-ending first. */
