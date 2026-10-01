@@ -74,6 +74,17 @@ class CooldownTrackerTest {
 		assertTrue(e.label().endsWith("\u2026"));
 	}
 
+	@Test void allCapsNamesBecomeTitleCase() {
+		assertEquals("Phoenix Staff", CooldownTracker.titleCase("PHOENIX STAFF"));
+		assertEquals("Staff of the Sun", CooldownTracker.titleCase("STAFF OF THE SUN"));
+		assertEquals("Of Mice", CooldownTracker.titleCase("OF MICE")); // the first word is always capitalised
+		assertEquals("[Rare] Bow", CooldownTracker.titleCase("[RARE] BOW"));
+		assertEquals("Samurai Katana", CooldownTracker.titleCase("Samurai Katana")); // mixed case left alone
+		CooldownTracker t = new CooldownTracker();
+		t.trigger("PHOENIX STAFF", RIGHT, Action.USE, false, 0);
+		assertEquals("Phoenix Staff", t.active(0).get(0).label());
+	}
+
 	@Test void plainAbilityAlsoFiresWhileSneakingWhenThereIsNoSneakVariant() {
 		CooldownTracker t = new CooldownTracker();
 		assertTrue(t.trigger("Wand", RIGHT, Action.USE, true, 0));

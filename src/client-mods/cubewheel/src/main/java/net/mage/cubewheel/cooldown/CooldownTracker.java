@@ -68,9 +68,33 @@ public final class CooldownTracker {
 		return a.sneak() && a.action() != Action.SNEAK ? "\u21E7" + base : base;
 	}
 
+	private static final java.util.Set<String> SMALL_WORDS = java.util.Set.of("of", "the", "a", "an", "and", "in", "on", "to");
+
+	/**
+	 * An all-caps name ("PHOENIX STAFF OF THE SUN") in title case ("Phoenix Staff of the Sun"); a name that already
+	 * has lower-case letters is left alone.
+	 */
+	static String titleCase(String name) {
+		if (name.chars().noneMatch(Character::isLetter) || !name.equals(name.toUpperCase(java.util.Locale.ROOT))) return name;
+		String[] words = name.toLowerCase(java.util.Locale.ROOT).split(" ", -1);
+		StringBuilder out = new StringBuilder();
+		for (int i = 0; i < words.length; i++) {
+			String w = words[i];
+			if (i > 0) out.append(' ');
+			if (w.isEmpty() || i > 0 && SMALL_WORDS.contains(w)) {
+				out.append(w);
+				continue;
+			}
+			int first = 0;
+			while (first < w.length() && !Character.isLetter(w.charAt(first))) first++;
+			out.append(first < w.length() ? w.substring(0, first) + Character.toUpperCase(w.charAt(first)) + w.substring(first + 1) : w);
+		}
+		return out.toString();
+	}
+
 	/** {@code name} cut to {@link #MAX_NAME} characters ("Bottomless Firefly Bottle" -> "Bottomless Fir…"). */
 	static String shortName(String name) {
-		String n = name.trim();
+		String n = titleCase(name.trim());
 		return n.length() <= MAX_NAME ? n : n.substring(0, MAX_NAME - 1).trim() + "\u2026";
 	}
 
