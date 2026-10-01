@@ -15,6 +15,13 @@ public final class RuleMatcher {
 			"cocoa bean", "cocoa");
 
 	/**
+	 * Metals and gems named bare in mining objectives ("Mine 201 Sandara Iron"): the material stands for its ore
+	 * blocks, plain, deepslate or nether ("iron ore", "deepslate iron ore").
+	 */
+	private static final java.util.Set<String> ORE_MATERIALS = java.util.Set.of(
+			"iron", "gold", "copper", "coal", "diamond", "emerald", "lapis", "redstone", "quartz");
+
+	/**
 	 * Blocks ManaCube's mana worlds use in place of a crop: Wolfhaven "wheat" is a hay block you scythe
 	 * (capture 2026-09-30). World scoping still applies through the rule, so a hay bale in the overworld
 	 * doesn't count toward "Harvest … Wolfhaven Wheat".
@@ -86,6 +93,7 @@ public final class RuleMatcher {
 				String fromName = displayName(name);
 				String compactWant = want.replace(" ", "");
 				yield fromId.equals(want) || fromId.equals(ID_ALIASES.get(want))
+						|| ORE_MATERIALS.contains(want) && fromId.matches("((deepslate|nether) )?" + want + " ore")
 						|| fromName.equals(want) || fromName.endsWith(" " + want)
 						// "Rattle Snakes" vs a "Rattlesnake" mob or a "rattlesnake" id
 						|| (want.indexOf(' ') > 0 && (fromName.replace(" ", "").equals(compactWant)

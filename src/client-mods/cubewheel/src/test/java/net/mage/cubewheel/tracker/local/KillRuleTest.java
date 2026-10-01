@@ -38,6 +38,17 @@ class KillRuleTest {
 						false, false), WORLDS));
 	}
 
+	@Test void bareOreMaterialMatchesItsOres() {
+		CounterRule iron = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 0/201 Sandara Iron", null)),
+				false, false), WORLDS).orElseThrow();
+		assertEquals(new CounterRule(Kind.BREAK, 201, new Named("iron"), new NamedWorld("sandara")), iron);
+		WorldInfo sandara = WorldResolver.resolve("minecraft:sandara", SIDEBAR, WORLDS);
+		for (String id : List.of("minecraft:iron_ore", "minecraft:deepslate_iron_ore")) {
+			assertTrue(RuleMatcher.matches(iron, new Signal.BlockBroken(id, "Iron Ore", java.util.Set.of(), false, false, sandara)), id);
+		}
+		assertFalse(RuleMatcher.matches(iron, new Signal.BlockBroken("minecraft:gold_ore", "Gold Ore", java.util.Set.of(), false, false, sandara)));
+	}
+
 	@Test void tanglerootsWorldResolvesFromDimension() {
 		WorldInfo at = tangleroots();
 		assertTrue(at.known());
