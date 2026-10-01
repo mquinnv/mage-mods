@@ -74,6 +74,7 @@ public final class LiveWatcher {
 			String text = message.getString();
 			long now = System.currentTimeMillis();
 			if (tpa.onChat(text, now)) return true;
+			if (boss.onChat(text, now)) return true;
 			Optional<BossParser.Spawn> spawn = BossParser.parse(text);
 			if (spawn.isPresent()) {
 				boss.spawned(spawn.get(), now);

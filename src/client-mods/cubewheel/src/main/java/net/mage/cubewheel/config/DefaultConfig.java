@@ -273,9 +273,11 @@ public final class DefaultConfig {
 	 */
 	public static List<CubeWheelConfig.EventDef> events() {
 		List<CubeWheelConfig.EventDef> l = new ArrayList<>();
-		l.add(new CubeWheelConfig.EventDef("LPS", "at 08:00, 13:00, 17:00"));
+		// LPS starts two minutes before the hour ("starting in 5s" at 12:58:01, 16:58:02 in captures).
+		l.add(new CubeWheelConfig.EventDef("LPS", "at 07:58, 12:58, 16:58"));
 		l.add(new CubeWheelConfig.EventDef("KOTH", "at 00:30, 02:30, 04:30, 06:30, 10:30, 12:30, 14:30, 16:30, 18:30, 22:30"));
-		l.add(new CubeWheelConfig.EventDef("Boss", "at 01:30, 03:30, 05:30, 07:30, 09:30, 13:30, 15:30, 17:30, 19:30, 21:30"));
+		// Boss Arena: every two hours from 01:30 (the wiki skips 11:30, but a boss spawned at 11:31 on 2026-10-01).
+		l.add(new CubeWheelConfig.EventDef("Boss", "every 2h from 01:30"));
 		l.add(new CubeWheelConfig.EventDef("Golden Knight", "every 3h from 00:15"));
 		l.add(new CubeWheelConfig.EventDef("Cursed Witch", "every 3h from 01:15"));
 		l.add(new CubeWheelConfig.EventDef("Desert Golem", "every 3h from 02:15"));

@@ -63,4 +63,15 @@ class BossTest {
 		assertEquals("X · <1m (no warp)", unmapped.label());
 		assertNull(SliceViews.command(node, unmapped));
 	}
+
+	@Test void killsByTheBossKeepItUpOthersDoNot() {
+		BossSlice s = new BossSlice();
+		Map<String, String> w = DefaultConfig.bossWarps();
+		s.spawned(BossParser.parse(GOLEM).orElseThrow(), 0);
+		assertEquals(BossSlice.NONE, s.view(w, 5 * MIN, 6 * MIN).label()); // no sign of life: gone after 5 min
+		assertTrue(s.onChat("\u2E5D KamishsRank was slain by Mana Golem Boss [axes]", 4 * MIN));
+		assertTrue(s.view(w, 5 * MIN, 8 * MIN).label().startsWith("Mana Golem"));    // still fighting at 4 min
+		assertFalse(s.onChat("\u2E5D Danix_005 was slain by Mana Wolf", 9 * MIN));  // another mob
+		assertEquals(BossSlice.NONE, s.view(w, 5 * MIN, 10 * MIN).label());
+	}
 }

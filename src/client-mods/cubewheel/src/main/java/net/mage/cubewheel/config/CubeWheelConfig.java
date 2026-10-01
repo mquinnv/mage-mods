@@ -80,8 +80,8 @@ public final class CubeWheelConfig {
 		 * defaults (Boss Arena -> /warp boss, each Mana world -> /warp <world>).
 		 */
 		public Map<String, String> bossWarps;
-		/** The "Boss event" slice shows a spawn for this many minutes, 1-180. */
-		public int bossMinutes = 15;
+		/** The "Boss event" slice shows a spawn this many minutes after its last sign of life (spawn, or a kill it made), 1-180. */
+		public int bossMinutes = 5;
 	}
 
 	/**

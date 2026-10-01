@@ -15,11 +15,30 @@ public final class BossSlice {
 
 	private BossParser.Spawn latest;
 	private long at;
+	/** The last sign the boss is still up: its spawn, or a player it killed ("X was slain by Mana Golem [axes]"). */
+	private long aliveAt;
+
+	private static final java.util.regex.Pattern SLAIN = java.util.regex.Pattern.compile("(?i)\\bwas slain by (.+)$");
 
 	public void spawned(BossParser.Spawn spawn, long now) {
 		if (spawn == null) return;
 		latest = spawn;
 		at = now;
+		aliveAt = now;
+	}
+
+	/**
+	 * A chat line: a player slain by the latest boss ("Mana Golem", "Mana Golem Boss [axes]") shows it is still
+	 * alive, so the slice stays up a while longer. Returns true if it was such a line.
+	 */
+	public boolean onChat(String text, long now) {
+		if (latest == null || text == null) return false;
+		java.util.regex.Matcher m = SLAIN.matcher(text.replaceAll("§.", "").trim());
+		if (!m.find() || !m.group(1).toLowerCase(java.util.Locale.ROOT).contains(latest.boss().toLowerCase(java.util.Locale.ROOT))) {
+			return false;
+		}
+		aliveAt = Math.max(aliveAt, now);
+		return true;
 	}
 
 	public BossParser.Spawn latest() {
@@ -39,9 +58,12 @@ public final class BossSlice {
 		return null;
 	}
 
-	/** The slice right now: the spawn while it is at most {@code maxAgeMs} old, else the placeholder. */
+	/**
+	 * The slice right now: the spawn until {@code maxAgeMs} after the last sign of life (its spawn or a kill it made),
+	 * else the placeholder. ManaCube announces no deaths, so this is a best guess; bosses usually fall in minutes.
+	 */
 	public SliceViews.View view(Map<String, String> warps, long maxAgeMs, long now) {
-		if (latest == null || now - at > maxAgeMs || now < at - 60_000) {
+		if (latest == null || now - aliveAt > maxAgeMs || now < at - 60_000) {
 			return new SliceViews.View(NONE, SliceViews.DIM, null, true);
 		}
 		String label = latest.boss() + " · " + LiveFormat.compact(now - at);

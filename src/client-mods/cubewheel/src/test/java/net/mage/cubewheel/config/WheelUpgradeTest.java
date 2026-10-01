@@ -125,7 +125,7 @@ class WheelUpgradeTest {
 		CubeWheelConfig d = DefaultConfig.create();
 		assertEquals("/warp boss", d.events.bossWarps.get("(?i)boss arena"));
 		assertEquals(7, d.events.bossWarps.size());
-		assertEquals(15, d.events.bossMinutes);
+		assertEquals(5, d.events.bossMinutes);
 		assertTrue(d.dailyReward.enabled);
 		assertEquals(24, d.dailyReward.dailyHours);
 		Path f = dir.resolve("cubewheel.json");
