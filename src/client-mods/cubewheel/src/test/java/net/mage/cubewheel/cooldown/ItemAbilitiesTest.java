@@ -115,4 +115,21 @@ class ItemAbilitiesTest {
 		assertTrue(ItemAbilities.parse(List.of("Infinite Uses")).uses().isEmpty());
 		assertTrue(ItemAbilities.parse(null).uses().isEmpty());
 	}
+
+	/** Phoenix Staff (screenshot 2026-09-30): each ability line names its own click, in parentheses at the end. */
+	@Test void abilityLinesNamingTheirClickAreSeparateSections() {
+		ItemAbilities a = ItemAbilities.parse(List.of(
+				"Unbreakable", "Phoenix Staff", "", "ITEM EFFECTS:", "\u279D Shoot a Flame (Left-Click)", "", "PVP Damage: 10",
+				"PVE Damage: 20", "Cooldown: 0.5s", "", "\u279D Shoot a High Damage Burst of Fire (Right-Click)", "",
+				"PVP Damage: 30", "PVE Damage: 65", "Cooldown: 10s", "", "Season Vault Access \u2714", "HOLY PROTECTION", "",
+				"When in Main Hand:", " 1 Attack Damage", " 24 Attack Speed"));
+		assertEquals(List.of(
+				new Ability(Action.ATTACK, false, 500, "Shoot a Flame"),
+				new Ability(Action.USE, false, 10_000, "Shoot a High Damage Burst of Fire")), a.abilities());
+	}
+
+	@Test void ordinaryLinesWithParenthesesAreNotHeadings() {
+		ItemAbilities a = ItemAbilities.parse(List.of("Grants Haste (Level 2)", "Cooldown: 30s"));
+		assertEquals(List.of(new Ability(Action.USE, false, 30_000, "")), a.abilities());
+	}
 }

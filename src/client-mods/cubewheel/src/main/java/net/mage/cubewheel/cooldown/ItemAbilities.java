@@ -57,6 +57,14 @@ public record ItemAbilities(List<Ability> abilities, OptionalLong uses) {
 					continue;
 				}
 			}
+			String abilityClick = abilityClick(line);
+			if (abilityClick != null) {
+				// "➝ Shoot a Flame (Left-Click)": the line names its ability and its click; label it by the ability.
+				inSection = true;
+				section = classify(abilityClick);
+				sectionName = abilityName(line);
+				continue;
+			}
 			String heading = heading(line);
 			if (heading != null) {
 				inSection = true;
@@ -70,6 +78,27 @@ public record ItemAbilities(List<Ability> abilities, OptionalLong uses) {
 			else if (section != null) out.add(new Ability(section.action(), section.sneak(), cd.getAsLong(), sectionName));
 		}
 		return out.isEmpty() && uses.isEmpty() ? NONE : new ItemAbilities(List.copyOf(out), uses);
+	}
+
+	/**
+	 * The click text of an ability line that names its own trigger in trailing parentheses — "➝ Shoot a Flame
+	 * (Left-Click)" — or null. Only real trigger phrases count, so "Grants Haste (Level 2)" is not a heading.
+	 * Title-style headings ("ITEM EFFECTS: (Right-Click)") are left to {@link #heading}.
+	 */
+	private static String abilityClick(String line) {
+		Matcher p = PAREN_HEADING.matcher(line);
+		if (!p.matches()) return null;
+		String prefix = p.group(1).trim().toLowerCase(Locale.ROOT);
+		if (prefix.isEmpty() || prefix.endsWith(":") || prefix.contains("effect") || prefix.contains("abilit")) return null;
+		String trigger = p.group(2).trim();
+		return isTriggerPhrase(trigger) ? trigger : null;
+	}
+
+	/** "➝ Shoot a Flame (Left-Click)" -> "Shoot a Flame". */
+	private static String abilityName(String line) {
+		Matcher p = PAREN_HEADING.matcher(line);
+		String name = p.matches() ? p.group(1) : line;
+		return name.replaceAll("^[^\\p{L}\\p{N}]+", "").trim();
 	}
 
 	/** The trigger text if the line is a section heading, else null. */
