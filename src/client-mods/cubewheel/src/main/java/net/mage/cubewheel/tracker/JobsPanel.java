@@ -37,18 +37,22 @@ public final class JobsPanel {
 		if (m.lines().isEmpty()) return Optional.empty();
 		List<Panel.Line> lines = new ArrayList<>(m.lines().size());
 		for (JobsPanelModel.Line l : m.lines()) {
-			lines.add(new Panel.Line(l.tag(), tierColor(l.tag()), l.text(), color(l.tone()), l.right()));
+			lines.add(new Panel.Line(l.tag(), worldTagColor(l.tag()), l.text(), color(l.tone()), l.right()));
 		}
 		CubeWheelConfig.Position p = cfg.tracker.jobsPanel.position;
 		return Optional.of(new Panel(m.title(), lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
 	}
 
-	/** Tier letters in their own colours: Beginner green, Experienced blue, Heavy red. */
-	private static int tierColor(String tag) {
+	/** World tags in each mana world's colour. */
+	private static int worldTagColor(String tag) {
 		return switch (tag) {
-			case "B" -> 0xFF55FF55;
-			case "E" -> 0xFF55AAFF;
-			case "H" -> 0xFFFF5555;
+			case "WH" -> 0xFFB8C7D9; // Wolfhaven: steel
+			case "TR" -> 0xFF5FD35F; // Tangleroots: jungle green
+			case "SA" -> 0xFFE8C98A; // Sandara: sand
+			case "IH" -> 0xFF9EE7FF; // Icehaven: ice
+			case "MO" -> 0xFFB98AE8; // Morend: end purple
+			case "BL" -> 0xFFFF7A45; // Burninglands: fire
+			case "\u2726" -> 0xFFFFD75E; // any special world
 			default -> Panel.GRAY;
 		};
 	}

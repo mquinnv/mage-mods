@@ -52,7 +52,8 @@ public final class JobsPanelModel {
 	}
 
 	/**
-	 * One panel row in three columns: {@code tag} (tier letter: B, E, H), {@code text} (an industry heading, or the
+	 * One panel row in three columns: {@code tag} (the world the job is tied to, e.g. "TR"; "" if none), {@code text}
+	 * (an industry heading, or the
 	 * target without verb or world) and {@code right} (a short count, right-aligned). Unused columns are "".
 	 */
 	public record Line(String tag, String text, String right, Tone tone) {}
@@ -105,7 +106,9 @@ public final class JobsPanelModel {
 			items.sort(Comparator.comparingInt(Item::tier).thenComparing(Item::text));
 			lines.add(new Line("", INDUSTRY_MARK + industry, "", Tone.INDUSTRY));
 			for (Item it : items) {
-				String tag = it.tier() < TIERS.size() ? TIERS.get(it.tier()).substring(0, 1) : "";
+				// Rows run Beginner → Experienced → Heavy, so the left column is free for the world restriction.
+				String tag = CompactJob.worldTag(WorldScope.of(it.row().item().name(),
+						objectives == null ? null : objectives.apply(it.row().item().id()), worldNames));
 				lines.add(new Line(tag, CompactJob.target(it.text(), worldNames), CompactJob.count(it.row(), now), tone(it)));
 			}
 		}

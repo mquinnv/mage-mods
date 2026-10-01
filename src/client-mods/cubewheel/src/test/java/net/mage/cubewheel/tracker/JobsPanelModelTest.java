@@ -59,16 +59,16 @@ class JobsPanelModelTest {
 		assertEquals("Jobs · Crate 4/5", m.title());
 		assertEquals(List.of(
 				"⚒ Farming |",
-				"B Wheat | 64/64 ✓",
-				"E Resources | 1/10",
-				"H Cherry Logs | 3.1k/4.8k",
+				"Wheat | 64/64 ✓",
+				"WH Resources | 1/10",
+				"Cherry Logs | 3.1k/4.8k",
 				"⚒ Hunting |",
-				"B Tigers | 16/64",
-				"E Rattle Snakes | 5/58",
+				"TR Tigers | 16/64",
+				"SA Rattle Snakes | 5/58",
 				"⚒ Mining |",
-				"H Deepslate | 10/100",
+				"Deepslate | 10/100",
 				"⚒ Cooking |",
-				"H Fish | 1/2"), texts(m));
+				"Fish | 1/2"), texts(m));
 		assertEquals(Tone.INDUSTRY, m.lines().get(0).tone());
 		assertEquals(Tone.DONE, m.lines().get(1).tone());
 		assertEquals(Tone.NEUTRAL, m.lines().get(3).tone());
@@ -77,10 +77,10 @@ class JobsPanelModelTest {
 	@Test void currentWorldIsHighlightedAndOtherWorldsDimmed() {
 		Model m = build(store(), TrackerStoreWorldFilterTest.TANGLEROOT);
 		List<String> t = texts(m);
-		assertEquals(Tone.CURRENT, m.lines().get(t.indexOf("B Tigers | 16/64")).tone());
-		assertEquals(Tone.OTHER_WORLD, m.lines().get(t.indexOf("E Rattle Snakes | 5/58")).tone());
-		assertEquals(Tone.OTHER_WORLD, m.lines().get(t.indexOf("E Resources | 1/10")).tone());
-		assertEquals(Tone.NEUTRAL, m.lines().get(t.indexOf("H Deepslate | 10/100")).tone());
+		assertEquals(Tone.CURRENT, m.lines().get(t.indexOf("TR Tigers | 16/64")).tone());
+		assertEquals(Tone.OTHER_WORLD, m.lines().get(t.indexOf("SA Rattle Snakes | 5/58")).tone());
+		assertEquals(Tone.OTHER_WORLD, m.lines().get(t.indexOf("WH Resources | 1/10")).tone());
+		assertEquals(Tone.NEUTRAL, m.lines().get(t.indexOf("Deepslate | 10/100")).tone());
 	}
 
 	@Test void hiddenEntriesAndTheCrateStayHidden() {
@@ -98,7 +98,7 @@ class JobsPanelModelTest {
 		s.addEstimate("jobs:Cooking Heavy · Cook Fish", 1, NOW);
 		Model m = build(s, WorldInfo.UNKNOWN);
 		Line cook = m.lines().get(texts(m).indexOf("⚒ Cooking |") + 1);
-		assertEquals("H", cook.tag());
+		assertEquals("", cook.tag()); // not tied to a world
 		assertEquals("~2/2 ✓?", cook.right());
 		assertEquals(Tone.AT_CAP, cook.tone());
 	}
@@ -108,8 +108,8 @@ class JobsPanelModelTest {
 		s.update("jobs", "Fishing Experienced · Catch   YellowSeaShroom while fishing", new ProgressExtractor.Progress(0, 9), 0);
 		s.update("jobs", "Mining Heavy · Mine Polished Blackstone Bricks", new ProgressExtractor.Progress(12_500, 250_000), 0);
 		Model m = build(s, WorldInfo.UNKNOWN, 3 * 3_600_000L);
-		assertEquals(List.of("⚒ Fishing |", "E YellowSeaShroom | 0/9 ·3h", "⚒ Mining |",
-				"H Polished Blacks… | 12.5k/250k ·3h"), texts(m));
+		assertEquals(List.of("⚒ Fishing |", "YellowSeaShroom | 0/9 ·3h", "⚒ Mining |",
+				"Polished Blacks… | 12.5k/250k ·3h"), texts(m));
 	}
 
 	@Test void nonListingJobEntriesGoToOtherLast() {
@@ -119,7 +119,7 @@ class JobsPanelModelTest {
 		s.update("jobs", "Fishing Beginner · Catch Cod", new ProgressExtractor.Progress(1, 2), 0);
 		Model m = build(s, WorldInfo.UNKNOWN);
 		assertEquals("Jobs", m.title());
-		assertEquals(List.of("⚒ Fishing |", "B Cod | 1/2", "⚒ Other |", "H Cherry Logs | 1/4", "Weekly Bonus | 1/3"), texts(m));
+		assertEquals(List.of("⚒ Fishing |", "Cod | 1/2", "⚒ Other |", "Cherry Logs | 1/4", "Weekly Bonus | 1/3"), texts(m));
 	}
 
 	@Test void noJobsMeansNoLines() {

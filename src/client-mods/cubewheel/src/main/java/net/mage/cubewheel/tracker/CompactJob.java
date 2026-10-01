@@ -17,7 +17,24 @@ final class CompactJob {
 	private static final Pattern WHILE = Pattern.compile("(?i)\\s+while\\s+\\w+.*$");
 	private static final Pattern PRIVATE_USE = Pattern.compile("[\\uE000-\\uF8FF]");
 
+	/** Short world tags by the start of the world key; "✦" for "special worlds" objectives. */
+	private static final java.util.List<String[]> WORLD_TAGS = java.util.List.of(
+			new String[] {"wolf", "WH"}, new String[] {"tangle", "TR"}, new String[] {"sand", "SA"},
+			new String[] {"ice", "IH"}, new String[] {"morend", "MO"}, new String[] {"burn", "BL"});
+	static final String SPECIAL_TAG = "\u2726";
+
 	private CompactJob() {}
+
+	/** The world a job is tied to, as a two-letter tag ("TR"), "✦" for any special world, "" for none. */
+	static String worldTag(net.mage.cubewheel.tracker.local.WorldScope.Scope scope) {
+		if (scope == null || !scope.scoped()) return "";
+		if (scope.worlds().isEmpty()) return SPECIAL_TAG;
+		String key = scope.worlds().iterator().next();
+		for (String[] t : WORLD_TAGS) {
+			if (key.startsWith(t[0])) return t[1];
+		}
+		return key.length() >= 2 ? key.substring(0, 2).toUpperCase(Locale.ROOT) : key.toUpperCase(Locale.ROOT);
+	}
 
 	/** "Harvest or Mine Wolfhaven Resources" → "Resources"; "Slay Tigers in Tangleroots" → "Tigers". */
 	static String target(String objective, Collection<String> worldNames) {
