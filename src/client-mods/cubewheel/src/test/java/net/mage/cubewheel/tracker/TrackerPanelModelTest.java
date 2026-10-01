@@ -31,8 +31,9 @@ class TrackerPanelModelTest {
 		s.update("prestige", "Rank [✪4] · Reach 2,500 Skill Level", new ProgressExtractor.Progress(1902, 2500), 0);
 		s.update("prestige", "Rank [✪9] · Reach Party Level 55", new ProgressExtractor.Progress(12, 55), 0);
 		s.update("pquests", "King of the Jungle", new ProgressExtractor.Progress(5, 100), 0);
-		s.setObjective(JUNGLE, new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Slay Jungle Zombies", 0.0),
-				new ObjectiveInfo.Sub("Slay Golden Knights", 10.0)), false, false));
+		// Real King of the Jungle lore (2026-09-30): the menu only gives a percentage per objective.
+		s.setObjective(JUNGLE, new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Slay 2,500 Tangleroot Monsters", 2.0),
+				new ObjectiveInfo.Sub("Slay 10 Golden Knights", 50.0)), false, false));
 		s.update("pquests", "Jungle Pursuit", new ProgressExtractor.Progress(0, 15000), 0);
 		s.setObjective(PURSUIT, TrackerStoreWorldFilterTest.obj("Mine 0/15,000 Tangleroots Resources"));
 		return s;
@@ -54,13 +55,25 @@ class TrackerPanelModelTest {
 				"✦ ✪4 Skill Level | 1.9k/2.5k",
 				"✦ ✪9 Party Level 55 | 12/55",
 				"⚑ King of the Jungle | 5/100",
-				"↳ 0% Jungle Zombies |",
-				"↳ 10% Golden Knights |",
+				"↳ Monsters | 50/2.5k",
+				"↳ Golden Knights | 5/10",
 				"⚑ Jungle Pursuit | 0/15k"), texts(lines));
 		assertEquals(Tone.DETAIL, lines.get(3).tone());
-		assertEquals(TrackerPanelModel.DETAIL_INDENT + "10% Golden Knights", lines.get(4).text());
+		assertEquals(TrackerPanelModel.DETAIL_INDENT + "Golden Knights", lines.get(4).text());
+		assertEquals("5/10", lines.get(4).right());
 		assertEquals(0xFFFF55FF, lines.get(0).tagColor()); // prestige's marker colour
 		assertEquals(Tone.NORMAL, lines.get(0).tone());
+	}
+
+	@Test void objectiveWithoutANumberCountsAsOneStep() {
+		// Mob Experience: "0% → Complete the Volcano Potion Quest", "40% → Participate in Slaying 5 Lava Beasts".
+		assertEquals(List.of("Volcano Potion Quest", "0/1"),
+				List.of(TrackerPanelModel.detailName(new ObjectiveInfo.Sub("Complete the Volcano Potion Quest", 0.0), List.of()),
+						TrackerPanelModel.detailCount(new ObjectiveInfo.Sub("Complete the Volcano Potion Quest", 0.0))));
+		assertEquals(List.of("Lava Beasts", "2/5"),
+				List.of(TrackerPanelModel.detailName(new ObjectiveInfo.Sub("Participate in Slaying 5 Lava Beasts", 40.0), List.of()),
+						TrackerPanelModel.detailCount(new ObjectiveInfo.Sub("Participate in Slaying 5 Lava Beasts", 40.0))));
+		assertEquals("", TrackerPanelModel.detailCount(new ObjectiveInfo.Sub("Slay 10 Golden Knights", null)));
 	}
 
 	@Test void headingsOnlyWithMoreThanOneGroup() {

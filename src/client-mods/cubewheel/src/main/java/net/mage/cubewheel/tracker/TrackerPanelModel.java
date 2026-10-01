@@ -73,8 +73,16 @@ public final class TrackerPanelModel {
 				SourceTag tag = SourceTag.of(t.source());
 				lines.add(new Line(tag.glyph(), tag.argb(), title(t.source(), label.title(), worldNames),
 						CompactJob.count(r, now), tone(r, near, s.kind())));
-				for (String d : label.details()) {
-					lines.add(new Line("", 0, detail(d, worldNames), "", Tone.DETAIL));
+				if (info != null && info.subs() != null && info.subs().size() > 1) {
+					// One row per objective, its count in the right column: 50% of "Slay 10 Golden Knights" is 5/10.
+					for (ObjectiveInfo.Sub sub : info.subs()) {
+						lines.add(new Line("", 0, DETAIL_INDENT + CompactJob.cut(detailName(sub, worldNames), MAX_DETAIL),
+								detailCount(sub), Tone.DETAIL));
+					}
+				} else {
+					for (String d : label.details()) {
+						lines.add(new Line("", 0, detail(d, worldNames), "", Tone.DETAIL));
+					}
 				}
 			}
 		}
@@ -102,6 +110,35 @@ public final class TrackerPanelModel {
 			out = name.isEmpty() ? CompactJob.objective(objective, worldNames) : name;
 		}
 		return CompactJob.cut(out, MAX_TITLE);
+	}
+
+	private static final Pattern AMOUNT = Pattern.compile("(?<![\\d.,])(\\d[\\d,]*)(?![\\d.,]*%)");
+	private static final Pattern STEP_LEAD = Pattern.compile("(?i)^(?:participate in slaying|participate in|complete the)\\s+");
+
+	/** "Slay 10 Golden Knights" → "Golden Knights"; "Complete the Volcano Potion Quest" → "Volcano Potion Quest". */
+	static String detailName(ObjectiveInfo.Sub sub, Collection<String> worldNames) {
+		String text = sub == null || sub.text() == null ? "" : CompactJob.clean(sub.text());
+		text = STEP_LEAD.matcher(text).replaceFirst("");
+		return CompactJob.objective(text, worldNames);
+	}
+
+	/**
+	 * The objective's share as units: its percentage of the amount it names ("Slay 10 Golden Knights" at 50% →
+	 * "5/10"); an objective naming no amount is one step ("0/1"). "" when the menu gave no percentage.
+	 */
+	static String detailCount(ObjectiveInfo.Sub sub) {
+		if (sub == null || sub.percent() == null) return "";
+		long total = 1;
+		Matcher m = AMOUNT.matcher(sub.text() == null ? "" : sub.text());
+		if (m.find()) {
+			try {
+				total = Math.max(1, Long.parseLong(m.group(1).replace(",", "")));
+			} catch (NumberFormatException ignored) {
+				total = 1;
+			}
+		}
+		long done = Math.round(Math.max(0, Math.min(100, sub.percent())) * total / 100.0);
+		return CompactJob.number(done) + "/" + CompactJob.number(total);
 	}
 
 	/** "10% Slay Golden Knights" → " ↳ 10% Golden Knights", cut to fit. */
