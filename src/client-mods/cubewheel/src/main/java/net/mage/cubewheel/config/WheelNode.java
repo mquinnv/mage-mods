@@ -12,7 +12,7 @@ public final class WheelNode {
 	/** Dynamic sources that fill a ring with generated entries. */
 	public static final Set<String> RING_SOURCES = Set.of("homes", "vaults");
 	/** Dynamic sources that are one live slice (label/command from a provider), never a ring. */
-	public static final Set<String> SLICE_SOURCES = Set.of("boss");
+	public static final Set<String> SLICE_SOURCES = Set.of("boss", "tpa");
 
 	public String label;
 	public String icon;

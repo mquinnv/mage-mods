@@ -132,6 +132,8 @@ public final class DefaultConfig {
 			leaf("Challenges", "minecraft:target", "/challenges")));
 		w.add(leaf("Daily reward", "minecraft:milk_bucket", "/cow"));
 		w.add(slice("Boss event", "minecraft:wither_skeleton_skull", "boss"));
+		// TPA: "Accept <name>" (/tpaccept) while a teleport request is pending; friends to /tpa in its arc.
+		w.add(slice("TPA", "minecraft:player_head", "tpa"));
 		w.add(ring(MORE, "minecraft:chest",
 			ring("Shops", "minecraft:emerald",
 				leaf("Alchemist", "minecraft:brewing_stand", "/alchemist"),

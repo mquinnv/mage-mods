@@ -25,6 +25,7 @@ public final class LiveWatcher {
 
 	private static CowStore cow;
 	private static final BossSlice boss = new BossSlice();
+	private static final TpaSlice tpa = new TpaSlice();
 	private static long cowSentAt = Long.MIN_VALUE;
 	private static boolean chatFailureLogged;
 	private static boolean menuFailureLogged;
@@ -48,6 +49,10 @@ public final class LiveWatcher {
 			CubeWheelConfig.Events e = CubeWheelClient.config().current().events;
 			return boss.view(e.bossWarps, e.bossMinutes * 60_000L, now);
 		});
+		SliceViews.register((node, now) -> {
+			if (!node.isSlice() || !"tpa".equals(node.dynamic)) return null;
+			return tpa.view(now);
+		});
 	}
 
 	static CowStore.Periods periods(CubeWheelConfig.DailyReward d) {
@@ -68,6 +73,7 @@ public final class LiveWatcher {
 			if (!ServerGate.survival(cfg)) return true;
 			String text = message.getString();
 			long now = System.currentTimeMillis();
+			if (tpa.onChat(text, now)) return true;
 			Optional<BossParser.Spawn> spawn = BossParser.parse(text);
 			if (spawn.isPresent()) {
 				boss.spawned(spawn.get(), now);

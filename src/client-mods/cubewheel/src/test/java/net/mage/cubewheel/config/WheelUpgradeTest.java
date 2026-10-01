@@ -24,7 +24,7 @@ class WheelUpgradeTest {
 	@Test void newDefaultTopLevelOrder() {
 		List<WheelNode> w = DefaultConfig.wheel();
 		assertEquals(List.of("Sushi", "Homes", "Spawn", "Jobs", "Kilton", "Sell", "PV 1", "Fly",
-				"Isles", "Party quests", "Daily reward", "Boss event", "More"), labels(w));
+				"Isles", "Party quests", "Daily reward", "Boss event", "TPA", "More"), labels(w));
 		assertEquals("/back", w.get(2).outer.outer.outer.outer.command);
 		assertEquals("/challenges", w.get(9).outer.outer.command);
 		assertEquals("/pv 2", w.get(6).outer.command);
@@ -43,7 +43,8 @@ class WheelUpgradeTest {
 		assertTrue(w.get(11).isSlice());
 		assertEquals("boss", w.get(11).dynamic);
 		assertEquals("/prestige", w.get(9).outer.command);
-		WheelNode more = w.get(12);
+		assertEquals("tpa", w.get(12).dynamic);
+		WheelNode more = w.get(13);
 		assertEquals(List.of("Shops", "Warps", "Party", "Ender chest"), labels(more.children));
 		assertEquals(List.of("Alchemist", "Enchanter", "Shop", "Auction house", "Forge", "Fish shop"),
 				labels(child(more.children, "Shops").children));
