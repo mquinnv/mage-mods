@@ -33,7 +33,17 @@ public sealed interface Signal permits Signal.BlockBroken, Signal.MobKilled, Sig
 		}
 	}
 
-	record FishCaught(WorldInfo world) implements Signal {}
+	/**
+	 * A fish the player caught. {@code species}/{@code rarity} come from ManaCube's catch chat line
+	 * ("You caught a 52.2cm Common Flounder"); both are null for a vanilla bobber reel-in, which then only
+	 * counts toward "any fish" objectives.
+	 */
+	record FishCaught(String species, String rarity, WorldInfo world) implements Signal {
+		/** A catch of unknown species (vanilla bobber reel-in). */
+		public FishCaught(WorldInfo world) {
+			this(null, null, world);
+		}
+	}
 
 	/** A shearable entity the player sheared (the server confirmed it: its sheared flag synced to true). */
 	record Sheared(String typeId, String name, WorldInfo world) implements Signal {}

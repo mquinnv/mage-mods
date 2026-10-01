@@ -42,6 +42,10 @@ public final class ObjectiveParser {
 			"wart", "cocoa", "cocoa bean", "sweet berry", "berry", "melon", "pumpkin");
 
 	private static final Set<String> FISH_WORDS = Set.of("cod", "salmon", "pufferfish");
+	/** A trailing "while fishing" (job listings) makes any "catch" a fishing objective. */
+	private static final Pattern WHILE_FISHING = Pattern.compile("(?i)\\s+while\\s+fishing\\s*$");
+	/** Private-use glyphs (ManaCube's item icons, e.g. U+F895 before "Goldfish") are not words. */
+	private static final Pattern PRIVATE_USE = Pattern.compile("[\\p{Co}]");
 
 	private ObjectiveParser() {}
 
@@ -49,7 +53,12 @@ public final class ObjectiveParser {
 		if (info == null || info.handIn() || info.subs().size() != 1) return Optional.empty();
 		String line = info.subs().get(0).text();
 		if (line == null) return Optional.empty();
-		Matcher m = GRAMMAR.matcher(line.trim().replaceAll("\\s+", " "));
+		String text = normalise(line);
+		// Fishing job listings: "Catch 1/3  Goldfish while fishing" (the icon glyph already removed).
+		Matcher wf = WHILE_FISHING.matcher(text);
+		boolean whileFishing = wf.find();
+		if (whileFishing) text = text.substring(0, wf.start());
+		Matcher m = GRAMMAR.matcher(text);
 		if (!m.matches()) return Optional.empty();
 		long target;
 		try {
@@ -95,15 +104,21 @@ public final class ObjectiveParser {
 			case "harvest" -> isCropNoun(what) ? Kind.HARVEST : Kind.BREAK;
 			case "kill", "slay", "slaughter", "defeat" -> Kind.KILL;
 			// "Catch 61 Tangleroots Fireflies": a custom entity hit (or bottled) and removed, counted like a kill.
-			case "catch" -> isFishNoun(singular) ? Kind.FISH : Kind.KILL;
+			case "catch" -> whileFishing || isFishNoun(singular) ? Kind.FISH : Kind.KILL;
 			case "fish" -> Kind.FISH;
 			// "Shear 84 Sheep", "Shear 10/84 Sheep": a shearable mob, matched by type id or name like a kill.
 			case "shear" -> Kind.SHEAR;
 			default -> Kind.BREAK;
 		};
-		if (kind == Kind.FISH && !(what instanceof Any)) return Optional.empty(); // specific fish: not in v1
+		// A specific fish ("Catch 9 YellowSeaShroom while fishing") is matched by species from the catch chat line.
+		if (kind == Kind.FISH && !(what instanceof Any) && !(what instanceof Named)) return Optional.empty();
 		if (kind != Kind.FISH && singular.equals("fish")) return Optional.empty();
 		return Optional.of(new CounterRule(kind, target, what, world));
+	}
+
+	/** The line with private-use icon glyphs dropped and whitespace collapsed. */
+	static String normalise(String line) {
+		return PRIVATE_USE.matcher(line).replaceAll(" ").trim().replaceAll("\\s+", " ");
 	}
 
 	/** Fish nouns keep "catch" on the fishing path: fish, cod, salmon, pufferfish, "tropical fish", "angelfish". */

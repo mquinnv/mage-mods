@@ -182,7 +182,7 @@ public final class TrackerStore {
 		Map<String, CounterRule> out = new LinkedHashMap<>();
 		for (Trackable t : items.values()) {
 			if (t.complete()) continue;
-			ObjectiveInfo info = objectives.get(t.id());
+			ObjectiveInfo info = objectiveOf(t);
 			if (info == null) continue;
 			ObjectiveParser.parse(info, tokens).ifPresent(r -> out.put(t.id(), r));
 		}
@@ -198,7 +198,30 @@ public final class TrackerStore {
 			activeTokens = null;
 			rulesDirty = false;
 		}
-		return displayRules.computeIfAbsent(id, k -> ObjectiveParser.parse(objectives.get(k), List.of())).orElse(null);
+		return displayRules.computeIfAbsent(id, k -> ObjectiveParser.parse(objectiveOf(items.get(k)), List.of())).orElse(null);
+	}
+
+	/**
+	 * The stored objective of {@code t}, else, for a prestige rank, the one its name carries ("Rank [✪8] ·
+	 * Catch 1,000 Fish", see {@link ContainerScanner#displayName}). Entries read before objectives were
+	 * stored, and kept fresh since only by sidebar values ({@link #applyLiveValue}), have none on file
+	 * until /prestige is opened again; the name holds the same OBJECTIVE line, minus its special-worlds
+	 * note (the next menu read stores the full objective).
+	 */
+	private ObjectiveInfo objectiveOf(Trackable t) {
+		if (t == null) return null;
+		ObjectiveInfo stored = objectives.get(t.id());
+		if (stored != null) return stored;
+		return "prestige".equals(t.source()) ? objectiveFromName(t.name()) : null;
+	}
+
+	/** "Rank [✪8] · Catch 1,000 Fish" -> objective "Catch 1,000 Fish"; null without a " · " part. */
+	static ObjectiveInfo objectiveFromName(String name) {
+		if (name == null) return null;
+		int dot = name.indexOf(" · ");
+		if (dot < 0) return null;
+		String objective = name.substring(dot + 3).trim();
+		return objective.isEmpty() ? null : new ObjectiveInfo(List.of(new ObjectiveInfo.Sub(objective, null)), false, false);
 	}
 
 	/**

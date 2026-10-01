@@ -402,18 +402,22 @@ What is counted, per objective text read from the menu (only objectives with a s
 | Harvest N Sweet Berries / Cocoa Beans | pick a ripe sweet berry bush / cocoa pod |
 | Kill / Slay N Mobs / Monsters / Zombies / Mana Wolves, "Slay 16/64 Tigers in Tangleroots" | kill it: you were the last player to damage it within 5 s (arrows and tridents count). Names match the mob type or its name tag, ignoring stack counts, health (`Dart Frog 20⺛`, `❤ 20`), levels and small caps. A **stacked** mob you hit whose count drops (`5x Tiger` -> `4x Tiger`) counts the drop (only when both names show a count; at most 2 per change unless you hit it again). A **custom-model mob** (Tangleroot tigers: an unnamed hitbox such as a `Slime` that vanishes without dying) counts when the server removes it within 1.5 s (30 ticks) of your hit and within 16 blocks, once; it is named by its own name tag, a name tag riding it or within 3 blocks, or else by a loot action bar seen from your first hit on it (at most 3 s before the removal) until 1.5 s after it (`+2  Tiger Hide` counts for the one kill objective whose target is a whole word of the item name, singular or plural, here "Tigers"; `+N Mana` is ignored) |
 | Catch N Fireflies (any non-fish), "Catch 0/61 Tangleroots Fireflies" | like a custom-model kill: the entity (a firefly is a `minecraft:interaction` hitbox) is hit **or used on** (Firefly Bottle) and then removed; named by the loot line (`+1  Sad Firefly` -> "Fireflies"), or, with a Firefly Bottle in hand and no loot line, by "Firefly" when exactly one such objective fits this world. Counted under `tracker.local.kills` |
-| Catch N Fish | reel in while the bobber is biting |
+| Catch N Fish (prestige "Rank [✪8] · Catch 1,000 Fish", party quest "Fisherman") | catch any fish: ManaCube's chat line `You caught a 52.2cm Common Flounder` (its custom fishing never makes the vanilla bobber bite). A vanilla reel-in on a biting bobber also counts; a reel-in and a chat line within 2 s are one catch (the chat line wins) |
+| Catch N &lt;species&gt; (while fishing), job listing "Catch 0/9  YellowSeaShroom while fishing" | catch that species: the chat line's last word(s), compared without case, spaces or plural ("YellowSeaShroom" = "Yellow Sea Shrooms"); the rarity word (Common/Uncommon/Rare/...) is ignored. Item icon glyphs in the listing are dropped. "while fishing" makes any "Catch" a fishing objective ("Catch 5 Crabs while fishing") |
 | Shear N Sheep (any shearable mob by name: "Shear 20 Mooshrooms"), job listing "Shear 10/84 Sheep" | use shears (vanilla shears, or any item whose name or lore says "Shears") on a grown, unsheared sheep **and** see the server sync it as sheared within 2 s (40 ticks); nothing counts at the click. With an area shears tool, other sheep within 5 blocks that were unsheared at the click and turn sheared within 1 s (20 ticks) count too. Sheep sheared by anyone else never count (only sheep in the snapshot taken at your click). Counted under `tracker.local.shear` |
 | ... "Wolfhaven Resources", "Sandara Monsters", "in <world>" | only while you are in that world (names match with or without spaces/underscores: "Burning Lands" = `burning_lands` = `burninglands`) |
 | Job listings: "Harvest 3,127/4,773 Cherry Logs" | as "Harvest 4,773 Cherry Logs" |
 | ... with "special worlds (/worlds)" in the lore | only in one of `tracker.local.specialWorlds` |
 
+Prestige ranks read before objectives were stored (kept fresh since only by the sidebar) take their
+objective from their name ("Rank [✪8] · Catch 1,000 Fish") until /prestige is opened again; that
+fallback does not know a rank's "special worlds" note, which the next read restores.
+
 The world comes from the dimension name and the sidebar's `World:` line, if the server shows one. If
 it cannot be told, world-scoped objectives are not counted.
 
 Not counted (the next read fixes the number): skill levels, "Complete N Jobs", boss kills and
-participation, discovery, dungeons, party/island levels, hand-in jobs ("Harvest and hand in ..."),
-specific fish ("Catch 5 Angelfish"), and quests with several objectives. Blocks you placed yourself do
+participation, discovery, dungeons, party/island levels, hand-in jobs ("Harvest and hand in ..."), and quests with several objectives. Blocks you placed yourself do
 not count when broken again, and a break the server undoes (claims, protection) is taken back.
 
 **Area breaks** (`tracker.local.areaBreaks`). Blocks the server breaks for you (mcMMO Tree Feller,
@@ -670,7 +674,9 @@ Each line is JSON with a kind:
 - `world`: the world local counting resolved (dimension, sidebar lines, tokens, special), when it changes.
 - `local`: a counted signal (`break`, `kill`, `fish`, `shear`, `area` for a block the server broke in an
   area window, or `reject` for a break the server undid) with
-  the block/mob id and name, the world and the tracker entries it moved. Kill diagnostics also land here,
+  the block/mob id and name, the world and the tracker entries it moved. A `fish` line from the chat has
+the species as `name` and `detail` `chat; rarity=Common size=52.2cm` (plus `; replaces the bobber
+reel-in` when it took a reel-in's count back); a bobber reel-in has `detail` `bobber reel-in`. Kill diagnostics also land here,
   with a `detail`: `attack` (each own hit: type id, raw name, custom name or not, passengers), `stack`
   (a hit mob's name changed, `old -> new (killed n, local hit)`), `death` (a death not credited to you:
   `other_player`, `expired`, or `no_hit` within 32 blocks), `removed` (a mob you hit vanished

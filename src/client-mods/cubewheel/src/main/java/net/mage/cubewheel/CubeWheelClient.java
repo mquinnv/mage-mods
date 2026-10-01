@@ -104,6 +104,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ClientSendMessageEvents.COMMAND.register(CubeWheelClient::noteCommand);
 		ContainerHook.register();
 		LocalSignals.register(); // after tracker and capture exist
+		ClientReceiveMessageEvents.ALLOW_GAME.register(LocalSignals::onGameMessage);
 		CooldownWatcher.register();
 		TrackerHud.register();
 		PanelsHud.add(EventHud::panel);

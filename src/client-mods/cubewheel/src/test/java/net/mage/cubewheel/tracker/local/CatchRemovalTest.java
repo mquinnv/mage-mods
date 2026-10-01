@@ -41,8 +41,9 @@ class CatchRemovalTest {
 
 	@Test void catchOfFishStaysTheFishingPath() {
 		assertEquals(Optional.of(new CounterRule(Kind.FISH, 25, new CounterRule.Any(), new AnyWorld())), ObjectiveParserTest.parse("Catch 25 Fish"));
+		// A specific fish is a FISH rule on that species, counted from ManaCube's catch chat line (FishCatchTest).
 		for (String s : List.of("Catch 5 Angelfish", "Catch 5 Cod", "Catch 5 Salmon", "Catch 5 Tropical Fish", "Catch 5 Pufferfish")) {
-			assertTrue(ObjectiveParserTest.parse(s).isEmpty(), s); // a specific fish: not counted locally
+			assertEquals(Kind.FISH, ObjectiveParserTest.parse(s).orElseThrow().kind(), s);
 		}
 	}
 

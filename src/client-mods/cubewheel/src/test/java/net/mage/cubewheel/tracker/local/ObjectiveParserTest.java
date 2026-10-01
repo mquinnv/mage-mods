@@ -93,7 +93,7 @@ class ObjectiveParserTest {
 
 	@Test void noRule() {
 		for (String s : List.of("Reach 2,500 Skill Level", "Complete 25 Jobs", "Get 20 Boss Kills",
-				"Participate in Killing 20 Bosses", "Place a Spawner", "Discover Wolfhaven", "Catch 5 Angelfish",
+				"Participate in Killing 20 Bosses", "Place a Spawner", "Discover Wolfhaven",
 				"Slay 5 Great Bosses", "Kill 0 Zombies", "Pay $10,000,000", "Reach Party Level 55")) {
 			assertTrue(parse(s).isEmpty(), s);
 		}

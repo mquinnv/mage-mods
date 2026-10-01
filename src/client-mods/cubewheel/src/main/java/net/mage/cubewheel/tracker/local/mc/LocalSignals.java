@@ -12,6 +12,8 @@ import net.mage.cubewheel.cooldown.McmmoParser;
 import net.mage.cubewheel.cooldown.McmmoWatcher;
 import net.mage.cubewheel.tracker.local.AreaBreaks;
 import net.mage.cubewheel.tracker.local.ActionBarFeed;
+import net.mage.cubewheel.tracker.local.FishCatchParser;
+import net.mage.cubewheel.tracker.local.FishDedup;
 import net.mage.cubewheel.tracker.local.FishDetector;
 import net.mage.cubewheel.tracker.local.KeyThrottle;
 import net.mage.cubewheel.tracker.local.KillAttribution;
@@ -68,7 +70,7 @@ import net.minecraft.world.level.block.state.BlockState;
 /**
  * Minecraft adapter for local counting: the static facade that Fabric callbacks and the optional mixins
  * call. Purely passive: it only observes (own block breaks, damage/death/removal packets, action-bar
- * loot lines, reeling in a biting bobber) and never sends, opens or clicks anything; its only write is the local tracker file. Active
+ * loot lines, reeling in a biting bobber, ManaCube's catch chat line) and never sends, opens or clicks anything; its only write is the local tracker file. Active
  * only in ManaCube Survival (host gate plus sidebar title, see {@link ServerGate#survival}), in
  * survival/adventure game mode, with {@code tracker.local.enabled}. Every entry point is guarded: a failing hook is
  * logged once and switched off for the session after {@link #MAX_FAILURES} failures.
@@ -90,6 +92,7 @@ public final class LocalSignals {
 	private static final RemovalKills removals = new RemovalKills();
 	private static final PendingShears shears = new PendingShears();
 	private static final AreaBreaks areas = new AreaBreaks();
+	private static final FishDedup fishDedup = new FishDedup();
 	/** Unsheared shearables within this many blocks of a sheared one wait for an area shear. */
 	private static final double AREA_SHEAR_RANGE = 5;
 	private static final int MAX_AREA_SHEAR = 32;
@@ -575,11 +578,51 @@ public final class LocalSignals {
 			boolean hasHook = player.fishing != null;
 			boolean biting = hasHook && ((FishingHookAccessor) player.fishing).cubewheel$isBiting();
 			if (!FishDetector.onRodUse(hasHook, biting)) return;
+			long now = System.currentTimeMillis();
 			Signal.FishCaught signal = new Signal.FishCaught(world());
-			capture("fish", null, null, signal.world(), count(signal));
+			if (!fishDedup.hookAllowed(now)) {
+				capture("fish", null, null, "bobber reel-in; same catch as the chat line, not counted", signal.world(), List.of());
+				return;
+			}
+			List<LocalCounter.Contribution> added = count(signal);
+			fishDedup.hookCounted(now, added);
+			capture("fish", null, null, "bobber reel-in", signal.world(), added);
 		} catch (Throwable t) {
 			fail(Hook.FISH, t);
 		}
+	}
+
+	/**
+	 * ClientReceiveMessageEvents.ALLOW_GAME: ManaCube's catch line ("You caught a 52.2cm Common Flounder") is
+	 * a catch of that species; its custom fishing never makes the vanilla bobber bite. Never hides anything.
+	 */
+	public static boolean onGameMessage(Component message, boolean overlay) {
+		try {
+			if (message == null || overlay || !enabled(Hook.FISH) || !local().fish) return true;
+			Minecraft mc = Minecraft.getInstance();
+			if (!survivalMode(mc.player)) return true;
+			String text = message.getString();
+			for (String line : text.split("\n")) {
+				Optional<FishCatchParser.Catch> c = FishCatchParser.parse(line);
+				if (c.isEmpty()) continue;
+				onChatCatch(c.get());
+				break;
+			}
+		} catch (Throwable t) {
+			fail(Hook.FISH, t);
+		}
+		return true;
+	}
+
+	private static void onChatCatch(FishCatchParser.Catch c) {
+		List<LocalCounter.Contribution> undo = fishDedup.chatCatch(System.currentTimeMillis());
+		if (!undo.isEmpty()) {
+			LocalCounter.reverse(undo, CubeWheelClient.tracker());
+			saveThrottle.markDirty();
+		}
+		Signal.FishCaught signal = new Signal.FishCaught(c.species(), c.rarity(), world());
+		capture("fish", null, c.species(), "chat; rarity=" + c.rarity() + " size=" + c.sizeCm() + "cm"
+				+ (undo.isEmpty() ? "" : "; replaces the bobber reel-in"), signal.world(), count(signal));
 	}
 
 	/**
