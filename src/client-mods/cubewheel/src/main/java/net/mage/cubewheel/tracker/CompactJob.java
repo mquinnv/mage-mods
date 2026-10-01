@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 /** Short forms for the Jobs and Tracker panels' narrow columns. Pure: no Minecraft/Fabric imports. */
 final class CompactJob {
 	/** Longest target shown; longer ones are cut with "…". */
-	static final int MAX_TARGET = 16;
+	static final int MAX_TARGET = 40;
 
 	private static final Pattern VERB = Pattern.compile("(?i)^(?:harvest or mine|harvest|mine|break|chop|dig|gather|"
 			+ "kill|slay|slaughter|defeat|catch|fish|shear|milk|cook|collect|craft|smelt|brew|complete|deliver|obtain|get|reach)\\s+");

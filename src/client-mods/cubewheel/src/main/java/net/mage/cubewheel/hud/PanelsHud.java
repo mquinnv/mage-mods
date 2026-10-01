@@ -29,6 +29,8 @@ public final class PanelsHud implements HudElement {
 	private static final int COLUMN_GAP = 4;
 	/** An item icon before a line's text: drawn at half size (8 px) plus a gap. */
 	private static final int ICON_W = 10;
+	/** Widest a panel's content may grow; longer names are cut to fit, with "…". */
+	private static final int MAX_CONTENT_W = 170;
 	/** The empty part of a row's progress bar. */
 	private static final int METER_TRACK = 0x18FFFFFF;
 
@@ -94,7 +96,14 @@ public final class PanelsHud implements HudElement {
 			boolean heading = l.tag().isEmpty() && l.right().isEmpty();
 			textW = Math.max(textW, textWidth(font, l) - (heading ? tagW + rightW : 0));
 		}
-		return Math.max(font.width(p.title()), tagW + textW + rightW);
+		return Math.max(font.width(p.title()), Math.min(MAX_CONTENT_W, tagW + textW + rightW));
+	}
+
+	/** {@code s} cut with "…" to at most {@code max} pixels. */
+	private static String fit(Font font, String s, int max) {
+		if (font.width(s) <= max) return s;
+		if (max <= font.width("…")) return "";
+		return font.plainSubstrByWidth(s, max - font.width("…")).stripTrailing() + "…";
 	}
 
 	private static void draw(GuiGraphicsExtractor g, Font font, HudLayout layout, Panel p, int width) {
@@ -109,7 +118,7 @@ public final class PanelsHud implements HudElement {
 			boolean heading = l.tag().isEmpty() && l.right().isEmpty();
 			textW = Math.max(textW, textWidth(font, l) - (heading ? tagW + rightW : 0));
 		}
-		int w = Math.max(width, Math.max(font.width(p.title()), tagW + textW + rightW));
+		int w = Math.max(width, Math.max(font.width(p.title()), Math.min(MAX_CONTENT_W, tagW + textW + rightW)));
 		int lh = font.lineHeight + 1;
 		int h = lh * (p.lines().size() + 1);
 		HudLayout.Box box = layout.place(p.corner(), p.x(), p.y(), w + 2 * PAD, h + 2 * PAD);
@@ -140,7 +149,9 @@ public final class PanelsHud implements HudElement {
 				g.pose().popMatrix();
 				tx += ICON_W;
 			}
-			g.text(font, l.text(), tx, ly, l.color());
+			// Names use all the room the panel has; only what really does not fit is cut.
+			int room = x + w - tx - (l.right().isEmpty() ? 0 : font.width(l.right()) + COLUMN_GAP);
+			g.text(font, fit(font, l.text(), room), tx, ly, l.color());
 			if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), ly, l.rightColor());
 		}
 	}

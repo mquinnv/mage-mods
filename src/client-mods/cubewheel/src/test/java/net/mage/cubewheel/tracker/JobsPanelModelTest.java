@@ -109,7 +109,7 @@ class JobsPanelModelTest {
 		s.update("jobs", "Mining Heavy · Mine Polished Blackstone Bricks", new ProgressExtractor.Progress(12_500, 250_000), 0);
 		Model m = build(s, WorldInfo.UNKNOWN, 3 * 3_600_000L);
 		assertEquals(List.of("⚒ Fishing |", "YellowSeaShroom | 0/9", "⚒ Mining |",
-				"Polished Blacks… | 12.5k/250k"), texts(m));
+				"Polished Blackstone Bricks | 12.5k/250k"), texts(m));
 	}
 
 	@Test void industryHeadingsHaveTheirTool() {

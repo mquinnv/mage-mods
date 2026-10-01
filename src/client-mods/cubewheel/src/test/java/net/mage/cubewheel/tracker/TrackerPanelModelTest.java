@@ -110,7 +110,7 @@ class TrackerPanelModelTest {
 				TrackerPanelModel.title("pquests", "Jungle Pursuit · Mine 15,000 Tangleroots Resources", WORLDS));
 		assertEquals("King of the Jungle", TrackerPanelModel.title("pquests", "King of the Jungle", WORLDS));
 		assertEquals("Cherry Logs", TrackerPanelModel.title("jobs", "Farming Heavy · Harvest Cherry Logs", WORLDS));
-		String longName = TrackerPanelModel.title("challenges", "A Very Long Challenge Name Indeed", WORLDS);
+		String longName = TrackerPanelModel.title("challenges", "A Very Long Challenge Name Indeed, Truly Far Too Long To Show", WORLDS);
 		assertEquals(TrackerPanelModel.MAX_TITLE, longName.length());
 		assertTrue(longName.endsWith("…"));
 	}

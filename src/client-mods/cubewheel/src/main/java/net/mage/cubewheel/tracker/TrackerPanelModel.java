@@ -19,9 +19,9 @@ import net.mage.cubewheel.tracker.local.ObjectiveInfo;
 public final class TrackerPanelModel {
 	public static final String TITLE = "Tracker";
 	/** Longest title shown; longer ones are cut with "…". */
-	static final int MAX_TITLE = 18;
+	static final int MAX_TITLE = 40;
 	/** Longest objective row (it may run across the whole panel width). */
-	static final int MAX_DETAIL = 26;
+	static final int MAX_DETAIL = 40;
 	static final String DETAIL_INDENT = " ↳ ";
 	static final String HEADING_MARK = "— ";
 
