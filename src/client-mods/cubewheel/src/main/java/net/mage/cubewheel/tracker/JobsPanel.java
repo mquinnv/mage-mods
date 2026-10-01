@@ -37,7 +37,10 @@ public final class JobsPanel {
 		if (m.lines().isEmpty()) return Optional.empty();
 		List<Panel.Line> lines = new ArrayList<>(m.lines().size());
 		for (JobsPanelModel.Line l : m.lines()) {
-			lines.add(new Panel.Line(l.tag(), worldTagColor(l.tag()), l.text(), color(l.tone()), l.right()));
+			// A fish target takes its rarity colour (as the server draws it); the count keeps the progress colour.
+			int progress = color(l.tone());
+			int text = l.rarity() != null && l.tone() != JobsPanelModel.Tone.DONE ? l.rarity().argb : progress;
+			lines.add(new Panel.Line(l.tag(), worldTagColor(l.tag()), l.text(), text, l.right(), progress));
 		}
 		CubeWheelConfig.Position p = cfg.tracker.jobsPanel.position;
 		return Optional.of(new Panel(m.title(), lines, HudLayout.Corner.parse(p.corner), p.x, p.y));

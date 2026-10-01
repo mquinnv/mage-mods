@@ -56,7 +56,12 @@ public final class JobsPanelModel {
 	 * (an industry heading, or the
 	 * target without verb or world) and {@code right} (a short count, right-aligned). Unused columns are "".
 	 */
-	public record Line(String tag, String text, String right, Tone tone) {}
+	public record Line(String tag, String text, String right, Tone tone, Rarity rarity) {
+		/** A row without a rarity (headings, non-fish targets). */
+		public Line(String tag, String text, String right, Tone tone) {
+			this(tag, text, right, tone, null);
+		}
+	}
 
 	/** The panel's title (with the crate when known) and its lines; empty lines = nothing to show. */
 	public record Model(String title, List<Line> lines) {}
@@ -109,7 +114,12 @@ public final class JobsPanelModel {
 				// Rows run Beginner → Experienced → Heavy, so the left column is free for the world restriction.
 				String tag = CompactJob.worldTag(WorldScope.of(it.row().item().name(),
 						objectives == null ? null : objectives.apply(it.row().item().id()), worldNames));
-				lines.add(new Line(tag, CompactJob.target(it.text(), worldNames), CompactJob.count(it.row(), now), tone(it)));
+				ObjectiveInfo obj = objectives == null ? null : objectives.apply(it.row().item().id());
+				Rarity rarity = obj == null || obj.subs() == null ? null
+						: obj.subs().stream().map(sub -> Rarity.inText(sub.text())).flatMap(java.util.Optional::stream)
+								.findFirst().orElse(null);
+				lines.add(new Line(tag, CompactJob.target(it.text(), worldNames), CompactJob.count(it.row(), now), tone(it),
+						rarity));
 			}
 		}
 		return new Model(crate == null ? TITLE : TITLE + " · " + crate, List.copyOf(lines));

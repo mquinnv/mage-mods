@@ -112,7 +112,7 @@ public final class PanelsHud implements HudElement {
 			boolean heading = l.tag().isEmpty() && l.right().isEmpty();
 			if (!l.tag().isEmpty()) g.text(font, l.tag(), x, ly, l.tagColor());
 			g.text(font, l.text(), heading ? x : x + tagW, ly, l.color());
-			if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), ly, l.color());
+			if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), ly, l.rightColor());
 		}
 	}
 }
