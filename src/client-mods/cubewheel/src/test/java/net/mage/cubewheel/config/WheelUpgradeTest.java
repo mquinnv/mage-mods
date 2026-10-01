@@ -36,7 +36,8 @@ class WheelUpgradeTest {
 		assertEquals("/warp crops", w.get(0).command);
 		assertEquals("homes", w.get(1).dynamic);
 		assertEquals("/sell", w.get(5).command);
-		assertEquals("/isles", w.get(8).children.get(0).command);
+		assertEquals("/isles", w.get(8).command);
+		assertEquals(List.of("Wolfhaven", "Tangleroots", "Sandara", "Icehaven", "Morend", "Burninglands"), labels(w.get(8).arc));
 		assertEquals("/cow", w.get(10).command);
 		assertTrue(w.get(11).isSlice());
 		assertEquals("boss", w.get(11).dynamic);

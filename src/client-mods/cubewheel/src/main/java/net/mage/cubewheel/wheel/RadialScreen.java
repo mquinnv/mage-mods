@@ -35,7 +35,9 @@ public final class RadialScreen extends Screen {
 	/** How far a chain must lean sideways (sine of its angle) before its labels move beside the icons. */
 	private static final double SIDEWAYS = 0.35;
 	/** How far above the screen centre the wheel sits. */
-	private static final int LIFT = 30;
+	private static final int LIFT = 60;
+	/** Distance between neighbouring arc entries (one disc plus a gap). */
+	private static final int ARC_SPACING = 40;
 	/** Background disc behind an outer entry. */
 	private static final int OUTER_DISC = 16;
 	/** Light dim over the world, so it stays visible behind the wheel. */
@@ -87,6 +89,13 @@ public final class RadialScreen extends Screen {
 	private int hoveredTier;
 	private final TierPicker tiers = new TierPicker();
 	private boolean cursorPlaced;
+	/** The slice whose arc is showing (it, or one of its arc entries, is pointed at), or -1. */
+	private int arcOpen = -1;
+	/** The arc entry pointed at, or -1. */
+	private int hoveredArc = -1;
+	/** Where the open arc's entries sit, as last drawn. */
+	private double[] arcAngles = new double[0];
+	private double[] arcRadii = new double[0];
 	/** Outer-tier spacing per slice as last drawn (shrunk where the screen edge is near). */
 	private double[] tierSteps = new double[0];
 	/** The ring's outer edge as last drawn; beyond it the outer tiers start. */
@@ -205,7 +214,20 @@ public final class RadialScreen extends Screen {
 			tierSteps[i] = RadialMath.tierStep(renderedEdge, RadialMath.reach(cx, cy, dirs[i], width, height, 2),
 					outerCount(entries.get(i)), OUTER_DISC + font.lineHeight, MIN_TIER_STEP, TIER_STEP);
 		}
-		WheelNode hoveredNode = hovered < 0 ? null : entries.get(hovered);
+		// An open arc keeps the pointer while it is on one of the arc's entries, wherever the ring's nearest slice is.
+		hoveredArc = -1;
+		if (arcOpen >= entries.size() || arcOpen >= 0 && entries.get(arcOpen).arc == null) arcOpen = -1;
+		if (arcOpen >= 0) {
+			layoutArc(cx, cy, dirs[arcOpen], entries.get(arcOpen).arc.size());
+			double slack = ArcLayout.step(renderedEdge + ARC_SPACING / 2.0, ARC_SPACING) * 0.75;
+			hoveredArc = ArcLayout.pick(mouseX - cx, mouseY - cy, renderedEdge, arcAngles, slack);
+			if (hoveredArc >= 0) hovered = arcOpen;
+		}
+		if (hoveredArc < 0) {
+			arcOpen = hovered >= 0 && entries.get(hovered).arc != null ? hovered : -1;
+			if (arcOpen >= 0) layoutArc(cx, cy, dirs[arcOpen], entries.get(arcOpen).arc.size());
+		}
+		WheelNode hoveredNode = hovered < 0 || hoveredArc >= 0 ? null : entries.get(hovered);
 		hoveredTier = tiers.pick(hoveredNode, hoveredNode == null ? 0 : distanceTier(hovered, Math.hypot(mouseX - cx, mouseY - cy)),
 				outerCount(hoveredNode), isShiftDown());
 		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + half, ri - half, RING);
@@ -215,7 +237,7 @@ public final class RadialScreen extends Screen {
 			double[] o = RadialMath.offset(dirs[i], r);
 			int x = cx + (int) Math.round(o[0]);
 			int y = cy + (int) Math.round(o[1]);
-			boolean hot = i == hovered && hoveredTier == 0;
+			boolean hot = i == hovered && hoveredTier == 0 && hoveredArc < 0;
 			if (hot) fillRing(g, x, y, HOVER_RADIUS, 0, HOVER);
 			// Icon and label are stacked as one block centred on the slice point.
 			int top = y - BLOCK_HEIGHT / 2;
@@ -242,6 +264,7 @@ public final class RadialScreen extends Screen {
 				if (roomy || outerHot) outerLabel(g, outer.label == null ? "" : outer.label, ox, oy, dirs[i], outerHot ? WHITE : GREY);
 			}
 		}
+		if (arcOpen >= 0) drawArc(g, cx, cy, entries.get(arcOpen).arc);
 		WheelNode current = path.peekLast();
 		g.centeredText(font, current.label == null ? "" : current.label, cx, cy - font.lineHeight / 2, WHITE);
 		int line = cy + font.lineHeight;
@@ -263,7 +286,8 @@ public final class RadialScreen extends Screen {
 			}
 			if (isHoldKeyDown()) return;
 			keyStillHeld = false;
-			if (hovered >= 0 && hovered < entries.size()) activate(atTier(entries.get(hovered), hoveredTier));
+			if (hoveredArc >= 0 && arcOpen >= 0) activate(entries.get(arcOpen).arc.get(hoveredArc));
+			else if (hovered >= 0 && hovered < entries.size()) activate(atTier(entries.get(hovered), hoveredTier));
 			else onClose();
 		} catch (RuntimeException e) {
 			fail("tick", e);
@@ -280,6 +304,10 @@ public final class RadialScreen extends Screen {
 			double dy = event.y() - cy;
 			double dead = renderedHub > 0 ? renderedHub : radius() * HUB_FRACTION;
 			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+				if (hoveredArc >= 0 && arcOpen >= 0 && arcOpen < entries.size() && entries.get(arcOpen).arc != null) {
+					activate(entries.get(arcOpen).arc.get(hoveredArc));
+					return true;
+				}
 				int slice = RadialMath.nearest(dx, dy, directions(), dead);
 				if (slice >= 0) {
 					WheelNode node = entries.get(slice);
@@ -392,7 +420,7 @@ public final class RadialScreen extends Screen {
 
 	/** The wheel sits a little above the screen centre so its lower tiers clear HUDs below the crosshair. */
 	private int centerY() {
-		return height / 2 - Math.min(LIFT, height / 10);
+		return height / 2 - Math.min(LIFT, height / 6);
 	}
 
 	private double radius() {
@@ -425,6 +453,41 @@ public final class RadialScreen extends Screen {
 		else if (d[0] < -SIDEWAYS) g.text(font, label, ox - 10 - w, y, colour);
 		else if (d[1] < 0) g.centeredText(font, label, ox, oy - BLOCK_HEIGHT / 2 + 18, colour);
 		else g.text(font, label, ox + 10, oy - font.lineHeight / 2, colour);
+	}
+
+	/** Places {@code count} arc entries around {@code centre}, pulled in where the screen edge is near. */
+	private void layoutArc(int cx, int cy, double centre, int count) {
+		double radius = renderedEdge + ARC_SPACING / 2.0;
+		arcAngles = ArcLayout.angles(count, centre, ArcLayout.step(radius, ARC_SPACING));
+		arcRadii = new double[count];
+		for (int j = 0; j < count; j++) {
+			double room = RadialMath.reach(cx, cy, arcAngles[j], width, height, 2) - OUTER_DISC - font.lineHeight;
+			arcRadii[j] = Math.max(renderedEdge - OUTER_DISC, Math.min(radius, room));
+		}
+	}
+
+	private void drawArc(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> arc) {
+		for (int j = 0; j < arc.size() && j < arcAngles.length; j++) {
+			WheelNode a = arc.get(j);
+			double[] o = RadialMath.offset(arcAngles[j], arcRadii[j]);
+			int x = cx + (int) Math.round(o[0]);
+			int y = cy + (int) Math.round(o[1]);
+			boolean hot = j == hoveredArc;
+			fillRing(g, x, y, OUTER_DISC, 0, hot ? HOVER : RING);
+			ItemStack icon = Icons.stack(a.icon);
+			if (!icon.isEmpty()) g.item(icon, x - 8, y - 8);
+			radialLabel(g, a.label == null ? "" : a.label, x, y, arcAngles[j], hot ? WHITE : GREY);
+		}
+	}
+
+	/** A label just outside a disc, on the side facing away from the wheel's centre. */
+	private void radialLabel(GuiGraphicsExtractor g, String label, int x, int y, double direction, int colour) {
+		double[] d = RadialMath.offset(direction, 1);
+		int w = font.width(label);
+		int reach = OUTER_DISC + 2;
+		int lx = d[0] > SIDEWAYS ? x + reach : d[0] < -SIDEWAYS ? x - reach - w : x - w / 2;
+		int ly = d[1] > SIDEWAYS ? y + reach - 4 : d[1] < -SIDEWAYS ? y - reach - font.lineHeight + 4 : y - font.lineHeight / 2;
+		g.text(font, label, lx, ly, colour);
 	}
 
 	/** The tier the pointer's distance past the ring picks on slice {@code index}. */

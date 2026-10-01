@@ -25,6 +25,18 @@ public final class WheelNode {
 	 * still (Sell menu → hand → all), up to {@link #MAX_OUTER} beyond the ring.
 	 */
 	public WheelNode outer;
+	/**
+	 * Optional entries fanned out in an arc just beyond the ring, centred on this slice, shown while it is hovered
+	 * (e.g. the isle warps around Isles). Point along the arc to take one. Plain commands only.
+	 */
+	public List<WheelNode> arc;
+
+	/** This node with {@code arc} as its arc entries; returns this for chaining. */
+	public WheelNode withArc(WheelNode... arc) {
+		this.arc = new java.util.ArrayList<>(List.of(arc));
+		return this;
+	}
+
 	/** Tiers beyond the ring a slice may have. */
 	public static final int MAX_OUTER = 4;
 

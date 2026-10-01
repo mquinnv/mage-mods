@@ -117,8 +117,8 @@ public final class DefaultConfig {
 			leaf("Party vault", "minecraft:barrel", "/p vault"),
 			leaf("All vaults", "minecraft:chest", "/pv")));
 		w.add(leaf("Fly", "minecraft:feather", "/fly"));
-		w.add(ring("Isles", "minecraft:filled_map",
-			leaf("Isles menu", "minecraft:map", "/isles"),
+		// Isles: the menu on the ring, the isle warps fanned out in an arc beyond it while it is hovered.
+		w.add(leaf("Isles", "minecraft:filled_map", "/isles").withArc(
 			leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven"),
 			leaf("Tangleroots", "minecraft:vine", "/warp tangleroots"),
 			leaf("Sandara", "minecraft:sand", "/warp sandara"),

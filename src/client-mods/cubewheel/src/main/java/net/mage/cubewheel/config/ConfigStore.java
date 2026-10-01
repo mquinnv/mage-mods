@@ -321,6 +321,7 @@ public final class ConfigStore {
 				n.command = null;
 				n.children = null; // a live slice never opens a ring
 				n.outer = normalizeOuter(n.outer, WheelNode.MAX_OUTER);
+				n.arc = normalizeArc(n.arc);
 				out.add(n);
 				continue;
 			}
@@ -341,9 +342,23 @@ public final class ConfigStore {
 				}
 			}
 			n.outer = normalizeOuter(n.outer, WheelNode.MAX_OUTER);
+			n.arc = normalizeArc(n.arc);
 			out.add(n);
 		}
 		return out;
+	}
+
+	/** A slice's arc entries: valid plain commands only (no rings, live sources, tiers or arcs of their own). */
+	private static List<WheelNode> normalizeArc(List<WheelNode> arc) {
+		if (arc == null) return null;
+		List<WheelNode> ok = new ArrayList<>();
+		for (WheelNode a : normalizeNodes(arc)) {
+			if (a.command == null) continue;
+			a.outer = null;
+			a.arc = null;
+			ok.add(a);
+		}
+		return ok.isEmpty() ? null : ok;
 	}
 
 	/**

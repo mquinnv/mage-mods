@@ -75,6 +75,7 @@ public final class WheelUpgrade {
 			out.add(n);
 			if (n.children != null) for (WheelNode c : n.children) if (c != null) q.add(c);
 			if (n.outer != null) q.add(n.outer); // a slice's outer tiers count as part of the tree
+			if (n.arc != null) for (WheelNode a : n.arc) if (a != null) q.add(a);
 		}
 		return out;
 	}
