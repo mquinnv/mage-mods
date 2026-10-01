@@ -13,7 +13,7 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 	public static final int GREEN = 0xFF55FF55;
 
 	/** How opaque a full progress bar behind a row gets (text stays readable on top). */
-	static final int METER_ALPHA = 0x80;
+	static final int METER_ALPHA = 0x99;
 
 	/**
 	 * The colour of a row's progress bar at {@code fraction}: it heats up from clear through yellow (half way) to red
@@ -21,13 +21,15 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 	 */
 	public static int meterColor(double fraction) {
 		double f = Math.max(0, Math.min(1, fraction));
-		if (f >= 1) return argb(METER_ALPHA, 0x55, 0xFF, 0x55);
+		// Deep shades (amber, brick red, dark green) so white text on top keeps its contrast.
+		if (f >= 1) return argb(METER_ALPHA, 0x1F, 0x7A, 0x2E);
 		if (f < 0.5) {
 			double t = f / 0.5; // clear -> yellow
-			return argb((int) Math.round(METER_ALPHA * t), 0xFF, 0xDD, 0x33);
+			return argb((int) Math.round(METER_ALPHA * t), 0x9A, 0x6E, 0x00);
 		}
 		double t = (f - 0.5) / 0.5; // yellow -> red
-		return argb(METER_ALPHA, 0xFF, (int) Math.round(0xDD + (0x33 - 0xDD) * t), 0x33);
+		return argb(METER_ALPHA, (int) Math.round(0x9A + (0x9E - 0x9A) * t), (int) Math.round(0x6E + (0x1E - 0x6E) * t),
+				(int) Math.round(0x00 + (0x1E - 0x00) * t));
 	}
 
 	private static int argb(int a, int r, int g, int b) {
