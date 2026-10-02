@@ -70,6 +70,9 @@ public final class DefaultConfig {
 	/** Boss spawn "Location:" regex -> warp. Locations seen: "Boss Arena", "Wolfhaven Mines", "Sandara Canyon", "Morend". */
 	public static Map<String, String> bossWarps() {
 		Map<String, String> m = new LinkedHashMap<>();
+		// A boss's own warp first (the first match wins); confirmed by Michael 2026-10-02.
+		m.put("(?i)wolfhaven mines", "/warp managolem");
+		m.put("(?i)tangleroots? volcano", "/warp volcanogolem");
 		m.put("(?i)boss arena", "/warp boss");
 		m.put("(?i)wolfhaven", "/warp wolfhaven");
 		m.put("(?i)tangleroot", "/warp tangleroots");

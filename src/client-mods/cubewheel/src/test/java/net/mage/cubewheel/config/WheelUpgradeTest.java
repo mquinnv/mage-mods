@@ -126,7 +126,7 @@ class WheelUpgradeTest {
 	@Test void bossWarpsAndDailyRewardDefaultsAndNormalisation() throws Exception {
 		CubeWheelConfig d = DefaultConfig.create();
 		assertEquals("/warp boss", d.events.bossWarps.get("(?i)boss arena"));
-		assertEquals(7, d.events.bossWarps.size());
+		assertEquals(9, d.events.bossWarps.size());
 		assertEquals(5, d.events.bossMinutes);
 		assertTrue(d.dailyReward.enabled);
 		assertEquals(24, d.dailyReward.dailyHours);
