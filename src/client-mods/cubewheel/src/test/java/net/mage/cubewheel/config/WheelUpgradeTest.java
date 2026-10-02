@@ -23,9 +23,10 @@ class WheelUpgradeTest {
 
 	@Test void newDefaultTopLevelOrder() {
 		List<WheelNode> w = DefaultConfig.wheel();
-		assertEquals(List.of("Sushi", "Homes", "Spawn", "Jobs", "Kilton", "Sell", "PV 1", "Fly",
+		assertEquals(List.of("Sushi", "Homes", "Teleporter", "Jobs", "Kilton", "Sell", "PV 1", "Fly",
 				"Isles", "Party quests", "Daily reward", "Boss event", "TPA", "More"), labels(w));
-		assertEquals("/back", w.get(2).outer.outer.outer.outer.command);
+		assertEquals("/back", w.get(2).outer.command);
+		assertEquals(null, w.get(2).outer.outer);
 		assertEquals("/challenges", w.get(9).outer.outer.command);
 		assertEquals("/pv 2", w.get(6).outer.command);
 		assertEquals("/p vault", w.get(6).outer.outer.command);

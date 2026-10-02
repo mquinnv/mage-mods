@@ -98,12 +98,9 @@ public final class DefaultConfig {
 			.withOuter(leaf("Spawners", "minecraft:spawner", "/warp spawners")));
 		// Homes: click for the full homes ring; hover to fan the (cached) homes out in an arc.
 		w.add(dynamic("Homes", "minecraft:red_bed", "homes").shownAsArc());
-		// Travel as one slice: Spawn on the ring, then outward (or scroll) Random TP, Teleporter, Warps menu, Back.
+		// Travel: the teleporter menu on the ring, /back just outside it.
 		w.add(chain(
-			leaf("Spawn", "minecraft:compass", "/spawn"),
-			leaf("Random TP", "minecraft:grass_block", "/rtp"),
 			leaf("Teleporter", "minecraft:ender_pearl", "/teleporter"),
-			leaf("Warps menu", "minecraft:oak_sign", "/warp"),
 			leaf("Back", "minecraft:arrow", "/back")));
 		w.add(leaf("Jobs", "minecraft:iron_pickaxe", "/jobs"));
 		w.add(leaf("Kilton", "minecraft:skeleton_skull", "/kilton"));

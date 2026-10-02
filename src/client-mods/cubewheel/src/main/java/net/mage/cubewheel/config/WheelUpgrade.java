@@ -19,6 +19,11 @@ public final class WheelUpgrade {
 	/** Entries per ring; more moved leaves are split into "Custom 1", "Custom 2", ... inside Custom. */
 	static final int RING_MAX = 8;
 	public static final String CUSTOM = "Custom";
+	/**
+	 * Commands earlier defaults had and the current one dropped on purpose (2026-10-02: Travel is just Teleporter
+	 * and Back). They are not "yours", so the upgrade does not carry them into More > Custom.
+	 */
+	static final Set<String> RETIRED = Set.of("/spawn", "/rtp", "/warp");
 
 	/** The upgraded wheel and the leaves moved into More › Custom, as "Label (/command)". */
 	public record Result(List<WheelNode> wheel, List<String> moved) {}
@@ -29,6 +34,7 @@ public final class WheelUpgrade {
 		List<WheelNode> wheel = DefaultConfig.wheel();
 		Set<String> known = new HashSet<>();
 		for (WheelNode n : walk(wheel)) if (n.command != null) known.add(key(n.command));
+		for (String c : RETIRED) known.add(key(c));
 		Map<String, WheelNode> keep = new LinkedHashMap<>();
 		if (old != null) {
 			for (WheelNode n : walk(old)) {

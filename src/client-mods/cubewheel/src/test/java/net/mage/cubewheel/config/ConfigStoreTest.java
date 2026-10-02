@@ -122,7 +122,7 @@ class ConfigStoreTest {
 		List<String> all = new ArrayList<>();
 		Deque<WheelNode> q = new ArrayDeque<>(c.wheel);
 		while (!q.isEmpty()) { WheelNode n = q.pop(); if (n.command != null) all.add(n.command); if (n.children != null) q.addAll(n.children); if (n.outer != null) q.add(n.outer); if (n.arc != null) q.addAll(n.arc); }
-		for (String cmd : List.of("/sell", "/kilton", "/alchemist", "/enchanter", "/warp crops", "/warp spawners", "/warp wolfhaven", "/warp tangleroots", "/warp morend", "/warp boss", "/rtp", "/jobs", "/pquests", "/prestige"))
+		for (String cmd : List.of("/sell", "/kilton", "/alchemist", "/enchanter", "/warp crops", "/warp spawners", "/warp wolfhaven", "/warp tangleroots", "/warp morend", "/warp boss", "/teleporter", "/back", "/jobs", "/pquests", "/prestige"))
 			assertTrue(all.contains(cmd), cmd);
 		assertTrue(WheelUpgrade.walk(c.wheel).stream().anyMatch(n -> "homes".equals(n.dynamic)));
 		assertTrue(all.containsAll(List.of("/pv 1", "/pv 2", "/p vault", "/pv", "/ec")));
