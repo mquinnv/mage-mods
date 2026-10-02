@@ -43,8 +43,13 @@ public final class TrackerPanelModel {
 		/** Anything else. */
 		NORMAL,
 		/** An entry in the "Other worlds" group. */
-		OTHER_WORLD
+		OTHER_WORLD,
+		/** Done, but it cannot be claimed yet: a prestige rank waiting on an earlier one ("after ✪4"). */
+		BLOCKED
 	}
+
+	/** "Rank [✪8] · Catch 1,000 Fish" -> 8. */
+	private static final Pattern PRESTIGE_RANK = Pattern.compile("\\[\u272A(\\d+)]");
 
 	/**
 	 * One panel row: {@code tag} (the source's marker, "" for headings and objective rows) in {@code tagColor},
@@ -74,8 +79,19 @@ public final class TrackerPanelModel {
 	/** As above; {@code activity} says how recently each entry (by id) made progress (null: none marked). */
 	public static List<Line> build(List<TrackerStore.HudSection> sections, Function<String, ObjectiveInfo> objectives,
 			double near, Collection<String> worldNames, long now, Function<String, Activity> activity) {
+		return build(sections, objectives, near, worldNames, now, activity, null);
+	}
+
+	/**
+	 * As above; {@code subCounted} gives the units counted locally for an objective of a multi-objective entry
+	 * (key {@link TrackerStore#subKey}), shown on its row ("~330/2,500"); null: none.
+	 */
+	public static List<Line> build(List<TrackerStore.HudSection> sections, Function<String, ObjectiveInfo> objectives,
+			double near, Collection<String> worldNames, long now, Function<String, Activity> activity,
+			Function<String, Long> subCounted) {
 		List<Line> lines = new ArrayList<>();
 		if (sections == null) return lines;
+		int nextRank = nextPrestigeRank(sections);
 		boolean headings = sections.size() > 1;
 		for (TrackerStore.HudSection s : sections) {
 			if (s.rows().isEmpty()) continue;
@@ -86,14 +102,27 @@ public final class TrackerPanelModel {
 				EntryLabel label = EntryLabel.of(t.name(), info);
 				SourceTag tag = SourceTag.of(t.source());
 				Activity act = activity == null ? Activity.NONE : activity.apply(t.id());
+				String right = CompactJob.count(r, now);
+				Tone tone = tone(r, near, s.kind());
+				int rank = prestigeRank(t);
+				if (rank > 0 && nextRank > 0 && rank > nextRank && (r.complete() || r.atCap())) {
+					// Met, but the ranks go in order: it is claimed in /prestige after the next one.
+					right = right + " after \u272A" + nextRank;
+					tone = Tone.BLOCKED;
+				}
 				lines.add(new Line(tag.glyph(), tag.argb(), title(t.source(), label.title(), worldNames),
-						CompactJob.count(r, now), tone(r, near, s.kind()), act == null ? Activity.NONE : act,
-						JobsPanelModel.progress(r)));
+						right, tone, act == null ? Activity.NONE : act, JobsPanelModel.progress(r)));
 				if (info != null && info.subs() != null && info.subs().size() > 1) {
-					// One row per objective, its count in the right column: 50% of "Slay 10 Golden Knights" is 5/10.
-					for (ObjectiveInfo.Sub sub : info.subs()) {
+					// One row per objective, its count in the right column: 50% of "Slay 10 Golden Knights" is 5/10,
+					// plus what was counted locally since that read ("~330/2,500").
+					for (int i = 0; i < info.subs().size(); i++) {
+						ObjectiveInfo.Sub sub = info.subs().get(i);
+						Long extra = subCounted == null ? null : subCounted.apply(TrackerStore.subKey(t.id(), i));
+						long[] dt = detailAmounts(sub, extra == null ? 0 : extra);
+						String count = dt == null ? "" : (extra != null && extra > 0 ? "~" : "")
+								+ CompactJob.number(dt[0]) + "/" + CompactJob.number(dt[1]);
 						lines.add(new Line("", 0, DETAIL_INDENT + CompactJob.cut(detailName(sub, worldNames), MAX_DETAIL),
-								detailCount(sub), Tone.DETAIL));
+								count, Tone.DETAIL, Activity.NONE, dt == null ? -1 : Math.min(1, dt[0] / (double) dt[1])));
 					}
 				} else {
 					for (String d : label.details()) {
@@ -142,6 +171,41 @@ public final class TrackerPanelModel {
 	 * The objective's share as units: its percentage of the amount it names ("Slay 10 Golden Knights" at 50% →
 	 * "5/10"); an objective naming no amount is one step ("0/1"). "" when the menu gave no percentage.
 	 */
+	/** {done, total} for an objective row: its read percent of its amount plus {@code extra} counted since; null if unknown. */
+	static long[] detailAmounts(ObjectiveInfo.Sub sub, long extra) {
+		if (sub == null || sub.percent() == null) return null;
+		long total = 1;
+		Matcher m = AMOUNT.matcher(sub.text() == null ? "" : sub.text());
+		if (m.find()) {
+			try {
+				total = Math.max(1, Long.parseLong(m.group(1).replace(",", "")));
+			} catch (NumberFormatException ignored) {
+				total = 1;
+			}
+		}
+		long done = Math.round(Math.max(0, Math.min(100, sub.percent())) * total / 100.0) + Math.max(0, extra);
+		return new long[] {Math.min(done, total), total};
+	}
+
+	/** The prestige rank an entry is ("Rank [✪8] · …" -> 8), else 0. */
+	static int prestigeRank(Trackable t) {
+		if (t == null || !"prestige".equals(t.source()) || t.name() == null) return 0;
+		Matcher m = PRESTIGE_RANK.matcher(t.name());
+		return m.find() ? Integer.parseInt(m.group(1)) : 0;
+	}
+
+	/** The lowest prestige rank not yet met among the shown entries (the one to work on), else 0. */
+	static int nextPrestigeRank(List<TrackerStore.HudSection> sections) {
+		int next = 0;
+		for (TrackerStore.HudSection s : sections) {
+			for (TrackerRow r : s.rows()) {
+				int rank = prestigeRank(r.item());
+				if (rank > 0 && !(r.complete() || r.atCap()) && (next == 0 || rank < next)) next = rank;
+			}
+		}
+		return next;
+	}
+
 	static String detailCount(ObjectiveInfo.Sub sub) {
 		if (sub == null || sub.percent() == null) return "";
 		long total = 1;

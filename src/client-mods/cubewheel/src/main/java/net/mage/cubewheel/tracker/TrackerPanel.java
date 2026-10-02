@@ -30,7 +30,8 @@ public final class TrackerPanel {
 				mode == WorldScope.Mode.OFF ? null : LocalSignals.currentWorld(), cfg.tracker.local.worlds, mode,
 				cfg.tracker.jobsPanel.enabled ? JobsPanelModel::isJob : null); // the Jobs panel shows those
 		List<TrackerPanelModel.Line> model = TrackerPanelModel.build(sections, id -> store.objective(id).orElse(null),
-				cfg.tracker.nearThreshold, cfg.tracker.local.worlds, now, id -> store.activity(id, now));
+				cfg.tracker.nearThreshold, cfg.tracker.local.worlds, now, id -> store.activity(id, now),
+				cfg.tracker.local.enabled ? store::counted : null);
 		if (model.isEmpty()) return Optional.empty();
 		List<Panel.Line> lines = new ArrayList<>(model.size());
 		for (TrackerPanelModel.Line l : model) {
@@ -47,7 +48,7 @@ public final class TrackerPanel {
 			case DONE -> Panel.GREEN;
 			case NEAR -> Panel.YELLOW;
 			case NORMAL -> Panel.WHITE;
-			case OTHER_WORLD -> OTHER_WORLD_COLOR;
+			case OTHER_WORLD, BLOCKED -> OTHER_WORLD_COLOR;
 		};
 	}
 }

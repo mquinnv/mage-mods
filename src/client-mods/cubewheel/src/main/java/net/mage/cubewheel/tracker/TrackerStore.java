@@ -160,7 +160,9 @@ public final class TrackerStore {
 	/** Stores the objective text of {@code id}; returns true if it changed. */
 	public boolean setObjective(String id, ObjectiveInfo info) {
 		if (id == null || info == null) return false;
-		if (Objects.equals(objectives.get(id), info)) return false;
+		// A menu read is the truth for its objectives' percents: counts made since are dropped even if unchanged.
+		boolean dropped = estimates.keySet().removeIf(k -> !k.equals(id) && id.equals(baseId(k)));
+		if (Objects.equals(objectives.get(id), info)) return dropped;
 		objectives.put(id, info);
 		rulesDirty = true;
 		return true;
@@ -188,11 +190,41 @@ public final class TrackerStore {
 			if (t.complete()) continue;
 			ObjectiveInfo info = objectiveOf(t);
 			if (info == null) continue;
+			if (info.subs().size() > 1 && !info.handIn()) {
+				// A quest with several objectives ("Slay 2,500 Tangleroot Monsters" + "Slay 10 Golden Knights"):
+				// each unfinished one counts on its own, under subKey(id, i).
+				for (int i = 0; i < info.subs().size(); i++) {
+					ObjectiveInfo.Sub sub = info.subs().get(i);
+					if (sub.percent() != null && sub.percent() >= 100) continue;
+					String key = subKey(t.id(), i);
+					ObjectiveParser.parse(new ObjectiveInfo(List.of(sub), false, false), tokens).ifPresent(r -> out.put(key, r));
+				}
+				continue;
+			}
 			ObjectiveParser.parse(info, tokens).ifPresent(r -> out.put(t.id(), r));
 		}
 		active = Map.copyOf(out);
 		activeTokens = tokens;
 		return active;
+	}
+
+	/** The counter key of objective {@code index} of a multi-objective entry. */
+	public static String subKey(String id, int index) {
+		return id + SUB + index;
+	}
+
+	/** The entry a counter key belongs to ("pquests:King of the Jungle#sub0" -> "pquests:King of the Jungle"). */
+	static String baseId(String key) {
+		int i = key == null ? -1 : key.lastIndexOf(SUB);
+		return i < 0 ? key : key.substring(0, i);
+	}
+
+	private static final String SUB = "#sub";
+
+	/** Objective units counted locally for {@code key} (an entry id or a {@link #subKey}) since its last read; 0 if none. */
+	public long counted(String key) {
+		Estimate e = estimates.get(key);
+		return e == null ? 0 : e.count();
 	}
 
 	/** The rule's target for display and unit conversion (independent of world tokens). */
@@ -233,10 +265,11 @@ public final class TrackerStore {
 	 * if needed. No-op (false) for unknown or complete items and non-positive units.
 	 */
 	public boolean addEstimate(String id, long units, long now) {
-		Trackable t = items.get(id);
+		String base = baseId(id);
+		Trackable t = items.get(base);
 		if (t == null || t.complete() || units <= 0) return false;
 		Estimate old = estimates.get(id);
-		progressAt.put(id, now);
+		progressAt.put(base, now);
 		estimates.put(id, old == null
 				? new Estimate(units, t.current(), now, now)
 				: new Estimate(old.count() + units, old.baseline(), old.since(), now));
@@ -397,7 +430,7 @@ public final class TrackerStore {
 		items.values().removeIf(t -> !pins.contains(t.id()) && which.test(t));
 		if (items.size() == before) return 0;
 		objectives.keySet().retainAll(items.keySet());
-		estimates.keySet().retainAll(items.keySet());
+		estimates.keySet().removeIf(k -> !items.containsKey(baseId(k)));
 		hidden.retainAll(items.keySet());
 		rulesDirty = true;
 		return before - items.size();
@@ -408,7 +441,7 @@ public final class TrackerStore {
 		int before = items.size();
 		items.values().removeIf(t -> !pins.contains(t.id()) && now - t.seenAt() > ageMs);
 		objectives.keySet().retainAll(items.keySet());
-		estimates.keySet().retainAll(items.keySet());
+		estimates.keySet().removeIf(k -> !items.containsKey(baseId(k)));
 		hidden.retainAll(items.keySet());
 		rulesDirty = true;
 		return before - items.size();
@@ -451,7 +484,7 @@ public final class TrackerStore {
 			}
 			if (snap.estimates != null) {
 				snap.estimates.forEach((id, est) -> {
-					Trackable t = id == null ? null : newItems.get(id);
+					Trackable t = id == null ? null : newItems.get(baseId(id));
 					if (est != null && est.count() > 0 && t != null && !t.complete()) newEstimates.put(id, est);
 				});
 			}
