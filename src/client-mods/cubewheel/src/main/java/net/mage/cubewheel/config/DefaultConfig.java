@@ -127,7 +127,9 @@ public final class DefaultConfig {
 			leaf("Party quests", "minecraft:writable_book", "/pquests"),
 			leaf("Prestige", "minecraft:nether_star", "/prestige"),
 			leaf("Challenges", "minecraft:target", "/challenges")));
-		w.add(leaf("Daily reward", "minecraft:milk_bucket", "/cow"));
+		// Rewards: the daily reward (/cow) on the ring, crates (virtual keys) just outside it.
+		w.add(leaf("Daily reward", "minecraft:milk_bucket", "/cow")
+			.withOuter(leaf("Crates", "minecraft:tripwire_hook", "/crates")));
 		w.add(slice("Boss event", "minecraft:wither_skeleton_skull", "boss"));
 		// TPA: "Accept <name>" (/tpaccept) while a teleport request is pending; friends to /tpa in its arc.
 		w.add(slice("TPA", "minecraft:player_head", "tpa"));
