@@ -84,7 +84,7 @@ public final class JobsPanel {
 	private static int color(JobsPanelModel.Tone tone) {
 		return switch (tone) {
 			case INDUSTRY -> INDUSTRY_COLOR;
-			case CURRENT -> Panel.WHITE;
+			case CURRENT -> Panel.CYAN;
 			case NEUTRAL -> NEUTRAL_COLOR;
 			case OTHER_WORLD -> OTHER_WORLD_COLOR;
 			case AT_CAP -> Panel.GREEN; // "✓?": probably ready to claim

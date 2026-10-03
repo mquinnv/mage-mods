@@ -47,7 +47,7 @@ public final class TrackerPanel {
 			case HEADING, DETAIL -> Panel.GRAY;
 			case DONE -> Panel.GREEN;
 			case NEAR -> Panel.YELLOW;
-			case NORMAL -> Panel.WHITE;
+			case NORMAL -> Panel.CYAN;
 			case OTHER_WORLD, BLOCKED -> OTHER_WORLD_COLOR;
 		};
 	}

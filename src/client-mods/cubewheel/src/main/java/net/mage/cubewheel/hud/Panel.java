@@ -11,6 +11,8 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 	public static final int YELLOW = 0xFFFFFF55;
 	public static final int GRAY = 0xFFAAAAAA;
 	public static final int GREEN = 0xFF55FF55;
+	/** Entries you can work on right here (green is taken by done, yellow by nearly done). */
+	public static final int CYAN = 0xFF55FFFF;
 
 	/** How opaque a full progress bar behind a row gets (text stays readable on top). */
 	static final int METER_ALPHA = 0x99;
