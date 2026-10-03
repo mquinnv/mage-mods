@@ -22,6 +22,8 @@ import net.minecraft.network.chat.Component;
 public final class LiveWatcher {
 	/** A menu opened this soon after you sent /cow is read as the /cow menu, whatever its title. */
 	private static final long COW_MENU_WINDOW_MS = 10_000;
+	/** A "You received N Daily Crate Key(s)" line this soon after /cow is read as your claim from its menu. */
+	private static final long COW_CLAIM_WINDOW_MS = 300_000;
 
 	private static CowStore cow;
 	private static final BossSlice boss = new BossSlice();
@@ -88,6 +90,13 @@ public final class LiveWatcher {
 				if (cow.claimed(me, claim.get(), now)) cow.save();
 				CubeWheelClient.LOG.info("[cubewheel] /cow claim: {} {}",
 						claim.get().tier() == null ? "their" : claim.get().tier().id(), claim.get().reward());
+				return true;
+			}
+			// The daily claim broadcasts nothing; its private key line counts only while the /cow menu is fresh.
+			Optional<CowParser.Claim> own = CowParser.received(text);
+			if (own.isPresent() && me != null && now >= cowSentAt && now - cowSentAt <= COW_CLAIM_WINDOW_MS) {
+				if (cow.claimed(me, own.get(), now)) cow.save();
+				CubeWheelClient.LOG.info("[cubewheel] /cow claim: {} {}", own.get().tier().id(), own.get().reward());
 			}
 		} catch (RuntimeException e) {
 			if (!chatFailureLogged) CubeWheelClient.LOG.error("[cubewheel] live slice chat parse failed", e);

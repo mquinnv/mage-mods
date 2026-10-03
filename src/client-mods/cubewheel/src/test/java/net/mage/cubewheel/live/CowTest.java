@@ -31,6 +31,27 @@ class CowTest {
 		assertTrue(CowParser.claim("[/CASHCOW] something else happened").isEmpty());
 	}
 
+	@Test void parsesYourOwnKeyMessage() {
+		// Claiming the daily reward broadcasts nothing; only this private line was seen (2026-10-03 10:04:17).
+		CowParser.Claim d = CowParser.received("You received 2 Daily Crate Key(s). TYPE /CRATES TO USE").orElseThrow();
+		assertNull(d.player());
+		assertEquals(Tier.DAILY, d.tier());
+		assertEquals("2 Daily Crate Key(s)", d.reward());
+		assertEquals(Tier.WEEKLY, CowParser.received("§aYou received 1 Weekly Crate Key(s).").orElseThrow().tier());
+		assertTrue(CowParser.received("You received a Terrastriker from a Golden Crate!").isEmpty());
+		assertTrue(CowParser.received("§r KingBee: You received 2 Daily Crate Key(s)").isEmpty());
+	}
+
+	@Test void aClaimAfterTheMenuSaidReadyIsNoLongerReady() {
+		CowStore s = new CowStore(dir.resolve("cow.json"));
+		long t = 1_000 * D;
+		s.menu("Qualan", new CowParser.MenuState(Tier.DAILY, 0), t);
+		assertTrue(s.status("Qualan", P, t).ready());
+		s.claimed("Qualan", CowParser.received("You received 2 Daily Crate Key(s).").orElseThrow(), t + 2_000);
+		assertFalse(s.status("Qualan", P, t + 3_000).ready());
+		assertEquals(t + 2_000 + D, s.nextAvailable("Qualan", Tier.DAILY, P));
+	}
+
 	@Test void parsesMenuCooldownLore() {
 		assertEquals(new CowParser.MenuState(Tier.DAILY, 13 * H + 2 * 60_000),
 				CowParser.menuItem("§aDaily Reward", List.of("Rewards: 1x Key", "§7Available in 13h 2m")).orElseThrow());

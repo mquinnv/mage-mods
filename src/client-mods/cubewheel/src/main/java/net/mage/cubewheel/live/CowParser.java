@@ -41,6 +41,8 @@ public final class CowParser {
 	private static final Pattern CLAIM = Pattern.compile(
 			"\\[/CASHCOW]\\s+(?:.*\\s)?([A-Za-z0-9_]{2,16})\\s+claimed\\s+(?:(daily|weekly|monthly)|their)\\s+(.+?)\\s*$",
 			Pattern.CASE_INSENSITIVE);
+	private static final Pattern RECEIVED = Pattern.compile(
+			"^You received ((?:\\d+\\s+)?(daily|weekly|monthly)\\s+Crate Key(?:\\(s\\)|s)?)", Pattern.CASE_INSENSITIVE);
 	private static final Pattern WAIT = Pattern.compile(
 			"(?i)(?:available|claimable|claim|ready|come back|resets?|refresh(?:es)?|cooldown)\\s*(?:again\\s*)?(?:in|:)\\s*:?\\s*(.+)$");
 	private static final Pattern READY = Pattern.compile("(?i)click to (?:claim|collect)|available now|claim now|ready to claim");
@@ -57,6 +59,18 @@ public final class CowParser {
 		if (!m.find()) return Optional.empty();
 		Tier tier = m.group(2) == null ? null : Tier.valueOf(m.group(2).toUpperCase(Locale.ROOT));
 		return Optional.of(new Claim(m.group(1), tier, m.group(3).trim()));
+	}
+
+	/**
+	 * Your own claim, from the private line the claim sends you ("You received 2 Daily Crate Key(s). TYPE /CRATES
+	 * TO USE"): claiming the daily reward broadcasts nothing. The player is null (the line is always about you);
+	 * crate keys can come from elsewhere too, so the caller only trusts it right after /cow.
+	 */
+	public static Optional<Claim> received(String text) {
+		if (text == null) return Optional.empty();
+		Matcher m = RECEIVED.matcher(strip(text).trim());
+		if (!m.find()) return Optional.empty();
+		return Optional.of(new Claim(null, Tier.valueOf(m.group(2).toUpperCase(Locale.ROOT)), m.group(1).trim()));
 	}
 
 	/**
