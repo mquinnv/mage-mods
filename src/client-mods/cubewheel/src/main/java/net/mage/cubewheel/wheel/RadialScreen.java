@@ -25,7 +25,12 @@ import org.lwjgl.glfw.GLFW;
 /** Hold-to-open radial command wheel. Release or left-click commits; right-click goes back. */
 public final class RadialScreen extends Screen {
 	private static final int WHITE = 0xFFFFFFFF;
-	private static final int GREY = 0xFFAAAAAA;
+	/** Unselected labels: light enough to read over a bright world. */
+	private static final int GREY = 0xFFDADADA;
+	/** Plate behind labels drawn off the band (outer tiers, arcs), so the world behind can't wash them out. */
+	private static final int PLATE = 0xB0101014;
+	/** Space between an outer label and the next tier's disc. */
+	private static final int LABEL_GAP = 3;
 	/** Widest gap between neighbouring entries of a sub-ring, in degrees. */
 	private static final double SUB_RING_STEP = 45;
 	/** Depth of each tier beyond the ring (one icon + label block plus padding). */
@@ -105,6 +110,8 @@ public final class RadialScreen extends Screen {
 	private List<List<WheelNode>> arcLists = List.of();
 	/** Outer-tier spacing per slice as last drawn (shrunk where the screen edge is near). */
 	private double[] tierSteps = new double[0];
+	/** Per slice: the step at which every outer label fits beside its icon; below it only the hovered one is labelled. */
+	private double[] labelSteps = new double[0];
 	/** The ring's outer edge as last drawn; beyond it the outer tiers start. */
 	private double renderedEdge;
 	private boolean keyStillHeld;
@@ -217,9 +224,15 @@ public final class RadialScreen extends Screen {
 		hovered = RadialMath.nearest(mouseX - cx, mouseY - cy, dirs, hub);
 		renderedEdge = ri + half;
 		tierSteps = new double[entries.size()];
+		labelSteps = new double[entries.size()];
 		for (int i = 0; i < entries.size(); i++) {
+			// Every outer label but the last has another disc beyond it, so the widest of those sets the spacing.
+			int widest = 0;
+			for (WheelNode o = entries.get(i).outer; o != null && o.outer != null; o = o.outer)
+				widest = Math.max(widest, font.width(o.label == null ? "" : o.label));
+			labelSteps[i] = RadialMath.labelStep(dirs[i], widest, OUTER_DISC, LABEL_GAP, SIDEWAYS, TIER_STEP);
 			tierSteps[i] = RadialMath.tierStep(renderedEdge, RadialMath.reach(cx, cy, dirs[i], width, height, 2),
-					outerCount(entries.get(i)), OUTER_DISC + font.lineHeight, MIN_TIER_STEP, TIER_STEP);
+					outerCount(entries.get(i)), OUTER_DISC + font.lineHeight, MIN_TIER_STEP, labelSteps[i]);
 		}
 		// An open arc keeps the pointer while it is on one of the arc's entries, wherever the ring's nearest slice is.
 		// The arc's entries count as the arc slice's tiers (tier 1 = first entry), so pointing, scrolling and Shift
@@ -275,7 +288,7 @@ public final class RadialScreen extends Screen {
 			boolean coveredByArc = i != arcOpen && underArc(dirs[i]);
 			int shown = i == hovered ? count : coveredByArc ? 0 : count <= 2 ? count : 1;
 			if (shown == 0 && count > 0 || i != arcOpen && arcAt(i) != null) moreDots(g, cx, cy, dirs[i], arcAt(i) != null ? arcAt(i).size() : count);
-			boolean roomy = tierSteps[i] >= TIER_STEP - 0.5;
+			boolean roomy = tierSteps[i] >= labelSteps[i] - 0.5;
 			WheelNode outer = node.outer;
 			for (int tier = 1; outer != null && tier <= shown; tier++, outer = outer.outer) {
 				double[] oo = RadialMath.offset(dirs[i], renderedEdge + (tier - 0.5) * tierSteps[i]);
@@ -286,7 +299,8 @@ public final class RadialScreen extends Screen {
 				int otop = oy - 8; // icon centred in its disc; the label sits beside it
 				ItemStack oicon = Icons.stack(outer.icon);
 				if (!oicon.isEmpty()) g.item(oicon, ox - 8, otop);
-				if (roomy || outerHot) outerLabel(g, outer.label == null ? "" : outer.label, ox, oy, dirs[i], outerHot ? WHITE : GREY);
+				// The last tier has no disc beyond it to collide with, so its label always shows.
+				if (roomy || outerHot || outer.outer == null) outerLabel(g, outer.label == null ? "" : outer.label, ox, oy, dirs[i], outerHot ? WHITE : GREY);
 			}
 		}
 		if (arcOpen >= 0) drawArc(g, cx, cy, arcAt(arcOpen));
@@ -474,10 +488,17 @@ public final class RadialScreen extends Screen {
 		double[] d = RadialMath.offset(direction, 1);
 		int w = font.width(label);
 		int y = d[1] < 0 ? oy + 2 : oy - 2 - font.lineHeight;
-		if (d[0] > SIDEWAYS) g.text(font, label, ox + 10, y, colour);
-		else if (d[0] < -SIDEWAYS) g.text(font, label, ox - 10 - w, y, colour);
-		else if (d[1] < 0) g.centeredText(font, label, ox, oy - BLOCK_HEIGHT / 2 + 18, colour);
-		else g.text(font, label, ox + 10, oy - font.lineHeight / 2, colour);
+		if (d[0] > SIDEWAYS) plated(g, label, ox + 10, y, colour);
+		else if (d[0] < -SIDEWAYS) plated(g, label, ox - 10 - w, y, colour);
+		else if (d[1] < 0) plated(g, label, ox - w / 2, oy - BLOCK_HEIGHT / 2 + 18, colour);
+		else plated(g, label, ox + 10, oy - font.lineHeight / 2, colour);
+	}
+
+	/** A label on a dark plate, for labels drawn over the world rather than on the band. */
+	private void plated(GuiGraphicsExtractor g, String label, int x, int y, int colour) {
+		if (label.isEmpty()) return;
+		g.fill(x - 2, y - 1, x + font.width(label) + 1, y + font.lineHeight, PLATE);
+		g.text(font, label, x, y, colour);
 	}
 
 	/** Slice {@code i}'s arc entries as of this frame, or null. */
@@ -557,7 +578,7 @@ public final class RadialScreen extends Screen {
 		int reach = OUTER_DISC + 2;
 		int lx = d[0] > SIDEWAYS ? x + reach : d[0] < -SIDEWAYS ? x - reach - w : x - w / 2;
 		int ly = d[1] > SIDEWAYS ? y + reach - 4 : d[1] < -SIDEWAYS ? y - reach - font.lineHeight + 4 : y - font.lineHeight / 2;
-		g.text(font, label, lx, ly, colour);
+		plated(g, label, lx, ly, colour);
 	}
 
 	/** The tier the pointer's distance past the ring picks on slice {@code index}. */

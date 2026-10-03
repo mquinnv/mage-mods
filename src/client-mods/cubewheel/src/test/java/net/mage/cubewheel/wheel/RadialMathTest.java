@@ -6,6 +6,17 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class RadialMathTest {
+	@Test void sidewaysChainsSpaceTiersSoALabelBesideItsIconClearsTheNextDisc() {
+		// A chain pointing right (90°): a 30px label starting 10px right of its icon, a 2px gap, then a 16px disc.
+		assertEquals(10 + 30 + 2 + 16, RadialMath.labelStep(90, 30, 16, 2, 0.35, 34), 1e-9);
+		// Leaning 100° (as Shop -> Kilton -> Auction house did): wider still, by 1 / sin.
+		assertEquals(58 / Math.sin(Math.toRadians(100)), RadialMath.labelStep(100, 30, 16, 2, 0.35, 34), 1e-9);
+		// A chain going straight down puts labels beside the icons, out of the next disc's way: the base step.
+		assertEquals(34, RadialMath.labelStep(180, 300, 16, 2, 0.35, 34), 1e-9);
+		// Short labels never shrink the base step.
+		assertEquals(34, RadialMath.labelStep(90, 2, 16, 2, 0.35, 34), 1e-9);
+	}
+
 	@Test void deadZoneReturnsMinusOne() { assertEquals(-1, RadialMath.sliceAt(2, 3, 8, 10)); }
 	@Test void emptyWheel() { assertEquals(-1, RadialMath.sliceAt(0, -50, 0, 10)); }
 	@Test void upIsZero() { assertEquals(0, RadialMath.sliceAt(0, -50, 8, 10)); }

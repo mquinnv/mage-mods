@@ -18,7 +18,7 @@ public final class SliceViews {
 	public static final int GREEN = 0xFF55FF55;
 	public static final int RED = 0xFFFF7777;
 	public static final int GOLD = 0xFFFFAA00;
-	public static final int DIM = 0xFF777777;
+	public static final int DIM = 0xFF9A9A9A;
 
 	/**
 	 * How one slice looks and acts right now.

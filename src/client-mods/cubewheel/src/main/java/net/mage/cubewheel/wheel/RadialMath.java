@@ -89,6 +89,17 @@ public final class RadialMath {
 	 * Spacing of {@code tiers} outer tiers starting at {@code edge} so the last one's centre stays {@code pad} inside
 	 * {@code reach}; between {@code min} and {@code max}. Tier k is centred at {@code edge + (k - 0.5) * step}.
 	 */
+	/**
+	 * The tier step a chain needs so a label of {@code labelWidth}, set beside its icon (10 px from the centre), ends
+	 * {@code gap} short of the next tier's disc of radius {@code disc}. Only chains leaning further sideways than
+	 * {@code sideways} (sine of {@code direction}, degrees clockwise from up) put labels there; never below {@code base}.
+	 */
+	public static double labelStep(double direction, int labelWidth, int disc, int gap, double sideways, double base) {
+		double s = Math.abs(Math.sin(Math.toRadians(direction)));
+		if (s <= sideways) return base;
+		return Math.max(base, (10 + labelWidth + gap + disc) / s);
+	}
+
 	public static double tierStep(double edge, double reach, int tiers, double pad, double min, double max) {
 		if (tiers <= 0) return max;
 		double fit = (reach - pad - edge) / (tiers - 0.5);
