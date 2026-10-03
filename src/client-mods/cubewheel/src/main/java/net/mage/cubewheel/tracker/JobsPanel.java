@@ -23,6 +23,9 @@ public final class JobsPanel {
 	private static final int NEUTRAL_COLOR = 0xFFCCCCCC;
 	private static final int OTHER_WORLD_COLOR = 0xFF808080;
 
+	/** The industry the panel shows (that of the last tool held); null until a tool has been held: all of them. */
+	private static String focused;
+
 	private JobsPanel() {}
 
 	public static Optional<Panel> panel(long now) {
@@ -37,6 +40,14 @@ public final class JobsPanel {
 				t -> WorldScope.relevance(WorldScope.of(t.name(), store.objective(t.id()).orElse(null), worlds), at), worlds, now,
 				id -> store.activity(id, now));
 		if (m.lines().isEmpty()) return Optional.empty();
+		// Only the industry of the tool in hand; a non-tool keeps whichever it last showed.
+		net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
+		if (player != null) {
+			String held = ToolIndustry.of(net.minecraft.core.registries.BuiltInRegistries.ITEM
+					.getKey(player.getMainHandItem().getItem()).toString());
+			if (held != null) focused = held;
+		}
+		m = JobsPanelModel.focus(m, focused);
 		List<Panel.Line> lines = new ArrayList<>(m.lines().size());
 		for (JobsPanelModel.Line l : m.lines()) {
 			// A fish target takes its rarity colour (as the server draws it); the count keeps the progress colour.

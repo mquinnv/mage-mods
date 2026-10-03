@@ -162,6 +162,21 @@ public final class JobsPanelModel {
 		return new Model(crate == null ? TITLE : TITLE + " · " + crate, List.copyOf(lines));
 	}
 
+	/**
+	 * Only {@code industry}'s heading and entries (the title kept); the whole model when {@code industry} is null or
+	 * has no entries, so the panel never goes blank.
+	 */
+	public static Model focus(Model all, String industry) {
+		if (all == null || industry == null) return all;
+		List<Line> out = new ArrayList<>();
+		boolean in = false;
+		for (Line l : all.lines()) {
+			if (l.tone() == Tone.INDUSTRY) in = industryName(l.text()).equalsIgnoreCase(industry);
+			if (in) out.add(l);
+		}
+		return out.size() <= 1 ? all : new Model(all.title(), List.copyOf(out));
+	}
+
 	private record Item(TrackerRow row, int tier, String text, WorldScope.Relevance rel) {}
 
 	/** An entry's progress meter: 1 when done, else its (estimated) fraction; -1 when it has no target. */
