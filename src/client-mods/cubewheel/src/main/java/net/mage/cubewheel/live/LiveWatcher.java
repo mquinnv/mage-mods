@@ -28,6 +28,7 @@ public final class LiveWatcher {
 
 	private static CowStore cow;
 	private static final BossSlice boss = new BossSlice();
+	private static Path bossFile;
 	private static final TpaSlice tpa = new TpaSlice();
 	private static long cowSentAt = Long.MIN_VALUE;
 	private static VaultPages vaults;
@@ -42,6 +43,9 @@ public final class LiveWatcher {
 		cow.load();
 		vaults = new VaultPages(configDir.resolve("cubewheel-vaults.json"));
 		vaults.load();
+		// A boss outlives a client restart (2026-10-03: a restart mid-Mana Golem left the slice at "No boss").
+		bossFile = configDir.resolve("cubewheel-boss.json");
+		boss.load(bossFile);
 		SliceViews.register((node, now) -> {
 			Minecraft mc = Minecraft.getInstance();
 			return SliceViews.fly(node, mc.player != null && mc.player.getAbilities().mayfly);
@@ -87,10 +91,14 @@ public final class LiveWatcher {
 			String text = message.getString();
 			long now = System.currentTimeMillis();
 			if (tpa.onChat(text, now)) return true;
-			if (boss.onChat(text, now)) return true;
+			if (boss.onChat(text, now)) {
+				boss.save(bossFile);
+				return true;
+			}
 			Optional<BossParser.Spawn> spawn = BossParser.parse(text);
 			if (spawn.isPresent()) {
 				boss.spawned(spawn.get(), now);
+				boss.save(bossFile);
 				CubeWheelClient.LOG.info("[cubewheel] {}boss {} at {}", spawn.get().mini() ? "mini " : "",
 						spawn.get().boss(), spawn.get().location());
 				return true;

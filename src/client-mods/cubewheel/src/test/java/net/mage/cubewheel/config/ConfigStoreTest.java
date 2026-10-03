@@ -17,7 +17,7 @@ class ConfigStoreTest {
 	@Test void outerEntriesAreKeptValidatedAndAtMostFourDeep() throws Exception {
 		Path f = dir.resolve("cubewheel.json");
 		Files.writeString(f, """
-		  {"configVersion": 5, "wheel": [
+		  {"configVersion": 6, "wheel": [
 		    {"label":"Sell","command":"sell","outer":{"label":"Hand","command":"/sell hand",
 		      "outer":{"label":"All","command":"/sell all","outer":{"label":"Three","command":"/3",
 		      "outer":{"label":"Four","command":"/4","outer":{"label":"Too far","command":"/x"}}}}}},
@@ -32,6 +32,21 @@ class ConfigStoreTest {
 		assertEquals("/4", sell.outer.outer.outer.outer.command);
 		assertNull(sell.outer.outer.outer.outer.outer); // five tiers at most
 		assertNull(s.current().wheel.get(1).outer);
+	}
+
+	@Test void aVersion5ChainLoadsAsAnArcAndIsWrittenBack() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, """
+		  {"configVersion": 5, "wheel": [
+		    {"label":"Shop","command":"/shop","outer":{"label":"Kilton","command":"/kilton",
+		      "outer":{"label":"Auction house","command":"/ah"}}}
+		  ]}""");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		WheelNode shop = s.current().wheel.get(0);
+		assertNull(shop.outer);
+		assertEquals(List.of("/kilton", "/ah"), shop.arc.stream().map(n -> n.command).toList());
+		assertTrue(Files.readString(f).replaceAll("\\s", "").contains("\"configVersion\":6"));
 	}
 
 	@Test void arcEntriesKeepOnlyPlainCommands() throws Exception {

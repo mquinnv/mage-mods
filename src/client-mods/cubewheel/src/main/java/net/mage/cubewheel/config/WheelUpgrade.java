@@ -71,6 +71,30 @@ public final class WheelUpgrade {
 		return more;
 	}
 
+	/**
+	 * The version 6 upgrade (2026-10-03): entries that stuck out past their slice (outer tiers) move into the
+	 * slice's arc, in order, after any arc entries it already had. Your own chains are kept, just shown as arcs.
+	 * Returns true if anything changed.
+	 */
+	public static boolean chainsToArcs(List<WheelNode> wheel) {
+		boolean changed = false;
+		if (wheel == null) return false;
+		for (WheelNode n : walk(wheel)) {
+			if (n.outer == null) continue;
+			List<WheelNode> arc = n.arc == null ? new ArrayList<>() : new ArrayList<>(n.arc);
+			for (WheelNode o = n.outer; o != null; ) {
+				WheelNode next = o.outer;
+				o.outer = null;
+				arc.add(o);
+				o = next;
+			}
+			n.outer = null;
+			n.arc = arc;
+			changed = true;
+		}
+		return changed;
+	}
+
 	/** Every node of the tree: rings' and dynamic nodes' children and slices' outer tiers included. */
 	static List<WheelNode> walk(List<WheelNode> roots) {
 		List<WheelNode> out = new ArrayList<>();

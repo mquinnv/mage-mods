@@ -58,6 +58,49 @@ public final class BossSlice {
 		return latest;
 	}
 
+	/** What a client restart must not lose ({@code config/cubewheel-boss.json}); public fields for Gson. */
+	static final class Saved {
+		String boss, location;
+		boolean mini, dead;
+		long at, aliveAt;
+	}
+
+	/** Writes the latest spawn; false (and logged) on IO errors. Nothing to write before the first spawn. */
+	public boolean save(java.nio.file.Path file) {
+		if (latest == null) return true;
+		Saved s = new Saved();
+		s.boss = latest.boss();
+		s.location = latest.location();
+		s.mini = latest.mini();
+		s.dead = dead;
+		s.at = at;
+		s.aliveAt = aliveAt;
+		try {
+			if (file.getParent() != null) java.nio.file.Files.createDirectories(file.getParent());
+			java.nio.file.Files.writeString(file, new com.google.gson.Gson().toJson(s), java.nio.charset.StandardCharsets.UTF_8);
+			return true;
+		} catch (java.io.IOException | RuntimeException e) {
+			org.slf4j.LoggerFactory.getLogger("cubewheel").warn("[cubewheel] could not save boss state to {}: {}", file, e.toString());
+			return false;
+		}
+	}
+
+	/** Restores the latest spawn written by {@link #save}; a missing or corrupt file leaves no boss. */
+	public void load(java.nio.file.Path file) {
+		if (!java.nio.file.Files.exists(file)) return;
+		try {
+			Saved s = new com.google.gson.Gson().fromJson(
+					java.nio.file.Files.readString(file, java.nio.charset.StandardCharsets.UTF_8), Saved.class);
+			if (s == null || s.boss == null) return;
+			latest = new BossParser.Spawn(s.boss, s.location, s.mini);
+			at = s.at;
+			aliveAt = s.aliveAt;
+			dead = s.dead;
+		} catch (java.io.IOException | RuntimeException e) {
+			org.slf4j.LoggerFactory.getLogger("cubewheel").warn("[cubewheel] could not read boss state from {}: {}", file, e.toString());
+		}
+	}
+
 	/** The command for {@code location}: the first {@code warps} regex found in it; null if none. */
 	public static String warpFor(String location, Map<String, String> warps) {
 		if (location == null || warps == null) return null;

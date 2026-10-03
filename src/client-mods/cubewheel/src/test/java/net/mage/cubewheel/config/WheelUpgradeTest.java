@@ -25,31 +25,28 @@ class WheelUpgradeTest {
 		List<WheelNode> w = DefaultConfig.wheel();
 		assertEquals(List.of("Sushi", "Homes", "Teleporter", "Jobs", "Shop", "Sell", "Vaults", "Fly",
 				"Isles", "Party quests", "Daily reward", "Boss event", "TPA", "More"), labels(w));
-		assertEquals("/back", w.get(2).outer.command);
-		assertEquals(null, w.get(2).outer.outer);
-		assertEquals("/challenges", w.get(9).outer.outer.command);
+		for (WheelNode n : w) assertNull(n.outer, n.label + " still sticks out"); // every second entry is an arc now
+		assertEquals(List.of("Back"), labels(w.get(2).arc));
+		assertEquals(List.of("Prestige", "Challenges"), labels(w.get(9).arc));
 		assertEquals("vaults", w.get(6).dynamic);
 		assertTrue(w.get(6).asArc);
 		assertEquals(List.of("Party vault", "All vaults"), labels(w.get(6).children));
 		assertEquals(List.of("PV 1", "PV 2", "PV 3", "PV 4", "Party vault", "All vaults"),
 				labels(net.mage.cubewheel.wheel.WheelResolver.children(w.get(6), 4, List.of())));
-		assertEquals("/warp spawners", w.get(0).outer.command);
-		assertEquals("/sell hand", w.get(5).outer.command);
-		assertEquals("/sell all", w.get(5).outer.outer.command);
+		assertEquals("/warp spawners", w.get(0).arc.get(0).command);
+		assertEquals(List.of("/sell hand", "/sell all"), w.get(5).arc.stream().map(n -> n.command).toList());
 		assertEquals("/warp crops", w.get(0).command);
 		assertEquals("homes", w.get(1).dynamic);
 		assertTrue(w.get(1).asArc);
 		assertEquals("/sell", w.get(5).command);
 		assertEquals("/shop", w.get(4).command);
-		assertEquals("/kilton", w.get(4).outer.command);
-		assertEquals("/ah", w.get(4).outer.outer.command);
+		assertEquals(List.of("/kilton", "/ah"), w.get(4).arc.stream().map(n -> n.command).toList());
 		assertEquals("/isles", w.get(8).command);
 		assertEquals(List.of("Wolfhaven", "Tangleroots", "Sandara", "Icehaven", "Morend", "Burninglands"), labels(w.get(8).arc));
 		assertEquals("/cow", w.get(10).command);
-		assertEquals("/crates", w.get(10).outer.command);
+		assertEquals("/crates", w.get(10).arc.get(0).command);
 		assertTrue(w.get(11).isSlice());
 		assertEquals("boss", w.get(11).dynamic);
-		assertEquals("/prestige", w.get(9).outer.command);
 		assertEquals("tpa", w.get(12).dynamic);
 		WheelNode more = w.get(13);
 		assertEquals(List.of("Shops", "Warps", "Party", "Ender chest"), labels(more.children));
@@ -58,6 +55,22 @@ class WheelUpgradeTest {
 		assertEquals(List.of("Server warps", "Bosses"), labels(child(more.children, "Warps").children));
 		assertEquals(List.of("Party menu", "Party home", "Party warps", "Claim", "Map", "Party vault"),
 				labels(child(more.children, "Party").children));
+	}
+
+	@Test void chainsBecomeArcsInOrderKeepingAnyArcAlreadyThere() {
+		List<WheelNode> w = new java.util.ArrayList<>();
+		w.add(WheelNode.leaf("Sell", null, "/sell")
+				.withOuter(WheelNode.leaf("Sell hand", null, "/sell hand").withOuter(WheelNode.leaf("Sell all", null, "/sell all"))));
+		w.add(WheelNode.leaf("Isles", null, "/isles").withArc(WheelNode.leaf("Morend", null, "/warp morend"))
+				.withOuter(WheelNode.leaf("Mine", null, "/is")));
+		w.add(WheelNode.leaf("Fly", null, "/fly"));
+		assertTrue(WheelUpgrade.chainsToArcs(w));
+		assertEquals(List.of("Sell hand", "Sell all"), labels(w.get(0).arc));
+		assertNull(w.get(0).outer);
+		assertNull(w.get(0).arc.get(0).outer);
+		assertEquals(List.of("Morend", "Mine"), labels(w.get(1).arc));
+		assertNull(w.get(2).arc);
+		assertFalse(WheelUpgrade.chainsToArcs(w));
 	}
 
 	@Test void everyRingBelowTheTopHoldsAtMostEight() {

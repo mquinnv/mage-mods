@@ -22,6 +22,36 @@ public final class ArcLayout {
 	}
 
 	/**
+	 * Directions of entries whose neighbours sit {@code gaps[k]} pixels apart (k between entry k and k + 1) on a
+	 * circle of {@code radius}, the whole arc centred on {@code centre}; in [0, 360).
+	 */
+	public static double[] angles(double[] gaps, double centre, double radius) {
+		int count = gaps.length + 1;
+		double[] out = new double[count];
+		double[] at = new double[count];
+		for (int k = 0; k < gaps.length; k++) at[k + 1] = at[k] + step(radius, gaps[k]);
+		double start = centre - at[count - 1] / 2.0;
+		for (int i = 0; i < count; i++) out[i] = norm(start + at[i]);
+		return out;
+	}
+
+	/**
+	 * How far an entry at {@code direction} reaches along the arc (tangentially) from its centre: its disc, or its
+	 * label where that sticks out further. The label sits as {@code RadialScreen.radialLabel} puts it: beside the
+	 * disc where the arc leans sideways (sine past {@code sideways}), above or below it otherwise.
+	 */
+	public static double extent(double direction, int labelWidth, int labelHeight, int disc, double sideways) {
+		double rad = Math.toRadians(direction);
+		double dx = Math.sin(rad), dy = -Math.cos(rad); // outwards
+		double tx = Math.cos(rad), ty = Math.sin(rad);  // along the arc
+		int reach = disc + 2;
+		double cx = dx > sideways ? reach + labelWidth / 2.0 : dx < -sideways ? -reach - labelWidth / 2.0 : 0;
+		double cy = dy > sideways ? reach - 4 + labelHeight / 2.0 : dy < -sideways ? -reach + 4 - labelHeight / 2.0 : 0;
+		double label = Math.abs(cx * tx + cy * ty) + labelWidth / 2.0 * Math.abs(tx) + labelHeight / 2.0 * Math.abs(ty);
+		return Math.max(disc, label);
+	}
+
+	/**
 	 * The arc entry the pointer at (dx, dy) is on: nearest by angle, provided the pointer is past {@code edge} and
 	 * within {@code slack} degrees of that entry; otherwise -1.
 	 */

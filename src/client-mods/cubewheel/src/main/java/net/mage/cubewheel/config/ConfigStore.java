@@ -107,7 +107,7 @@ public final class ConfigStore {
 	 * {@code notes}, which end up in {@link #warnings()} and the log). Version 4: the new Jobs panel takes the
 	 * offset of your top-left panels (the lowest one), so it stacks below them instead of sitting above them.
 	 * Version 5: the tracker leaves the top right for a panel that takes the Jobs panel's corner and offset, so it
-	 * stacks under it.
+	 * stacks under it. Version 6: chains of outer tiers become arcs.
 	 */
 	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
@@ -129,6 +129,9 @@ public final class ConfigStore {
 		if (c.configVersion < 5 && c.tracker != null) {
 			CubeWheelConfig.Position j = c.tracker.jobsPanel == null ? null : c.tracker.jobsPanel.position;
 			c.tracker.position = j == null ? DefaultConfig.trackerPosition() : new CubeWheelConfig.Position(j.corner, j.x, j.y);
+		}
+		if (c.configVersion < 6 && c.wheel != null && WheelUpgrade.chainsToArcs(c.wheel)) {
+			notes.add("wheel: entries beyond a slice now fan out around it (arcs) instead of sticking out");
 		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;

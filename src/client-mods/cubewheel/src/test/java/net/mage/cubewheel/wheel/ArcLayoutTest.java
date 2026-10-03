@@ -17,6 +17,23 @@ class ArcLayoutTest {
 		assertEquals(0, ArcLayout.angles(0, 90, 20).length);
 	}
 
+	@Test void anglesFromPerGapSpacingStayCentred() {
+		double r = 100;
+		double g1 = Math.toDegrees(40.0 / r), g2 = Math.toDegrees(80.0 / r);
+		double[] a = ArcLayout.angles(new double[] {40, 80}, 90, r);
+		assertArrayEquals(new double[] {90 - (g1 + g2) / 2, 90 - (g1 + g2) / 2 + g1, 90 + (g1 + g2) / 2}, a, 1e-9);
+		assertArrayEquals(new double[] {90}, ArcLayout.angles(new double[0], 90, r), 1e-9);
+	}
+
+	@Test void aLabelReachesFurtherAlongTheArcAtTheTopThanAtTheSide() {
+		// At the top (0°) a 60px label sits centred above its disc and runs along the arc: half its width.
+		assertEquals(30, ArcLayout.extent(0, 60, 9, 16, 0.35), 1e-9);
+		// At 3 o'clock it sits beside the disc, across the arc: only the disc counts.
+		assertEquals(16, ArcLayout.extent(90, 60, 9, 16, 0.35), 1e-9);
+		// A short label never reaches less than the disc.
+		assertEquals(16, ArcLayout.extent(0, 10, 9, 16, 0.35), 1e-9);
+	}
+
 	@Test void pickNeedsThePointerPastTheEdgeAndNearAnEntry() {
 		double[] a = ArcLayout.angles(3, 180, 20); // 160, 180, 200
 		assertEquals(1, ArcLayout.pick(0, 150, 100, a, 15));            // straight down, past the edge

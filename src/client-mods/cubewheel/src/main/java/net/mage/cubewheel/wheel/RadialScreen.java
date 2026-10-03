@@ -43,6 +43,8 @@ public final class RadialScreen extends Screen {
 	private static final int LIFT = 60;
 	/** Distance between neighbouring arc entries (one disc plus a gap). */
 	private static final int ARC_SPACING = 40;
+	/** The most of the circle an arc may cover. */
+	private static final double MAX_ARC_DEGREES = 300;
 	/** At most this many "more" dots past a slice. */
 	private static final int MAX_DOTS = 4;
 	/** Longest arc a ring is fanned into (more entries: open the ring). */
@@ -106,6 +108,8 @@ public final class RadialScreen extends Screen {
 	/** Where the open arc's entries sit, as last drawn. */
 	private double[] arcAngles = new double[0];
 	private double[] arcRadii = new double[0];
+	/** The open arc's widest gap between neighbours, in degrees (sets how far the pointer may stray). */
+	private double arcStep;
 	/** Each slice's arc entries this frame (null: none). */
 	private List<List<WheelNode>> arcLists = List.of();
 	/** Outer-tier spacing per slice as last drawn (shrunk where the screen edge is near). */
@@ -244,13 +248,13 @@ public final class RadialScreen extends Screen {
 		int onArc = -1;
 		if (arcOpen >= entries.size() || arcOpen >= 0 && arcAt(arcOpen) == null) arcOpen = -1;
 		if (arcOpen >= 0) {
-			layoutArc(cx, cy, dirs[arcOpen], arcAt(arcOpen).size());
+			layoutArc(cx, cy, dirs[arcOpen], arcAt(arcOpen));
 			onArc = ArcLayout.pick(mdx, mdy, renderedEdge, arcAngles, arcSlack());
 			if (onArc >= 0) hovered = arcOpen; // an open arc keeps the pointer wherever the ring's nearest slice is
 		}
 		if (onArc < 0) {
 			arcOpen = hovered >= 0 && arcAt(hovered) != null ? hovered : -1;
-			if (arcOpen >= 0) layoutArc(cx, cy, dirs[arcOpen], arcAt(arcOpen).size());
+			if (arcOpen >= 0) layoutArc(cx, cy, dirs[arcOpen], arcAt(arcOpen));
 		}
 		WheelNode hoveredNode = hovered < 0 ? null : entries.get(hovered);
 		boolean shift = isShiftDown();
@@ -526,14 +530,15 @@ public final class RadialScreen extends Screen {
 	private boolean underArc(double deg) {
 		if (arcOpen < 0 || arcAngles.length == 0) return false;
 		double centre = directions()[arcOpen];
-		double half = ArcLayout.step(renderedEdge + ARC_SPACING / 2.0, ARC_SPACING) * arcAngles.length / 2.0;
+		double first = Math.abs(arcAngles[0] - centre) % 360;
+		double half = Math.min(first, 360 - first) + arcStep / 2.0;
 		double d = Math.abs(deg - centre) % 360;
 		return Math.min(d, 360 - d) <= half;
 	}
 
 	/** How far (degrees) from an arc entry the pointer may stray and still be on it. */
 	private double arcSlack() {
-		return ArcLayout.step(renderedEdge + ARC_SPACING / 2.0, ARC_SPACING) * 0.75;
+		return arcStep * 0.75;
 	}
 
 	/** Small dots just past the ring hinting that a slice has more (outer tiers or an arc) when hovered. */
@@ -546,10 +551,36 @@ public final class RadialScreen extends Screen {
 		}
 	}
 
-	/** Places {@code count} arc entries around {@code centre}, pulled in where the screen edge is near. */
-	private void layoutArc(int cx, int cy, double centre, int count) {
+	/**
+	 * Places the arc's entries around {@code centre}, pulled in where the screen edge is near. Neighbours sit at
+	 * least {@link #ARC_SPACING} apart, and further where their labels run along the arc (above and below the
+	 * wheel) so labels never meet. Where an entry lands decides how its label runs, so the gaps are settled over a
+	 * few passes.
+	 */
+	private void layoutArc(int cx, int cy, double centre, List<WheelNode> arc) {
+		int count = arc.size();
 		double radius = renderedEdge + ARC_SPACING / 2.0;
-		arcAngles = ArcLayout.angles(count, centre, ArcLayout.step(radius, ARC_SPACING));
+		double base = ArcLayout.step(radius, ARC_SPACING);
+		arcAngles = ArcLayout.angles(count, centre, base);
+		int[] widths = new int[count];
+		for (int j = 0; j < count; j++) widths[j] = font.width(arc.get(j).label == null ? "" : arc.get(j).label);
+		double widest = base;
+		for (int pass = 0; pass < 3 && count > 1; pass++) {
+			double[] gaps = new double[count - 1];
+			double total = 0;
+			for (int k = 0; k < count - 1; k++) {
+				gaps[k] = Math.max(ARC_SPACING, LABEL_GAP
+						+ ArcLayout.extent(arcAngles[k], widths[k], font.lineHeight, OUTER_DISC, SIDEWAYS)
+						+ ArcLayout.extent(arcAngles[k + 1], widths[k + 1], font.lineHeight, OUTER_DISC, SIDEWAYS));
+				total += ArcLayout.step(radius, gaps[k]);
+			}
+			// A long arc may not wrap all the way round; past that it tightens (labels may then touch).
+			if (total > MAX_ARC_DEGREES) for (int k = 0; k < gaps.length; k++) gaps[k] *= MAX_ARC_DEGREES / total;
+			arcAngles = ArcLayout.angles(gaps, centre, radius);
+			widest = base;
+			for (double gap : gaps) widest = Math.max(widest, ArcLayout.step(radius, gap));
+		}
+		arcStep = widest;
 		arcRadii = new double[count];
 		for (int j = 0; j < count; j++) {
 			double room = RadialMath.reach(cx, cy, arcAngles[j], width, height, 2) - OUTER_DISC - font.lineHeight;

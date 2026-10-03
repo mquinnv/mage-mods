@@ -55,11 +55,9 @@ final class NearbyProbe {
 		for (Entity p : target.getPassengers()) seen.add(p);
 		Entity vehicle = target.getVehicle();
 		if (vehicle != null) seen.add(vehicle);
-		List<Entity> found = target.level().getEntities(target, box.inflate(CAPTURE_RANGE), e -> !(e instanceof Player));
-		for (Entity e : found) {
-			if (seen.size() >= MAX_ENTITIES) break;
-			seen.add(e);
-		}
+		// Every entity in the box is looked at for a name: a model can have more parts than the capture cap (the Mana
+		// Wolf has 32 bone item_displays and 2 clouds before its name tag, 2026-10-03), so the cap only limits capture.
+		seen.addAll(target.level().getEntities(target, box.inflate(CAPTURE_RANGE), e -> !(e instanceof Player)));
 		List<CaptureLog.Nearby> near = new ArrayList<>();
 		for (Entity e : seen) {
 			if (e == target || e instanceof Player) continue;
@@ -73,6 +71,8 @@ final class NearbyProbe {
 			String name = text != null ? NameResolver.firstLine(text) : custom != null ? NameResolver.firstLine(custom) : null;
 			String source = e.typeHolder().getRegisteredName() + " #" + e.getId();
 			if (name != null) candidates.add(new NameResolver.Candidate(rel, name, distSq, source));
+			// Capture keeps the named ones whatever the cap, so a capture always shows the tag that was used.
+			if (near.size() >= MAX_ENTITIES && name == null) continue;
 			List<Integer> passengers = new ArrayList<>();
 			for (Entity p : e.getPassengers()) passengers.add(p.getId());
 			Entity v = e.getVehicle();

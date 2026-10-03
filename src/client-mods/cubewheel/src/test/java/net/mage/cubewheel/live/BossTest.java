@@ -13,6 +13,27 @@ class BossTest {
 			+ "● Deal 50 damage for rewards…\n---------------------";
 	private static final long MIN = 60_000;
 
+	@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir;
+
+	/** 2026-10-03: the Mana Golem spawned at 15:35:04, the client restarted at 15:36, its kills went on after. */
+	@Test void aBossSurvivesAClientRestart() {
+		String spawn = "\n---------------------\nA BOSS SPAWNED\n\nBoss Mana Golem\nLocation: Wolfhaven Mines\n"
+				+ "● Deal 75 damage for rewards\n● Top 10 damage have a increased \nchance at legendary loot\n---------------------";
+		long t0 = 1_000_000L, min = 60_000L;
+		java.nio.file.Path file = dir.resolve("cubewheel-boss.json");
+		BossSlice before = new BossSlice();
+		before.spawned(BossParser.parse(spawn).orElseThrow(), t0);
+		assertTrue(before.save(file));
+		BossSlice after = new BossSlice();
+		after.load(file);
+		assertTrue(after.onChat("⺝ HumaneElm5707 was slain by Mana Golem [maces]", t0 + 6 * min));
+		SliceViews.View v = after.view(DefaultConfig.bossWarps(), 5 * min, t0 + 7 * min);
+		assertEquals("/warp managolem", v.command());
+		BossSlice none = new BossSlice();
+		none.load(dir.resolve("missing.json"));
+		assertEquals(BossSlice.NONE, none.view(DefaultConfig.bossWarps(), 5 * min, t0).label());
+	}
+
 	@Test void parsesRealAnnouncements() {
 		BossParser.Spawn g = BossParser.parse(GOLEM).orElseThrow();
 		assertEquals(new BossParser.Spawn("Mana Golem", "Wolfhaven Mines", false), g);

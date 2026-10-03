@@ -14,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 5;
+	public static final int CONFIG_VERSION = 6;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 
@@ -87,42 +87,31 @@ public final class DefaultConfig {
 	 * Version 3 layout: the most used entries at the top level (the first ones get the first fan positions,
 	 * slice 0 at the top), everything else under More. Every ring below the top holds at most 8 entries.
 	 */
-	/** One slice of several tiers: the first node on the ring, each next one an outer tier beyond the last. */
-	static WheelNode chain(WheelNode... tiers) {
-		for (int i = tiers.length - 1; i > 0; i--) tiers[i - 1].withOuter(tiers[i]);
-		return tiers[0];
-	}
-
 	public static List<WheelNode> wheel() {
 		List<WheelNode> w = new ArrayList<>();
+		// Every slice runs its own command on a click; its other entries fan out around it (an arc) while it is
+		// hovered, with dots marking that they are there. Shift picks the arc entry nearest the pointer.
 		// Player warps: crops and spawners are player Sushi's warps, the ones most people want.
-		// Two tiers on one slice: Crops on the ring, Spawners just outside it (point further out).
 		w.add(leaf("Sushi", "minecraft:wheat", "/warp crops")
-			.withOuter(leaf("Spawners", "minecraft:spawner", "/warp spawners")));
+			.withArc(leaf("Spawners", "minecraft:spawner", "/warp spawners")));
 		// Homes: click for the full homes ring; hover to fan the (cached) homes out in an arc.
 		w.add(dynamic("Homes", "minecraft:red_bed", "homes").shownAsArc());
-		// Travel: the teleporter menu on the ring, /back just outside it.
-		w.add(chain(
-			leaf("Teleporter", "minecraft:ender_pearl", "/teleporter"),
-			leaf("Back", "minecraft:arrow", "/back")));
+		w.add(leaf("Teleporter", "minecraft:ender_pearl", "/teleporter")
+			.withArc(leaf("Back", "minecraft:arrow", "/back")));
 		w.add(leaf("Jobs", "minecraft:iron_pickaxe", "/jobs"));
-		// Shops: the server shop on the ring, Kilton outside it, the auction house furthest out (the outermost
-		// tier has no outer edge, so the most used shop is the easiest to hit).
-		w.add(chain(
-			leaf("Shop", "minecraft:emerald", "/shop"),
+		// Shops: the server shop on a click (Liz's most used), Kilton and the auction house around it.
+		w.add(leaf("Shop", "minecraft:emerald", "/shop").withArc(
 			leaf("Kilton", "minecraft:skeleton_skull", "/kilton"),
 			leaf("Auction house", "minecraft:gold_block", "/ah")));
-		// Three tiers: the sell menu on the ring, sell hand outside it, sell all furthest out.
-		w.add(leaf("Sell", "minecraft:gold_ingot", "/sell")
-			.withOuter(leaf("Sell hand", "minecraft:gold_nugget", "/sell hand")
-				.withOuter(leaf("Sell all", "minecraft:gold_block", "/sell all"))));
+		w.add(leaf("Sell", "minecraft:gold_ingot", "/sell").withArc(
+			leaf("Sell hand", "minecraft:gold_nugget", "/sell hand"),
+			leaf("Sell all", "minecraft:gold_block", "/sell all")));
 		// Vaults: hover fans PV 1…N out in an arc (N read from the page buttons of any /pv page, else vaultCount),
 		// then the party vault and the full vault menu; click for the full ring.
 		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
 			leaf("Party vault", "minecraft:barrel", "/p vault"),
 			leaf("All vaults", "minecraft:chest", "/pv")).shownAsArc());
 		w.add(leaf("Fly", "minecraft:feather", "/fly"));
-		// Isles: the menu on the ring, the isle warps fanned out in an arc beyond it while it is hovered.
 		w.add(leaf("Isles", "minecraft:filled_map", "/isles").withArc(
 			leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven"),
 			leaf("Tangleroots", "minecraft:vine", "/warp tangleroots"),
@@ -130,13 +119,12 @@ public final class DefaultConfig {
 			leaf("Icehaven", "minecraft:packed_ice", "/warp icehaven"),
 			leaf("Morend", "minecraft:end_stone", "/warp morend"),
 			leaf("Burninglands", "minecraft:magma_block", "/warp burninglands")));
-		w.add(chain(
-			leaf("Party quests", "minecraft:writable_book", "/pquests"),
+		w.add(leaf("Party quests", "minecraft:writable_book", "/pquests").withArc(
 			leaf("Prestige", "minecraft:nether_star", "/prestige"),
 			leaf("Challenges", "minecraft:target", "/challenges")));
-		// Rewards: the daily reward (/cow) on the ring, crates (virtual keys) just outside it.
+		// Rewards: the daily reward (/cow) on a click, crates (virtual keys) beside it.
 		w.add(leaf("Daily reward", "minecraft:milk_bucket", "/cow")
-			.withOuter(leaf("Crates", "minecraft:tripwire_hook", "/crates")));
+			.withArc(leaf("Crates", "minecraft:tripwire_hook", "/crates")));
 		w.add(slice("Boss event", "minecraft:wither_skeleton_skull", "boss"));
 		// TPA: "Accept <name>" (/tpaccept) while a teleport request is pending; friends to /tpa in its arc.
 		w.add(slice("TPA", "minecraft:player_head", "tpa"));
