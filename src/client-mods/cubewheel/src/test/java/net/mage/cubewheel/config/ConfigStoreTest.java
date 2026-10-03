@@ -58,7 +58,7 @@ class ConfigStoreTest {
 		assertNull(s.reload());
 		assertTrue(Files.exists(f));
 		assertEquals(3, s.current().vaultCount);
-		assertEquals(14, s.current().wheel.size()); // top level incl. Homes, Sell, Isles and TPA
+		assertEquals(14, s.current().wheel.size()); // top level incl. Homes, Shops, Sell, Isles and TPA
 	}
 
 	@Test void localCountingDefaultsAndNormalisation() throws Exception {

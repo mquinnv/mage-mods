@@ -106,7 +106,12 @@ public final class DefaultConfig {
 			leaf("Teleporter", "minecraft:ender_pearl", "/teleporter"),
 			leaf("Back", "minecraft:arrow", "/back")));
 		w.add(leaf("Jobs", "minecraft:iron_pickaxe", "/jobs"));
-		w.add(leaf("Kilton", "minecraft:skeleton_skull", "/kilton"));
+		// Shops: the server shop on the ring, Kilton outside it, the auction house furthest out (the outermost
+		// tier has no outer edge, so the most used shop is the easiest to hit).
+		w.add(chain(
+			leaf("Shop", "minecraft:emerald", "/shop"),
+			leaf("Kilton", "minecraft:skeleton_skull", "/kilton"),
+			leaf("Auction house", "minecraft:gold_block", "/ah")));
 		// Three tiers: the sell menu on the ring, sell hand outside it, sell all furthest out.
 		w.add(leaf("Sell", "minecraft:gold_ingot", "/sell")
 			.withOuter(leaf("Sell hand", "minecraft:gold_nugget", "/sell hand")
