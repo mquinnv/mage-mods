@@ -125,7 +125,8 @@ class ConfigStoreTest {
 		for (String cmd : List.of("/sell", "/kilton", "/alchemist", "/enchanter", "/warp crops", "/warp spawners", "/warp wolfhaven", "/warp tangleroots", "/warp morend", "/warp boss", "/teleporter", "/back", "/jobs", "/pquests", "/prestige"))
 			assertTrue(all.contains(cmd), cmd);
 		assertTrue(WheelUpgrade.walk(c.wheel).stream().anyMatch(n -> "homes".equals(n.dynamic)));
-		assertTrue(all.containsAll(List.of("/pv 1", "/pv 2", "/p vault", "/pv", "/ec")));
+		assertTrue(WheelUpgrade.walk(c.wheel).stream().anyMatch(n -> "vaults".equals(n.dynamic))); // PV 1…N
+		assertTrue(all.containsAll(List.of("/p vault", "/pv", "/ec")));
 	}
 
 	@Test void refreshAndSidebarDefaults() throws Exception {

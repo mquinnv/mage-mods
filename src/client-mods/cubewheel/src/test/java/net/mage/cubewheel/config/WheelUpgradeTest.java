@@ -23,14 +23,16 @@ class WheelUpgradeTest {
 
 	@Test void newDefaultTopLevelOrder() {
 		List<WheelNode> w = DefaultConfig.wheel();
-		assertEquals(List.of("Sushi", "Homes", "Teleporter", "Jobs", "Shop", "Sell", "PV 1", "Fly",
+		assertEquals(List.of("Sushi", "Homes", "Teleporter", "Jobs", "Shop", "Sell", "Vaults", "Fly",
 				"Isles", "Party quests", "Daily reward", "Boss event", "TPA", "More"), labels(w));
 		assertEquals("/back", w.get(2).outer.command);
 		assertEquals(null, w.get(2).outer.outer);
 		assertEquals("/challenges", w.get(9).outer.outer.command);
-		assertEquals("/pv 2", w.get(6).outer.command);
-		assertEquals("/p vault", w.get(6).outer.outer.command);
-		assertEquals("/pv", w.get(6).outer.outer.outer.command);
+		assertEquals("vaults", w.get(6).dynamic);
+		assertTrue(w.get(6).asArc);
+		assertEquals(List.of("Party vault", "All vaults"), labels(w.get(6).children));
+		assertEquals(List.of("PV 1", "PV 2", "PV 3", "PV 4", "Party vault", "All vaults"),
+				labels(net.mage.cubewheel.wheel.WheelResolver.children(w.get(6), 4, List.of())));
 		assertEquals("/warp spawners", w.get(0).outer.command);
 		assertEquals("/sell hand", w.get(5).outer.command);
 		assertEquals("/sell all", w.get(5).outer.outer.command);

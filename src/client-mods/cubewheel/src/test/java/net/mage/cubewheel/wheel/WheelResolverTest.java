@@ -16,7 +16,7 @@ class WheelResolverTest {
 	@Test void vaultsExpandThenExtras() {
 		WheelNode v = WheelNode.dynamic("V", null, "vaults", WheelNode.leaf("EC", null, "/ec"));
 		assertEquals(List.of("/pv 1", "/pv 2", "/pv 3", "/ec"), WheelResolver.children(v, 3, List.of()).stream().map(n -> n.command).toList());
-		assertEquals("Vault 2", WheelResolver.children(v, 3, List.of()).get(1).label);
+		assertEquals("PV 2", WheelResolver.children(v, 3, List.of()).get(1).label);
 	}
 	@Test void zeroVaultsOnlyExtras() {
 		WheelNode v = WheelNode.dynamic("V", null, "vaults");

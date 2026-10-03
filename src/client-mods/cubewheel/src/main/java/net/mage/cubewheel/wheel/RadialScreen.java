@@ -152,12 +152,12 @@ public final class RadialScreen extends Screen {
 		return s == null ? 0 : s;
 	}
 
-	/** Default resolver: vault count from config, homes from the per-server cache (none if not wired). */
+	/** Default resolver: vault count as read from /pv (else config), homes from the per-server cache. */
 	public static List<WheelNode> defaultChildren(WheelNode node) {
 		CubeWheelConfig cfg = CubeWheelClient.config().current();
 		HomesCache homes = CubeWheelClient.homes();
 		List<String> names = homes == null ? List.of() : ServerGate.currentHost().map(homes::get).orElse(List.of());
-		return WheelResolver.children(node, cfg.vaultCount, names);
+		return WheelResolver.children(node, net.mage.cubewheel.live.LiveWatcher.vaultCount(cfg.vaultCount), names);
 	}
 
 	/** childrenProvider with failures contained: a broken provider yields an empty ring, not a crash. */

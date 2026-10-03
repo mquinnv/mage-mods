@@ -68,7 +68,7 @@ public final class HomesFetcher {
 					? WheelNode.leaf("Loading…", "minecraft:clock", null)
 					: WheelNode.dynamic("↻ Refresh", "minecraft:clock", REFRESH_SOURCE));
 		}
-		children.addAll(WheelResolver.children(ring, cfg.vaultCount, names));
+		children.addAll(WheelResolver.children(ring, net.mage.cubewheel.live.LiveWatcher.vaultCount(cfg.vaultCount), names));
 		return children;
 	}
 

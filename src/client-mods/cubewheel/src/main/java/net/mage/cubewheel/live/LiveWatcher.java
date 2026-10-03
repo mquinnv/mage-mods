@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.minecraft.client.Minecraft;
@@ -29,6 +30,8 @@ public final class LiveWatcher {
 	private static final BossSlice boss = new BossSlice();
 	private static final TpaSlice tpa = new TpaSlice();
 	private static long cowSentAt = Long.MIN_VALUE;
+	private static VaultPages vaults;
+	private static long pvSentAt = Long.MIN_VALUE;
 	private static boolean chatFailureLogged;
 	private static boolean menuFailureLogged;
 
@@ -37,6 +40,8 @@ public final class LiveWatcher {
 	public static void init(Path configDir) {
 		cow = new CowStore(configDir.resolve("cubewheel-cow.json"));
 		cow.load();
+		vaults = new VaultPages(configDir.resolve("cubewheel-vaults.json"));
+		vaults.load();
 		SliceViews.register((node, now) -> {
 			Minecraft mc = Minecraft.getInstance();
 			return SliceViews.fly(node, mc.player != null && mc.player.getAbilities().mayfly);
@@ -55,6 +60,12 @@ public final class LiveWatcher {
 			if (!node.isSlice() || !"tpa".equals(node.dynamic)) return null;
 			return tpa.view(now);
 		});
+	}
+
+	/** Your vault count as last read from a /pv page, else {@code fallback} (the configured vaultCount). */
+	public static int vaultCount(int fallback) {
+		Integer n = vaults == null ? null : vaults.count(player());
+		return n == null ? fallback : n;
 	}
 
 	static CowStore.Periods periods(CubeWheelConfig.DailyReward d) {
@@ -112,6 +123,7 @@ public final class LiveWatcher {
 			String c = command.trim().toLowerCase(Locale.ROOT);
 			if (c.startsWith("/")) c = c.substring(1);
 			if (c.equals("cow") || c.startsWith("cow ") || c.equals("cashcow")) cowSentAt = System.currentTimeMillis();
+			if (c.equals("pv") || c.startsWith("pv ")) pvSentAt = System.currentTimeMillis();
 		} catch (RuntimeException e) {
 			CubeWheelClient.LOG.error("[cubewheel] /cow note failed", e);
 		}
@@ -121,6 +133,16 @@ public final class LiveWatcher {
 	public static void onMenu(String title, List<ItemView> items, long now) {
 		try {
 			if (cow == null || items == null) return;
+			// A /pv page (its title is a glyph, so only "opened right after /pv" identifies it): read the page row.
+			if (vaults != null && now >= pvSentAt && now - pvSentAt <= COW_MENU_WINDOW_MS) {
+				String me = player();
+				OptionalInt pages = VaultPages.unlocked(items);
+				if (me != null && pages.isPresent() && vaults.set(me, pages.getAsInt())) {
+					vaults.save();
+					CubeWheelClient.LOG.info("[cubewheel] {} has {} vaults", me, pages.getAsInt());
+				}
+				return;
+			}
 			CubeWheelConfig cfg = CubeWheelClient.config().current();
 			if (!cfg.dailyReward.enabled) return;
 			boolean afterCow = now - cowSentAt <= COW_MENU_WINDOW_MS && now >= cowSentAt;

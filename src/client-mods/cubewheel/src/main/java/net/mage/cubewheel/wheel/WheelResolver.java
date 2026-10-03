@@ -36,7 +36,7 @@ public final class WheelResolver {
 			if ("vaults".equals(node.dynamic)) {
 				// Create leaf for each vault (1 to vaultCount)
 				for (int i = 1; i <= vaultCount; i++) {
-					result.add(WheelNode.leaf("Vault " + i, "minecraft:ender_chest", "/pv " + i));
+					result.add(WheelNode.leaf("PV " + i, "minecraft:ender_chest", "/pv " + i));
 				}
 			} else if ("homes".equals(node.dynamic)) {
 				// Create leaves for each home, sorted case-insensitive

@@ -116,12 +116,11 @@ public final class DefaultConfig {
 		w.add(leaf("Sell", "minecraft:gold_ingot", "/sell")
 			.withOuter(leaf("Sell hand", "minecraft:gold_nugget", "/sell hand")
 				.withOuter(leaf("Sell all", "minecraft:gold_block", "/sell all"))));
-		// Vaults as one slice: PV 1 on the ring, then PV 2, the party vault, and the full vault menu.
-		w.add(chain(
-			leaf("PV 1", "minecraft:ender_chest", "/pv 1"),
-			leaf("PV 2", "minecraft:ender_chest", "/pv 2"),
+		// Vaults: hover fans PV 1…N out in an arc (N read from the page buttons of any /pv page, else vaultCount),
+		// then the party vault and the full vault menu; click for the full ring.
+		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
 			leaf("Party vault", "minecraft:barrel", "/p vault"),
-			leaf("All vaults", "minecraft:chest", "/pv")));
+			leaf("All vaults", "minecraft:chest", "/pv")).shownAsArc());
 		w.add(leaf("Fly", "minecraft:feather", "/fly"));
 		// Isles: the menu on the ring, the isle warps fanned out in an arc beyond it while it is hovered.
 		w.add(leaf("Isles", "minecraft:filled_map", "/isles").withArc(
