@@ -152,6 +152,40 @@ public final class RadialMath {
 	 * @return {@code {dy, x0, x1}} per span, x1 exclusive; empty if {@code outer <= 0} or
 	 *         {@code inner >= outer}
 	 */
+	/**
+	 * As {@link #ringSpans} for the wedge of the band from direction {@code from} clockwise to {@code to} (degrees, 0 =
+	 * up; it may wrap past 0). Each span is {dy, x0, x1}: pixels x0 to x1 - 1 of row dy, by their centres.
+	 */
+	public static List<int[]> sectorSpans(int outer, int inner, double from, double to) {
+		double width = to - from;
+		if (width >= 360 || width <= -360) return ringSpans(outer, inner);
+		width = ((width % 360) + 360) % 360;
+		List<int[]> spans = new ArrayList<>();
+		if (outer <= 0 || inner >= outer || width == 0) return spans;
+		double o2 = outer * (double) outer, i2 = inner * (double) inner;
+		for (int dy = -outer; dy < outer; dy++) {
+			double yc = dy + 0.5;
+			int start = Integer.MIN_VALUE;
+			for (int x = -outer; x <= outer; x++) {
+				double xc = x + 0.5;
+				double r2 = xc * xc + yc * yc;
+				boolean in = r2 <= o2 && r2 >= i2;
+				if (in) {
+					double deg = Math.toDegrees(Math.atan2(xc, -yc));
+					double off = (((deg - from) % 360) + 360) % 360;
+					in = off <= width;
+				}
+				if (in && start == Integer.MIN_VALUE) start = x;
+				if (!in && start != Integer.MIN_VALUE) {
+					spans.add(new int[] { dy, start, x });
+					start = Integer.MIN_VALUE;
+				}
+			}
+			if (start != Integer.MIN_VALUE) spans.add(new int[] { dy, start, outer + 1 });
+		}
+		return spans;
+	}
+
 	public static List<int[]> ringSpans(int outer, int inner) {
 		List<int[]> spans = new ArrayList<>();
 		if (outer <= 0 || inner >= outer) return spans;

@@ -56,6 +56,8 @@ public final class RadialScreen extends Screen {
 	private static final int BACKDROP = 0x33000000;
 	/** Translucent charcoal band the slices sit on. */
 	private static final int RING = 0xC0141418;
+	/** The depth-2 band (where arcs fan out): lighter than the ring. */
+	private static final int BAND2 = 0x70303038;
 	/** Slightly lighter hub inside the dead-zone, behind the ring label. */
 	private static final int HUB = 0xB0202028;
 	/** Soft highlight behind the hovered slice (icon + label). */
@@ -269,6 +271,15 @@ public final class RadialScreen extends Screen {
 			hoveredArc = -1;
 		}
 		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + half, ri - half, RING);
+		// Depth 2: a lighter band just outside the ring, where arc entries sit, whenever any slice has an arc.
+		boolean anyArc = false;
+		for (int i = 0; i < entries.size(); i++) anyArc |= arcAt(i) != null;
+		if (anyArc) fillRing(g, cx, cy, ri + half + ARC_SPACING, ri + half, BAND2);
+		// The hovered slice lights up its whole wedge of the ring.
+		if (hovered >= 0 && hoveredTier == 0 && hoveredArc < 0) {
+			double w = sliceHalfWidth(dirs, hovered);
+			fillSector(g, cx, cy, ri + half, ri - half, dirs[hovered] - w, dirs[hovered] + w, HOVER);
+		}
 		fillRing(g, cx, cy, hub, 0, HUB);
 		for (int i = 0; i < entries.size(); i++) {
 			WheelNode node = entries.get(i);
@@ -276,7 +287,6 @@ public final class RadialScreen extends Screen {
 			int x = cx + (int) Math.round(o[0]);
 			int y = cy + (int) Math.round(o[1]);
 			boolean hot = i == hovered && hoveredTier == 0 && hoveredArc < 0;
-			if (hot) fillRing(g, x, y, HOVER_RADIUS, 0, HOVER);
 			// Icon and label are stacked as one block centred on the slice point.
 			int top = y - BLOCK_HEIGHT / 2;
 			ItemStack icon = Icons.stack(node.icon);
@@ -471,6 +481,33 @@ public final class RadialScreen extends Screen {
 	}
 
 	/** Fills a ring (or a disc when {@code inner} is 0) as one-unit-tall strips. */
+	/** Half the angle a slice owns: half the gap to its nearest neighbour (a lone entry: half a sub-ring step). */
+	private static double sliceHalfWidth(double[] dirs, int i) {
+		if (dirs.length <= 1) return SUB_RING_STEP / 2.0;
+		double best = 360;
+		for (int j = 0; j < dirs.length; j++) {
+			if (j == i) continue;
+			double d = Math.abs(dirs[i] - dirs[j]) % 360;
+			best = Math.min(best, Math.min(d, 360 - d));
+		}
+		return best / 2.0;
+	}
+
+	/** Recent wedge shapes, so a steady hover costs nothing per frame (a wedge is computed pixel by pixel). */
+	private final java.util.Map<String, List<int[]>> sectors = new java.util.LinkedHashMap<>(16, 0.75f, true) {
+		@Override protected boolean removeEldestEntry(java.util.Map.Entry<String, List<int[]>> e) {
+			return size() > 16;
+		}
+	};
+
+	/** Fills the wedge of the band between {@code inner} and {@code outer} from {@code from} to {@code to} degrees. */
+	private void fillSector(GuiGraphicsExtractor g, int cx, int cy, int outer, int inner, double from, double to, int argb) {
+		long f = Math.round(from * 4), t = Math.round(to * 4); // quarter degrees: plenty for a highlight
+		List<int[]> spans = sectors.computeIfAbsent(outer + ":" + inner + ":" + f + ":" + t,
+				k -> RadialMath.sectorSpans(outer, inner, f / 4.0, t / 4.0));
+		for (int[] s : spans) g.fill(cx + s[1], cy + s[0], cx + s[2], cy + s[0] + 1, argb);
+	}
+
 	private static void fillRing(GuiGraphicsExtractor g, int cx, int cy, int outer, int inner, int argb) {
 		for (int[] s : RadialMath.ringSpans(outer, inner)) {
 			g.fill(cx + s[1], cy + s[0], cx + s[2], cy + s[0] + 1, argb);
@@ -574,6 +611,11 @@ public final class RadialScreen extends Screen {
 						+ ArcLayout.extent(arcAngles[k + 1], widths[k + 1], font.lineHeight, OUTER_DISC, SIDEWAYS));
 				total += ArcLayout.step(radius, gaps[k]);
 			}
+			// Even spacing reads as one arc: every gap takes the widest one's size.
+			double even = 0;
+			for (double gap : gaps) even = Math.max(even, gap);
+			java.util.Arrays.fill(gaps, even);
+			total = gaps.length * ArcLayout.step(radius, even);
 			// A long arc may not wrap all the way round; past that it tightens (labels may then touch).
 			if (total > MAX_ARC_DEGREES) for (int k = 0; k < gaps.length; k++) gaps[k] *= MAX_ARC_DEGREES / total;
 			arcAngles = ArcLayout.angles(gaps, centre, radius);
@@ -589,13 +631,20 @@ public final class RadialScreen extends Screen {
 	}
 
 	private void drawArc(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> arc) {
+		int inner = (int) Math.round(renderedEdge);
+		// The open arc's span of the depth-2 band is darkened so its entries read as one group.
+		if (arcAngles.length > 0) {
+			double first = arcAngles[0] - arcStep / 2.0, span = arcStep * arcAngles.length;
+			fillSector(g, cx, cy, inner + ARC_SPACING, inner, first, first + span, RING);
+		}
 		for (int j = 0; j < arc.size() && j < arcAngles.length; j++) {
 			WheelNode a = arc.get(j);
 			double[] o = RadialMath.offset(arcAngles[j], arcRadii[j]);
 			int x = cx + (int) Math.round(o[0]);
 			int y = cy + (int) Math.round(o[1]);
 			boolean hot = j == hoveredArc;
-			fillRing(g, x, y, OUTER_DISC, 0, hot ? HOVER : RING);
+			// The hovered entry lights up its whole wedge of the band.
+			if (hot) fillSector(g, cx, cy, inner + ARC_SPACING, inner, arcAngles[j] - arcStep / 2.0, arcAngles[j] + arcStep / 2.0, HOVER);
 			ItemStack icon = Icons.stack(a.icon);
 			if (!icon.isEmpty()) g.item(icon, x - 8, y - 8);
 			radialLabel(g, a.label == null ? "" : a.label, x, y, arcAngles[j], hot ? WHITE : GREY);
