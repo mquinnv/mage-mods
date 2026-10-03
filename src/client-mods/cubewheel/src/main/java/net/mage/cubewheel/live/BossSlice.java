@@ -115,6 +115,15 @@ public final class BossSlice {
 	}
 
 	/**
+	 * The command for a spawn: the rules are tried against "boss · location", so a rule naming the boss (its own
+	 * warp, e.g. "cursed witch") wins over its world's when it comes first.
+	 */
+	public static String warpFor(BossParser.Spawn spawn, Map<String, String> warps) {
+		if (spawn == null) return null;
+		return warpFor((spawn.boss() == null ? "" : spawn.boss()) + " · " + (spawn.location() == null ? "" : spawn.location()), warps);
+	}
+
+	/**
 	 * The slice right now: the spawn until {@code maxAgeMs} after the last sign of life (its spawn or a kill it made),
 	 * else the placeholder. ManaCube announces no deaths, so this is a best guess; bosses usually fall in minutes.
 	 */
@@ -123,7 +132,7 @@ public final class BossSlice {
 			return new SliceViews.View(NONE, SliceViews.DIM, null, true);
 		}
 		String label = latest.boss() + " · " + LiveFormat.compact(now - at);
-		String cmd = warpFor(latest.location(), warps);
+		String cmd = warpFor(latest, warps);
 		if (cmd == null) return new SliceViews.View(label + " (no warp)", SliceViews.GOLD, null, true);
 		return new SliceViews.View(label, SliceViews.GOLD, cmd, false);
 	}

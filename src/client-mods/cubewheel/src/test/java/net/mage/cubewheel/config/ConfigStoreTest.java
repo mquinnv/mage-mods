@@ -46,7 +46,19 @@ class ConfigStoreTest {
 		WheelNode shop = s.current().wheel.get(0);
 		assertNull(shop.outer);
 		assertEquals(List.of("/kilton", "/ah"), shop.arc.stream().map(n -> n.command).toList());
-		assertTrue(Files.readString(f).replaceAll("\\s", "").contains("\"configVersion\":6"));
+		assertTrue(Files.readString(f).replaceAll("\\s", "").contains("\"configVersion\":" + DefaultConfig.CONFIG_VERSION));
+	}
+
+	@Test void aVersion6FileGainsNewBossRulesAheadOfItsOwn() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, """
+		  {"configVersion": 6, "events": {"bossWarps": {"(?i)morend": "/warp morend", "(?i)my spot": "/home boss"}}}""");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		List<String> keys = new ArrayList<>(s.current().events.bossWarps.keySet());
+		assertEquals("(?i)cursed witch", keys.get(0));
+		assertTrue(keys.indexOf("(?i)cursed witch") < keys.indexOf("(?i)morend"));
+		assertEquals("/home boss", s.current().events.bossWarps.get("(?i)my spot"));
 	}
 
 	@Test void arcEntriesKeepOnlyPlainCommands() throws Exception {

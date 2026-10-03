@@ -133,6 +133,15 @@ public final class ConfigStore {
 		if (c.configVersion < 6 && c.wheel != null && WheelUpgrade.chainsToArcs(c.wheel)) {
 			notes.add("wheel: entries beyond a slice now fan out around it (arcs) instead of sticking out");
 		}
+		if (c.configVersion < 7 && c.events != null && c.events.bossWarps != null) {
+			// The rule new in version 7 (the Cursed Witch's own warp) goes first, ahead of the world rules; rules you
+			// removed on purpose stay removed.
+			Map<String, String> merged = new LinkedHashMap<>();
+			String witch = "(?i)cursed witch";
+			if (!c.events.bossWarps.containsKey(witch)) merged.put(witch, DefaultConfig.bossWarps().get(witch));
+			merged.putAll(c.events.bossWarps);
+			c.events.bossWarps = merged;
+		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;
 	}

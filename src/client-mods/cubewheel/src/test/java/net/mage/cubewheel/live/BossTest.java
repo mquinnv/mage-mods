@@ -53,6 +53,14 @@ class BossTest {
 		assertTrue(BossParser.parse(null).isEmpty());
 	}
 
+	/** 2026-10-03 16:15: "A MINI BOSS SPAWNED / Boss Cursed Witch / Location: Morend" has its own warp. */
+	@Test void aBossWithItsOwnWarpGoesThereNotToItsWorld() {
+		Map<String, String> w = DefaultConfig.bossWarps();
+		assertEquals("/warp cursedwitch", BossSlice.warpFor(new BossParser.Spawn("Cursed Witch", "Morend", true), w));
+		assertEquals("/warp morend", BossSlice.warpFor(new BossParser.Spawn("Void Beholder", "Morend", false), w));
+		assertEquals("/warp managolem", BossSlice.warpFor(new BossParser.Spawn("Mana Golem", "Wolfhaven Mines", false), w));
+	}
+
 	@Test void defaultWarpsForEachLocation() {
 		Map<String, String> w = DefaultConfig.bossWarps();
 		assertEquals("/warp boss", BossSlice.warpFor("Boss Arena", w));
@@ -65,7 +73,8 @@ class BossTest {
 		assertEquals("/warp morend", BossSlice.warpFor("Morend", w));
 		assertEquals("/warp burninglands", BossSlice.warpFor("Burning Lands", w));
 		assertNull(BossSlice.warpFor("Somewhere", w));
-		assertNull(BossSlice.warpFor(null, w));
+		assertNull(BossSlice.warpFor((String) null, w));
+		assertNull(BossSlice.warpFor((BossParser.Spawn) null, w));
 	}
 
 	@Test void sliceShowsRecentSpawnAndSendsItsWarp() {

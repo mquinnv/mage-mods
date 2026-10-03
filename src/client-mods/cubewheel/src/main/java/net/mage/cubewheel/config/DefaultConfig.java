@@ -14,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 6;
+	public static final int CONFIG_VERSION = 7;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 
@@ -70,7 +70,10 @@ public final class DefaultConfig {
 	/** Boss spawn "Location:" regex -> warp. Locations seen: "Boss Arena", "Wolfhaven Mines", "Sandara Canyon", "Morend". */
 	public static Map<String, String> bossWarps() {
 		Map<String, String> m = new LinkedHashMap<>();
-		// A boss's own warp first (the first match wins); confirmed by Michael 2026-10-02.
+		// A boss's own warp first (the first match wins; rules are tried against "boss · location").
+		// The Cursed Witch (a mini boss "at Morend") has its own warp, per Michael 2026-10-03.
+		m.put("(?i)cursed witch", "/warp cursedwitch");
+		// Confirmed by Michael 2026-10-02.
 		m.put("(?i)wolfhaven mines", "/warp managolem");
 		m.put("(?i)tangleroots? volcano", "/warp volcanogolem");
 		m.put("(?i)boss arena", "/warp boss");

@@ -144,7 +144,7 @@ class WheelUpgradeTest {
 	@Test void bossWarpsAndDailyRewardDefaultsAndNormalisation() throws Exception {
 		CubeWheelConfig d = DefaultConfig.create();
 		assertEquals("/warp boss", d.events.bossWarps.get("(?i)boss arena"));
-		assertEquals(9, d.events.bossWarps.size());
+		assertEquals(10, d.events.bossWarps.size());
 		assertEquals(5, d.events.bossMinutes);
 		assertTrue(d.dailyReward.enabled);
 		assertEquals(24, d.dailyReward.dailyHours);
@@ -154,7 +154,8 @@ class WheelUpgradeTest {
 		   "dailyReward": {"dailyHours": 0, "weeklyDays": 99, "menuTitlePattern": "(["}}""");
 		ConfigStore s = new ConfigStore(f);
 		assertNull(s.reload());
-		assertEquals(Map.of("(?i)mine", "/warp mines"), s.current().events.bossWarps);
+		// Only the rule new in version 7 is added; the world rules this file left out stay out.
+		assertEquals(Map.of("(?i)cursed witch", "/warp cursedwitch", "(?i)mine", "/warp mines"), s.current().events.bossWarps);
 		assertEquals(1, s.current().events.bossMinutes);
 		assertEquals(1, s.current().dailyReward.dailyHours);
 		assertEquals(60, s.current().dailyReward.weeklyDays);
