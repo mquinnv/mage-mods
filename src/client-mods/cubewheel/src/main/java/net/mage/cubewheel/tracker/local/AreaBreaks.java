@@ -89,6 +89,7 @@ public final class AreaBreaks {
 		}
 	}
 
+	private static final Pattern FORMATTING = Pattern.compile("§.");
 	private static final Pattern WORN_OFF = Pattern.compile(
 			"(?i)\\b(tree feller|super breaker|giga drill breaker|green terra)\\b[^a-z]*\\s+has\\s+worn\\s+off");
 
@@ -247,7 +248,7 @@ public final class AreaBreaks {
 	/** The ability a "... has worn off" line names: Tree Feller gives true, others false; else empty. */
 	public static Optional<Boolean> wornOff(String text) {
 		if (text == null || text.length() > 256) return Optional.empty();
-		Matcher m = WORN_OFF.matcher(text.replaceAll("§.", ""));
+		Matcher m = WORN_OFF.matcher(FORMATTING.matcher(text).replaceAll(""));
 		if (!m.find()) return Optional.empty();
 		return Optional.of(m.group(1).equalsIgnoreCase("tree feller"));
 	}

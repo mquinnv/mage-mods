@@ -13,6 +13,8 @@ import java.util.regex.Pattern;
  */
 public final class QuestCompleted {
 	private static final Pattern FORMATTING = Pattern.compile("§.");
+	private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+	private static final Pattern TRAILING_PUNCT = Pattern.compile("[\\s!.]+$");
 	/** Player chat on ManaCube: "§r" then "[Rank] Name: " (as {@link FishCatchParser}). */
 	private static final Pattern PLAYER_CHAT = Pattern.compile("^§r[^:]{0,64}:\\s");
 	/** Resource-pack glyphs ("㘓", private-use icons): anything but Latin letters, digits, spaces and ASCII punctuation. */
@@ -48,11 +50,11 @@ public final class QuestCompleted {
 	/** § codes and glyphs removed, spaces collapsed, trimmed. */
 	private static String clean(String s) {
 		String out = FORMATTING.matcher(s).replaceAll("");
-		return GLYPHS.matcher(out).replaceAll("").replaceAll("\\s+", " ").trim();
+		return WHITESPACE.matcher(GLYPHS.matcher(out).replaceAll("")).replaceAll(" ").trim();
 	}
 
 	/** A quest name as a comparable key: cleaned, lower case, without trailing "!"/".". */
 	private static String key(String name) {
-		return clean(name).replaceAll("[\\s!.]+$", "").toLowerCase(Locale.ROOT);
+		return TRAILING_PUNCT.matcher(clean(name)).replaceAll("").toLowerCase(Locale.ROOT);
 	}
 }

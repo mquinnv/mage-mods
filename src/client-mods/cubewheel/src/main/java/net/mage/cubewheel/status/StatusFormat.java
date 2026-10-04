@@ -1,6 +1,7 @@
 package net.mage.cubewheel.status;
 
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /** Text and colours for the Status panel. Pure: no Minecraft/Fabric imports. */
 public final class StatusFormat {
@@ -10,6 +11,9 @@ public final class StatusFormat {
 	public static final int WORN_LOW = 0xFFFFFF55;
 	/** Under 10% left. */
 	public static final int WORN_OUT = 0xFFFF5555;
+
+	/** Separators in a biome id's path. */
+	private static final Pattern BIOME_SEPARATOR = Pattern.compile("[_/]");
 
 	private StatusFormat() {}
 
@@ -36,7 +40,7 @@ public final class StatusFormat {
 		if (id == null || id.isBlank()) return "";
 		String path = id.substring(id.indexOf(':') + 1);
 		StringBuilder out = new StringBuilder();
-		for (String w : path.split("[_/]")) {
+		for (String w : BIOME_SEPARATOR.split(path)) {
 			if (w.isEmpty()) continue;
 			if (out.length() > 0) out.append(' ');
 			out.append(Character.toUpperCase(w.charAt(0))).append(w.substring(1));

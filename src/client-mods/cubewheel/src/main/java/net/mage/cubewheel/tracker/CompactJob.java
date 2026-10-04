@@ -16,6 +16,8 @@ final class CompactJob {
 	private static final Pattern IN_WORLD = Pattern.compile("(?i)\\s+(?:in|at|from)\\s+\\S.*$");
 	private static final Pattern WHILE = Pattern.compile("(?i)\\s+while\\s+\\w+.*$");
 	private static final Pattern PRIVATE_USE = Pattern.compile("[\\uE000-\\uF8FF]");
+	private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+	private static final Pattern NON_ALNUM = Pattern.compile("[^a-z0-9]");
 
 	/** Short world tags by the start of the world key; "✦" for "special worlds" objectives. */
 	private static final java.util.List<String[]> WORLD_TAGS = java.util.List.of(
@@ -58,7 +60,7 @@ final class CompactJob {
 
 	/** Private-use glyphs (server icons) dropped, spaces collapsed. */
 	static String clean(String s) {
-		return PRIVATE_USE.matcher(s == null ? "" : s).replaceAll(" ").replaceAll("\\s+", " ").trim();
+		return WHITESPACE.matcher(PRIVATE_USE.matcher(s == null ? "" : s).replaceAll(" ")).replaceAll(" ").trim();
 	}
 
 	/** {@code s} cut to {@code max} characters, ending in "…" when cut. */
@@ -112,7 +114,7 @@ final class CompactJob {
 	}
 
 	private static String norm(String s) {
-		String n = s.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+		String n = NON_ALNUM.matcher(s.toLowerCase(Locale.ROOT)).replaceAll("");
 		return n.endsWith("s") ? n.substring(0, n.length() - 1) : n;
 	}
 }

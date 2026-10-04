@@ -77,6 +77,15 @@ public final class TrackerStore {
 	private List<String> activeTokens;
 	private Map<String, CounterRule> active = Map.of();
 	private final Map<String, Optional<CounterRule>> displayRules = new HashMap<>();
+	/**
+	 * {@link WorldScope#of} per entry id, for the HUD panels that ask every frame: reused while the entry's name, its
+	 * stored objective (by identity: a new read stores a new one) and the world names are the same.
+	 */
+	private record ScopeEntry(String name, ObjectiveInfo info, WorldScope.Scope scope) {}
+
+	private final Map<String, ScopeEntry> scopes = new HashMap<>();
+	/** The world names {@link #scopes} were worked out for. */
+	private List<String> scopeWorlds = List.of();
 
 	public TrackerStore(Path file) {
 		this.file = file;
@@ -190,6 +199,23 @@ public final class TrackerStore {
 
 	public Optional<ObjectiveInfo> objective(String id) {
 		return Optional.ofNullable(objectives.get(id));
+	}
+
+	/**
+	 * {@link WorldScope#of}({@code t}'s name, its stored objective, {@code worldNames}), cached per entry until its name
+	 * or objective or the world names change.
+	 */
+	public WorldScope.Scope scope(Trackable t, Collection<String> worldNames) {
+		if (!scopeWorlds.equals(worldNames == null ? List.of() : worldNames)) {
+			scopes.clear();
+			scopeWorlds = worldNames == null ? List.of() : Collections.unmodifiableList(new ArrayList<>(worldNames));
+		}
+		ObjectiveInfo info = objectives.get(t.id());
+		ScopeEntry e = scopes.get(t.id());
+		if (e != null && e.info() == info && Objects.equals(e.name(), t.name())) return e.scope();
+		WorldScope.Scope s = WorldScope.of(t.name(), info, worldNames);
+		scopes.put(t.id(), new ScopeEntry(t.name(), info, s));
+		return s;
 	}
 
 	/**
@@ -442,7 +468,7 @@ public final class TrackerStore {
 			}
 			HudSection.Kind kind = HudSection.Kind.ANYWHERE;
 			if (byWorld) {
-				WorldScope.Relevance rel = WorldScope.relevance(WorldScope.of(t.name(), objectives.get(t.id()), worldNames), at);
+				WorldScope.Relevance rel = WorldScope.relevance(scope(t, worldNames), at);
 				if (rel == WorldScope.Relevance.OTHER && mode == WorldScope.Mode.HIDE) continue;
 				if (rel == WorldScope.Relevance.CURRENT) kind = HudSection.Kind.THIS_WORLD;
 				else if (rel == WorldScope.Relevance.OTHER) kind = HudSection.Kind.OTHER_WORLDS;
@@ -471,6 +497,7 @@ public final class TrackerStore {
 		objectives.keySet().retainAll(items.keySet());
 		estimates.keySet().removeIf(k -> !items.containsKey(baseId(k)));
 		hidden.retainAll(items.keySet());
+		scopes.keySet().retainAll(items.keySet());
 		rulesDirty = true;
 		return before - items.size();
 	}
@@ -482,6 +509,7 @@ public final class TrackerStore {
 		objectives.keySet().retainAll(items.keySet());
 		estimates.keySet().removeIf(k -> !items.containsKey(baseId(k)));
 		hidden.retainAll(items.keySet());
+		scopes.keySet().retainAll(items.keySet());
 		rulesDirty = true;
 		return before - items.size();
 	}
@@ -534,6 +562,7 @@ public final class TrackerStore {
 		objectives = newObjectives;
 		estimates = newEstimates;
 		accuracy.clear();
+		scopes.clear();
 		rulesDirty = true;
 	}
 

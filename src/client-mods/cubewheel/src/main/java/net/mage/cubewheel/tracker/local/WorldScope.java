@@ -52,20 +52,35 @@ public final class WorldScope {
 		}
 	}
 
+	/** The world keys of the last {@code worldNames} seen: the config's list rarely changes, so they are worked out once. */
+	private record Wanted(List<String> names, Set<String> keys) {}
+
+	private static volatile Wanted lastWanted = new Wanted(List.of(), Set.of());
+
 	private WorldScope() {}
+
+	/** The keys ({@link WorldResolver#key}) of {@code worldNames}, blanks left out; cached for the last list asked about. */
+	static Set<String> wantedKeys(Collection<String> worldNames) {
+		if (worldNames == null || worldNames.isEmpty()) return Set.of();
+		Wanted w = lastWanted;
+		if (worldNames instanceof List<?> && w.names().equals(worldNames)) return w.keys();
+		Set<String> keys = new LinkedHashSet<>();
+		for (String n : worldNames) {
+			String k = WorldResolver.key(n);
+			if (!k.isEmpty()) keys.add(k);
+		}
+		Set<String> frozen = java.util.Collections.unmodifiableSet(keys);
+		lastWanted = new Wanted(java.util.Collections.unmodifiableList(new ArrayList<>(worldNames)), frozen);
+		return frozen;
+	}
 
 	/** The configured {@code worldNames} that {@code name} or {@code info}'s objective lines mention, as one or two words. */
 	public static Scope of(String name, ObjectiveInfo info, Collection<String> worldNames) {
 		List<String> texts = new ArrayList<>();
 		if (name != null) texts.add(name);
 		if (info != null) for (ObjectiveInfo.Sub sub : info.subs()) if (sub.text() != null) texts.add(sub.text());
-		Set<String> wanted = new LinkedHashSet<>();
-		if (worldNames != null) {
-			for (String w : worldNames) {
-				String k = WorldResolver.key(w);
-				if (!k.isEmpty()) wanted.add(k);
-			}
-		}
+		Set<String> wanted = wantedKeys(worldNames);
+		if (wanted.isEmpty() && (info == null || !info.special())) return Scope.NONE; // nothing to look for
 		Set<String> found = new LinkedHashSet<>();
 		for (String text : texts) {
 			String[] words = SPLIT.split(text.toLowerCase(Locale.ROOT));

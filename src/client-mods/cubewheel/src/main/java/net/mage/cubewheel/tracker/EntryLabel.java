@@ -3,6 +3,7 @@ package net.mage.cubewheel.tracker;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 import net.mage.cubewheel.tracker.local.ObjectiveInfo;
 
 /**
@@ -12,8 +13,9 @@ import net.mage.cubewheel.tracker.local.ObjectiveInfo;
  */
 public record EntryLabel(String title, List<String> details) {
 	/** In-line counters ("16/64 ") and trailing bracketed progress ("[Lvl 1902/2,500]"). */
-	private static final String COUNTER = "\\s*\\d[\\d,.]*\\s*/\\s*\\d[\\d,.]*\\s*";
-	private static final String BRACKETS = "\\s*\\[[^\\]]*]\\s*$";
+	private static final Pattern COUNTER = Pattern.compile("\\s*\\d[\\d,.]*\\s*/\\s*\\d[\\d,.]*\\s*");
+	private static final Pattern BRACKETS = Pattern.compile("\\s*\\[[^\\]]*]\\s*$");
+	private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
 	public static EntryLabel of(String name, ObjectiveInfo info) {
 		String title = name == null ? "" : name;
@@ -34,10 +36,12 @@ public record EntryLabel(String title, List<String> details) {
 
 	private static String clean(String text) {
 		if (text == null) return "";
-		return text.replaceAll(BRACKETS, "").replaceAll(COUNTER, " ").replaceAll("\\s+", " ").trim();
+		String s = BRACKETS.matcher(text).replaceAll("");
+		s = COUNTER.matcher(s).replaceAll(" ");
+		return WHITESPACE.matcher(s).replaceAll(" ").trim();
 	}
 
 	private static String normalise(String s) {
-		return s.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+		return WHITESPACE.matcher(s.toLowerCase(Locale.ROOT)).replaceAll(" ");
 	}
 }

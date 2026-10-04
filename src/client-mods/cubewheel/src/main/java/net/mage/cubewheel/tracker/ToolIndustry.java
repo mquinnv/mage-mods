@@ -14,6 +14,7 @@ public final class ToolIndustry {
 	/** Names of magic weapons ManaCube builds on tool items (the Phoenix Staff is a netherite hoe). */
 	private static final java.util.regex.Pattern WEAPON_NAME =
 			java.util.regex.Pattern.compile("(?i)\\b(staff|wand|scepter|sceptre|blaster)\\b");
+	private static final java.util.regex.Pattern FORMATTING = java.util.regex.Pattern.compile("§.");
 
 	/**
 	 * As {@link #of(String)}, but a tool whose display name says it is a magic weapon ("Phoenix Staff", "Frost
@@ -22,7 +23,7 @@ public final class ToolIndustry {
 	public static String of(String itemId, String name) {
 		String industry = of(itemId);
 		if (industry == null || name == null) return industry;
-		return WEAPON_NAME.matcher(name.replaceAll("§.", "")).find() ? "Hunting" : industry;
+		return WEAPON_NAME.matcher(FORMATTING.matcher(name).replaceAll("")).find() ? "Hunting" : industry;
 	}
 
 	public static String of(String itemId) {

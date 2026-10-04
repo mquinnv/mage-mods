@@ -41,7 +41,7 @@ public final class McmmoParser {
 		/** "SUPER BREAKER", "super  breaker", "Super Breaker" -> SUPER_BREAKER; else empty. */
 		public static Optional<Ability> byName(String name) {
 			if (name == null) return Optional.empty();
-			String n = name.replaceAll("[^A-Za-z]+", " ").trim().toLowerCase(Locale.ROOT);
+			String n = NON_LETTERS.matcher(name).replaceAll(" ").trim().toLowerCase(Locale.ROOT);
 			for (Ability a : values()) {
 				if (a.label.toLowerCase(Locale.ROOT).equals(n)) return Optional.of(a);
 			}
@@ -64,6 +64,8 @@ public final class McmmoParser {
 	public record Readied(Tool tool) implements Message {}
 
 	private static final Pattern FORMATTING = Pattern.compile("§.");
+	private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+	private static final Pattern NON_LETTERS = Pattern.compile("[^A-Za-z]+");
 	/** Player chat on ManaCube: "§r" then "[Rank] Name: ". */
 	private static final Pattern PLAYER_CHAT = Pattern.compile("^§r[^:]{0,64}:\\s");
 	/** Optional "MINING » " / "EXCAVATION » " skill prefix. */
@@ -84,7 +86,7 @@ public final class McmmoParser {
 	/** Parses one message (legacy § codes allowed); empty if it is not one of the four. */
 	public static Optional<Message> parse(String raw) {
 		if (raw == null || raw.isEmpty() || raw.length() > 256 || PLAYER_CHAT.matcher(raw).find()) return Optional.empty();
-		String line = FORMATTING.matcher(raw).replaceAll("").replaceAll("\\s+", " ").trim();
+		String line = WHITESPACE.matcher(FORMATTING.matcher(raw).replaceAll("")).replaceAll(" ").trim();
 		if (line.isEmpty()) return Optional.empty();
 		Matcher m = TOO_TIRED.matcher(line);
 		if (m.matches()) return Optional.of(new TooTired(Integer.parseInt(m.group(1))));

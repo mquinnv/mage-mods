@@ -17,6 +17,7 @@ public final class FishCatchParser {
 	public record Catch(String species, String rarity, double sizeCm) {}
 
 	private static final Pattern FORMATTING = Pattern.compile("§.");
+	private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 	/** Player chat on ManaCube: "§r" then "[Rank] Name: " (as {@code McmmoParser}). */
 	private static final Pattern PLAYER_CHAT = Pattern.compile("^§r[^:]{0,64}:\\s");
 	private static final Pattern CATCH = Pattern.compile(
@@ -29,7 +30,7 @@ public final class FishCatchParser {
 	/** The catch a chat message announces (legacy § codes and extra spaces allowed); empty otherwise. */
 	public static Optional<Catch> parse(String raw) {
 		if (raw == null || raw.isEmpty() || raw.length() > 256 || PLAYER_CHAT.matcher(raw).find()) return Optional.empty();
-		String line = FORMATTING.matcher(raw).replaceAll("").replaceAll("\\s+", " ").trim();
+		String line = WHITESPACE.matcher(FORMATTING.matcher(raw).replaceAll("")).replaceAll(" ").trim();
 		Matcher m = CATCH.matcher(line);
 		if (!m.matches()) return Optional.empty();
 		double size;

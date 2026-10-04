@@ -116,6 +116,18 @@ public final class JobsPanelModel {
 	public static Model build(List<TrackerRow> rows, Predicate<String> hidden, Function<String, ObjectiveInfo> objectives,
 			Function<Trackable, WorldScope.Relevance> relevance, java.util.Collection<String> worldNames, long now,
 			Function<String, Activity> activity) {
+		return build(rows, hidden, objectives, relevance, worldNames, now, activity, null);
+	}
+
+	/**
+	 * As above; {@code scopes} gives an entry's {@link WorldScope.Scope} for its world tag (e.g. the store's cached
+	 * {@link TrackerStore#scope}); null works it out with {@link WorldScope#of}.
+	 */
+	public static Model build(List<TrackerRow> rows, Predicate<String> hidden, Function<String, ObjectiveInfo> objectives,
+			Function<Trackable, WorldScope.Relevance> relevance, java.util.Collection<String> worldNames, long now,
+			Function<String, Activity> activity, Function<Trackable, WorldScope.Scope> scopes) {
+		Function<Trackable, WorldScope.Scope> scopeOf = scopes != null ? scopes
+				: t -> WorldScope.of(t.name(), objectives == null ? null : objectives.apply(t.id()), worldNames);
 		String crate = null;
 		Map<String, List<Item>> groups = new LinkedHashMap<>();
 		for (TrackerRow r : rows) {
@@ -148,8 +160,7 @@ public final class JobsPanelModel {
 			lines.add(new Line("", INDUSTRY_MARK + industry, "", Tone.INDUSTRY));
 			for (Item it : items) {
 				// Rows run Beginner → Experienced → Heavy, so the left column is free for the world restriction.
-				String tag = CompactJob.worldTag(WorldScope.of(it.row().item().name(),
-						objectives == null ? null : objectives.apply(it.row().item().id()), worldNames));
+				String tag = CompactJob.worldTag(scopeOf.apply(it.row().item()));
 				ObjectiveInfo obj = objectives == null ? null : objectives.apply(it.row().item().id());
 				Rarity rarity = obj == null || obj.subs() == null ? null
 						: obj.subs().stream().map(sub -> Rarity.inText(sub.text())).flatMap(java.util.Optional::stream)

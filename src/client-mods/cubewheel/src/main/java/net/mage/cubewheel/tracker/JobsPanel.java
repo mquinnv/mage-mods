@@ -37,8 +37,8 @@ public final class JobsPanel {
 		List<String> worlds = cfg.tracker.local.worlds;
 		JobsPanelModel.Model m = JobsPanelModel.build(store.rows(cfg.tracker.local.enabled), store::isHidden,
 				id -> store.objective(id).orElse(null),
-				t -> WorldScope.relevance(WorldScope.of(t.name(), store.objective(t.id()).orElse(null), worlds), at), worlds, now,
-				id -> store.activity(id, now));
+				t -> WorldScope.relevance(store.scope(t, worlds), at), worlds, now,
+				id -> store.activity(id, now), t -> store.scope(t, worlds));
 		if (m.lines().isEmpty()) return Optional.empty();
 		// Only the industry of the tool in hand; a non-tool keeps whichever it last showed.
 		net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
