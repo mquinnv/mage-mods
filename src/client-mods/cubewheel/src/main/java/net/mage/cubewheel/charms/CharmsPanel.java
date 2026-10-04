@@ -67,7 +67,7 @@ public final class CharmsPanel {
 		InvMeter.Level level = InvMeter.level(used, SLOTS);
 		int colour = level == InvMeter.Level.FULL ? RED : level == InvMeter.Level.HIGH ? Panel.YELLOW : Panel.WHITE;
 		String vaults = vaultLine(LiveWatcher.vaultCount(cfg.vaultCount), LiveWatcher.vaultFill());
-		lines.add(new Panel.Line("", 0, "Inv " + used + "/" + SLOTS, colour, vaults, Panel.GRAY).withProgress(used / (double) SLOTS));
+		lines.add(new Panel.Line("", 0, "Inv " + used + "/" + SLOTS, colour, vaults, Panel.GRAY).withGauge(used / (double) SLOTS));
 		List<Panel.Piece> charms = new ArrayList<>(amulets);
 		if (!talismans.isEmpty()) {
 			charms.add(new Panel.Piece(null, "Auto$", Panel.YELLOW));

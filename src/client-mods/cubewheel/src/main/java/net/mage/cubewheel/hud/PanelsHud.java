@@ -34,6 +34,9 @@ public final class PanelsHud implements HudElement {
 	/** A row of pieces draws its item icons at full size (16 px) plus a gap. */
 	private static final int BIG_ICON = 16;
 	private static final int BIG_ICON_W = 18;
+	/** A capacity gauge: a bar this tall under its row, on a dark track. */
+	private static final int GAUGE_H = 3;
+	private static final int GAUGE_TRACK = 0x60000000;
 	/** Widest a panel's content may grow; longer names are cut to fit, with "…". */
 	private static final int MAX_CONTENT_W = 170;
 	/** The empty part of a row's progress bar. */
@@ -127,7 +130,8 @@ public final class PanelsHud implements HudElement {
 
 	/** A row's height: text rows {@code lh}, rows of pieces a full-size icon. */
 	private static int rowHeight(Panel.Line l, int lh) {
-		return l.pieces().isEmpty() ? lh : BIG_ICON + 1;
+		if (!l.pieces().isEmpty()) return BIG_ICON + 1;
+		return l.gauge() >= 0 ? lh + GAUGE_H + 1 : lh;
 	}
 
 	/** A line's text width, its icon included. */
@@ -200,7 +204,7 @@ public final class PanelsHud implements HudElement {
 			if (!l.tag().isEmpty()) g.text(font, l.tag(), x, ly, l.tagColor());
 			int tx = heading ? x : x + tagW;
 			if (l.progress() >= 0) {
-				// The row itself is the bar: filled behind the text and count, heating up as it goes (see Panel.meterColor).
+				// The row itself is the bar: filled behind the text and count in one steady colour, green once done (see Panel.meterColor).
 				int left = tx - 1;
 				int end = x + w + 1;
 				int fill = left + (int) Math.round((end - left) * Math.min(1, l.progress()));
@@ -232,6 +236,13 @@ public final class PanelsHud implements HudElement {
 			int room = x + w - tx - (l.right().isEmpty() ? 0 : font.width(l.right()) + COLUMN_GAP);
 			g.text(font, fit(font, l.text(), room), tx, ly, l.color());
 			if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), ly, l.rightColor());
+			if (l.gauge() >= 0) {
+				// A capacity gauge: a thin bar under the row, across the panel, on its own dark track.
+				int top = ly + font.lineHeight, end = x + w;
+				int fill = x + (int) Math.round((end - x) * Math.min(1, l.gauge()));
+				g.fill(x, top, end, top + GAUGE_H, GAUGE_TRACK);
+				if (fill > x) g.fill(x, top, fill, top + GAUGE_H, Panel.gaugeColor(l.gauge()));
+			}
 		}
 		return box;
 	}
