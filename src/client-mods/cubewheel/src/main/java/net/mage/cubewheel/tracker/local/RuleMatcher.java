@@ -22,6 +22,12 @@ public final class RuleMatcher {
 			"iron", "gold", "copper", "coal", "diamond", "emerald", "lapis", "redstone", "quartz");
 
 	/**
+	 * Ore blocks that do not count as their bare material: nether gold ore drops nuggets, and ManaCube's
+	 * "Mine … Gold" jobs don't count it (Michael 2026-10-04). Nether quartz ore is the only quartz ore, so it stays.
+	 */
+	private static final java.util.Set<String> NOT_THE_MATERIAL = java.util.Set.of("nether gold ore");
+
+	/**
 	 * Blocks ManaCube's mana worlds use in place of a crop: Wolfhaven "wheat" is a hay block you scythe
 	 * (capture 2026-09-30). World scoping still applies through the rule, so a hay bale in the overworld
 	 * doesn't count toward "Harvest … Wolfhaven Wheat".
@@ -94,6 +100,7 @@ public final class RuleMatcher {
 				String compactWant = want.replace(" ", "");
 				yield fromId.equals(want) || fromId.equals(ID_ALIASES.get(want))
 						|| ORE_MATERIALS.contains(want) && fromId.matches("((deepslate|nether) )?" + want + " ore")
+								&& !NOT_THE_MATERIAL.contains(fromId)
 						|| fromName.equals(want) || fromName.endsWith(" " + want)
 						// "Rattle Snakes" vs a "Rattlesnake" mob or a "rattlesnake" id
 						|| (want.indexOf(' ') > 0 && (fromName.replace(" ", "").equals(compactWant)

@@ -49,6 +49,22 @@ class KillRuleTest {
 		assertFalse(RuleMatcher.matches(iron, new Signal.BlockBroken("minecraft:gold_ore", "Gold Ore", java.util.Set.of(), false, false, sandara)));
 	}
 
+	/** Nether gold ore drops nuggets, and ManaCube's "Mine … Gold" jobs don't count it (Michael 2026-10-04). */
+	@Test void netherGoldOreIsNotGoldButNetherQuartzIsQuartz() {
+		CounterRule gold = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 66/152 Gold", null)),
+				false, false), WORLDS).orElseThrow();
+		WorldInfo any = WorldResolver.resolve("minecraft:overworld", SIDEBAR, WORLDS);
+		for (String id : List.of("minecraft:gold_ore", "minecraft:deepslate_gold_ore")) {
+			assertTrue(RuleMatcher.matches(gold, new Signal.BlockBroken(id, "Gold Ore", java.util.Set.of(), false, false, any)), id);
+		}
+		assertFalse(RuleMatcher.matches(gold,
+				new Signal.BlockBroken("minecraft:nether_gold_ore", "Nether Gold Ore", java.util.Set.of(), false, false, any)));
+		CounterRule quartz = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 0/50 Quartz", null)),
+				false, false), WORLDS).orElseThrow();
+		assertTrue(RuleMatcher.matches(quartz,
+				new Signal.BlockBroken("minecraft:nether_quartz_ore", "Nether Quartz Ore", java.util.Set.of(), false, false, any)));
+	}
+
 	@Test void tanglerootsWorldResolvesFromDimension() {
 		WorldInfo at = tangleroots();
 		assertTrue(at.known());
