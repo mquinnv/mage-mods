@@ -163,18 +163,30 @@ public final class JobsPanelModel {
 	}
 
 	/**
-	 * Only {@code industry}'s heading and entries (the title kept); the whole model when {@code industry} is null or
-	 * has no entries, so the panel never goes blank.
+	 * {@code industry}'s heading and entries, plus any other industry's entries with recent progress under their own
+	 * heading (what you were just working on stays, whatever is held; Michael 2026-10-04). The title is kept. The
+	 * whole model when {@code industry} is null or has no entries, so the panel never goes blank.
 	 */
 	public static Model focus(Model all, String industry) {
 		if (all == null || industry == null) return all;
 		List<Line> out = new ArrayList<>();
-		boolean in = false;
+		boolean in = false, any = false;
+		Line heading = null; // another industry's heading, added before its first recent entry
 		for (Line l : all.lines()) {
-			if (l.tone() == Tone.INDUSTRY) in = industryName(l.text()).equalsIgnoreCase(industry);
-			if (in) out.add(l);
+			if (l.tone() == Tone.INDUSTRY) {
+				in = industryName(l.text()).equalsIgnoreCase(industry);
+				heading = in ? null : l;
+				if (in) out.add(l);
+			} else if (in) {
+				out.add(l);
+				any = true;
+			} else if (l.activity() != Activity.NONE) {
+				if (heading != null) out.add(heading);
+				heading = null;
+				out.add(l);
+			}
 		}
-		return out.size() <= 1 ? all : new Model(all.title(), List.copyOf(out));
+		return any ? new Model(all.title(), List.copyOf(out)) : all;
 	}
 
 	private record Item(TrackerRow row, int tier, String text, WorldScope.Relevance rel) {}

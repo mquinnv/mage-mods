@@ -51,4 +51,18 @@ class ToolIndustryTest {
 		assertSame(all, JobsPanelModel.focus(all, null));      // nothing held yet: everything
 		assertSame(all, JobsPanelModel.focus(all, "Fishing")); // no Fishing jobs: everything rather than nothing
 	}
+
+	/** Entries with recent progress stay whatever is held, under their own heading (Michael 2026-10-04). */
+	@Test void focusKeepsRecentProgressFromOtherIndustries() {
+		JobsPanelModel.Model all = new JobsPanelModel.Model("Jobs", List.of(
+				new JobsPanelModel.Line("", "⚒ Farming", "", JobsPanelModel.Tone.INDUSTRY),
+				new JobsPanelModel.Line("", "Acacia Logs", "0/630", JobsPanelModel.Tone.CURRENT),
+				new JobsPanelModel.Line("", "Wheat", "40/200", JobsPanelModel.Tone.CURRENT, null, Activity.RECENT),
+				new JobsPanelModel.Line("", "⚒ Hunting", "", JobsPanelModel.Tone.INDUSTRY),
+				new JobsPanelModel.Line("IH", "Zombie Moose", "58/70", JobsPanelModel.Tone.CURRENT, null, Activity.ACTIVE),
+				new JobsPanelModel.Line("", "⚒ Mining", "", JobsPanelModel.Tone.INDUSTRY),
+				new JobsPanelModel.Line("", "Gold", "23/152", JobsPanelModel.Tone.CURRENT)));
+		assertEquals(List.of("⚒ Farming", "Wheat", "⚒ Hunting", "Zombie Moose", "⚒ Mining", "Gold"),
+				JobsPanelModel.focus(all, "Mining").lines().stream().map(JobsPanelModel.Line::text).toList());
+	}
 }
