@@ -124,7 +124,7 @@ public final class ContainerHook {
 				if (store == null) return;
 				// Facts any menu states about you ("Current Level: 55" on /party) update matching objectives.
 				boolean factsChanged = MenuFacts.apply(MenuFacts.of(items), store, now) > 0;
-				if (factsChanged) store.save();
+				if (factsChanged) store.saveInBackground();
 				Optional<String> source = MenuClassifier.classify(title, items, cfg.tracker.sources);
 				if (source.isEmpty()) {
 					announceCompletions(store);
@@ -134,7 +134,7 @@ public final class ContainerHook {
 				java.util.function.Consumer<String> seen = RefreshController.running() ? RefreshController::noteSeen : null;
 				if (ContainerScanner.scan(source.get(), items, store, now, seen) > 0) {
 					CubeWheelClient.sidebar().reapply(now);
-					store.save();
+					store.saveInBackground();
 				}
 				announceCompletions(store);
 			} catch (RuntimeException e) {

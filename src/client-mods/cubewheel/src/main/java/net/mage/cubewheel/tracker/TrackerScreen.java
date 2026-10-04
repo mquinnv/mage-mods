@@ -122,7 +122,7 @@ public final class TrackerScreen extends Screen {
 					String id = rows.get(index).item().item().id();
 					if (left) store.togglePin(id);
 					else store.toggleHidden(id);
-					store.save();
+					store.saveInBackground();
 					return true;
 				}
 			}
@@ -158,7 +158,7 @@ public final class TrackerScreen extends Screen {
 			TrackerStore store = CubeWheelClient.tracker();
 			if (store == null) return;
 			int removed = store.forgetOlderThan(System.currentTimeMillis(), FORGET_AGE_MS);
-			if (removed > 0) store.save();
+			if (removed > 0) store.saveInBackground();
 			rebuild();
 		} catch (RuntimeException e) {
 			CubeWheelClient.LOG.error("[cubewheel] forgetting stale tracker entries failed", e);

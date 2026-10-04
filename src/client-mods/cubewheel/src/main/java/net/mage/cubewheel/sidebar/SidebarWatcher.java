@@ -98,7 +98,7 @@ public final class SidebarWatcher {
 		try {
 			long now = System.currentTimeMillis();
 			TrackerStore store = CubeWheelClient.tracker();
-			if (store != null && saveThrottle.shouldSave(now)) store.save();
+			if (store != null && saveThrottle.shouldSave(now)) store.saveInBackground();
 			if (++ticks < INTERVAL_TICKS) return;
 			ticks = 0;
 			CubeWheelConfig cfg = CubeWheelClient.config().current();

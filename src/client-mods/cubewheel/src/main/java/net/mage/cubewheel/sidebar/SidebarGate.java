@@ -13,6 +13,10 @@ public final class SidebarGate {
 	private static String cachedSource;
 	private static Pattern cachedPattern;
 	private static boolean cachedInvalid;
+	/** The last answer: the title and pattern rarely change between the many calls per frame. */
+	private record Answer(String title, String pattern, boolean matches) {}
+
+	private static volatile Answer last;
 
 	private SidebarGate() {}
 
@@ -24,6 +28,14 @@ public final class SidebarGate {
 	public static boolean matches(String title, String pattern) {
 		if (pattern == null || pattern.isBlank()) return true;
 		if (title == null) return false;
+		Answer a = last;
+		if (a != null && a.title().equals(title) && a.pattern().equals(pattern)) return a.matches();
+		boolean matches = matchUncached(title, pattern);
+		last = new Answer(title, pattern, matches);
+		return matches;
+	}
+
+	private static boolean matchUncached(String title, String pattern) {
 		String t = FORMATTING.matcher(title).replaceAll("").trim();
 		if (t.isEmpty()) return false;
 		Pattern p = compile(pattern);

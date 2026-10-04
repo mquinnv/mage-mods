@@ -869,7 +869,7 @@ public final class LocalSignals {
 				}
 			}
 			expireLootKills(mc); // after the removals: a kill counted this tick still claims its line
-			if (store != null && saveThrottle.shouldSave(System.currentTimeMillis())) store.save();
+			if (store != null && saveThrottle.shouldSave(System.currentTimeMillis())) store.saveInBackground();
 		} catch (Throwable t) {
 			fail(Hook.TICK, t);
 		}

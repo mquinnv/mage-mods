@@ -2,6 +2,7 @@ package net.mage.cubewheel.tracker;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.mage.cubewheel.io.BackgroundSaver;
 import net.mage.cubewheel.tracker.local.Accuracy;
 import net.mage.cubewheel.tracker.local.CounterRule;
 import net.mage.cubewheel.tracker.local.Estimate;
@@ -59,6 +60,7 @@ public final class TrackerStore {
 		Comparator.comparingDouble(TrackerRow::fraction).reversed().thenComparing(r -> r.item().name());
 
 	private final Path file;
+	private final BackgroundSaver saver;
 	private Map<String, Trackable> items = new LinkedHashMap<>();
 	private Set<String> pins = new LinkedHashSet<>();
 	/** Not persisted: pending "completed" notices, drained by the adapter. */
@@ -89,6 +91,7 @@ public final class TrackerStore {
 
 	public TrackerStore(Path file) {
 		this.file = file;
+		this.saver = new BackgroundSaver(file, "tracker");
 	}
 
 	/** Called with (id, accuracy) whenever an authoritative read replaces an estimate. */
@@ -566,22 +569,40 @@ public final class TrackerStore {
 		rulesDirty = true;
 	}
 
-	/** Best effort (the tracker is re-scannable): returns false and logs a warning if the file could not be written. */
+	/**
+	 * Saves now, on this thread. Best effort (the tracker is re-scannable): returns false and logs a warning if the file
+	 * could not be written. The file is replaced whole (see {@link BackgroundSaver}), never left half written.
+	 */
 	public boolean save() {
+		return saver.saveNow(GSON.toJson(snapshot()));
+	}
+
+	/**
+	 * Saves on CubeWheel's background thread, so a frame never waits for the disk: the store is copied here, turned
+	 * into JSON and written there. Saves made while one waits are merged into one. Use {@link #save} or
+	 * {@link #flushSaves} when the game is quitting.
+	 */
+	public void saveInBackground() {
+		Snapshot snap = snapshot();
+		saver.saveLater(() -> GSON.toJson(snap));
+	}
+
+	/** Writes a background save still waiting, now on this thread (disconnect, quit). */
+	public void flushSaves() {
+		saver.flush();
+	}
+
+	/**
+	 * A copy of what is persisted. The collections are new; their elements (records) are immutable, so the copy may be
+	 * serialized on another thread while the store changes.
+	 */
+	private Snapshot snapshot() {
 		Snapshot snap = new Snapshot();
 		snap.items = new ArrayList<>(items.values());
 		snap.pins = new ArrayList<>(pins);
 		snap.hidden = new ArrayList<>(hidden);
 		snap.objectives = new LinkedHashMap<>(objectives);
 		snap.estimates = new LinkedHashMap<>(estimates);
-		try {
-			Path parent = file.getParent();
-			if (parent != null) Files.createDirectories(parent);
-			Files.writeString(file, GSON.toJson(snap), StandardCharsets.UTF_8);
-			return true;
-		} catch (IOException e) {
-			LOG.warn("[cubewheel] could not save tracker to {}: {}", file, e.toString());
-			return false;
-		}
+		return snap;
 	}
 }

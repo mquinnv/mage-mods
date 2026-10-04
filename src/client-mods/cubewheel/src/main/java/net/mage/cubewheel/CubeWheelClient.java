@@ -157,10 +157,25 @@ public final class CubeWheelClient implements ClientModInitializer {
 			}
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(CubeWheelClient::onEndTick);
-		// Sidebar-driven changes are saved at most every 10 s; write the rest when leaving or quitting.
-		ClientPlayConnectionEvents.DISCONNECT.register((handler, mc) -> sidebar.flush());
-		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> sidebar.flush());
+		// Sidebar-driven changes are saved at most every 10 s; write the rest when leaving or quitting, then any
+		// background save still waiting (an older one than a save just made is skipped).
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, mc) -> {
+			sidebar.flush();
+			flushTrackerSaves();
+		});
+		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> {
+			sidebar.flush();
+			flushTrackerSaves();
+		});
 		LOG.info("[cubewheel] initialised");
+	}
+
+	private static void flushTrackerSaves() {
+		try {
+			tracker.flushSaves();
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] tracker save flush failed", e);
+		}
 	}
 
 	private static void onEndTick(Minecraft mc) {

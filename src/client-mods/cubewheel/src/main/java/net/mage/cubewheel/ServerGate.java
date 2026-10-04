@@ -44,8 +44,22 @@ public final class ServerGate {
 
 	public static boolean active(CubeWheelConfig cfg) {
 		if (cfg == null || !cfg.enabled) return false;
-		return currentHost().map(h -> matches(h, cfg.serverHosts)).orElse(false);
+		ServerData server = Minecraft.getInstance().getCurrentServer();
+		if (server == null || server.ip == null) return false;
+		// Asked a dozen times a frame; the address and the host list hardly ever change.
+		HostMatch last = lastMatch;
+		if (last != null && last.ip().equals(server.ip) && java.util.Objects.equals(last.hosts(), cfg.serverHosts)) return last.match();
+		String h = host(server.ip);
+		boolean match = !h.isEmpty() && matches(h, cfg.serverHosts);
+		lastMatch = new HostMatch(server.ip,
+				cfg.serverHosts == null ? null : java.util.Collections.unmodifiableList(new java.util.ArrayList<>(cfg.serverHosts)), match);
+		return match;
 	}
+
+	/** The last {@link #active} answer for a server address and host list (a copy, so edits in place are seen). */
+	private record HostMatch(String ip, List<String> hosts, boolean match) {}
+
+	private static volatile HostMatch lastMatch;
 
 	/**
 	 * {@link #active} and in ManaCube Survival: the live sidebar title matches
