@@ -18,6 +18,7 @@ import net.mage.cubewheel.tracker.local.FishDetector;
 import net.mage.cubewheel.tracker.local.KeyThrottle;
 import net.mage.cubewheel.tracker.local.KillAttribution;
 import net.mage.cubewheel.tracker.local.LocalCounter;
+import net.mage.cubewheel.tracker.local.LootKills;
 import net.mage.cubewheel.tracker.local.LootLine;
 import net.mage.cubewheel.tracker.local.LootMatch;
 import net.mage.cubewheel.tracker.local.ModelHitbox;
@@ -98,6 +99,7 @@ public final class LocalSignals {
 	private static final KillAttribution kills = new KillAttribution();
 	private static final StackWatch stacks = new StackWatch();
 	private static final RemovalKills removals = new RemovalKills();
+	private static final LootKills lootKills = new LootKills();
 	private static final PendingShears shears = new PendingShears();
 	private static final PendingMilk milkings = new PendingMilk();
 	private static final AreaBreaks areas = new AreaBreaks();
@@ -390,6 +392,7 @@ public final class LocalSignals {
 			}
 			Signal.MobKilled signal = EntityFacts.of(entity, world());
 			List<LocalCounter.Contribution> added = count(signal);
+			killCounted();
 			capture("kill", signal.typeId(), rawName(entity), "death, local hit", signal.world(), added);
 		} catch (Throwable t) {
 			fail(Hook.DEATH, t);
@@ -423,6 +426,7 @@ public final class LocalSignals {
 			}
 			Signal.MobKilled signal = EntityFacts.of(root == null ? entity : root, world(), c.newName(), c.killed());
 			List<LocalCounter.Contribution> added = count(signal);
+			killCounted();
 			capture("kill", signal.typeId(), c.newName(), "stack: " + detail, signal.world(), added);
 		} catch (Throwable t) {
 			fail(Hook.STACK, t);
@@ -500,6 +504,7 @@ public final class LocalSignals {
 					? new Signal.MobKilled("", facts.name(), Set.of("mob", "monster"), 1, at)
 					: facts;
 			List<LocalCounter.Contribution> added = count(signal);
+			killCounted();
 			capture("kill", typeId, h.name(), "removal, method " + h.method().code + " (" + h.source() + "), local hit", at, added);
 			return;
 		}
@@ -527,6 +532,7 @@ public final class LocalSignals {
 				creditLoot(r, List.of(bottle.get()), "held item");
 				return;
 			}
+			killCounted();
 			capture("kill", r.typeId(), r.name(), "removal, method d (" + from + " " + loot + " names no single kill objective"
 					+ (r.modelHitbox() ? "; model hitbox: generic" : "") + "), local hit", r.world(), genericKill(r));
 			return;
@@ -534,6 +540,7 @@ public final class LocalSignals {
 		List<LocalCounter.Contribution> added = LocalCounter.lootKill(credit.get().ruleIds(), r.modelHitbox(), r.world(),
 				store, local().worlds, System.currentTimeMillis());
 		if (!added.isEmpty()) saveThrottle.markDirty();
+		killCounted();
 		capture("kill", r.typeId(), credit.get().target(), "removal, method c (" + from + " " + loot + " -> " + credit.get().target() + "), local hit",
 				r.world(), added);
 	}
@@ -589,6 +596,7 @@ public final class LocalSignals {
 			}
 		}
 		if (!lootOn() || text.indexOf('+') < 0) return;
+		lootKills.onActionBar(text, world(), now); // every kill line, also one that names a pending removal below
 		if (lootSourceLogged == null && !LootLine.items(text).isEmpty()) {
 			lootSourceLogged = source;
 			CubeWheelClient.LOG.info("[cubewheel] loot lines: {}", source.label);
@@ -817,6 +825,7 @@ public final class LocalSignals {
 			kills.clear();
 			stacks.clear();
 			removals.clear();
+			lootKills.clear();
 			world.invalidate();
 		} catch (Throwable t) {
 			fail(Hook.LEVEL, t);
@@ -846,11 +855,13 @@ public final class LocalSignals {
 						creditLoot(r, List.of(bottle.get()), "held item");
 						continue;
 					}
+					killCounted();
 					capture("kill", r.typeId(), r.name(), "removal, method d (no name tag, no loot line within "
 							+ RemovalKills.LOOT_WAIT_MS + " ms" + (r.modelHitbox() ? "; model hitbox: generic" : "") + "), local hit",
 							r.world(), genericKill(r));
 				}
 			}
+			expireLootKills(mc); // after the removals: a kill counted this tick still claims its line
 			if (store != null && saveThrottle.shouldSave(System.currentTimeMillis())) store.save();
 		} catch (Throwable t) {
 			fail(Hook.TICK, t);
@@ -911,6 +922,35 @@ public final class LocalSignals {
 	/** Projectiles and vehicles: their removal is never a kill, whatever was hit. */
 	private static boolean neverAKill(Entity e) {
 		return e instanceof Projectile || e instanceof VehicleEntity || ModelHitbox.neverAKill(e.typeHolder().getRegisteredName());
+	}
+
+	/** A kill was counted locally (any path): it claims its action-bar loot line (see {@link LootKills}). */
+	private static void killCounted() {
+		lootKills.counted(System.currentTimeMillis());
+	}
+
+	/**
+	 * Loot lines no local kill claimed within {@link LootKills#GRACE_MS}: kills by an ability weapon (Phoenix Staff,
+	 * magic book), which the client never sees as ours. Each counts for the rules its drops name plus the generic
+	 * monster rules, like method c. Held lines are dropped while kills are not counted.
+	 */
+	private static void expireLootKills(Minecraft mc) {
+		try {
+			if (!lootOn()) { // also off outside ManaCube Survival or with tracker.local disabled (see enabled)
+				lootKills.clear();
+				return;
+			}
+			long now = System.currentTimeMillis();
+			for (LootKills.Kill k : lootKills.expire(now)) {
+				if (!survivalMode(mc.player)) continue;
+				LootKills.Credited c = LootKills.credit(k, CubeWheelClient.tracker(), local().worlds, now);
+				if (!c.added().isEmpty()) saveThrottle.markDirty();
+				capture("kill", null, c.target().orElse(null), "loot line only (ability kill): " + k.loot()
+						+ c.target().map(t -> " -> " + t).orElse(" names no kill objective; generic"), k.world(), c.added());
+			}
+		} catch (Throwable t) {
+			fail(Hook.LOOT, t);
+		}
 	}
 
 	/** Method d for a model hitbox: a monster kill nothing names counts for the generic kill objectives only. */
