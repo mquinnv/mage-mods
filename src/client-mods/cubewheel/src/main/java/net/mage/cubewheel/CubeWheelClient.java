@@ -132,6 +132,8 @@ public final class CubeWheelClient implements ClientModInitializer {
 				() -> Minecraft.getInstance().gui.setScreen(new net.mage.cubewheel.hud.ArrangeScreen())));
 		ClientActions.register("settings", () -> Minecraft.getInstance().execute(
 				() -> Minecraft.getInstance().gui.setScreen(SettingsScreens.root(null))));
+		ClientActions.register("wheel-editor", () -> Minecraft.getInstance().execute(
+				() -> Minecraft.getInstance().gui.setScreen(new net.mage.cubewheel.wheel.edit.WheelEditorScreen(null))));
 		// /cubewheel (client-only, works on any server): the chat screen is still closing, so open on the next tick.
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
 				dispatcher.register(ClientCommands.literal("cubewheel").executes(ctx -> {

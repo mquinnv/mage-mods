@@ -31,6 +31,7 @@ import net.mage.cubewheel.settings.SettingsSpec.Setting;
 import net.mage.cubewheel.settings.SettingsSpec.Text;
 import net.mage.cubewheel.settings.SettingsSpec.TextList;
 import net.mage.cubewheel.settings.SettingsSpec.Toggle;
+import net.mage.cubewheel.wheel.edit.WheelEditorScreen;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -217,6 +218,13 @@ public final class SettingsScreens {
 	private static OptionGroup tools(ConfigStore store, Draft draft) {
 		return OptionGroup.createBuilder()
 				.name(Component.literal("Tools"))
+				// Like "Arrange panels…": the editor saves the wheel itself, so this swaps screens without saving here.
+				.option(ButtonOption.createBuilder()
+						.name(Component.literal("Edit wheel…"))
+						.description(OptionDescription.of(Component.literal(
+								"Add, change, move and delete wheel entries. Save first; unsaved changes here are dropped.")))
+						.action((screen, button) -> Minecraft.getInstance().gui.setScreen(new WheelEditorScreen(null)))
+						.build())
 				.option(ButtonOption.createBuilder()
 						.name(Component.literal("Reload from file"))
 						.description(OptionDescription.of(Component.literal(
