@@ -36,13 +36,14 @@ class CharmTest {
 		Charm farm = parse("FARMING TALISMAN", "Farming Talisman", "", "Automatically sells harvested crops",
 				"Total items sold: 48,631", "Total earned: $217,633.69", "");
 		assertEquals(Charm.Kind.TALISMAN, farm.kind());
-		assertEquals("minecraft:iron_hoe", farm.icon());
+		assertEquals("minecraft:wheat", farm.icon());
 		assertEquals("$217k", farm.text());
 		Charm fish = parse("Fish Talisman", "", "Automatically sells fish to /fish");
 		assertEquals("minecraft:cod", fish.icon());
 		assertEquals("$", fish.text());
 		Charm mobs = parse("Hunting Talisman", "Automatically sells mob drops", "Total earned: $1,234,567.00");
-		assertEquals("minecraft:bone", mobs.icon());
+		assertEquals("minecraft:zombie_head", mobs.icon());
+		assertEquals("minecraft:soul_lantern", parse("Soul Talisman", "Automatically sells mob drops for souls").icon());
 		assertEquals("$1.2M", mobs.text());
 	}
 
