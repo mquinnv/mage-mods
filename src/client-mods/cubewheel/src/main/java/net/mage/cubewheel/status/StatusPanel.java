@@ -12,8 +12,11 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemLore;
 
 /**
  * The "Status" panel (top left, above Jobs): the armor set you wear ("Phoenix 4/4"), coordinates and facing,
@@ -26,6 +29,9 @@ public final class StatusPanel {
 	private static final int GREY = 0xFFAAAAAA;
 	private static final int WORN_LOW = 0xFFFFFF55;  // a piece under 25% durability
 	private static final int WORN_OUT = 0xFFFF5555;  // a piece under 10%
+
+	/** Appended to the set's name when its lore states a bonus that needs more pieces than are worn. */
+	private static final String NO_BONUS = " ⚠ no set bonus";
 
 	private static double lastX, lastZ;
 	private static boolean hasLast;
@@ -71,26 +77,34 @@ public final class StatusPanel {
 		return Optional.of(new Panel("Status", lines, HudLayout.Corner.parse(at.corner), at.x, at.y));
 	}
 
-	/** "[chestplate] Phoenix   4/4": the set's name and count, yellow/red when a piece is wearing out. */
+	/**
+	 * "[chestplate] Phoenix   4/4": the set's name and count, yellow/red when a piece is wearing out; yellow with
+	 * "⚠ no set bonus" when the lore's set bonus needs more pieces than are worn.
+	 */
 	private static Panel.Line armorLine(LocalPlayer p) {
 		List<String> names = new ArrayList<>();
+		List<List<String>> lores = new ArrayList<>();
 		ItemStack icon = ItemStack.EMPTY;
 		double lowest = 1;
 		for (EquipmentSlot slot : ARMOR) {
 			ItemStack s = p.getItemBySlot(slot);
 			if (s.isEmpty()) {
 				names.add(null);
+				lores.add(List.of());
 				continue;
 			}
 			names.add(s.getHoverName().getString());
+			ItemLore lore = s.get(DataComponents.LORE);
+			lores.add(lore == null ? List.of() : lore.lines().stream().map(Component::getString).toList());
 			if (icon.isEmpty() || slot == EquipmentSlot.CHEST) icon = s;
 			if (s.isDamageableItem() && s.getMaxDamage() > 0) {
 				lowest = Math.min(lowest, 1 - s.getDamageValue() / (double) s.getMaxDamage());
 			}
 		}
-		ArmorSet set = ArmorSet.of(names);
+		ArmorSet set = ArmorSet.of(names, lores);
 		int color = lowest < 0.10 ? WORN_OUT : lowest < 0.25 ? WORN_LOW : Panel.WHITE;
-		Panel.Line line = new Panel.Line("", 0, set.name(), color, set.worn() == 0 ? "" : set.count(),
+		boolean unmet = set.bonusUnmet();
+		Panel.Line line = new Panel.Line("", 0, unmet ? set.name() + NO_BONUS : set.name(), unmet ? Panel.YELLOW : color, set.worn() == 0 ? "" : set.count(),
 				set.matching() == 4 ? Panel.GREEN : color);
 		return icon.isEmpty() ? line : line.withIcon(icon.copyWithCount(1));
 	}
