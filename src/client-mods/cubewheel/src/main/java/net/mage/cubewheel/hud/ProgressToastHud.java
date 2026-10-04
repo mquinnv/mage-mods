@@ -16,7 +16,8 @@ import net.minecraft.resources.Identifier;
 
 /**
  * Minecraft adapter for {@link ProgressToast}: listens to the tracker store's local counts (see
- * {@link TrackerStore#setProgressListener}), names them as the panels do ({@link ProgressLabel}) and draws the popup's
+ * {@link TrackerStore#setProgressListener}), names them as the panels do ({@link ProgressLabel}), takes one-off
+ * notices ({@link #notice}, from {@link NoticeWatcher}) and draws the popup's
  * lines centred a little below the crosshair, stacked downwards, each on its own dark plate and fading on its own.
  * Hidden while a screen is open or {@code toast.enabled} is off.
  */
@@ -39,6 +40,11 @@ public final class ProgressToastHud implements HudElement {
 				new ProgressToastHud());
 		TrackerStore store = CubeWheelClient.tracker();
 		if (store != null) store.setProgressListener(ProgressToastHud::onProgress);
+	}
+
+	/** A one-off notice for the popup ("Inventory full"), in {@code color}; ignored while {@code toast.enabled} is off. */
+	public static void notice(String text, int color, long now) {
+		TOAST.onNotice(text, color, now, CubeWheelClient.config().current().toast);
 	}
 
 	/** The store counted ({@code units} &gt; 0) or took back ({@code units} &lt; 0) progress for {@code key}. */

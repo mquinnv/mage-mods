@@ -126,7 +126,7 @@ public final class SettingsSpec {
 										"Show the Status panel: armor set, coordinates, biome, light, FPS, speed and time.",
 										c -> c.status.enabled, (c, v) -> c.status.enabled = v),
 								toggle(d, "status.armor", "Armor set",
-										"Show the worn armor set (\"Phoenix 4/4\") as the panel's first line.",
+										"Show the armor column: each piece with its durability, the worn set (\"Phoenix 4/4\") and its set bonus.",
 										c -> c.status.armor, (c, v) -> c.status.armor = v))),
 						new Group("Events", List.of(
 								toggle(d, "events.hudVisible", "Show panel",
@@ -180,7 +180,8 @@ public final class SettingsSpec {
 						new Group("Progress popup", List.of(
 								toggle(d, "toast.enabled", "Enabled",
 										"A short line under the crosshair when local counting adds progress to a tracked"
-												+ " entry (\"+1 Mana Wolves  ~10/74\"); green with a \"✓\" when it completes it.",
+												+ " entry (\"+1 Mana Wolves  ~10/74\"); green with a \"✓\" when it completes it. Also one-off"
+												+ " notices: inventory full, set bonus lost or back, a vault nearly full or full.",
 										c -> c.toast.enabled, (c, v) -> c.toast.enabled = v),
 								doubleRange(d, "toast.seconds", "Seconds shown",
 										"How long the popup stays after the last increment before it fades. Further"

@@ -183,4 +183,39 @@ class ProgressToastTest {
 		t.onIncrement("q:x", "Volcano Potion Quest", 1, "", false, 0, cfg());
 		assertEquals("+1 Volcano Potion Quest", one(t, 0).text());
 	}
+
+	@Test void aNoticeShowsItsTextInItsColourAndFadesLikeTheRest() {
+		ProgressToast t = new ProgressToast();
+		t.onNotice("Inventory full", 0xFFFF5555, 1_000, cfg());
+		ProgressToast.Shown s = one(t, 1_000);
+		assertEquals("Inventory full", s.text());
+		assertEquals(0xFFFF5555, s.color());
+		assertEquals(1.0, one(t, 2_499).alpha(), 1e-9);
+		assertTrue(t.lines(2_800, cfg()).isEmpty());
+	}
+
+	@Test void theSameNoticeAgainRestartsItsLine() {
+		ProgressToast t = new ProgressToast();
+		t.onNotice("Inventory full", 0xFFFF5555, 0, cfg());
+		t.onNotice("Inventory full", 0xFFFF5555, 1_000, cfg());
+		assertEquals(1.0, one(t, 2_000).alpha(), 1e-9);
+	}
+
+	@Test void noticesStackWithProgressAndShareTheLineLimit() {
+		ProgressToast t = new ProgressToast();
+		t.onIncrement("j:stone", "Stone", 1, "~10/100", false, 0, cfg());
+		t.onNotice("Inventory full", 0xFFFF5555, 10, cfg());
+		assertEquals(List.of("Inventory full", "+1 Stone  ~10/100"), texts(t, 10));
+		t.onNotice("PV 2 full", 0xFFFF5555, 100, cfg());
+		t.onNotice("Phoenix set bonus lost (3/4)", Panel.YELLOW, 200, cfg());
+		assertEquals(List.of("Phoenix set bonus lost (3/4)", "PV 2 full", "Inventory full"), texts(t, 200));
+	}
+
+	@Test void noNoticeWhileThePopupIsOff() {
+		ProgressToast t = new ProgressToast();
+		CubeWheelConfig.Toast off = cfg();
+		off.enabled = false;
+		t.onNotice("Inventory full", 0xFFFF5555, 0, off);
+		assertTrue(t.lines(0, cfg()).isEmpty());
+	}
 }

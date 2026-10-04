@@ -127,6 +127,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		PanelsHud.add(net.mage.cubewheel.charms.CharmsPanel::panel, c -> c.charms.position, DefaultConfig::charmsPosition); // above the hotbar, in place of schrumboHUD
 		PanelsHud.register();
 		ProgressToastHud.register(); // after the panels and the tracker store
+		net.mage.cubewheel.hud.NoticeWatcher.register(); // inventory full, set bonus, vaults: one-off popups
 		SvaClient.init(configDir);
 		Keybinds.register();
 		// Opened on the next tick: a wheel click runs this while the wheel screen is closing, which would replace it.

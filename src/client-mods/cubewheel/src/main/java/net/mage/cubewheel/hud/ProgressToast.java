@@ -10,7 +10,8 @@ import java.util.List;
  * a block) counting for several entries shows up to {@link #MAX_LINES} lines, in the order the increments arrive
  * (the counter credits the most specific entry first), above the lines of earlier signals. Each line merges further
  * increments for its own entry ("+7 …") and restarts its own time; an increment for an entry not shown starts a new
- * line, and past {@link #MAX_LINES} the line idle longest goes. A line stays fully visible for {@code toast.seconds}
+ * line, and past {@link #MAX_LINES} the line idle longest goes. One-off notices ({@link #onNotice}: "Inventory full")
+ * share the lines, on top. A line stays fully visible for {@code toast.seconds}
  * after its last increment, then fades over {@link #FADE_MS}. Thread-safe, as the counter and the HUD may call from
  * different threads. Pure: no Minecraft/Fabric imports.
  */
@@ -27,6 +28,9 @@ public final class ProgressToast {
 
 	private static final class Line {
 		final String id;
+		/** A one-off notice's text and colour, shown as is (null for progress lines). */
+		String notice;
+		int noticeColor;
 		String name;
 		long units;
 		String count;
@@ -73,6 +77,27 @@ public final class ProgressToast {
 	}
 
 	/**
+	 * A one-off notice ({@code text} in {@code color}, see {@link Notices}): a new line on top, or the same notice's
+	 * line moved there with its time restarted. Ignored while the popup is off.
+	 */
+	public synchronized void onNotice(String text, int color, long now, CubeWheelConfig.Toast cfg) {
+		if (text == null || text.isEmpty() || cfg == null || !cfg.enabled) return;
+		prune(now, cfg);
+		String id = "notice:" + text;
+		Line line = find(id);
+		if (line == null) {
+			line = new Line(id);
+		} else {
+			lines.remove(line);
+		}
+		line.notice = text;
+		line.noticeColor = color;
+		line.lastAt = now;
+		lines.add(0, line);
+		while (lines.size() > MAX_LINES) lines.remove(idlest());
+	}
+
+	/**
 	 * Takes back {@code units} of entry {@code id} (the server rejected a break, a chat catch replaces the bobber's):
 	 * its line's total drops, without restarting its time; all of it taken back removes the line. Entries not shown
 	 * are ignored.
@@ -98,6 +123,10 @@ public final class ProgressToast {
 			if (!visible(l, now, cfg)) continue;
 			long age = now - l.lastAt;
 			double alpha = age < visibleMs ? 1.0 : 1.0 - (age - visibleMs) / (double) FADE_MS;
+			if (l.notice != null) {
+				out.add(new Shown(l.notice, l.noticeColor, alpha));
+				continue;
+			}
 			String head = l.done ? "✓ " + l.name : "+" + l.units + " " + l.name;
 			String text = l.count.isEmpty() ? head : head + "  " + l.count;
 			out.add(new Shown(text, l.done ? Panel.GREEN : Panel.CYAN, alpha));

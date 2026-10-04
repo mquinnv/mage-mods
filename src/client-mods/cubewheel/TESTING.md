@@ -149,6 +149,15 @@ Bind "Refresh trackers" under Options > Controls > Key Binds > CubeWheel first.
 - [ ] Finish an entry locally (or "You have completed the <quest>!"): green "✓ <name>  ~n/n".
 - [ ] Open a /jobs or /pquests menu (a server read): no popup. Open the inventory while counting: the popup is hidden.
 - [ ] Settings → HUD panels → Progress popup: "Enabled" off stops it; "Seconds shown" 4.0 keeps it about 4 s.
+- [ ] Join with a full inventory: no notice. Drop an item, pick it up again: red "Inventory full" once.
+- [ ] Wear a full set whose lore says "(Requires 4/4 pieces)", take one piece off: yellow "<Set> set bonus lost (3/4)"; put it back: green "<Set> set bonus active". Join or change worlds wearing it: no notice.
+- [ ] Open a vault with more than 3 free slots, fill it to 3 or fewer and close it: yellow "PV n: 3 slots left" on closing; fill it completely: red "PV n full".
+
+## Status panel
+
+- [ ] One box, two columns: left "X  Y  Z" with "N -Z"/"E +X"…, the biome with a round light disc (black in the dark, yellow in daylight, its number readable), "fps" and "b/s", a grass block before the game time and a globe before the clock.
+- [ ] Right: four armor rows (item + durability bar; a faint square for an empty slot; no bar on unbreakable pieces), then "<Set>  n/4" (green at 4/4) and the set bonus text in at most two lines; yellow "⚠ no set bonus" when too few pieces are worn.
+- [ ] Settings → Status → "Armor set" off: the right column goes. Arrange screen: the Status panel drags by its whole box.
 
 ## Live estimates (local counting)
 
