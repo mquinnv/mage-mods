@@ -8,6 +8,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import net.mage.cubewheel.ClientActions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -137,7 +138,7 @@ class ConfigStoreTest {
 		CubeWheelConfig c = s.current();
 		assertEquals(54, c.vaultCount);
 		assertEquals(3, c.listThreshold);
-		assertEquals(List.of("ok", "ring"), c.wheel.stream().map(n -> n.label).toList());
+		assertEquals(List.of("ok", "ring", "Settings"), c.wheel.stream().map(n -> n.label).toList());
 		assertEquals(1, c.wheel.get(1).children.size());
 		assertEquals("/sell", c.wheel.get(1).children.get(0).command); // leading slash added
 		assertNotNull(c.serverHosts); assertFalse(c.serverHosts.isEmpty());
@@ -425,5 +426,61 @@ class ConfigStoreTest {
 		ConfigStore again = new ConfigStore(f);
 		assertNull(again.reload());
 		assertEquals(12, again.current().vaultCount);
+	}
+
+	private static long settingsNodes(List<WheelNode> wheel) {
+		return WheelUpgrade.walk(wheel).stream().filter(n -> n.command != null && "settings".equals(ClientActions.name(n.command))).count();
+	}
+
+	@Test void aVersion7FileGainsTheSettingsLeafUnderMoreOnce() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, """
+		  {"configVersion": 7, "wheel": [
+		    {"label":"Sell","command":"/sell"},
+		    {"label":"More","icon":"minecraft:chest","children":[{"label":"Ender chest","command":"/ec"}]}
+		  ]}""");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		List<WheelNode> more = s.current().wheel.get(1).children;
+		assertEquals(List.of("Ender chest", "Settings"), more.stream().map(n -> n.label).toList());
+		assertEquals("cubewheel:settings", more.get(1).command);
+		assertEquals("minecraft:comparator", more.get(1).icon);
+		assertEquals(2, s.current().wheel.size());
+		assertTrue(Files.readString(f).replaceAll("\\s", "").contains("\"configVersion\":" + DefaultConfig.CONFIG_VERSION));
+		ConfigStore again = new ConfigStore(f);
+		assertNull(again.reload());
+		assertEquals(1, settingsNodes(again.current().wheel));
+	}
+
+	@Test void aVersion7FileThatAlreadyHasASettingsNodeIsLeftAlone() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, """
+		  {"configVersion": 7, "wheel": [
+		    {"label":"Tools","children":[{"label":"Mine","command":"CubeWheel:Settings"}]},
+		    {"label":"More","icon":"minecraft:chest","children":[{"label":"Ender chest","command":"/ec"}]}
+		  ]}""");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(1, settingsNodes(s.current().wheel));
+		assertEquals(1, s.current().wheel.get(1).children.size());
+	}
+
+	@Test void aVersion7FileWithoutAMoreRingGetsSettingsAtTheTopLevel() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{\"configVersion\": 7, \"wheel\": [{\"label\":\"Sell\",\"command\":\"/sell\"}]}");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(List.of("Sell", "Settings"), s.current().wheel.stream().map(n -> n.label).toList());
+	}
+
+	@Test void aFullMoreRingSendsSettingsToTheTopLevel() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		StringBuilder kids = new StringBuilder();
+		for (int i = 0; i < 8; i++) kids.append(i > 0 ? "," : "").append("{\"label\":\"c").append(i).append("\",\"command\":\"/c").append(i).append("\"}");
+		Files.writeString(f, "{\"configVersion\": 7, \"wheel\": [{\"label\":\"More\",\"children\":[" + kids + "]}]}");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(8, s.current().wheel.get(0).children.size());
+		assertEquals("Settings", s.current().wheel.get(1).label);
 	}
 }

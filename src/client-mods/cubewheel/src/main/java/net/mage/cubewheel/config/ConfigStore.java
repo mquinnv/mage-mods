@@ -1,5 +1,6 @@
 package net.mage.cubewheel.config;
 
+import net.mage.cubewheel.ClientActions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
@@ -103,6 +104,8 @@ public final class ConfigStore {
 	 * offset of your top-left panels (the lowest one), so it stacks below them instead of sitting above them.
 	 * Version 5: the tracker leaves the top right for a panel that takes the Jobs panel's corner and offset, so it
 	 * stacks under it. Version 6: chains of outer tiers become arcs.
+	 * Version 8: a wheel with no Settings entry gains one at the end of {@link DefaultConfig#MORE} (top level if
+	 * that ring is missing or full).
 	 */
 	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
@@ -137,7 +140,28 @@ public final class ConfigStore {
 			merged.putAll(c.events.bossWarps);
 			c.events.bossWarps = merged;
 		}
+		if (c.configVersion < 8 && c.wheel != null && addSettingsLeaf(c.wheel)) {
+			notes.add("wheel: added " + DefaultConfig.MORE + " › Settings (also /cubewheel)");
+		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
+		return true;
+	}
+
+	/**
+	 * Appends the Settings leaf to the top-level More ring, or to the top level when that ring is missing or already
+	 * holds eight entries; does nothing (false) when a node anywhere already sends {@code cubewheel:settings}.
+	 */
+	private static boolean addSettingsLeaf(List<WheelNode> wheel) {
+		for (WheelNode n : WheelUpgrade.walk(wheel)) {
+			if (n.command != null && "settings".equals(ClientActions.name(n.command))) return false;
+		}
+		for (WheelNode n : wheel) {
+			if (n != null && DefaultConfig.MORE.equals(n.label) && n.children != null && n.dynamic == null && n.children.size() < 8) {
+				n.children.add(DefaultConfig.settingsLeaf());
+				return true;
+			}
+		}
+		wheel.add(DefaultConfig.settingsLeaf());
 		return true;
 	}
 

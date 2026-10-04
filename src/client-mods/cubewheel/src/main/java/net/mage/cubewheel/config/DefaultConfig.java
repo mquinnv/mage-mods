@@ -14,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 7;
+	public static final int CONFIG_VERSION = 8;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 
@@ -159,8 +159,14 @@ public final class DefaultConfig {
 				leaf("Claim", "minecraft:golden_shovel", "/p claim"),
 				leaf("Map", "minecraft:map", "/p map"),
 				leaf("Party vault", "minecraft:barrel", "/p vault")),
-			leaf("Ender chest", "minecraft:ender_chest", "/ec")));
+			leaf("Ender chest", "minecraft:ender_chest", "/ec"),
+			settingsLeaf()));
 		return w;
+	}
+
+	/** The wheel's "Settings" leaf (opens CubeWheel's settings screen); shared by the default wheel and the version 8 migration. */
+	static WheelNode settingsLeaf() {
+		return leaf("Settings", "minecraft:comparator", "cubewheel:settings");
 	}
 
 	/** The version 1-2 default wheel, kept so tests can check the upgrade from it. */

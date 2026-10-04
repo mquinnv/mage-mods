@@ -49,7 +49,7 @@ class WheelUpgradeTest {
 		assertEquals("boss", w.get(11).dynamic);
 		assertEquals("tpa", w.get(12).dynamic);
 		WheelNode more = w.get(13);
-		assertEquals(List.of("Shops", "Warps", "Party", "Ender chest"), labels(more.children));
+		assertEquals(List.of("Shops", "Warps", "Party", "Ender chest", "Settings"), labels(more.children));
 		assertEquals(List.of("Alchemist", "Enchanter", "Shop", "Auction house", "Forge", "Fish shop"),
 				labels(child(more.children, "Shops").children));
 		assertEquals(List.of("Server warps", "Bosses"), labels(child(more.children, "Warps").children));
@@ -136,7 +136,7 @@ class WheelUpgradeTest {
 		  ]}""");
 		ConfigStore s = new ConfigStore(f);
 		assertNull(s.reload());
-		assertEquals(List.of("Boss"), labels(s.current().wheel));
+		assertEquals(List.of("Boss", "Settings"), labels(s.current().wheel));
 		assertTrue(s.current().wheel.get(0).isSlice());
 		assertNull(s.current().wheel.get(0).children);
 	}

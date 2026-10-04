@@ -37,6 +37,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
@@ -130,6 +132,12 @@ public final class CubeWheelClient implements ClientModInitializer {
 				() -> Minecraft.getInstance().gui.setScreen(new net.mage.cubewheel.hud.ArrangeScreen())));
 		ClientActions.register("settings", () -> Minecraft.getInstance().execute(
 				() -> Minecraft.getInstance().gui.setScreen(SettingsScreens.root(null))));
+		// /cubewheel (client-only, works on any server): the chat screen is still closing, so open on the next tick.
+		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
+				dispatcher.register(ClientCommands.literal("cubewheel").executes(ctx -> {
+					ClientActions.run(ClientActions.PREFIX + "settings");
+					return 1;
+				})));
 		ClientTickEvents.START_CLIENT_TICK.register(mc -> {
 			try {
 				RefreshController.sampleInput(mc);
