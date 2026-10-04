@@ -41,8 +41,9 @@ public final class CharmsPanel {
 		Inventory inv = mc.player.getInventory();
 		List<Panel.Line> lines = new ArrayList<>();
 		int used = 0;
-		List<Panel.Line> amulets = new ArrayList<>();
-		List<Panel.Line> talismans = new ArrayList<>();
+		// Two rows, no title: the inventory bar (vault fill on its right), then every charm side by side.
+		List<Panel.Piece> amulets = new ArrayList<>();
+		List<Panel.Piece> talismans = new ArrayList<>();
 		for (int i = 0; i < SLOTS; i++) {
 			ItemStack stack = inv.getItem(i);
 			if (stack.isEmpty()) continue;
@@ -53,33 +54,33 @@ public final class CharmsPanel {
 			if (c.isEmpty()) continue;
 			Charm charm = c.get();
 			if (charm.kind() == Charm.Kind.AMULET) {
+				// The worn one (pendant slot) first and bright; carried ones dim.
 				boolean worn = i == PENDANT_SLOT;
-				Panel.Line l = new Panel.Line(worn ? "◆" : "", Panel.GREEN, charm.text(), worn ? Panel.WHITE : DIM, "")
-						.withIcon(Icons.stack(charm.icon()));
-				if (worn) amulets.add(0, l);
-				else amulets.add(l);
+				Panel.Piece piece = new Panel.Piece(Icons.stack(charm.icon()), charm.text(), worn ? Panel.WHITE : DIM);
+				if (worn) amulets.add(0, piece);
+				else amulets.add(piece);
 			} else {
-				talismans.add(new Panel.Line("", 0, charm.text(), Panel.YELLOW, "").withIcon(Icons.stack(charm.icon())));
+				talismans.add(new Panel.Piece(Icons.stack(charm.icon()), charm.text(), Panel.YELLOW));
 			}
 		}
 		InvMeter.Level level = InvMeter.level(used, SLOTS);
-		int colour = level == InvMeter.Level.FULL ? RED : level == InvMeter.Level.HIGH ? Panel.YELLOW : Panel.GRAY;
-		lines.add(new Panel.Line("", 0, "Inv", Panel.GRAY, used + "/" + SLOTS, colour).withProgress(used / (double) SLOTS));
-		lines.addAll(amulets);
-		lines.addAll(talismans);
+		int colour = level == InvMeter.Level.FULL ? RED : level == InvMeter.Level.HIGH ? Panel.YELLOW : Panel.WHITE;
 		String vaults = vaultLine(LiveWatcher.vaultCount(cfg.vaultCount), LiveWatcher.vaultFill());
-		if (!vaults.isEmpty()) lines.add(new Panel.Line(vaults, Panel.GRAY));
+		lines.add(new Panel.Line("", 0, "Inv " + used + "/" + SLOTS, colour, vaults, Panel.GRAY).withProgress(used / (double) SLOTS));
+		List<Panel.Piece> charms = new ArrayList<>(amulets);
+		charms.addAll(talismans);
+		if (!charms.isEmpty()) lines.add(Panel.Line.pieces(charms));
 		CubeWheelConfig.Position p = cfg.charms.position;
-		return Optional.of(new Panel("Charms", lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
+		return Optional.of(new Panel("", lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
 	}
 
-	/** "PV1 30 · PV2 12 · PV3 45 · PV4 —": used slots per vault as last seen ("—": not opened yet). */
+	/** "PV 30·12·full·—": used slots per vault as last seen ("—": not opened yet); empty without vaults. */
 	static String vaultLine(int count, Map<Integer, Integer> fill) {
 		StringBuilder sb = new StringBuilder();
 		for (int page = 1; page <= count; page++) {
-			if (sb.length() > 0) sb.append(" · ");
+			sb.append(sb.length() == 0 ? "PV " : "·");
 			Integer n = fill.get(page);
-			sb.append("PV").append(page).append(' ').append(n == null ? "—" : n >= VaultPages.STORAGE ? "full" : n.toString());
+			sb.append(n == null ? "—" : n >= VaultPages.STORAGE ? "full" : n.toString());
 		}
 		return sb.toString();
 	}

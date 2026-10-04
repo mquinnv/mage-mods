@@ -29,6 +29,8 @@ public final class PanelsHud implements HudElement {
 	private static final int COLUMN_GAP = 4;
 	/** An item icon before a line's text: drawn at half size (8 px) plus a gap. */
 	private static final int ICON_W = 10;
+	/** Space between the pieces of a row of pieces. */
+	private static final int PIECE_GAP = 6;
 	/** Widest a panel's content may grow; longer names are cut to fit, with "…". */
 	private static final int MAX_CONTENT_W = 170;
 	/** The empty part of a row's progress bar. */
@@ -122,6 +124,13 @@ public final class PanelsHud implements HudElement {
 
 	/** A line's text width, its icon included. */
 	private static int textWidth(Font font, Panel.Line l) {
+		if (!l.pieces().isEmpty()) {
+			int w = -PIECE_GAP;
+			for (Panel.Piece piece : l.pieces()) {
+				w += PIECE_GAP + font.width(piece.text()) + (piece.icon() instanceof ItemStack s && !s.isEmpty() ? ICON_W : 0);
+			}
+			return w;
+		}
 		return font.width(l.text()) + (l.icon() instanceof ItemStack s && !s.isEmpty() ? ICON_W : 0);
 	}
 
@@ -160,14 +169,16 @@ public final class PanelsHud implements HudElement {
 		}
 		int w = Math.max(width, Math.max(font.width(p.title()), Math.min(MAX_CONTENT_W, tagW + textW + rightW)));
 		int lh = font.lineHeight + 1;
-		int h = lh * (p.lines().size() + 1);
+		// A panel with an empty title has no title row (the compact Charms panel).
+		int titleRows = p.title().isEmpty() ? 0 : 1;
+		int h = lh * (p.lines().size() + titleRows);
 		HudLayout.Box box = layout.place(p.corner(), p.x(), p.y(), w + 2 * PAD, h + 2 * PAD);
 		int x = box.x() + PAD, y = box.y() + PAD;
 		g.fill(box.x(), box.y(), box.x() + box.w(), box.y() + box.h(), BACKDROP);
-		g.text(font, p.title(), x, y, GOLD);
+		if (titleRows > 0) g.text(font, p.title(), x, y, GOLD);
 		for (int i = 0; i < p.lines().size(); i++) {
 			Panel.Line l = p.lines().get(i);
-			int ly = y + lh * (i + 1);
+			int ly = y + lh * (i + titleRows);
 			boolean heading = l.tag().isEmpty() && l.right().isEmpty();
 			// An accent bar in the left padding (e.g. an entry you made progress on just now).
 			if (l.accent() != 0) g.fill(box.x(), ly - 1, box.x() + PAD, ly + lh - 1, l.accent());
@@ -188,6 +199,21 @@ public final class PanelsHud implements HudElement {
 				g.item(stack, 0, 0);
 				g.pose().popMatrix();
 				tx += ICON_W;
+			}
+			if (!l.pieces().isEmpty()) {
+				for (Panel.Piece piece : l.pieces()) {
+					if (piece.icon() instanceof ItemStack stack && !stack.isEmpty()) {
+						g.pose().pushMatrix();
+						g.pose().translate(tx, ly - 0.5f);
+						g.pose().scale(0.5f, 0.5f);
+						g.item(stack, 0, 0);
+						g.pose().popMatrix();
+						tx += ICON_W;
+					}
+					g.text(font, piece.text(), tx, ly, piece.color());
+					tx += font.width(piece.text()) + PIECE_GAP;
+				}
+				continue;
 			}
 			// Names use all the room the panel has; only what really does not fit is cut.
 			int room = x + w - tx - (l.right().isEmpty() ? 0 : font.width(l.right()) + COLUMN_GAP);
