@@ -243,9 +243,12 @@ public final class DefaultConfig {
 	}
 
 	/** The Status panel: top left, first, so Jobs and Tracker stack under it. */
-	/** Bottom right: clear of chat (bottom left) and the hotbar. */
+	/**
+	 * Centred above the hotbar, where schrumboHUD's grid sat: 52 clears the hotbar (22), the XP bar, the hearts and
+	 * the armour row. Bottom right is where minimaps go (Michael's is there, 2026-10-03).
+	 */
 	public static CubeWheelConfig.Position charmsPosition() {
-		return new CubeWheelConfig.Position("bottom_right", 4, 4);
+		return new CubeWheelConfig.Position("bottom_center", 0, 52);
 	}
 
 	public static CubeWheelConfig.Position statusPosition() {

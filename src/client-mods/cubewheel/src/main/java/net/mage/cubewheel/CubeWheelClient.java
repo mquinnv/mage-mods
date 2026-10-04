@@ -1,5 +1,7 @@
 package net.mage.cubewheel;
 
+import net.mage.cubewheel.config.DefaultConfig;
+
 import com.google.gson.JsonElement;
 import net.mage.cubewheel.boosters.BoosterWatcher;
 import net.mage.cubewheel.capture.CaptureLog;
@@ -112,13 +114,13 @@ public final class CubeWheelClient implements ClientModInitializer {
 		// Panels in one corner stack in this order. The ones that come and go (boosters, cooldowns) go last so
 		// they don't push the always-present Jobs/Tracker panels up and down.
 		net.mage.cubewheel.status.StatusPanel.register();
-		PanelsHud.add(net.mage.cubewheel.status.StatusPanel::panel); // top left, above Jobs
-		PanelsHud.add(EventHud::panel);
-		PanelsHud.add(JobsPanel::panel);
-		PanelsHud.add(TrackerPanel::panel); // under the Jobs panel
-		PanelsHud.add(BoosterWatcher::panel);
-		PanelsHud.add(CooldownWatcher::panel);
-		PanelsHud.add(net.mage.cubewheel.charms.CharmsPanel::panel); // bottom right, in place of schrumboHUD
+		PanelsHud.add(net.mage.cubewheel.status.StatusPanel::panel, c -> c.status.position, DefaultConfig::statusPosition); // top left, above Jobs
+		PanelsHud.add(EventHud::panel, c -> c.events.position, DefaultConfig::eventsPosition);
+		PanelsHud.add(JobsPanel::panel, c -> c.tracker.jobsPanel.position, DefaultConfig::jobsPanelPosition);
+		PanelsHud.add(TrackerPanel::panel, c -> c.tracker.position, DefaultConfig::trackerPosition); // under the Jobs panel
+		PanelsHud.add(BoosterWatcher::panel, c -> c.boosters.position, DefaultConfig::boostersPosition);
+		PanelsHud.add(CooldownWatcher::panel, c -> c.cooldowns.position, DefaultConfig::cooldownsPosition);
+		PanelsHud.add(net.mage.cubewheel.charms.CharmsPanel::panel, c -> c.charms.position, DefaultConfig::charmsPosition); // above the hotbar, in place of schrumboHUD
 		PanelsHud.register();
 		SvaClient.init(configDir);
 		Keybinds.register();
@@ -161,6 +163,11 @@ public final class CubeWheelClient implements ClientModInitializer {
 			handleJobsPanelKey(mc);
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] jobs panel key handler failed", e);
+		}
+		try {
+			if (pressed(Keybinds.arrange) && mc.gui.screen() == null) mc.gui.setScreen(new net.mage.cubewheel.hud.ArrangeScreen());
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] arrange key handler failed", e);
 		}
 		EventHud.tick(mc); // catches and logs its own failures
 		try {

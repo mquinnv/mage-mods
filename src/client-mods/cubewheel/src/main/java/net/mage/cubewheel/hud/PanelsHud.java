@@ -39,11 +39,43 @@ public final class PanelsHud implements HudElement {
 
 	private static final List<Source> SOURCES = new ArrayList<>();
 	private static final List<Boolean> FAILED = new ArrayList<>();
+	/** Per source: its position in the live config, and its default (for the arrange screen). */
+	private static final List<Function<net.mage.cubewheel.config.CubeWheelConfig, net.mage.cubewheel.config.CubeWheelConfig.Position>> POSITIONS = new ArrayList<>();
+	private static final List<java.util.function.Supplier<net.mage.cubewheel.config.CubeWheelConfig.Position>> DEFAULTS = new ArrayList<>();
 
-	/** Adds a source; panels in one corner are stacked in registration order. */
-	public static void add(Source s) {
+	/** Where a source's panel was drawn last frame (for dragging it). */
+	public record Placed(int source, String title, HudLayout.Box box) {}
+
+	private static volatile List<Placed> lastPlaced = List.of();
+
+	/**
+	 * Adds a source; panels in one corner are stacked in registration order. {@code position} reads its position in
+	 * the live config (the arrange screen moves it), {@code def} gives its default.
+	 */
+	public static void add(Source s, Function<net.mage.cubewheel.config.CubeWheelConfig, net.mage.cubewheel.config.CubeWheelConfig.Position> position,
+			java.util.function.Supplier<net.mage.cubewheel.config.CubeWheelConfig.Position> def) {
 		SOURCES.add(s);
 		FAILED.add(false);
+		POSITIONS.add(position);
+		DEFAULTS.add(def);
+	}
+
+	public static List<Placed> lastPlaced() {
+		return lastPlaced;
+	}
+
+	/** The live config position of source {@code i}. */
+	public static net.mage.cubewheel.config.CubeWheelConfig.Position position(int i) {
+		return POSITIONS.get(i).apply(CubeWheelClient.config().current());
+	}
+
+	/** A fresh copy of source {@code i}'s default position. */
+	public static net.mage.cubewheel.config.CubeWheelConfig.Position defaultPosition(int i) {
+		return DEFAULTS.get(i).get();
+	}
+
+	public static int sourceCount() {
+		return SOURCES.size();
 	}
 
 	public static void register() {
@@ -59,10 +91,14 @@ public final class PanelsHud implements HudElement {
 		HudLayout layout = new HudLayout(g.guiWidth(), g.guiHeight());
 		layout.reserve(HudLayout.Corner.TOP_RIGHT, TrackerHud.lastBottom());
 		List<Panel> panels = new ArrayList<>();
+		List<Integer> sources = new ArrayList<>();
 		for (int i = 0; i < SOURCES.size(); i++) {
 			try {
 				Optional<Panel> p = SOURCES.get(i).apply(now);
-				if (p.isPresent() && !p.get().lines().isEmpty()) panels.add(p.get());
+				if (p.isPresent() && !p.get().lines().isEmpty()) {
+					panels.add(p.get());
+					sources.add(i);
+				}
 			} catch (RuntimeException e) {
 				if (!FAILED.get(i)) CubeWheelClient.LOG.error("[cubewheel] HUD panel failed", e);
 				FAILED.set(i, true);
@@ -70,14 +106,18 @@ public final class PanelsHud implements HudElement {
 		}
 		// Panels stacked in one corner share the widest one's width, so they line up as one column.
 		java.util.Map<HudLayout.Corner, Integer> cornerWidth = new java.util.EnumMap<>(HudLayout.Corner.class);
-		for (Panel p : panels) cornerWidth.merge(p.corner(), width(mc.font, p), Math::max);
-		for (Panel p : panels) {
+		for (Panel p : panels) if (p.corner() != HudLayout.Corner.CUSTOM) cornerWidth.merge(p.corner(), width(mc.font, p), Math::max);
+		List<Placed> placed = new ArrayList<>();
+		for (int k = 0; k < panels.size(); k++) {
+			Panel p = panels.get(k);
 			try {
-				draw(g, mc.font, layout, p, cornerWidth.get(p.corner()));
+				int w = p.corner() == HudLayout.Corner.CUSTOM ? width(mc.font, p) : cornerWidth.get(p.corner());
+				placed.add(new Placed(sources.get(k), p.title(), draw(g, mc.font, layout, p, w)));
 			} catch (RuntimeException e) {
 				CubeWheelClient.LOG.error("[cubewheel] HUD panel draw failed", e);
 			}
 		}
+		lastPlaced = List.copyOf(placed);
 	}
 
 	/** A line's text width, its icon included. */
@@ -106,7 +146,7 @@ public final class PanelsHud implements HudElement {
 		return font.plainSubstrByWidth(s, max - font.width("…")).stripTrailing() + "…";
 	}
 
-	private static void draw(GuiGraphicsExtractor g, Font font, HudLayout layout, Panel p, int width) {
+	private static HudLayout.Box draw(GuiGraphicsExtractor g, Font font, HudLayout layout, Panel p, int width) {
 		// Columns: tag (aligned), text, right-aligned part.
 		int tagW = 0, textW = 0, rightW = 0;
 		for (Panel.Line l : p.lines()) {
@@ -154,5 +194,6 @@ public final class PanelsHud implements HudElement {
 			g.text(font, fit(font, l.text(), room), tx, ly, l.color());
 			if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), ly, l.rightColor());
 		}
+		return box;
 	}
 }

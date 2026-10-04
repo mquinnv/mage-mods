@@ -13,6 +13,24 @@ class HudLayoutTest {
 		assertEquals(HudLayout.Corner.BOTTOM_LEFT, HudLayout.Corner.parse("bottom left"));
 	}
 
+	@Test void bottomCentreSitsCentredAboveTheHotbarAndStacksUp() {
+		assertEquals(HudLayout.Corner.BOTTOM_CENTER, HudLayout.Corner.parse("bottom_center"));
+		HudLayout l = new HudLayout(400, 300);
+		HudLayout.Box a = l.place(HudLayout.Corner.BOTTOM_CENTER, 0, 52, 100, 20);
+		assertEquals(new HudLayout.Box(150, 300 - 52 - 20, 100, 20), a);
+		HudLayout.Box b = l.place(HudLayout.Corner.BOTTOM_CENTER, 10, 52, 60, 10); // offX nudges right of centre
+		assertEquals(170 + 10, b.x());
+		assertEquals(a.y() - HudLayout.GAP - 10, b.y());
+	}
+
+	@Test void customIsExactlyWhereItWasDroppedAndStacksWithNothing() {
+		HudLayout l = new HudLayout(400, 300);
+		assertEquals(new HudLayout.Box(120, 80, 50, 20), l.place(HudLayout.Corner.CUSTOM, 120, 80, 50, 20));
+		assertEquals(new HudLayout.Box(120, 80, 50, 20), l.place(HudLayout.Corner.CUSTOM, 120, 80, 50, 20)); // no stacking
+		assertEquals(new HudLayout.Box(4, 4, 50, 20), l.place(HudLayout.Corner.TOP_LEFT, 4, 4, 50, 20)); // corners unaffected
+		assertEquals(new HudLayout.Box(350, 280, 50, 20), l.place(HudLayout.Corner.CUSTOM, 999, 999, 50, 20)); // kept on screen
+	}
+
 	@Test void topLeftPanelsStackDownwards() {
 		HudLayout l = new HudLayout(400, 300);
 		HudLayout.Box a = l.place(HudLayout.Corner.TOP_LEFT, 4, 4, 50, 20);
