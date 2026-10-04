@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -363,10 +364,23 @@ public final class RadialScreen extends Screen {
 			keyStillHeld = false;
 			if (hoveredArc >= 0 && arcOpen >= 0) activate(arcAt(arcOpen).get(hoveredArc));
 			else if (hovered >= 0 && hovered < entries.size()) activate(atTier(entries.get(hovered), hoveredTier));
-			else onClose();
+			// A tap (released without moving the mouse) just shows the wheel: it stays open in click mode
+			// (Michael 2026-10-04). Pointing back at the hub after moving still cancels.
+			else if (pointerMoved) onClose();
 		} catch (RuntimeException e) {
 			fail("tick", e);
 		}
+	}
+
+	@Override
+	public boolean keyPressed(KeyEvent event) {
+		InputConstants.Key bound = holdKey == null ? null : KeyMappingHelper.getBoundKeyOf(holdKey);
+		if (bound != null && bound.getType() == InputConstants.Type.KEYSYM && bound.getValue() == event.key()) {
+			// Key repeat while held does nothing; pressing it again once the wheel is open in click mode closes it.
+			if (!keyStillHeld) onClose();
+			return true;
+		}
+		return super.keyPressed(event);
 	}
 
 	@Override
