@@ -49,6 +49,9 @@ public final class ConfigNormalizer {
 		c.charms.position = normalizePosition(c.charms.position, DefaultConfig.charmsPosition());
 		if (c.status == null) c.status = new CubeWheelConfig.Status();
 		c.status.position = normalizePosition(c.status.position, DefaultConfig.statusPosition());
+		if (c.toast == null) c.toast = new CubeWheelConfig.Toast();
+		c.toast.seconds = Double.isNaN(c.toast.seconds) ? DefaultConfig.TOAST_SECONDS
+				: Math.max(DefaultConfig.TOAST_SECONDS_MIN, Math.min(DefaultConfig.TOAST_SECONDS_MAX, c.toast.seconds));
 		normalizeDailyReward(c, warnings);
 		c.wheel = c.wheel == null ? DefaultConfig.wheel() : normalizeNodes(c.wheel);
 		c.vaultCount = Math.max(0, Math.min(54, c.vaultCount));

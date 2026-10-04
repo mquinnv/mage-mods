@@ -177,6 +177,16 @@ public final class SettingsSpec {
 										"Show the Charms panel: inventory fill, the worn amulet and carried talismans,"
 												+ " vault fill.",
 										c -> c.charms.enabled, (c, v) -> c.charms.enabled = v))),
+						new Group("Progress popup", List.of(
+								toggle(d, "toast.enabled", "Enabled",
+										"A short line under the crosshair when local counting adds progress to a tracked"
+												+ " entry (\"+1 Mana Wolves  ~10/74\"); green with a \"✓\" when it completes it.",
+										c -> c.toast.enabled, (c, v) -> c.toast.enabled = v),
+								doubleRange(d, "toast.seconds", "Seconds shown",
+										"How long the popup stays after the last increment before it fades. Further"
+												+ " increments to the same entry add up in it and restart this time.",
+										DefaultConfig.TOAST_SECONDS_MIN, DefaultConfig.TOAST_SECONDS_MAX, 0.5,
+										c -> c.toast.seconds, (c, v) -> c.toast.seconds = v))),
 						new Group("Exact positions", positions(d), true))),
 				new Category("Tracker", List.of(
 						new Group("Sources & refresh", List.of(

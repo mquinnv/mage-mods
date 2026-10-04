@@ -71,10 +71,15 @@ final class CompactJob {
 	 * trailing "·3h" read as a countdown.
 	 */
 	static String count(TrackerRow row, long now) {
-		String c = (row.estimated() ? "~" : "") + number(row.shownCurrent()) + "/" + number(row.shownMax());
+		String c = amount(row);
 		if (row.complete()) c += " ✓";
 		else if (row.atCap()) c += " ✓?";
 		return c;
+	}
+
+	/** {@link #count} without its done mark: "3,127/4,800", "~2/2". */
+	static String amount(TrackerRow row) {
+		return (row.estimated() ? "~" : "") + number(row.shownCurrent()) + "/" + number(row.shownMax());
 	}
 
 	/**

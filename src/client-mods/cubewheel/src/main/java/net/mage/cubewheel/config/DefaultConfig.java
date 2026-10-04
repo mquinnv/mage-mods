@@ -17,6 +17,10 @@ public final class DefaultConfig {
 	public static final int CONFIG_VERSION = 9;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
+	/** The progress popup's visible time and the bounds ConfigNormalizer clamps it to. */
+	public static final double TOAST_SECONDS = 1.5;
+	public static final double TOAST_SECONDS_MIN = 0.5;
+	public static final double TOAST_SECONDS_MAX = 5.0;
 
 	public static List<String> serverHosts() {
 		return new ArrayList<>(List.of("manacube.com", "manacube.net"));

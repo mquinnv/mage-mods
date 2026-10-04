@@ -28,6 +28,15 @@ public final class CubeWheelConfig {
 	public Status status = new Status();
 
 	public Charms charms = new Charms();
+	/** The popup under the crosshair when local counting adds progress to a tracked entry. */
+	public Toast toast = new Toast();
+
+	/** "+1 Mana Wolves  ~10/74" under the crosshair while a live counter goes up. */
+	public static final class Toast {
+		public boolean enabled = true;
+		/** How long it stays fully visible after the last increment, 0.5-5.0; a short fade follows. */
+		public double seconds = DefaultConfig.TOAST_SECONDS;
+	}
 
 	/** The Charms panel: inventory fill, the worn amulet and carried talismans, vault fill. */
 	public static final class Charms {

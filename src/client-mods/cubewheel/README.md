@@ -177,6 +177,8 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `tracker.jobsPanel.enabled` | Left-hand Jobs panel on/off (saved by the "Toggle jobs panel" key); while on, job entries leave the tracker HUD (see [Jobs panel](#jobs-panel)) | `true` |
 | `tracker.jobsPanel.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `tracker.local.specialWorlds` | Worlds that count as "special worlds (/worlds)" | the six Mana worlds |
+| `toast.enabled` | Popup under the crosshair when a live counter goes up (see [Progress popup](#progress-popup)) | `true` |
+| `toast.seconds` | How long the popup stays after the last increment before it fades, 0.5–5 | `1.5` |
 | `events.enabled` | Event panel and alerts (see [Event timer](#event-timer)) | `true` |
 | `events.hudVisible` | Event panel on/off (saved by the "Toggle event HUD" key) | `true` |
 | `events.show` | Upcoming events listed, 1–10 | `3` |
@@ -552,6 +554,25 @@ Tracker
 - `tracker.hudVisible` and the "Toggle tracker HUD" key show or hide it; `hudMaxLines`, `worldFilter`, pins and
   hidden entries work as before. While the Jobs panel is on, job entries are left out.
 - Loading a config older than version 5 gives the panel the Jobs panel's corner and offset.
+
+### Progress popup
+
+When [local counting](#live-estimates-local-counting) adds progress to a tracked entry (blocks, kills, fish, shears,
+milk, a quest completed in chat), a short line appears just below the crosshair and fades out:
+
+```
++1 Mana Wolves  ~10/74
+```
+
+- Named and counted as on the Jobs and Tracker panels (`~` for a live estimate); an objective of a multi-objective
+  quest shows its "↳" row's name and count ("+1 Golden Knights  ~6/10").
+- Further increments to the same entry while it is shown add up in it ("+7 Acacia Logs  ~493/630") and restart its
+  time; an increment to another entry replaces it. A count taken back (a rejected break, a chat catch replacing
+  the bobber's) is taken off it too.
+- Cyan; green with a `✓` ("✓ Mana Wolves  ~74/74") when the increment reaches the target.
+- Only local counts show it: menu reads and sidebar values never do. Hidden while a screen is open.
+- `toast.enabled` and `toast.seconds` (default 1.5 s, then a 0.3 s fade), in the settings screen's HUD panels tab
+  under "Progress popup".
 
 ### Event timer
 

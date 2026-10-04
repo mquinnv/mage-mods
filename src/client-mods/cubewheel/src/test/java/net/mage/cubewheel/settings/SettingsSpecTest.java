@@ -52,7 +52,8 @@ class SettingsSpecTest {
 	@Test
 	void hudPanelsCategoryHasOneGroupPerPanelThenCollapsedExactPositions() {
 		Category hud = SettingsSpec.categories().get(1);
-		assertEquals(List.of("Status", "Events", "Jobs", "Tracker", "Boosters", "Cooldowns", "Charms", "Exact positions"),
+		assertEquals(List.of("Status", "Events", "Jobs", "Tracker", "Boosters", "Cooldowns", "Charms", "Progress popup",
+				"Exact positions"),
 				hud.groups().stream().map(Group::name).toList());
 		assertEquals(List.of("status.enabled", "status.armor"), ids(hud.groups().get(0)));
 		assertEquals(List.of("events.hudVisible"), ids(hud.groups().get(1)));
@@ -62,8 +63,9 @@ class SettingsSpecTest {
 		assertEquals(List.of("boosters.enabled"), ids(hud.groups().get(4)));
 		assertEquals(List.of("cooldowns.enabled", "cooldowns.showUses", "cooldowns.mcmmo"), ids(hud.groups().get(5)));
 		assertEquals(List.of("charms.enabled"), ids(hud.groups().get(6)));
-		for (int i = 0; i < 7; i++) assertFalse(hud.groups().get(i).collapsed(), hud.groups().get(i).name());
-		Group exact = hud.groups().get(7);
+		assertEquals(List.of("toast.enabled", "toast.seconds"), ids(hud.groups().get(7)));
+		for (int i = 0; i < 8; i++) assertFalse(hud.groups().get(i).collapsed(), hud.groups().get(i).name());
+		Group exact = hud.groups().get(8);
 		assertTrue(exact.collapsed());
 		List<String> expected = new ArrayList<>();
 		for (String p : List.of("status", "events", "tracker.jobsPanel", "tracker", "boosters", "cooldowns", "charms")) {
@@ -122,7 +124,7 @@ class SettingsSpecTest {
 	@Test
 	void doubleRangesHoldTheirDefaultAndMatchTheNormalizerClamps() {
 		List<DoubleRange> ranges = all().stream().filter(s -> s instanceof DoubleRange).map(s -> (DoubleRange) s).toList();
-		assertEquals(1, ranges.size());
+		assertEquals(2, ranges.size()); // nearThreshold, toast.seconds
 		for (DoubleRange r : ranges) {
 			assertTrue(r.min() <= r.defaultValue() && r.defaultValue() <= r.max(), r.id());
 			assertTrue(r.step() > 0, r.id());

@@ -141,6 +141,15 @@ Bind "Refresh trackers" under Options > Controls > Key Binds > CubeWheel first.
 - [ ] "Toggle jobs panel" off: the Jobs panel goes, job entries (⚒ target) appear in the Tracker panel, which moves up.
 - [ ] An existing config with `"configVersion": 4` and `tracker.jobsPanel.position` `{"corner": "top_left", "x": 6, "y": 80}`: after loading, `tracker.position` is the same and `configVersion` is 5.
 
+## Progress popup
+
+- [ ] Break a block a tracked job counts: "+1 <target>  ~n/m" appears in cyan just below the crosshair and fades after about 1.5 s.
+- [ ] Break several quickly: one popup counting up ("+5 …") with the latest count; it fades 1.5 s after the last break.
+- [ ] Kill a mob for a different entry while it shows: the popup switches to that entry ("+1 …").
+- [ ] Finish an entry locally (or "You have completed the <quest>!"): green "✓ <name>  ~n/n".
+- [ ] Open a /jobs or /pquests menu (a server read): no popup. Open the inventory while counting: the popup is hidden.
+- [ ] Settings → HUD panels → Progress popup: "Enabled" off stops it; "Seconds shown" 4.0 keeps it about 4 s.
+
 ## Live estimates (local counting)
 
 Open `/pquests`, `/prestige` (rank objectives) and `/challenges` once so the objectives are known, and pin the entries below. Turn capture on to see `local`/`world`/`estimate` lines while testing.

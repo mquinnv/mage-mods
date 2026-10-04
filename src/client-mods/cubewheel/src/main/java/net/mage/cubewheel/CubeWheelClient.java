@@ -14,6 +14,7 @@ import net.mage.cubewheel.events.EventHud;
 import net.mage.cubewheel.homes.HomesCache;
 import net.mage.cubewheel.homes.HomesFetcher;
 import net.mage.cubewheel.hud.PanelsHud;
+import net.mage.cubewheel.hud.ProgressToastHud;
 import net.mage.cubewheel.live.LiveWatcher;
 import net.mage.cubewheel.mixin.BossHealthOverlayAccessor;
 import net.mage.cubewheel.mixin.HudAccessor;
@@ -125,6 +126,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		PanelsHud.add(CooldownWatcher::panel, c -> c.cooldowns.position, DefaultConfig::cooldownsPosition);
 		PanelsHud.add(net.mage.cubewheel.charms.CharmsPanel::panel, c -> c.charms.position, DefaultConfig::charmsPosition); // above the hotbar, in place of schrumboHUD
 		PanelsHud.register();
+		ProgressToastHud.register(); // after the panels and the tracker store
 		SvaClient.init(configDir);
 		Keybinds.register();
 		// Opened on the next tick: a wheel click runs this while the wheel screen is closing, which would replace it.

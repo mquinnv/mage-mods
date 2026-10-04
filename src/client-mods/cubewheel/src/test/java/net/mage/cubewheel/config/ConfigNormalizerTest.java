@@ -16,6 +16,25 @@ class ConfigNormalizerTest {
 		assertTrue(warnings.isEmpty());
 	}
 
+	@Test void toastSecondsAreClampedAndAMissingSectionIsFilled() {
+		CubeWheelConfig c = DefaultConfig.create();
+		assertTrue(c.toast.enabled);
+		assertEquals(1.5, c.toast.seconds);
+		c.toast.seconds = 0.1;
+		ConfigNormalizer.normalize(c, new ArrayList<>());
+		assertEquals(0.5, c.toast.seconds);
+		c.toast.seconds = 60;
+		ConfigNormalizer.normalize(c, new ArrayList<>());
+		assertEquals(5.0, c.toast.seconds);
+		c.toast.seconds = Double.NaN;
+		ConfigNormalizer.normalize(c, new ArrayList<>());
+		assertEquals(1.5, c.toast.seconds);
+		c.toast = null; // a file from before the popup
+		ConfigNormalizer.normalize(c, new ArrayList<>());
+		assertTrue(c.toast.enabled);
+		assertEquals(1.5, c.toast.seconds);
+	}
+
 	@Test void anInvalidBossWarpRegexIsDroppedWithAWarning() {
 		CubeWheelConfig c = DefaultConfig.create();
 		c.events.bossWarps.clear();

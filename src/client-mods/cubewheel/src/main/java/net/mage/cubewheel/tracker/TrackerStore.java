@@ -69,6 +69,7 @@ public final class TrackerStore {
 	/** Not persisted: when each entry last made progress this session (local count or a higher server value). */
 	private final Map<String, Long> progressAt = new HashMap<>();
 	private BiConsumer<String, Accuracy> snapBackListener;
+	private BiConsumer<String, Long> progressListener;
 
 	// Rule caches, rebuilt after any change to items or objectives.
 	private boolean rulesDirty = true;
@@ -83,6 +84,24 @@ public final class TrackerStore {
 	/** Called with (id, accuracy) whenever an authoritative read replaces an estimate. */
 	public void setSnapBackListener(BiConsumer<String, Accuracy> listener) {
 		this.snapBackListener = listener;
+	}
+
+	/**
+	 * Called with (counter key, units) after every local count ({@link #addEstimate}, units &gt; 0) and every take-back
+	 * ({@link #reverseEstimate}, units &lt; 0), the store already updated; never for menu or sidebar reads. This is the
+	 * one place all local counting passes through (blocks, kills, fish, shears, milk, quests completed in chat).
+	 */
+	public void setProgressListener(BiConsumer<String, Long> listener) {
+		this.progressListener = listener;
+	}
+
+	private void progressed(String key, long units) {
+		if (progressListener == null) return;
+		try {
+			progressListener.accept(key, units);
+		} catch (RuntimeException e) {
+			LOG.warn("[cubewheel] progress listener failed: {}", e.toString());
+		}
 	}
 
 	/**
@@ -213,6 +232,17 @@ public final class TrackerStore {
 		return id + SUB + index;
 	}
 
+	/** The objective index of a {@link #subKey} ("…#sub1" -> 1); -1 for an entry id. */
+	static int subIndex(String key) {
+		int i = key == null ? -1 : key.lastIndexOf(SUB);
+		if (i < 0) return -1;
+		try {
+			return Integer.parseInt(key.substring(i + SUB.length()));
+		} catch (NumberFormatException e) {
+			return -1;
+		}
+	}
+
 	/** The entry a counter key belongs to ("pquests:King of the Jungle#sub0" -> "pquests:King of the Jungle"). */
 	static String baseId(String key) {
 		int i = key == null ? -1 : key.lastIndexOf(SUB);
@@ -273,6 +303,7 @@ public final class TrackerStore {
 		estimates.put(id, old == null
 				? new Estimate(units, t.current(), now, now)
 				: new Estimate(old.count() + units, old.baseline(), old.since(), now));
+		progressed(id, units);
 		return true;
 	}
 
@@ -283,6 +314,7 @@ public final class TrackerStore {
 		long left = old.count() - units;
 		if (left <= 0) estimates.remove(id);
 		else estimates.put(id, new Estimate(left, old.baseline(), old.since(), old.lastAt()));
+		progressed(id, -Math.min(units, old.count()));
 		return true;
 	}
 
@@ -314,6 +346,12 @@ public final class TrackerStore {
 		for (Trackable t : items.values()) out.add(row(t, withEstimates));
 		out.sort(ROWS_BY_FRACTION_THEN_NAME);
 		return out;
+	}
+
+	/** Entry {@code id} as displayed, its local estimate included; empty if unknown. */
+	public Optional<TrackerRow> row(String id) {
+		Trackable t = id == null ? null : items.get(id);
+		return t == null ? Optional.empty() : Optional.of(row(t, true));
 	}
 
 	private TrackerRow row(Trackable t, boolean withEstimates) {

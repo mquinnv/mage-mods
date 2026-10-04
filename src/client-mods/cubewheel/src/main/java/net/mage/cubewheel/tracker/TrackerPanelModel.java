@@ -119,8 +119,7 @@ public final class TrackerPanelModel {
 						ObjectiveInfo.Sub sub = info.subs().get(i);
 						Long extra = subCounted == null ? null : subCounted.apply(TrackerStore.subKey(t.id(), i));
 						long[] dt = detailAmounts(sub, extra == null ? 0 : extra);
-						String count = dt == null ? "" : (extra != null && extra > 0 ? "~" : "")
-								+ CompactJob.number(dt[0]) + "/" + CompactJob.number(dt[1]);
+						String count = detailRight(dt, extra == null ? 0 : extra);
 						lines.add(new Line("", 0, DETAIL_INDENT + CompactJob.cut(detailName(sub, worldNames), MAX_DETAIL),
 								count, Tone.DETAIL, Activity.NONE, dt == null ? -1 : Math.min(1, dt[0] / (double) dt[1])));
 					}
@@ -185,6 +184,12 @@ public final class TrackerPanelModel {
 		}
 		long done = Math.round(Math.max(0, Math.min(100, sub.percent())) * total / 100.0) + Math.max(0, extra);
 		return new long[] {Math.min(done, total), total};
+	}
+
+	/** An objective row's count from {@link #detailAmounts}: "5/10", "~6/10" with units counted since; "" if unknown. */
+	static String detailRight(long[] amounts, long extra) {
+		if (amounts == null) return "";
+		return (extra > 0 ? "~" : "") + CompactJob.number(amounts[0]) + "/" + CompactJob.number(amounts[1]);
 	}
 
 	/** The prestige rank an entry is ("Rank [✪8] · …" -> 8), else 0. */
