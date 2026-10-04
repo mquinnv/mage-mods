@@ -105,6 +105,14 @@ public final class RadialScreen extends Screen {
 	private int hoveredTier;
 	private final TierPicker tiers = new TierPicker();
 	private boolean cursorPlaced;
+	/** Set by the first real mouse move; until then the reported position is stale (see extractRenderState). */
+	private boolean pointerMoved;
+
+	@Override
+	public void mouseMoved(double x, double y) {
+		pointerMoved = true;
+		super.mouseMoved(x, y);
+	}
 	/** The slice whose arc is showing (it, or one of its arc entries, is pointed at), or -1. */
 	private int arcOpen = -1;
 	/** The arc entry pointed at, or -1. */
@@ -213,6 +221,12 @@ public final class RadialScreen extends Screen {
 		super.extractRenderState(g, mouseX, mouseY, partial);
 		int cx = width / 2;
 		int cy = centerY();
+		// Until the mouse really moves, Minecraft still reports the old screen centre (below the lifted hub), which
+		// read as "pointing straight down" (Fly) on a release without moving: treat the pointer as on the hub.
+		if (!pointerMoved) {
+			mouseX = cx;
+			mouseY = cy;
+		}
 		// The band must hold each icon+label block wherever it sits on the ring: at 3 and 9 o'clock a
 		// label spans the band's thickness horizontally, so the widest label sets the thickness.
 		long now = System.currentTimeMillis();
@@ -361,8 +375,8 @@ public final class RadialScreen extends Screen {
 			keyStillHeld = false; // any mouse-driven action ends hold mode; a later release must not commit
 			int cx = width / 2;
 			int cy = centerY();
-			double dx = event.x() - cx;
-			double dy = event.y() - cy;
+			double dx = pointerMoved ? event.x() - cx : 0;
+			double dy = pointerMoved ? event.y() - cy : 0;
 			double dead = renderedHub > 0 ? renderedHub : radius() * HUB_FRACTION;
 			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 				if (hoveredArc >= 0 && arcOpen >= 0 && arcOpen < entries.size() && arcAt(arcOpen) != null) {
