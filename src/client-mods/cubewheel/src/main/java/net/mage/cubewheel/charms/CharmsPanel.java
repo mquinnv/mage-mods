@@ -31,6 +31,8 @@ public final class CharmsPanel {
 	private static final int PENDANT_SLOT = 35;
 	private static final int RED = 0xFFFF5555;
 	private static final int DIM = 0xFF707070;
+	/** Each slot's charm (or none), parsed only when the slot's item object changes. Client thread only. */
+	private static final SlotCache<Optional<Charm>> CHARMS = new SlotCache<>(SLOTS);
 
 	private CharmsPanel() {}
 
@@ -48,9 +50,7 @@ public final class CharmsPanel {
 			ItemStack stack = inv.getItem(i);
 			if (stack.isEmpty()) continue;
 			used++;
-			ItemLore lore = stack.get(DataComponents.LORE);
-			List<String> text = lore == null ? List.of() : lore.lines().stream().map(Component::getString).toList();
-			Optional<Charm> c = Charm.parse(stack.getHoverName().getString(), text);
+			Optional<Charm> c = CHARMS.get(i, stack, () -> charm(stack));
 			if (c.isEmpty()) continue;
 			Charm charm = c.get();
 			if (charm.kind() == Charm.Kind.AMULET) {
@@ -76,6 +76,13 @@ public final class CharmsPanel {
 		if (!charms.isEmpty()) lines.add(Panel.Line.pieces(charms));
 		CubeWheelConfig.Position p = cfg.charms.position;
 		return Optional.of(new Panel("", lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
+	}
+
+	/** The charm {@code stack} is, from its name and lore. */
+	private static Optional<Charm> charm(ItemStack stack) {
+		ItemLore lore = stack.get(DataComponents.LORE);
+		List<String> text = lore == null ? List.of() : lore.lines().stream().map(Component::getString).toList();
+		return Charm.parse(stack.getHoverName().getString(), text);
 	}
 
 	/** "PV 15·33·full·—": free slots per vault as last seen ("—": not opened yet); empty without vaults. */

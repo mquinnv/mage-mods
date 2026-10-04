@@ -12,6 +12,8 @@ import java.util.Map;
  */
 public final class HudLayout {
 	public static final int GAP = 3;
+	/** {@link Corner#parse} results by spelling. */
+	private static final Map<String, Corner> PARSED = new java.util.concurrent.ConcurrentHashMap<>();
 
 	public enum Corner {
 		TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT,
@@ -23,6 +25,15 @@ public final class HudLayout {
 		/** "top_left", "Top-Left", "top left" ...; anything unknown is TOP_LEFT. */
 		public static Corner parse(String s) {
 			if (s == null) return TOP_LEFT;
+			// Every panel's position is parsed every frame; the config holds only a few spellings.
+			Corner known = PARSED.get(s);
+			if (known != null) return known;
+			Corner c = parseUncached(s);
+			if (PARSED.size() < 64) PARSED.put(s, c);
+			return c;
+		}
+
+		private static Corner parseUncached(String s) {
 			String k = s.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
 			for (Corner c : values()) {
 				if (c.name().equals(k)) return c;

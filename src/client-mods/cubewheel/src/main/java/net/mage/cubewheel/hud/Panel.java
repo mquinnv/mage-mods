@@ -13,6 +13,11 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 		this(title, lines, corner, x, y, null);
 	}
 
+	/** This panel drawn at {@code corner} + ({@code x}, {@code y}); itself when it already is. */
+	public Panel at(HudLayout.Corner corner, int x, int y) {
+		return corner == this.corner && x == this.x && y == this.y ? this : new Panel(title, lines, corner, x, y, grid);
+	}
+
 	public static final int WHITE = 0xFFFFFFFF;
 	public static final int YELLOW = 0xFFFFFF55;
 	public static final int GRAY = 0xFFAAAAAA;

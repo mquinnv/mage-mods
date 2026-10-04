@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.DeltaTracker;
@@ -50,6 +51,8 @@ public final class PanelsHud implements HudElement {
 	private static final int MAX_CELL_W = 110;
 	/** A piece's wear bar, as Minecraft draws a durability bar: 13 px wide, 2 px from the item's left, 13 px down. */
 	private static final int WEAR_W = 13;
+	/** The light disc's rows (see {@link LightDisc#spans}); the same every frame. */
+	private static final int[] DISC_SPANS = LightDisc.spans(LightDisc.SIZE);
 
 	/** A panel source, given the current time in epoch ms. */
 	public interface Source extends Function<Long, Optional<Panel>> {}
@@ -67,6 +70,8 @@ public final class PanelsHud implements HudElement {
 	/** Per source with a grid: its column widths, which only grow until the world changes. */
 	private static final java.util.Map<Integer, GridLayout> GRIDS = new java.util.HashMap<>();
 	private static Object gridLevel;
+	/** Client ticks since start, counted at the start of each tick; {@link #perTick} sources rebuild when it moves. */
+	private static long ticks;
 
 	/**
 	 * Adds a source; panels in one corner are stacked in registration order. {@code position} reads its position in
@@ -78,6 +83,22 @@ public final class PanelsHud implements HudElement {
 		FAILED.add(false);
 		POSITIONS.add(position);
 		DEFAULTS.add(def);
+	}
+
+	/**
+	 * {@code s} built at most once per client tick: the first frame after a tick builds it, the frames until the next
+	 * tick reuse that panel. For sources whose content changes only with game state, which moves once a tick (the
+	 * world, the inventory, the tracker store, chat), and whose clocks show seconds or minutes. The panel is still
+	 * placed every frame at its live config {@code position}, so dragging it on the arrange screen stays smooth.
+	 */
+	public static Source perTick(Source s, Function<net.mage.cubewheel.config.CubeWheelConfig, net.mage.cubewheel.config.CubeWheelConfig.Position> position) {
+		TickCache<Optional<Panel>> cache = new TickCache<>();
+		return now -> {
+			Optional<Panel> built = cache.get(ticks, () -> s.apply(now));
+			if (built.isEmpty()) return built;
+			net.mage.cubewheel.config.CubeWheelConfig.Position p = position.apply(CubeWheelClient.config().current());
+			return Optional.of(built.get().at(HudLayout.Corner.parse(p.corner), p.x, p.y));
+		};
 	}
 
 	public static List<Placed> lastPlaced() {
@@ -99,6 +120,8 @@ public final class PanelsHud implements HudElement {
 	}
 
 	public static void register() {
+		// At the start of a tick: the first frame after it sees everything that tick changed.
+		ClientTickEvents.START_CLIENT_TICK.register(mc -> ticks++);
 		HudElementRegistry.attachElementAfter(TrackerHud.ID,
 				Identifier.fromNamespaceAndPath(CubeWheelClient.MOD_ID, "panels"), new PanelsHud());
 	}
@@ -392,7 +415,7 @@ public final class PanelsHud implements HudElement {
 
 	/** A light-level disc with its number inside, its top left at {@code dx}, {@code dy} (see {@link LightDisc}). */
 	private static void drawLight(GuiGraphicsExtractor g, Font font, int level, int dx, int dy) {
-		int[] spans = LightDisc.spans(LightDisc.SIZE);
+		int[] spans = DISC_SPANS;
 		int fill = LightDisc.fill(level);
 		for (int row = 0; row < spans.length; row++) {
 			int inset = (LightDisc.SIZE - spans[row]) / 2;

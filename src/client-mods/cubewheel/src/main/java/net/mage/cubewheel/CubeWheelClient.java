@@ -118,13 +118,19 @@ public final class CubeWheelClient implements ClientModInitializer {
 		// Panels in one corner stack in this order. The ones that come and go (boosters, cooldowns) go last so
 		// they don't push the always-present Jobs/Tracker panels up and down.
 		net.mage.cubewheel.status.StatusPanel.register();
-		PanelsHud.add(net.mage.cubewheel.status.StatusPanel::panel, c -> c.status.position, DefaultConfig::statusPosition); // top left, above Jobs
+		// Status, Jobs, Tracker and Charms change only with game state, so they are built once per tick (perTick), not
+		// every frame: the Jobs and Tracker models are costly to build.
+		PanelsHud.add(PanelsHud.perTick(net.mage.cubewheel.status.StatusPanel::panel, c -> c.status.position), c -> c.status.position,
+				DefaultConfig::statusPosition); // top left, above Jobs
 		PanelsHud.add(EventHud::panel, c -> c.events.position, DefaultConfig::eventsPosition);
-		PanelsHud.add(JobsPanel::panel, c -> c.tracker.jobsPanel.position, DefaultConfig::jobsPanelPosition);
-		PanelsHud.add(TrackerPanel::panel, c -> c.tracker.position, DefaultConfig::trackerPosition); // under the Jobs panel
+		PanelsHud.add(PanelsHud.perTick(JobsPanel::panel, c -> c.tracker.jobsPanel.position), c -> c.tracker.jobsPanel.position,
+				DefaultConfig::jobsPanelPosition);
+		PanelsHud.add(PanelsHud.perTick(TrackerPanel::panel, c -> c.tracker.position), c -> c.tracker.position,
+				DefaultConfig::trackerPosition); // under the Jobs panel
 		PanelsHud.add(BoosterWatcher::panel, c -> c.boosters.position, DefaultConfig::boostersPosition);
 		PanelsHud.add(CooldownWatcher::panel, c -> c.cooldowns.position, DefaultConfig::cooldownsPosition);
-		PanelsHud.add(net.mage.cubewheel.charms.CharmsPanel::panel, c -> c.charms.position, DefaultConfig::charmsPosition); // above the hotbar, in place of schrumboHUD
+		PanelsHud.add(PanelsHud.perTick(net.mage.cubewheel.charms.CharmsPanel::panel, c -> c.charms.position), c -> c.charms.position,
+				DefaultConfig::charmsPosition); // above the hotbar, in place of schrumboHUD
 		PanelsHud.register();
 		ProgressToastHud.register(); // after the panels and the tracker store
 		net.mage.cubewheel.hud.NoticeWatcher.register(); // inventory full, set bonus, vaults: one-off popups

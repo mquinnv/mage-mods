@@ -21,13 +21,18 @@ public final class StatusFormat {
 	public static String gameTime(long ticks) {
 		long t = Math.floorMod(ticks, 24_000L);
 		int minutes = (int) ((t * 60 / 1000 + 6 * 60) % (24 * 60));
-		return String.format(Locale.ROOT, "%d:%02d", minutes / 60, minutes % 60);
+		return (minutes / 60) + ":" + twoDigits(minutes % 60);
 	}
 
 	/** The real clock, compact: 16, 35 -> "4:35p". */
 	public static String clock(int hour, int minute) {
 		int h = hour % 12 == 0 ? 12 : hour % 12;
-		return String.format(Locale.ROOT, "%d:%02d%s", h, minute, hour < 12 ? "a" : "p");
+		return h + ":" + twoDigits(minute) + (hour < 12 ? "a" : "p");
+	}
+
+	/** As {@code %02d} formats it: at least two characters, zero-padded ("05", "42", "-5"). */
+	static String twoDigits(int v) {
+		return v >= 0 && v < 10 ? "0" + v : Integer.toString(v);
 	}
 
 	/** Block coordinates as plain numbers: "123  64  -456". */
@@ -62,8 +67,18 @@ public final class StatusFormat {
 
 	/** Blocks per second with one decimal: "4.3 b/s". */
 	public static String speed(double blocksPerSecond) {
-		return String.format(Locale.ROOT, "%.1f b/s", Math.max(0, blocksPerSecond));
+		// The speed changes once a tick, the panel asks more often: keep the last text.
+		double v = Math.max(0, blocksPerSecond);
+		Speed last = lastSpeed;
+		if (Double.compare(last.value(), v) == 0) return last.text();
+		String text = String.format(Locale.ROOT, "%.1f b/s", v);
+		lastSpeed = new Speed(v, text);
+		return text;
 	}
+
+	private record Speed(double value, String text) {}
+
+	private static volatile Speed lastSpeed = new Speed(0, "0.0 b/s");
 
 	/** Below this fraction of durability left a piece is wearing out (yellow; its bar shows). */
 	public static final double WEAR_LOW = 0.25;
