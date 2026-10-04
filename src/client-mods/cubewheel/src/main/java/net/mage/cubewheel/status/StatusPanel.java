@@ -53,6 +53,16 @@ public final class StatusPanel {
 	 */
 	private static final Object[] worn = new Object[ARMOR.length];
 	private static ArmorSet set = ArmorSet.NONE;
+	private static boolean unbreakable(ItemStack s) {
+		if (s.has(DataComponents.UNBREAKABLE)) return true;
+		ItemLore lore = s.get(DataComponents.LORE);
+		if (lore == null) return false;
+		for (Component c : lore.lines()) {
+			if (c.getString().replaceAll("§.", "").toLowerCase(java.util.Locale.ROOT).contains("unbreakable")) return true;
+		}
+		return false;
+	}
+
 	/** The armor column's width and text lines for {@link #set}; null until made for it. */
 	private static List<Panel.Line> sideLines;
 	private static int sideWidth;
@@ -140,8 +150,8 @@ public final class StatusPanel {
 	}
 
 	/**
-	 * The right column: head to feet, each piece with a durability bar (yellow under 25%, red under 10%; none for an
-	 * unbreakable piece), then "Phoenix  4/4" (the count green at 4/4) and the set bonus, word-wrapped to the column.
+	 * The right column: head to feet, each piece, with a durability bar only while it wears out (yellow under 25%, red
+	 * under 10%; never for an unbreakable piece), then "Phoenix  4/4" (the count green at 4/4) and the set bonus, word-wrapped to the column.
 	 */
 	private static Panel.Side armor(LocalPlayer p, Font font) {
 		List<Panel.Slot> slots = new ArrayList<>(4);
@@ -152,6 +162,9 @@ public final class StatusPanel {
 				continue;
 			}
 			double left = s.isDamageableItem() && s.getMaxDamage() > 0 ? 1 - s.getDamageValue() / (double) s.getMaxDamage() : -1;
+			// A bar only as a warning: a piece wearing out (under 25%), never a ManaCube "Unbreakable" one, which says
+			// so in its lore while still reporting durability (Michael 2026-10-04).
+			if (left >= StatusFormat.WEAR_LOW || unbreakable(s)) left = -1;
 			slots.add(new Panel.Slot(s, left, left < 0 ? 0 : StatusFormat.wearColor(left)));
 		}
 		ArmorSet set = armorSet(p);

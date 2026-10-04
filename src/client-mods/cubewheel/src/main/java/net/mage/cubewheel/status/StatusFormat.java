@@ -62,7 +62,10 @@ public final class StatusFormat {
 	}
 
 	/** A durability bar's colour for the fraction {@code remaining}: red under 10%, yellow under 25%, else green. */
+	/** Below this fraction of durability left a piece is wearing out (yellow; its bar shows). */
+	public static final double WEAR_LOW = 0.25;
+
 	public static int wearColor(double remaining) {
-		return remaining < 0.10 ? WORN_OUT : remaining < 0.25 ? WORN_LOW : WORN_OK;
+		return remaining < 0.10 ? WORN_OUT : remaining < WEAR_LOW ? WORN_LOW : WORN_OK;
 	}
 }
