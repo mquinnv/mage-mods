@@ -13,6 +13,10 @@
     "fabricloader": ">=${loader_version}",
     "fabric-api": "*",
     "minecraft": "~${minecraft_version}",
-    "java": ">=25"
+    "java": ">=25",
+    "yet_another_config_lib_v3": ">=3.9.7"
+  },
+  "suggests": {
+    "modmenu": "*"
   }
 }
