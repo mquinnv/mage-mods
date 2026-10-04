@@ -65,6 +65,23 @@ class KillRuleTest {
 				new Signal.BlockBroken("minecraft:nether_quartz_ore", "Nether Quartz Ore", java.util.Set.of(), false, false, any)));
 	}
 
+	@Test void manaWorldOreIsNotTheBareMaterialButCountsForItsOwnWorld() {
+		CounterRule diamonds = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 0/101 Diamonds", null)),
+				false, false), WORLDS).orElseThrow();
+		WorldInfo overworld = WorldResolver.resolve("minecraft:overworld", SIDEBAR, WORLDS);
+		WorldInfo icehaven = WorldResolver.resolve("minecraft:icehaven", SIDEBAR, WORLDS);
+		assertTrue(icehaven.special());
+		Signal.BlockBroken here = new Signal.BlockBroken("minecraft:diamond_ore", "Diamond Ore", java.util.Set.of(), false, false, overworld);
+		Signal.BlockBroken mana = new Signal.BlockBroken("minecraft:deepslate_diamond_ore", "Deepslate Diamond Ore",
+				java.util.Set.of(), false, false, icehaven);
+		assertTrue(RuleMatcher.matches(diamonds, here));
+		assertFalse(RuleMatcher.matches(diamonds, mana));
+		CounterRule tangleIron = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 0/201 Tangleroots Iron", null)),
+				false, false), WORLDS).orElseThrow();
+		assertTrue(RuleMatcher.matches(tangleIron,
+				new Signal.BlockBroken("minecraft:iron_ore", "Iron Ore", java.util.Set.of(), false, false, tangleroots())));
+	}
+
 	@Test void tanglerootsWorldResolvesFromDimension() {
 		WorldInfo at = tangleroots();
 		assertTrue(at.known());

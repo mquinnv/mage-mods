@@ -75,6 +75,10 @@ public final class RuleMatcher {
 		if (rule.kind() == CounterRule.Kind.HARVEST && !b.crop()) return false;
 		// "Resources"/"Blocks": instabreak vegetation is not a resource (plugins count real blocks).
 		if (rule.what() instanceof Any && b.trivial() && !b.crop()) return false;
+		// Ore in a mana world gives the world's own variant ("Icehaven Diamond"), which ManaCube's bare "Mine …
+		// Diamonds/Gold" jobs don't count (Michael 2026-10-04); it still counts when the rule names that world.
+		if (rule.world() instanceof AnyWorld && rule.what() instanceof Named n && ORE_MATERIALS.contains(n.singular())
+				&& b.world() != null && b.world().special()) return false;
 		return targetMatches(rule.what(), b.id(), b.name(), b.groups());
 	}
 
