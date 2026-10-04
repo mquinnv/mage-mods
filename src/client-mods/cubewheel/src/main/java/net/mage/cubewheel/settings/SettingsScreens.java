@@ -11,6 +11,7 @@ import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
+import dev.isxander.yacl3.api.utils.OptionUtils;
 import net.mage.cubewheel.CubeWheelClient;
 import net.mage.cubewheel.config.ConfigStore;
 import net.mage.cubewheel.config.CubeWheelConfig;
@@ -42,6 +43,8 @@ public final class SettingsScreens {
 	/** The config being edited. Replaced by a fresh copy after each save, so the screen never edits the live config. */
 	private static final class Draft {
 		CubeWheelConfig cfg;
+		/** The built YACL config, so a save can re-sync its options; set before the screen exists. */
+		YetAnotherConfigLib screen;
 
 		Draft(CubeWheelConfig cfg) {
 			this.cfg = cfg;
@@ -68,7 +71,8 @@ public final class SettingsScreens {
 			if (i == 0) tab.group(tools(store, draft));
 			yacl.category(tab.build());
 		}
-		return yacl.build().generateScreen(parent);
+		draft.screen = yacl.build();
+		return draft.screen.generateScreen(parent);
 	}
 
 	/**
@@ -182,8 +186,25 @@ public final class SettingsScreens {
 			return;
 		}
 		draft.cfg = ConfigStore.copyOf(store.current()); // the applied draft is live now; keep editing a copy
+		resync(draft.screen);
 		for (String w : warnings) chat(Component.literal("[CubeWheel] " + w).withStyle(ChatFormatting.YELLOW));
 		chat(Component.literal("CubeWheel settings saved").withStyle(ChatFormatting.GREEN));
+	}
+
+	/**
+	 * Points every option whose pending value differs from its binding back at the binding, i.e. at the normalised
+	 * config. YACL forgets pending values only before it calls save, while the draft still held the player's input;
+	 * a value the normaliser then changed (an invalid regex, a command given its "/") would otherwise stay "changed",
+	 * so the button would stay "Save", "Done" would never close, and each press would re-save and repeat warnings.
+	 */
+	private static void resync(YetAnotherConfigLib screen) {
+		OptionUtils.forEachOptions(screen, o -> {
+			try {
+				if (o.changed()) o.forgetPendingValue();
+			} catch (RuntimeException e) {
+				CubeWheelClient.LOG.error("[cubewheel] could not refresh setting {}", o.name().getString(), e);
+			}
+		});
 	}
 
 	/** A client chat line; logged instead when there is no player (screen opened from the title screen's Mod Menu). */
