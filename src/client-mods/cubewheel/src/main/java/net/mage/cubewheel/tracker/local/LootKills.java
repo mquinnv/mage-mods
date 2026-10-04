@@ -23,16 +23,26 @@ import java.util.Optional;
  * A message is a kill line when it brings a new drop (any entry other than Mana) and holds a Mana entry: "+2 Mana"
  * alone is mining, and a drop with no mana ("+1 Sad Firefly") a catch.
  * <p>
- * Not counting twice: every kill counted locally (death, stack, removal) is reported with {@link #counted}. A kill line
- * is held for {@link #GRACE_MS}; when its window ends it is dropped if a reported kill not yet paired lies within
- * {@link #GRACE_MS} of it on either side (the line can come 1.2 s before the removal, or 25 ms after it), else it is
- * returned by {@link #expire} as a kill of its own. Two genuine kills with identical entries inside the linger merge
- * into one (an undercount; rare), and a local kill counted more than {@link #GRACE_MS} after its line counts twice.
+ * Not counting twice: every kill counted locally (death, stack, removal) is reported with {@link #counted}, once per
+ * mob. A kill line at most {@link #OWN_LINE_MS} after an unpaired reported kill is that kill's own line and is paired
+ * at once (removals are counted ~25-50 ms before their line, 2026-10-01). Any other kill line is held for
+ * {@link #AFTER_MS}, then paired with the nearest unpaired reported kill from {@link #BEFORE_MS} before it to
+ * {@link #AFTER_MS} after it, else returned by {@link #expire} as a kill of its own. The window reaches far after the
+ * line because a custom model's hitbox can be removed well after the death that showed the line (1.2 s in the
+ * 2026-10-04 capture; model hitboxes go 2-4.6 s after the last hit, see RemovalKills). Pairing a kill with its own
+ * line first keeps a late kill from taking an earlier, unrelated line and leaving its own line over (2026-10-01: a
+ * Dwarven Guard removed 3.7 s after an uncounted kill's line had its own line 25 ms later). Two genuine kills with
+ * identical entries inside the linger merge into one (an undercount; rare), and a local kill counted more than
+ * {@link #AFTER_MS} after its line counts twice.
  * Everything is bounded. Pure: no Minecraft/Fabric imports.
  */
 public final class LootKills {
-	/** How long a kill line waits for a locally counted kill to claim it (and how far apart they may be). */
-	public static final long GRACE_MS = 2000;
+	/** A kill line this soon after a reported kill is that kill's own line. */
+	public static final long OWN_LINE_MS = 500;
+	/** A reported kill this long before a kill line can still claim it. */
+	public static final long BEFORE_MS = 2000;
+	/** A reported kill this long after a kill line can still claim it; the line is held this long. */
+	public static final long AFTER_MS = 5000;
 	/** A loot entry seen again this long after its first sighting is the same entry, shown again. */
 	public static final long LINGER_MS = 3500;
 	public static final int MAX_LINES = 32;
@@ -70,8 +80,8 @@ public final class LootKills {
 	private final Deque<Counted> kills = new ArrayDeque<>();
 
 	/**
-	 * An action-bar message at {@code now} in {@code world}. True when it is a new kill line (now held for
-	 * {@link #GRACE_MS}).
+	 * An action-bar message at {@code now} in {@code world}. True when it is a new kill line: a reported kill's own
+	 * line (paired at once), or held for {@link #AFTER_MS}.
 	 */
 	public boolean onActionBar(String text, WorldInfo world, long now) {
 		List<LootLine.Entry> found = LootLine.entries(text);
@@ -100,38 +110,52 @@ public final class LootKills {
 		}
 		trim(entries, MAX_ENTRIES);
 		if (drops.isEmpty() || !mana) return false;
+		Counted owner = null;
+		for (Counted k : kills) {
+			if (!k.used && now - k.at >= 0 && now - k.at <= OWN_LINE_MS && (owner == null || k.at > owner.at)) owner = k;
+		}
+		if (owner != null) {
+			owner.used = true; // that kill's own line
+			return true;
+		}
 		lines.addLast(new Kill(List.copyOf(drops), world, now));
 		while (lines.size() > MAX_LINES) lines.removeFirst();
 		return true;
 	}
 
-	/** A kill was counted locally at {@code now} (any path): it claims one kill line within {@link #GRACE_MS}. */
+	/** A kill was counted locally at {@code now} (any path): it claims one kill line (see the class comment). */
 	public void counted(long now) {
-		kills.addLast(new Counted(now));
+		counted(now, 1);
+	}
+
+	/** {@code n} kills were counted locally at {@code now} (a stack dropping by {@code n}): each claims one line. */
+	public void counted(long now, int n) {
+		for (int i = 0; i < Math.min(n, MAX_KILLS); i++) kills.addLast(new Counted(now));
 		while (kills.size() > MAX_KILLS) kills.removeFirst();
 	}
 
 	/**
-	 * Kill lines whose grace window ended at {@code now}: each is paired with the nearest unpaired local kill within
-	 * {@link #GRACE_MS} of it (dropped), else returned as a kill of its own. Oldest first.
+	 * Kill lines held {@link #AFTER_MS} at {@code now}: each is paired with the nearest unpaired reported kill from
+	 * {@link #BEFORE_MS} before it to {@link #AFTER_MS} after it (dropped), else returned as a kill of its own. Oldest
+	 * first.
 	 */
 	public List<Kill> expire(long now) {
 		List<Kill> out = new ArrayList<>();
 		for (Iterator<Kill> it = lines.iterator(); it.hasNext(); ) {
 			Kill line = it.next();
-			if (now - line.at() < GRACE_MS) break; // lines are in arrival order
+			if (now - line.at() < AFTER_MS) break; // lines are in arrival order
 			it.remove();
 			Counted best = null;
 			for (Counted k : kills) {
-				long d = Math.abs(k.at - line.at());
-				if (k.used || d > GRACE_MS) continue;
-				if (best == null || d < Math.abs(best.at - line.at())) best = k;
+				long d = k.at - line.at();
+				if (k.used || d < -BEFORE_MS || d > AFTER_MS) continue;
+				if (best == null || Math.abs(d) < Math.abs(best.at - line.at())) best = k;
 			}
 			if (best != null) best.used = true;
 			else out.add(line);
 		}
-		// A kill can still claim a line up to GRACE_MS after it, which is decided GRACE_MS after that line.
-		kills.removeIf(k -> now - k.at > 2 * GRACE_MS);
+		// A kill can still claim a line up to BEFORE_MS after it, which is decided AFTER_MS after that line.
+		kills.removeIf(k -> now - k.at > BEFORE_MS + AFTER_MS);
 		return out;
 	}
 

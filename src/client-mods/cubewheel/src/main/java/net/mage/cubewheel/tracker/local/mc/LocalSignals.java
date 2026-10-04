@@ -426,7 +426,7 @@ public final class LocalSignals {
 			}
 			Signal.MobKilled signal = EntityFacts.of(root == null ? entity : root, world(), c.newName(), c.killed());
 			List<LocalCounter.Contribution> added = count(signal);
-			killCounted();
+			lootKills.counted(System.currentTimeMillis(), c.killed()); // each mob of the stack has its own line
 			capture("kill", signal.typeId(), c.newName(), "stack: " + detail, signal.world(), added);
 		} catch (Throwable t) {
 			fail(Hook.STACK, t);
@@ -532,7 +532,7 @@ public final class LocalSignals {
 				creditLoot(r, List.of(bottle.get()), "held item");
 				return;
 			}
-			killCounted();
+			removalCounted(r);
 			capture("kill", r.typeId(), r.name(), "removal, method d (" + from + " " + loot + " names no single kill objective"
 					+ (r.modelHitbox() ? "; model hitbox: generic" : "") + "), local hit", r.world(), genericKill(r));
 			return;
@@ -540,7 +540,7 @@ public final class LocalSignals {
 		List<LocalCounter.Contribution> added = LocalCounter.lootKill(credit.get().ruleIds(), r.modelHitbox(), r.world(),
 				store, local().worlds, System.currentTimeMillis());
 		if (!added.isEmpty()) saveThrottle.markDirty();
-		killCounted();
+		removalCounted(r);
 		capture("kill", r.typeId(), credit.get().target(), "removal, method c (" + from + " " + loot + " -> " + credit.get().target() + "), local hit",
 				r.world(), added);
 	}
@@ -929,8 +929,13 @@ public final class LocalSignals {
 		lootKills.counted(System.currentTimeMillis());
 	}
 
+	/** A removal counted by its loot: a kill, unless a Firefly Bottle was used on it (a catch shows no kill line). */
+	private static void removalCounted(RemovalKills.Removed r) {
+		if (removals.fallback(r.entityId()).isEmpty()) killCounted();
+	}
+
 	/**
-	 * Loot lines no local kill claimed within {@link LootKills#GRACE_MS}: kills by an ability weapon (Phoenix Staff,
+	 * Loot lines no local kill claimed (see {@link LootKills}): kills by an ability weapon (Phoenix Staff,
 	 * magic book), which the client never sees as ours. Each counts for the rules its drops name plus the generic
 	 * monster rules, like method c. Held lines are dropped while kills are not counted.
 	 */

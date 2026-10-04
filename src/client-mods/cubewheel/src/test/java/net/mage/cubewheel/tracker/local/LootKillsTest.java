@@ -83,11 +83,11 @@ class LootKillsTest {
 
 		// 25706: the staff kill, no attack, no kill event: only its loot line.
 		k.onActionBar(loot(7, 1, "Moose Skin"), ICEHAVEN, 25_706);
-		assertEquals(List.of(), k.expire(25_706 + LootKills.GRACE_MS - 1)); // still in its grace window
-		List<LootKills.Kill> got = k.expire(25_706 + LootKills.GRACE_MS);
+		assertEquals(List.of(), k.expire(25_706 + LootKills.AFTER_MS - 1)); // still held: a late removal may yet claim it
+		List<LootKills.Kill> got = k.expire(25_706 + LootKills.AFTER_MS);
 		assertEquals(1, got.size());
 		assertEquals(ICEHAVEN, got.get(0).world());
-		LootKills.Credited c = LootKills.credit(got.get(0), s, WORLDS, 27_706);
+		LootKills.Credited c = LootKills.credit(got.get(0), s, WORLDS, 25_706 + LootKills.AFTER_MS);
 		assertEquals(Optional.of("zombie moose"), c.target());
 		assertEquals(List.of(MOOSE, MONSTERS), ids(c.added()));
 		assertEquals(2, s.counted(MOOSE));
@@ -105,7 +105,7 @@ class LootKillsTest {
 	@Test void aLocalKillLongBeforeTheLineDoesNotConsumeIt() {
 		LootKills k = new LootKills();
 		k.counted(1_000);
-		k.onActionBar(loot(5, 2, "Gorilla Fur"), ICEHAVEN, 1_000 + LootKills.GRACE_MS + 1);
+		k.onActionBar(loot(5, 2, "Gorilla Fur"), ICEHAVEN, 1_000 + LootKills.BEFORE_MS + 1);
 		assertEquals(1, k.expire(10_000).size());
 	}
 
@@ -195,5 +195,39 @@ class LootKillsTest {
 		TrackerStore s = icehaven();
 		WorldInfo sandara = new WorldInfo(Set.of("sandara"), true, true);
 		assertTrue(LootKills.credit(new LootKills.Kill(List.of("Moose Skin"), sandara, 0), s, WORLDS, 5).added().isEmpty());
+	}
+
+	// ---- late removals and stacks (review round 1) ----
+
+	@Test void aModelHitboxRemovedLateStillClaimsItsLine() {
+		// A model hitbox goes 2-4.6 s after the last hit (RemovalKills.HITBOX_WINDOW_TICKS); its line may come first.
+		LootKills k = new LootKills();
+		k.onActionBar(loot(5, 2, "Gorilla Fur"), ICEHAVEN, 1_000);
+		k.counted(1_000 + 3_700); // the removal kill, with no line of its own
+		assertEquals(List.of(), k.expire(1_000 + LootKills.AFTER_MS));
+		assertEquals(List.of(), k.expire(20_000));
+	}
+
+	@Test void aKillKeepsItsOwnLineSoAnEarlierLineStaysALootOnlyKill() {
+		// 2026-10-01 14:38: "+3 Mana | +6 Quarry Coal" at ..497536 with no kill near it; the Dwarven Guard's method-b
+		// removal at ..501248 (+3712 ms) has its own line "+5 Mana | +5 Quarry Coal" 25 ms later. The guard keeps its
+		// own line; the earlier one is an uncounted kill of its own (taking it would leave the guard's line over).
+		LootKills k = new LootKills();
+		k.onActionBar("SAMURAI KATANA » Primed 2/4 | " + loot(3, 6, "Quarry Coal"), ICEHAVEN, 7_536);
+		k.onActionBar(loot(3, 6, "Quarry Coal"), ICEHAVEN, 8_536);
+		k.onActionBar(loot(3, 6, "Quarry Coal") + " | SAMURAI KATANA » Primed 1/4", ICEHAVEN, 10_376);
+		k.counted(11_248);
+		k.onActionBar("SAMURAI KATANA CD: ⬛⬛⬛⬛⬛ (5s) | " + loot(5, 5, "Quarry Coal"), ICEHAVEN, 11_273);
+		List<LootKills.Kill> got = k.expire(30_000);
+		assertEquals(1, got.size());
+		assertEquals(7_536, got.get(0).at());
+	}
+
+	@Test void aStackDropOfSeveralMobsClaimsAsManyLines() {
+		LootKills k = new LootKills();
+		k.counted(1_000, 2); // "5x Tiger" -> "3x Tiger"
+		k.onActionBar(loot(5, 2, "Tiger Hide"), ICEHAVEN, 1_030);
+		k.onActionBar(loot(5, 3, "Tiger Hide"), ICEHAVEN, 1_080);
+		assertEquals(List.of(), k.expire(20_000));
 	}
 }
