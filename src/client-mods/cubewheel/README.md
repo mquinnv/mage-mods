@@ -573,8 +573,11 @@ milk, a quest completed in chat), a short line appears just below the crosshair 
 - Only local counts show it: menu reads and sidebar values never do. Hidden while a screen is open.
 - It also shows one-off notices, each once when the state changes (not on joining a world):
   - "Inventory full" (red) when the last of the 36 main inventory slots fills; again after one frees up.
-  - "Phoenix set bonus lost (3/4)" (yellow) when the worn set's bonus (its lore's "(Requires 4/4 pieces)") stops
-    being met, "Phoenix set bonus active" (green) when it is met again.
+  - "Phoenix set bonus lost (3/4)" (yellow) when the worn set's bonus stops being met, "Phoenix set bonus active"
+    (green) when it is met again. The pieces a bonus needs come from its lore: "(Requires 4/4 pieces)" gives its
+    count; "(Full Set Required)" or a "FULL SET EFFECTS" heading without a count means all 4. These sets also get
+    the Status panel's "⚠ no set bonus" warning. A heading that names its pieces ("(Helmet + Boots)") gets
+    neither.
   - "PV 2: 3 slots left" (yellow) when a vault drops to 3 free slots or fewer, "PV 2 full" (red) when it fills; each
     again after it has been back above. Vault fill is read when a vault is opened, so these show as it closes.
   - Changes made in a menu (armor swapped, a vault filled) show when it closes.

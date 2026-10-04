@@ -62,6 +62,12 @@ public final class PanelsHud implements HudElement {
 	public record Placed(int source, String title, HudLayout.Box box) {}
 
 	private static volatile List<Placed> lastPlaced = List.of();
+	/**
+	 * Per source: its width only grows, for panels with a second column (the Status panel's digits change every
+	 * frame). Reset when the world changes.
+	 */
+	private static final java.util.Map<Integer, SteadyWidth> STEADY = new java.util.HashMap<>();
+	private static Object steadyLevel;
 
 	/**
 	 * Adds a source; panels in one corner are stacked in registration order. {@code position} reads its position in
@@ -119,14 +125,27 @@ public final class PanelsHud implements HudElement {
 				FAILED.set(i, true);
 			}
 		}
+		if (mc.level != steadyLevel) {
+			steadyLevel = mc.level;
+			STEADY.values().forEach(SteadyWidth::reset);
+		}
+		int[] widths = new int[panels.size()];
+		for (int k = 0; k < panels.size(); k++) {
+			Panel p = panels.get(k);
+			widths[k] = p.side() == null ? width(mc.font, p)
+					: STEADY.computeIfAbsent(sources.get(k), i -> new SteadyWidth()).apply(width(mc.font, p));
+		}
 		// Panels stacked in one corner share the widest one's width, so they line up as one column.
 		java.util.Map<HudLayout.Corner, Integer> cornerWidth = new java.util.EnumMap<>(HudLayout.Corner.class);
-		for (Panel p : panels) if (p.corner() != HudLayout.Corner.CUSTOM) cornerWidth.merge(p.corner(), width(mc.font, p), Math::max);
+		for (int k = 0; k < panels.size(); k++) {
+			Panel p = panels.get(k);
+			if (p.corner() != HudLayout.Corner.CUSTOM) cornerWidth.merge(p.corner(), widths[k], Math::max);
+		}
 		List<Placed> placed = new ArrayList<>();
 		for (int k = 0; k < panels.size(); k++) {
 			Panel p = panels.get(k);
 			try {
-				int w = p.corner() == HudLayout.Corner.CUSTOM ? width(mc.font, p) : cornerWidth.get(p.corner());
+				int w = p.corner() == HudLayout.Corner.CUSTOM ? widths[k] : cornerWidth.get(p.corner());
 				placed.add(new Placed(sources.get(k), p.title(), draw(g, mc.font, layout, p, w)));
 			} catch (RuntimeException e) {
 				CubeWheelClient.LOG.error("[cubewheel] HUD panel draw failed", e);

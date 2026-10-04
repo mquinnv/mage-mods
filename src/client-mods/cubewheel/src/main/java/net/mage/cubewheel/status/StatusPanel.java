@@ -47,6 +47,16 @@ public final class StatusPanel {
 	/** Minecraft's globe. */
 	private static final String CLOCK_ICON = "minecraft:globe_banner_pattern";
 
+	/**
+	 * The armor items {@link #set} and {@link #sideLines} were made from, by identity: the server sends a new stack
+	 * when a piece changes, so lore is parsed only then, not every frame.
+	 */
+	private static final Object[] worn = new Object[ARMOR.length];
+	private static ArmorSet set = ArmorSet.NONE;
+	/** The armor column's width and text lines for {@link #set}; null until made for it. */
+	private static List<Panel.Line> sideLines;
+	private static int sideWidth;
+
 	private static double lastX, lastZ;
 	private static boolean hasLast;
 	/** Horizontal speed, smoothed over a few ticks (blocks per second). */
@@ -92,8 +102,27 @@ public final class StatusPanel {
 		return Optional.of(new Panel("Status", lines, HudLayout.Corner.parse(at.corner), at.x, at.y, side));
 	}
 
-	/** The worn set, from the four pieces' names and lore (see {@link ArmorSet#of(List, List)}). */
+	/**
+	 * The worn set, from the four pieces' names and lore (see {@link ArmorSet#of(List, List)}); re-read only when an
+	 * armor item changes. Client thread only.
+	 */
 	public static ArmorSet armorSet(LocalPlayer p) {
+		boolean changed = false;
+		for (int i = 0; i < ARMOR.length; i++) {
+			Object s = p.getItemBySlot(ARMOR[i]);
+			if (s != worn[i]) {
+				worn[i] = s;
+				changed = true;
+			}
+		}
+		if (changed) {
+			set = readSet(p);
+			sideLines = null;
+		}
+		return set;
+	}
+
+	private static ArmorSet readSet(LocalPlayer p) {
 		List<String> names = new ArrayList<>(4);
 		List<List<String>> lores = new ArrayList<>(4);
 		for (EquipmentSlot slot : ARMOR) {
@@ -126,6 +155,12 @@ public final class StatusPanel {
 			slots.add(new Panel.Slot(s, left, left < 0 ? 0 : StatusFormat.wearColor(left)));
 		}
 		ArmorSet set = armorSet(p);
+		if (sideLines == null) sideText(set, font);
+		return new Panel.Side(sideWidth, slots, sideLines);
+	}
+
+	/** The armor column's width and its text lines for {@code set}: made once per change of armor. */
+	private static void sideText(ArmorSet set, Font font) {
 		boolean unmet = set.bonusUnmet();
 		// The bonus is on when the stated requirement is met; with none stated ("FULL SET EFFECTS"), at a full set.
 		boolean on = set.required() > 0 ? !unmet : set.matching() == 4;
@@ -142,6 +177,7 @@ public final class StatusPanel {
 		} else {
 			for (String l : TwoColumn.wrap(set.bonus(), width, font::width, BONUS_LINES)) lines.add(new Panel.Line(l, on ? GREY : DIM));
 		}
-		return new Panel.Side(width, slots, lines);
+		sideWidth = width;
+		sideLines = List.copyOf(lines);
 	}
 }
