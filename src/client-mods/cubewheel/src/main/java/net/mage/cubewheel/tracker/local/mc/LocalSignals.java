@@ -200,7 +200,7 @@ public final class LocalSignals {
 						+ signal.mature() + " trivial=" + signal.trivial() + " groups=" + signal.groups());
 				return;
 			}
-			pending.record(p, stateId, added, tick);
+			pending.record(p, stateId, added, tick, signal.world().special());
 			capture("break", signal.id(), signal.name(), signal.world(), added);
 		} catch (Throwable t) {
 			fail(Hook.BREAK, t);
@@ -211,13 +211,20 @@ public final class LocalSignals {
 	public static void onSyncBlockState(BlockPos pos, BlockState serverState) {
 		try {
 			if (pending.isEmpty() || !enabled(Hook.SYNC)) return;
-			Optional<List<LocalCounter.Contribution>> rejected =
-					pending.onSync(new Pos(pos.getX(), pos.getY(), pos.getZ()), Block.getId(serverState));
-			if (rejected.isEmpty()) return;
-			TrackerStore store = CubeWheelClient.tracker();
-			LocalCounter.reverse(rejected.get(), store);
-			saveThrottle.markDirty();
-			capture("reject", serverState.typeHolder().getRegisteredName(), null, world(), rejected.get());
+			PendingBreaks.Settled settled =
+					pending.settle(new Pos(pos.getX(), pos.getY(), pos.getZ()), Block.getId(serverState));
+			String id = serverState.typeHolder().getRegisteredName();
+			switch (settled.verdict()) {
+				case NONE -> {}
+				case KEPT_NODE -> capture("break", id, null, "restored by the server: resource node, kept", world(),
+						settled.contributions());
+				case REVERSE -> {
+					TrackerStore store = CubeWheelClient.tracker();
+					LocalCounter.reverse(settled.contributions(), store);
+					saveThrottle.markDirty();
+					capture("reject", id, null, world(), settled.contributions());
+				}
+			}
 		} catch (Throwable t) {
 			fail(Hook.SYNC, t);
 		}

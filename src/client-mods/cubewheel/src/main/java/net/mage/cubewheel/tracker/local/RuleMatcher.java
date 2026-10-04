@@ -33,7 +33,10 @@ public final class RuleMatcher {
 	 * doesn't count toward "Harvest … Wolfhaven Wheat".
 	 */
 	private static final java.util.Map<String, java.util.Set<String>> STAND_IN_BLOCKS = java.util.Map.of(
-			"wheat", java.util.Set.of("minecraft:hay_block"));
+			"wheat", java.util.Set.of("minecraft:hay_block"),
+			// Icehaven "Mine … Ice Crystals": the crystal is a plain ice block (capture 2026-10-04); packed/blue
+			// ice stay out until seen.
+			"ice crystal", java.util.Set.of("minecraft:ice"));
 
 	private RuleMatcher() {}
 
