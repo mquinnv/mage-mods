@@ -34,11 +34,56 @@ public final class VaultPages {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Type MAP = new TypeToken<LinkedHashMap<String, Integer>>() {}.getType();
 
+	/** A /pv page: 45 storage slots, then the row of page buttons. */
+	public static final int STORAGE = 45;
+	private static final Type FILLS = new TypeToken<LinkedHashMap<String, LinkedHashMap<Integer, Integer>>>() {}.getType();
+
 	private final Path file;
+	/** Used slots per page, as of the page's last open/close ({@code cubewheel-vaults-fill.json} beside the counts). */
+	private final Path fillFile;
 	private Map<String, Integer> counts = new LinkedHashMap<>();
+	private Map<String, Map<Integer, Integer>> fills = new LinkedHashMap<>();
 
 	public VaultPages(Path file) {
 		this.file = file;
+		String name = file.getFileName().toString();
+		this.fillFile = file.resolveSibling(name.endsWith(".json") ? name.substring(0, name.length() - 5) + "-fill.json" : name + "-fill");
+	}
+
+	/** The open page: its button is the one unlocked lime wool (the others are ender pearls); empty if unclear. */
+	public static OptionalInt current(List<ItemView> items) {
+		if (items == null) return OptionalInt.empty();
+		int found = -1;
+		for (ItemView item : items) {
+			Matcher m = PAGE.matcher(CowParser.strip(item.name()).trim());
+			if (!m.matches() || !"minecraft:lime_wool".equals(item.id())) continue;
+			boolean locked = false;
+			if (item.lore() != null) for (String l : item.lore()) locked |= LOCKED.matcher(CowParser.strip(l)).find();
+			if (locked) continue;
+			if (found >= 0) return OptionalInt.empty();
+			found = Integer.parseInt(m.group(1));
+		}
+		return found > 0 ? OptionalInt.of(found) : OptionalInt.empty();
+	}
+
+	/** Non-empty storage slots of a /pv page (the button row excluded). */
+	public static int used(List<ItemView> items) {
+		int n = 0;
+		if (items != null) for (ItemView item : items) if (item.slot() < STORAGE) n++;
+		return n;
+	}
+
+	/** Records how full {@code page} is; returns true if that changed. */
+	public boolean fill(String player, int page, int used) {
+		if (player == null || player.isBlank() || page <= 0) return false;
+		Integer old = fills.computeIfAbsent(key(player), k -> new LinkedHashMap<>()).put(page, used);
+		return old == null || old != used;
+	}
+
+	/** Used slots by page for the account (pages never opened are absent). */
+	public Map<Integer, Integer> fill(String player) {
+		Map<Integer, Integer> m = player == null ? null : fills.get(key(player));
+		return m == null ? Map.of() : m;
 	}
 
 	/** The highest unlocked page among the menu's "Page N" buttons; empty if it has none. */
@@ -83,6 +128,14 @@ public final class VaultPages {
 		} catch (IOException | JsonParseException | IllegalStateException e) {
 			LOG.warn("[cubewheel] could not read vault counts from {}: {}", file, e.toString());
 		}
+		fills = new LinkedHashMap<>();
+		if (!Files.exists(fillFile)) return;
+		try {
+			Map<String, Map<Integer, Integer>> m = GSON.fromJson(Files.readString(fillFile, StandardCharsets.UTF_8), FILLS);
+			if (m != null) m.forEach((k, v) -> { if (k != null && v != null) fills.put(key(k), new LinkedHashMap<>(v)); });
+		} catch (IOException | JsonParseException | IllegalStateException e) {
+			LOG.warn("[cubewheel] could not read vault fill from {}: {}", fillFile, e.toString());
+		}
 	}
 
 	/** Writes the file; returns false (and logs) on IO errors. */
@@ -91,6 +144,7 @@ public final class VaultPages {
 			Path parent = file.getParent();
 			if (parent != null) Files.createDirectories(parent);
 			Files.writeString(file, GSON.toJson(counts, MAP), StandardCharsets.UTF_8);
+			if (!fills.isEmpty()) Files.writeString(fillFile, GSON.toJson(fills, FILLS), StandardCharsets.UTF_8);
 			return true;
 		} catch (IOException | RuntimeException e) {
 			LOG.warn("[cubewheel] could not save vault counts to {}: {}", file, e.toString());

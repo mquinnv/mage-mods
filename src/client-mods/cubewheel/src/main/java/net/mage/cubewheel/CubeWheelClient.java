@@ -118,6 +118,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		PanelsHud.add(TrackerPanel::panel); // under the Jobs panel
 		PanelsHud.add(BoosterWatcher::panel);
 		PanelsHud.add(CooldownWatcher::panel);
+		PanelsHud.add(net.mage.cubewheel.charms.CharmsPanel::panel); // bottom right, in place of schrumboHUD
 		PanelsHud.register();
 		SvaClient.init(configDir);
 		Keybinds.register();

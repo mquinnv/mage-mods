@@ -71,6 +71,8 @@ public final class RadialScreen extends Screen {
 	private static final double HUB_FRACTION = 0.32;
 	private static final int MIN_HUB_RADIUS = 22;
 	private static final int HUB_GAP = 4;
+	/** The top level's dead zone (and hub disc), in GUI pixels. */
+	private static final int TOP_HUB_RADIUS = 12;
 
 	/** Radius used by the last frame, so clicks hit-test against what was drawn. */
 	private double renderedRadius;
@@ -224,7 +226,9 @@ public final class RadialScreen extends Screen {
 		double r = Math.max(radius(), half + MIN_HUB_RADIUS + HUB_GAP);
 		renderedRadius = r;
 		int ri = (int) Math.round(r);
-		int hub = Math.min((int) Math.round(r * HUB_FRACTION), ri - half - HUB_GAP);
+		// A small fixed dead zone: anything past it selects by direction, so the pointer barely has to move. A
+		// sub-ring keeps the larger hub, which holds its name.
+		int hub = path.size() <= 1 ? TOP_HUB_RADIUS : Math.min((int) Math.round(r * HUB_FRACTION), ri - half - HUB_GAP);
 		double[] dirs = directions();
 		renderedHub = hub;
 		hovered = RadialMath.nearest(mouseX - cx, mouseY - cy, dirs, hub);
@@ -251,7 +255,9 @@ public final class RadialScreen extends Screen {
 		if (arcOpen >= entries.size() || arcOpen >= 0 && arcAt(arcOpen) == null) arcOpen = -1;
 		if (arcOpen >= 0) {
 			layoutArc(cx, cy, dirs[arcOpen], arcAt(arcOpen));
-			onArc = ArcLayout.pick(mdx, mdy, renderedEdge, arcAngles, arcSlack());
+			// The arc answers from the ring's middle line out: the slice's inner half is the slice, its outer half
+			// already reaches into the arc, so the pointer never has to cross the whole band.
+			onArc = ArcLayout.pick(mdx, mdy, renderedRadius, arcAngles, arcSlack());
 			if (onArc >= 0) hovered = arcOpen; // an open arc keeps the pointer wherever the ring's nearest slice is
 		}
 		if (onArc < 0) {
@@ -319,7 +325,9 @@ public final class RadialScreen extends Screen {
 		}
 		if (arcOpen >= 0) drawArc(g, cx, cy, arcAt(arcOpen));
 		WheelNode current = path.peekLast();
-		g.centeredText(font, current.label == null ? "" : current.label, cx, cy - font.lineHeight / 2, WHITE);
+		// The top level shows just a dot in its small hub; a sub-ring names itself so you know where you are.
+		String centre = path.size() <= 1 ? "·" : current.label == null ? "" : current.label;
+		g.centeredText(font, centre, cx, cy - font.lineHeight / 2, WHITE);
 		int line = cy + font.lineHeight;
 		if (path.size() > 1) {
 			g.centeredText(font, "◀ back", cx, line, GREY);

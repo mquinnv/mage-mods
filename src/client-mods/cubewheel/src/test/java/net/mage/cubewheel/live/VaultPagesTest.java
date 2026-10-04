@@ -37,6 +37,30 @@ class VaultPagesTest {
 		assertTrue(VaultPages.unlocked(List.of()).isEmpty());
 	}
 
+	@Test void readsWhichPageIsOpenAndHowFullItIs() {
+		List<ItemView> l = new ArrayList<>(realRow()); // page 1 open: its button is the unlocked lime wool
+		assertEquals(OptionalInt.of(1), VaultPages.current(l));
+		assertEquals(1, VaultPages.used(l)); // the Diamond in slot 1; the button row (45+) does not count
+		List<ItemView> p3 = new ArrayList<>();
+		for (ItemView v : realRow()) {
+			if ("Page 1".equals(v.name())) p3.add(new ItemView(46, "minecraft:ender_pearl", "Page 1", v.lore()));
+			else if ("Page 3".equals(v.name())) p3.add(new ItemView(48, "minecraft:lime_wool", "Page 3", v.lore()));
+			else p3.add(v);
+		}
+		assertEquals(OptionalInt.of(3), VaultPages.current(p3));
+	}
+
+	@Test void fillIsPerPlayerAndPage() {
+		VaultPages s = new VaultPages(dir.resolve("vaults.json"));
+		assertTrue(s.fill("Qualan", 3, 45));
+		assertFalse(s.fill("qualan", 3, 45));
+		s.save();
+		VaultPages t = new VaultPages(dir.resolve("vaults.json"));
+		t.load();
+		assertEquals(45, t.fill("Qualan").get(3));
+		assertNull(t.fill("Qualan").get(1));
+	}
+
 	@Test void countsArePerPlayerAndPersist() {
 		VaultPages s = new VaultPages(dir.resolve("vaults.json"));
 		assertNull(s.count("Qualan"));

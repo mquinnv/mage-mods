@@ -33,6 +33,8 @@ public final class LiveWatcher {
 	private static long cowSentAt = Long.MIN_VALUE;
 	private static VaultPages vaults;
 	private static long pvSentAt = Long.MIN_VALUE;
+	/** The page the last /pv asked for ("/pv 3" -> 3, "/pv" -> 1). */
+	private static int pvPage = 1;
 	private static boolean chatFailureLogged;
 	private static boolean menuFailureLogged;
 
@@ -67,6 +69,11 @@ public final class LiveWatcher {
 	}
 
 	/** Your vault count as last read from a /pv page, else {@code fallback} (the configured vaultCount). */
+	/** Used slots per vault page for you, as of each page's last open (pages never opened are absent). */
+	public static java.util.Map<Integer, Integer> vaultFill() {
+		return vaults == null ? java.util.Map.of() : vaults.fill(player());
+	}
+
 	public static int vaultCount(int fallback) {
 		Integer n = vaults == null ? null : vaults.count(player());
 		return n == null ? fallback : n;
@@ -131,7 +138,11 @@ public final class LiveWatcher {
 			String c = command.trim().toLowerCase(Locale.ROOT);
 			if (c.startsWith("/")) c = c.substring(1);
 			if (c.equals("cow") || c.startsWith("cow ") || c.equals("cashcow")) cowSentAt = System.currentTimeMillis();
-			if (c.equals("pv") || c.startsWith("pv ")) pvSentAt = System.currentTimeMillis();
+			if (c.equals("pv") || c.startsWith("pv ")) {
+				pvSentAt = System.currentTimeMillis();
+				String arg = c.length() > 3 ? c.substring(3).trim() : "";
+				pvPage = arg.matches("\\d{1,2}") ? Integer.parseInt(arg) : 1;
+			}
 		} catch (RuntimeException e) {
 			CubeWheelClient.LOG.error("[cubewheel] /cow note failed", e);
 		}
@@ -141,14 +152,21 @@ public final class LiveWatcher {
 	public static void onMenu(String title, List<ItemView> items, long now) {
 		try {
 			if (cow == null || items == null) return;
-			// A /pv page (its title is a glyph, so only "opened right after /pv" identifies it): read the page row.
-			if (vaults != null && now >= pvSentAt && now - pvSentAt <= COW_MENU_WINDOW_MS) {
+			// A /pv page: opened right after /pv, or recognised by its page-button row (its title is only a glyph). Read
+			// how many pages you have and how full this one is (each scan, so the close scan has the final contents).
+			OptionalInt open = VaultPages.current(items);
+			boolean afterPv = now >= pvSentAt && now - pvSentAt <= COW_MENU_WINDOW_MS;
+			if (vaults != null && (afterPv || open.isPresent())) {
 				String me = player();
 				OptionalInt pages = VaultPages.unlocked(items);
+				boolean changed = false;
 				if (me != null && pages.isPresent() && vaults.set(me, pages.getAsInt())) {
-					vaults.save();
+					changed = true;
 					CubeWheelClient.LOG.info("[cubewheel] {} has {} vaults", me, pages.getAsInt());
 				}
+				int page = open.isPresent() ? open.getAsInt() : afterPv ? pvPage : -1;
+				if (me != null && page > 0 && pages.isPresent()) changed |= vaults.fill(me, page, VaultPages.used(items));
+				if (changed) vaults.save();
 				return;
 			}
 			CubeWheelConfig cfg = CubeWheelClient.config().current();

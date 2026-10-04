@@ -27,6 +27,14 @@ public final class CubeWheelConfig {
 	/** The "Status" panel: armor set, coordinates, biome, light, FPS, speed and time. */
 	public Status status = new Status();
 
+	public Charms charms = new Charms();
+
+	/** The Charms panel: inventory fill, the worn amulet and carried talismans, vault fill. */
+	public static final class Charms {
+		public boolean enabled = true;
+		public Position position = DefaultConfig.charmsPosition();
+	}
+
 	public static final class Status {
 		public boolean enabled = true;
 		/** Show the worn armor set ("Phoenix 4/4") as the panel's first line. */

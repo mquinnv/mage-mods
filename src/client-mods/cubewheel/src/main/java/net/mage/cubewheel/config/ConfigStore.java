@@ -195,6 +195,8 @@ public final class ConfigStore {
 		if (c.cooldowns == null) c.cooldowns = new CubeWheelConfig.Cooldowns();
 		c.cooldowns.position = normalizePosition(c.cooldowns.position, DefaultConfig.cooldownsPosition());
 		if (c.svas == null) c.svas = new CubeWheelConfig.Svas();
+		if (c.charms == null) c.charms = new CubeWheelConfig.Charms();
+		c.charms.position = normalizePosition(c.charms.position, DefaultConfig.charmsPosition());
 		if (c.status == null) c.status = new CubeWheelConfig.Status();
 		c.status.position = normalizePosition(c.status.position, DefaultConfig.statusPosition());
 		normalizeDailyReward(c, warnings);

@@ -243,6 +243,11 @@ public final class DefaultConfig {
 	}
 
 	/** The Status panel: top left, first, so Jobs and Tracker stack under it. */
+	/** Bottom right: clear of chat (bottom left) and the hotbar. */
+	public static CubeWheelConfig.Position charmsPosition() {
+		return new CubeWheelConfig.Position("bottom_right", 4, 4);
+	}
+
 	public static CubeWheelConfig.Position statusPosition() {
 		return new CubeWheelConfig.Position("top_left", 4, 4);
 	}
