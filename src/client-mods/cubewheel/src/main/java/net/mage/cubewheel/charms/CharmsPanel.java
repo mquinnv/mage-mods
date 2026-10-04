@@ -74,13 +74,14 @@ public final class CharmsPanel {
 		return Optional.of(new Panel("", lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
 	}
 
-	/** "PV 30·12·full·—": used slots per vault as last seen ("—": not opened yet); empty without vaults. */
+	/** "PV 15·33·full·—": free slots per vault as last seen ("—": not opened yet); empty without vaults. */
 	static String vaultLine(int count, Map<Integer, Integer> fill) {
 		StringBuilder sb = new StringBuilder();
 		for (int page = 1; page <= count; page++) {
 			sb.append(sb.length() == 0 ? "PV " : "·");
-			Integer n = fill.get(page);
-			sb.append(n == null ? "—" : n >= VaultPages.STORAGE ? "full" : n.toString());
+			Integer used = fill.get(page);
+			int free = used == null ? -1 : Math.max(0, VaultPages.STORAGE - used);
+			sb.append(used == null ? "—" : free == 0 ? "full" : String.valueOf(free));
 		}
 		return sb.toString();
 	}
