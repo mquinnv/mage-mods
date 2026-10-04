@@ -21,6 +21,8 @@ public record ArmorSet(String name, int matching, int worn, int required, String
 	private static final Pattern REQUIRES = Pattern.compile("(?i)\\(\\s*requires\\s+(\\d+)\\s*/\\s*\\d+\\s+pieces?\\s*\\)");
 	/** The heading of a set bonus block: "FULL SET EFFECTS:", "FULL SET EFFECTS (While Worn)". */
 	private static final Pattern FULL_SET = Pattern.compile("(?i)^full set effects?\\b");
+	/** "(Full Set Required)" (Warden). */
+	private static final Pattern FULL_SET_REQUIRED = Pattern.compile("(?i)\\(\\s*full set required\\s*\\)");
 	/** An effect line: "➟ Speed V in Worlds", "➤ Mobs drop 3x more EXP". */
 	private static final Pattern BULLET = Pattern.compile("^\\s*[➟➤•►▸»]\\s*(.*)$");
 	/** Between effects in {@link #bonus}. */
@@ -82,15 +84,23 @@ public record ArmorSet(String name, int matching, int worn, int required, String
 				bonuses.getOrDefault(best, ""));
 	}
 
-	/** Pieces a lore says the set bonus needs ("(Requires 4/4 pieces)" -> 4); 0 when there is no such line. */
+	/**
+	 * Pieces a lore says the set bonus needs: "(Requires 4/4 pieces)" -> 4; "(Full Set Required)" or a "FULL SET
+	 * EFFECTS" heading without a count -> 4, unless the heading names its pieces ("(Helmet + Boots)", Velociraptor:
+	 * left at 0, as the count is unknown); 0 when the lore states no set bonus.
+	 */
 	public static int requirement(List<String> lore) {
 		if (lore == null) return 0;
+		boolean fullSet = false;
 		for (String line : lore) {
 			if (line == null) continue;
-			Matcher m = REQUIRES.matcher(FORMATTING.matcher(line).replaceAll(""));
+			String clean = FORMATTING.matcher(line).replaceAll("").trim();
+			Matcher m = REQUIRES.matcher(clean);
 			if (m.find()) return Integer.parseInt(m.group(1));
+			if (FULL_SET_REQUIRED.matcher(clean).find()) fullSet = true;
+			else if (FULL_SET.matcher(clean).find() && !clean.contains("+")) fullSet = true;
 		}
-		return 0;
+		return fullSet ? 4 : 0;
 	}
 
 	/**

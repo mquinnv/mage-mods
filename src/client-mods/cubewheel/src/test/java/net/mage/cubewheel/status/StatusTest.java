@@ -195,4 +195,24 @@ class StatusTest {
 		assertEquals("", t.bonus());
 		assertEquals("", ArmorSet.NONE.bonus());
 	}
+
+	@Test void aFullSetHeadingWithoutACountNeedsAllFourPieces() {
+		assertEquals(4, ArmorSet.requirement(WARDEN_HELMET));     // "(Full Set Required)"
+		assertEquals(4, ArmorSet.requirement(MOREND_LEGGINGS));   // "FULL SET EFFECTS: (While Worn)"
+		assertEquals(4, ArmorSet.requirement(PHARAOH_HELMET));    // "FULL SET EFFECTS: (When Worn)"
+		// Hunter Chestplate (2026-10-01): no colon on the heading.
+		assertEquals(4, ArmorSet.requirement(List.of("Unbreakable", "Hunter Chestplate", "",
+				"FULL SET EFFECTS (While Worn)", "➟ Strength II", "➟ Take -10% less Damage", "➟ Invisible to Monsters", "")));
+		// Velociraptor Boots (2026-10-01) names its two pieces: the count is not guessed.
+		assertEquals(0, ArmorSet.requirement(List.of("Velociraptor Boots", "", "FULL SET EFFECTS: (Helmet + Boots)",
+				"➟ Strength II", "")));
+		assertEquals(4, ArmorSet.requirement(SNOWY_HELMET));      // a stated count still wins
+		ArmorSet w = ArmorSet.of(Arrays.asList("WARDEN HELMET", "WARDEN CHESTPLATE", "WARDEN LEGGINGS", null),
+				Arrays.asList(WARDEN_HELMET, List.of(), List.of(), List.of()));
+		assertEquals(4, w.required());
+		assertTrue(w.bonusUnmet());
+		ArmorSet full = ArmorSet.of(List.of("MOREND HELMET", "MOREND CHESTPLATE", "MOREND LEGGINGS", "MOREND BOOTS"),
+				Arrays.asList(List.of(), List.of(), MOREND_LEGGINGS, List.of()));
+		assertFalse(full.bonusUnmet());
+	}
 }
