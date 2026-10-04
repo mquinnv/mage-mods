@@ -21,6 +21,7 @@ import net.mage.cubewheel.tracker.local.LocalCounter;
 import net.mage.cubewheel.tracker.local.LootLine;
 import net.mage.cubewheel.tracker.local.LootMatch;
 import net.mage.cubewheel.tracker.local.PendingBreaks;
+import net.mage.cubewheel.tracker.local.QuestCompleted;
 import net.mage.cubewheel.tracker.local.PendingMilk;
 import net.mage.cubewheel.tracker.local.PendingShears;
 import net.mage.cubewheel.tracker.local.ShearTool;
@@ -74,14 +75,14 @@ import net.minecraft.world.level.block.state.BlockState;
 /**
  * Minecraft adapter for local counting: the static facade that Fabric callbacks and the optional mixins
  * call. Purely passive: it only observes (own block breaks, damage/death/removal packets, action-bar
- * loot lines, reeling in a biting bobber, ManaCube's catch chat line) and never sends, opens or clicks anything; its only write is the local tracker file. Active
+ * loot lines, reeling in a biting bobber, ManaCube's catch and quest-completed chat lines) and never sends, opens or clicks anything; its only write is the local tracker file. Active
  * only in ManaCube Survival (host gate plus sidebar title, see {@link ServerGate#survival}), in
  * survival/adventure game mode, with {@code tracker.local.enabled}. Every entry point is guarded: a failing hook is
  * logged once and switched off for the session after {@link #MAX_FAILURES} failures.
  */
 public final class LocalSignals {
 	/** Hook kinds that can fail independently. */
-	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, LOOT_POLL, FISH, SHEAR, MILK, TICK, LEVEL, AREA }
+	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, LOOT_POLL, FISH, SHEAR, MILK, TICK, LEVEL, AREA, QUEST }
 
 	private static final int MAX_FAILURES = 10;
 	private static final long SAVE_INTERVAL_MS = 30_000;
@@ -607,24 +608,45 @@ public final class LocalSignals {
 
 	/**
 	 * ClientReceiveMessageEvents.ALLOW_GAME: ManaCube's catch line ("You caught a 52.2cm Common Flounder") is
-	 * a catch of that species; its custom fishing never makes the vanilla bobber bite. Never hides anything.
+	 * a catch of that species; its custom fishing never makes the vanilla bobber bite. "You have completed the
+	 * Volcano Potion Quest!" marks that quest's "Complete the …" objective done (see {@link QuestCompleted}).
+	 * Never hides anything.
 	 */
 	public static boolean onGameMessage(Component message, boolean overlay) {
+		if (message == null || overlay || !active) return true;
 		try {
-			if (message == null || overlay || !enabled(Hook.FISH) || !local().fish) return true;
-			Minecraft mc = Minecraft.getInstance();
-			if (!survivalMode(mc.player)) return true;
-			String text = message.getString();
-			for (String line : text.split("\n")) {
-				Optional<FishCatchParser.Catch> c = FishCatchParser.parse(line);
-				if (c.isEmpty()) continue;
-				onChatCatch(c.get());
-				break;
+			if (enabled(Hook.FISH) && local().fish && survivalMode(Minecraft.getInstance().player)) {
+				for (String line : message.getString().split("\n")) {
+					Optional<FishCatchParser.Catch> c = FishCatchParser.parse(line);
+					if (c.isEmpty()) continue;
+					onChatCatch(c.get());
+					break;
+				}
 			}
 		} catch (Throwable t) {
 			fail(Hook.FISH, t);
 		}
+		try {
+			if (enabled(Hook.QUEST) && survivalMode(Minecraft.getInstance().player)) {
+				for (String line : message.getString().split("\n")) {
+					Optional<String> quest = QuestCompleted.parse(line);
+					if (quest.isEmpty()) continue;
+					onQuestCompleted(quest.get());
+					break;
+				}
+			}
+		} catch (Throwable t) {
+			fail(Hook.QUEST, t);
+		}
 		return true;
+	}
+
+	/** You finished {@code quest}: its "Complete the …" objectives are estimated done until the next menu read. */
+	private static void onQuestCompleted(String quest) {
+		List<LocalCounter.Contribution> added =
+				LocalCounter.questCompleted(quest, CubeWheelClient.tracker(), System.currentTimeMillis());
+		if (!added.isEmpty()) saveThrottle.markDirty();
+		capture("quest", null, quest, "chat: you completed it", world(), added);
 	}
 
 	private static void onChatCatch(FishCatchParser.Catch c) {
