@@ -135,7 +135,7 @@ public final class PanelsHud implements HudElement {
 			int[] cols = p.grid() == null ? null
 					: GRIDS.computeIfAbsent(sources.get(k), i -> new GridLayout()).columns(cellWidths(mc.font, p.grid()));
 			columns.add(cols);
-			widths[k] = width(mc.font, p, cols);
+			widths[k] = cols == null ? width(mc.font, p, null) : GRIDS.get(sources.get(k)).box(width(mc.font, p, cols));
 		}
 		// Panels stacked in one corner share the widest one's width, so they line up as one column.
 		java.util.Map<HudLayout.Corner, Integer> cornerWidth = new java.util.EnumMap<>(HudLayout.Corner.class);
@@ -181,19 +181,26 @@ public final class PanelsHud implements HudElement {
 		return l.tag().isEmpty() && l.right().isEmpty();
 	}
 
-	/** Content width of {@code p}'s lines; loose lines take what the rest makes. */
+	/**
+	 * Content width of {@code p}'s lines; loose lines take what the rest makes. Text lines are capped at
+	 * {@link #MAX_CONTENT_W} (they are cut to fit); rows of pieces are not cut, so they are measured whole.
+	 */
 	private static int linesWidth(Font font, Panel p) {
-		int tagW = 0, textW = 0, rightW = 0;
+		int tagW = 0, textW = 0, rightW = 0, piecesW = 0;
 		for (Panel.Line l : p.lines()) {
 			if (!l.tag().isEmpty()) tagW = Math.max(tagW, font.width(l.tag()) + COLUMN_GAP);
 			if (!l.right().isEmpty()) rightW = Math.max(rightW, font.width(l.right()) + COLUMN_GAP);
 		}
 		for (Panel.Line l : p.lines()) {
 			if (l.loose()) continue;
+			if (!l.pieces().isEmpty()) {
+				piecesW = Math.max(piecesW, textWidth(font, l));
+				continue;
+			}
 			// Headings (no tag, no right part) may run across the whole width.
 			textW = Math.max(textW, textWidth(font, l) - (heading(l) ? tagW + rightW : 0));
 		}
-		return Math.min(MAX_CONTENT_W, tagW + textW + rightW);
+		return Math.max(piecesW, Math.min(MAX_CONTENT_W, tagW + textW + rightW));
 	}
 
 	/** Content width of {@code p}: its lines, its grid's {@code columns} (null = none), at least its title. */

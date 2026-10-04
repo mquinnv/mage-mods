@@ -11,6 +11,7 @@ public final class GridLayout {
 	public static final int GAP = 9;
 
 	private int[] widest = new int[0];
+	private int widestBox;
 
 	/** Column widths for cells of natural widths {@code natural[row][column]}: never narrower than before a reset. */
 	public int[] columns(int[][] natural) {
@@ -23,9 +24,19 @@ public final class GridLayout {
 		return java.util.Arrays.copyOf(widest, n);
 	}
 
+	/**
+	 * The whole panel's width for content that would like {@code natural} pixels, never narrower than before a
+	 * reset: the rows above the grid change too (a hand going empty while scrolling the hotbar).
+	 */
+	public int box(int natural) {
+		widestBox = Math.max(widestBox, natural);
+		return widestBox;
+	}
+
 	/** Start over: the next widths are taken as they are. */
 	public void reset() {
 		widest = new int[0];
+		widestBox = 0;
 	}
 
 	/** The grid's width: its columns and the gaps between them. */

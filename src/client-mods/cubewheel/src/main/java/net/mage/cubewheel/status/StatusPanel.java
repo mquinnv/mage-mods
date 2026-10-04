@@ -2,6 +2,7 @@ package net.mage.cubewheel.status;
 
 import net.mage.cubewheel.CubeWheelClient;
 import net.mage.cubewheel.config.CubeWheelConfig;
+import net.mage.cubewheel.hud.Fit;
 import net.mage.cubewheel.hud.HudLayout;
 import net.mage.cubewheel.hud.Panel;
 import net.mage.cubewheel.wheel.Icons;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -36,6 +38,9 @@ public final class StatusPanel {
 	private static final int GREY = 0xFFAAAAAA;
 	/** A set bonus that is not on (fewer pieces than a full set, no requirement stated). */
 	private static final int DIM = 0xFF707070;
+
+	/** The set's name in the gear row is cut to this many pixels, so the box never gets very wide. */
+	private static final int MAX_NAME_W = 90;
 
 	/** Replaces the set bonus when the lore's bonus needs more pieces than are worn. */
 	private static final String NO_BONUS = "⚠ no set bonus";
@@ -161,7 +166,9 @@ public final class StatusPanel {
 		boolean unmet = set.bonusUnmet();
 		if (set.worn() > 0) {
 			// A leading space evens the gap after the item icons, which sit tight.
-			strip.add(new Panel.Piece(null, " " + set.name(), unmet ? Panel.YELLOW : Panel.WHITE));
+			Font font = Minecraft.getInstance().font;
+			String name = Fit.cut(" " + set.name(), MAX_NAME_W, font::width);
+			strip.add(new Panel.Piece(null, name, unmet ? Panel.YELLOW : Panel.WHITE));
 			strip.add(new Panel.Piece(null, set.count(), set.matching() == 4 ? Panel.GREEN : unmet ? Panel.YELLOW : Panel.WHITE));
 		} else if (strip.isEmpty()) {
 			strip.add(new Panel.Piece(null, set.name(), GREY));

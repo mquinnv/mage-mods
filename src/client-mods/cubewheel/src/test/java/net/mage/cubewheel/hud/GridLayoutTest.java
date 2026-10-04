@@ -34,4 +34,13 @@ class GridLayoutTest {
 		assertEquals(total, GridLayout.width(GridLayout.stretch(cols, total)));
 		assertArrayEquals(cols, GridLayout.stretch(cols, 10)); // never narrower
 	}
+
+	@Test void theBoxOnlyGrowsUntilReset() {
+		GridLayout g = new GridLayout();
+		assertEquals(150, g.box(150));
+		assertEquals(168, g.box(168)); // a hand item came into the gear row
+		assertEquals(168, g.box(150)); // it went: the box stays, nothing below re-flows
+		g.reset();
+		assertEquals(150, g.box(150));
+	}
 }

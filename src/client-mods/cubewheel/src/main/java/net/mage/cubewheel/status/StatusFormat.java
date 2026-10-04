@@ -78,11 +78,11 @@ public final class StatusFormat {
 		return remaining < 0 || remaining >= WEAR_LOW || unbreakable ? -1 : remaining;
 	}
 
-	/** True when a lore line says "Unbreakable" (formatting codes ignored), as ManaCube gear does. */
+	/** True when a lore line says "Unbreakable", as ManaCube gear does (lines as Component#getString gives them). */
 	public static boolean unbreakableLore(java.util.List<String> lore) {
 		if (lore == null) return false;
 		for (String line : lore) {
-			if (line != null && line.replaceAll("§.", "").toLowerCase(Locale.ROOT).contains("unbreakable")) return true;
+			if (line != null && line.toLowerCase(Locale.ROOT).contains("unbreakable")) return true;
 		}
 		return false;
 	}
