@@ -13,7 +13,7 @@ class LinesTest {
 	void mapRoundTripKeepsOrder() {
 		Map<String, String> m = DefaultConfig.bossWarps();
 		List<String> problems = new ArrayList<>();
-		Map<String, String> back = Lines.parseMap(Lines.mapLines(m), problems);
+		Map<String, String> back = Lines.parseMap(Lines.mapLines(m), problems, "a -> b");
 		assertEquals(new ArrayList<>(m.entrySet()), new ArrayList<>(back.entrySet()));
 		assertTrue(problems.isEmpty());
 	}
@@ -21,7 +21,7 @@ class LinesTest {
 	@Test
 	void mapKeyMayContainArrow() {
 		List<String> problems = new ArrayList<>();
-		Map<String, String> m = Lines.parseMap(List.of("(?i)a->b -> /warp x"), problems);
+		Map<String, String> m = Lines.parseMap(List.of("(?i)a->b -> /warp x"), problems, "a -> b");
 		assertEquals("/warp x", m.get("(?i)a->b"));
 		assertTrue(problems.isEmpty());
 	}
@@ -29,7 +29,7 @@ class LinesTest {
 	@Test
 	void mapBlankLinesSkippedSilently() {
 		List<String> problems = new ArrayList<>();
-		Map<String, String> m = Lines.parseMap(List.of("", "   ", "a -> b"), problems);
+		Map<String, String> m = Lines.parseMap(List.of("", "   ", "a -> b"), problems, "k -> v");
 		assertEquals(Map.of("a", "b"), m);
 		assertTrue(problems.isEmpty());
 	}
@@ -38,16 +38,17 @@ class LinesTest {
 	void mapBadLinesEachAddOneProblem() {
 		for (String bad : List.of("foo", " -> v", "k -> ")) {
 			List<String> problems = new ArrayList<>();
-			Map<String, String> m = Lines.parseMap(List.of(bad), problems);
+			Map<String, String> m = Lines.parseMap(List.of(bad), problems, "source id -> regex");
 			assertTrue(m.isEmpty(), bad);
 			assertEquals(1, problems.size(), bad);
+			assertEquals("\"" + bad.trim() + "\" ignored: expected  source id -> regex", problems.get(0));
 		}
 	}
 
 	@Test
 	void mapRepeatedKeyKeepsLater() {
 		List<String> problems = new ArrayList<>();
-		Map<String, String> m = Lines.parseMap(List.of("a -> 1", "b -> 2", "a -> 3"), problems);
+		Map<String, String> m = Lines.parseMap(List.of("a -> 1", "b -> 2", "a -> 3"), problems, "k -> v");
 		assertEquals("3", m.get("a"));
 		assertTrue(problems.isEmpty());
 		assertInstanceOf(LinkedHashMap.class, m);

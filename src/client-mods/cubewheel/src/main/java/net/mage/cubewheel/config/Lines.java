@@ -22,11 +22,12 @@ public final class Lines {
 	}
 
 	/**
-	 * Parses {@code regex -> value} lines into an insertion-ordered map. Splits at the last arrow, since regexes may
-	 * contain {@code ->}. Blank lines are skipped silently; malformed ones are skipped and described in {@code problems}.
-	 * A repeated key keeps the later value.
+	 * Parses {@code key -> value} lines into an insertion-ordered map. Splits at the last arrow, since regexes may
+	 * contain {@code ->}. Blank lines are skipped silently; malformed ones are skipped and described in {@code problems}
+	 * as "expected {@code format}" ({@code format} names the two sides, e.g. "source id -> regex"). A repeated key keeps
+	 * the later value.
 	 */
-	public static Map<String, String> parseMap(List<String> lines, List<String> problems) {
+	public static Map<String, String> parseMap(List<String> lines, List<String> problems, String format) {
 		Map<String, String> out = new LinkedHashMap<>();
 		for (String raw : lines) {
 			String line = raw.trim();
@@ -35,7 +36,7 @@ public final class Lines {
 			String key = at < 0 ? "" : line.substring(0, at).trim();
 			String value = at < 0 ? "" : line.substring(at + ARROW.length()).trim();
 			if (key.isEmpty() || value.isEmpty()) {
-				problems.add("\"" + line + "\" ignored: expected  regex -> value");
+				problems.add("\"" + line + "\" ignored: expected  " + format);
 				continue;
 			}
 			out.put(key, value);

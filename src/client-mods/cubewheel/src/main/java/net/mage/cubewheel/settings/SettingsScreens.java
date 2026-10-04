@@ -22,8 +22,10 @@ import net.mage.cubewheel.hud.ArrangeScreen;
 import net.mage.cubewheel.settings.SettingsSpec.Category;
 import net.mage.cubewheel.settings.SettingsSpec.Choice;
 import net.mage.cubewheel.settings.SettingsSpec.DoubleRange;
+import net.mage.cubewheel.settings.SettingsSpec.EventLines;
 import net.mage.cubewheel.settings.SettingsSpec.Group;
 import net.mage.cubewheel.settings.SettingsSpec.IntRange;
+import net.mage.cubewheel.settings.SettingsSpec.LinesSetter;
 import net.mage.cubewheel.settings.SettingsSpec.MapLines;
 import net.mage.cubewheel.settings.SettingsSpec.Setting;
 import net.mage.cubewheel.settings.SettingsSpec.Text;
@@ -32,6 +34,7 @@ import net.mage.cubewheel.settings.SettingsSpec.Toggle;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -51,7 +54,7 @@ public final class SettingsScreens {
 		CubeWheelConfig cfg;
 		/** The built YACL config, so a save can re-sync its options; set before the screen exists. */
 		YetAnotherConfigLib screen;
-		/** Lines the setters skipped since the last save (a malformed map line); reported in chat on save. */
+		/** Lines the setters skipped in the current save (a malformed map or event line); reported in chat on save. */
 		final List<String> problems = new ArrayList<>();
 
 		Draft(CubeWheelConfig cfg) {
@@ -97,7 +100,9 @@ public final class SettingsScreens {
 			if (setting instanceof TextList list) {
 				lists.add(listOption(list, draft));
 			} else if (setting instanceof MapLines map) {
-				lists.add(mapOption(map, draft));
+				lists.add(linesOption(map, map.getter(), map.setter(), map.defaultValue(), draft));
+			} else if (setting instanceof EventLines events) {
+				lists.add(linesOption(events, events.getter(), events.setter(), events.defaultValue(), draft));
 			} else {
 				plain.option(option(setting, draft));
 				plainCount++;
@@ -145,6 +150,7 @@ public final class SettingsScreens {
 					.build();
 			case TextList l -> throw new IllegalArgumentException("list setting " + l.id() + " is a group, not an option");
 			case MapLines m -> throw new IllegalArgumentException("list setting " + m.id() + " is a group, not an option");
+			case EventLines e -> throw new IllegalArgumentException("list setting " + e.id() + " is a group, not an option");
 		};
 	}
 
@@ -161,13 +167,17 @@ public final class SettingsScreens {
 				.build();
 	}
 
-	/** A map setting as a list option of {@code key -> value} lines; lines that do not parse land in {@code draft.problems}. */
-	private static ListOption<String> mapOption(MapLines m, Draft draft) {
+	/**
+	 * A line-edited setting (a map or the event schedule) as a list option of text lines; lines that do not parse land
+	 * in {@code draft.problems}.
+	 */
+	private static ListOption<String> linesOption(Setting s, Function<CubeWheelConfig, List<String>> getter,
+			LinesSetter setter, List<String> defaultValue, Draft draft) {
 		return ListOption.<String>createBuilder()
-				.name(Component.literal(m.label()))
-				.description(describe(m))
-				.binding(m.defaultValue(), () -> new ArrayList<>(m.getter().apply(draft.cfg)),
-						v -> m.setter().set(draft.cfg, v, draft.problems))
+				.name(Component.literal(s.label()))
+				.description(describe(s))
+				.binding(defaultValue, () -> new ArrayList<>(getter.apply(draft.cfg)),
+						v -> setter.set(draft.cfg, v, draft.problems))
 				.controller(StringControllerBuilder::create)
 				.initial("")
 				.build();
@@ -237,18 +247,22 @@ public final class SettingsScreens {
 				.build();
 	}
 
-	/** YACL's save: options have already written into the draft. */
+	/**
+	 * YACL's save: options have already written into the draft (their setters ran just before this), so
+	 * {@code draft.problems} holds exactly this save's parse problems. They are taken and cleared first, so a failed
+	 * save does not leave them behind to be repeated or go stale on the retry.
+	 */
 	private static void save(ConfigStore store, Draft draft) {
-		List<String> warnings;
+		List<String> warnings = new ArrayList<>(draft.problems);
+		draft.problems.clear();
 		try {
-			warnings = new ArrayList<>(draft.problems);
 			warnings.addAll(store.apply(draft.cfg));
 		} catch (IOException e) {
 			CubeWheelClient.LOG.error("[cubewheel] could not save settings", e);
+			for (String w : warnings) chat(Component.literal("[CubeWheel] " + w).withStyle(ChatFormatting.YELLOW));
 			chat(Component.literal("[CubeWheel] could not save: " + e.getMessage()).withStyle(ChatFormatting.RED));
 			return;
 		}
-		draft.problems.clear();
 		draft.cfg = ConfigStore.copyOf(store.current()); // the applied draft is live now; keep editing a copy
 		resync(draft.screen);
 		for (String w : warnings) chat(Component.literal("[CubeWheel] " + w).withStyle(ChatFormatting.YELLOW));

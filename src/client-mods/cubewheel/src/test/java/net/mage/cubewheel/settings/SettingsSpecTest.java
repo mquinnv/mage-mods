@@ -7,6 +7,7 @@ import net.mage.cubewheel.hud.HudLayout;
 import net.mage.cubewheel.settings.SettingsSpec.Category;
 import net.mage.cubewheel.settings.SettingsSpec.Choice;
 import net.mage.cubewheel.settings.SettingsSpec.DoubleRange;
+import net.mage.cubewheel.settings.SettingsSpec.EventLines;
 import net.mage.cubewheel.settings.SettingsSpec.Group;
 import net.mage.cubewheel.settings.SettingsSpec.IntRange;
 import net.mage.cubewheel.settings.SettingsSpec.MapLines;
@@ -15,6 +16,8 @@ import net.mage.cubewheel.settings.SettingsSpec.Text;
 import net.mage.cubewheel.settings.SettingsSpec.TextList;
 import net.mage.cubewheel.settings.SettingsSpec.Toggle;
 import org.junit.jupiter.api.Test;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -38,12 +41,12 @@ class SettingsSpecTest {
 	@Test
 	void categoriesInOrderWithTheirSettings() {
 		List<Category> cats = SettingsSpec.categories();
-		assertEquals(List.of("General", "HUD panels", "Tracker", "Daily reward", "SVA"),
+		assertEquals(List.of("General", "HUD panels", "Tracker", "Events", "Daily reward", "SVA"),
 				cats.stream().map(Category::name).toList());
 		assertEquals(List.of("enabled", "serverHosts", "vaultCount", "listThreshold"), ids(cats.get(0)));
 		assertEquals(List.of("dailyReward.enabled", "dailyReward.dailyHours", "dailyReward.weeklyDays",
-				"dailyReward.monthlyDays", "dailyReward.menuTitlePattern"), ids(cats.get(3)));
-		assertEquals(List.of("svas.enabled", "svas.tooltip"), ids(cats.get(4)));
+				"dailyReward.monthlyDays", "dailyReward.menuTitlePattern"), ids(cats.get(4)));
+		assertEquals(List.of("svas.enabled", "svas.tooltip"), ids(cats.get(5)));
 	}
 
 	@Test
@@ -178,6 +181,14 @@ class SettingsSpecTest {
 					l.setter().accept(c, v);
 					assertEquals(v, l.getter().apply(c), s.id());
 				}
+				case EventLines e -> {
+					List<String> v = List.of("Zed | at 01:00, 02:00", "Boss | every 2h from 01:30 | Europe/London | off");
+					assertNotEquals(v, e.defaultValue(), s.id());
+					List<String> problems = new ArrayList<>();
+					e.setter().set(c, v, problems);
+					assertEquals(v, e.getter().apply(c), s.id() + " keeps order");
+					assertTrue(problems.isEmpty(), s.id());
+				}
 				case MapLines m -> {
 					List<String> v = List.of("zeta -> (?i)z", "alpha -> a+", "mid -> m");
 					assertNotEquals(v, m.defaultValue(), s.id());
@@ -202,6 +213,7 @@ class SettingsSpecTest {
 				case Text t -> { assertEquals(t.defaultValue(), t.getter().apply(fresh), s.id()); yield t.defaultValue(); }
 				case TextList l -> { assertEquals(l.defaultValue(), l.getter().apply(fresh), s.id()); yield l.defaultValue(); }
 				case MapLines m -> { assertEquals(m.defaultValue(), m.getter().apply(fresh), s.id()); yield m.defaultValue(); }
+				case EventLines e -> { assertEquals(e.defaultValue(), e.getter().apply(fresh), s.id()); yield e.defaultValue(); }
 			};
 			assertNotNull(def, s.id());
 		}
@@ -254,11 +266,17 @@ class SettingsSpecTest {
 		c.tracker.refreshCommands = null;
 		c.tracker.local.worlds = null;
 		c.tracker.local.specialWorlds = null;
+		c.events.schedule = null;
+		c.events.bossWarps = null;
 		return c;
 	}
 
 	private static List<String> shown(Setting s, CubeWheelConfig c) {
-		return s instanceof MapLines m ? m.getter().apply(c) : ((TextList) s).getter().apply(c);
+		return switch (s) {
+			case MapLines m -> m.getter().apply(c);
+			case EventLines e -> e.getter().apply(c);
+			default -> ((TextList) s).getter().apply(c);
+		};
 	}
 
 	@Test
@@ -278,15 +296,23 @@ class SettingsSpecTest {
 	@Test
 	void nullMapsAndListsShowTheDefaultsAndSavingThemUnchangedKeepsBehaviour() {
 		for (String id : List.of("tracker.sources", "tracker.sidebarLinks", "tracker.refreshCommands",
-				"tracker.local.worlds", "tracker.local.specialWorlds", "serverHosts")) {
+				"tracker.local.worlds", "tracker.local.specialWorlds", "serverHosts", "events.bossWarps",
+				"events.schedule")) {
 			Setting s = byId(id);
 			List<String> shown = shown(s, nulled());
-			assertEquals(s instanceof MapLines m ? m.defaultValue() : ((TextList) s).defaultValue(), shown, id);
+			assertEquals(switch (s) {
+				case MapLines m -> m.defaultValue();
+				case EventLines e -> e.defaultValue();
+				default -> ((TextList) s).defaultValue();
+			}, shown, id);
 
 			// Writing the shown value back and normalising gives what normalising the null would have.
 			CubeWheelConfig saved = nulled();
-			if (s instanceof MapLines m) m.setter().set(saved, shown, new ArrayList<>());
-			else ((TextList) s).setter().accept(saved, shown);
+			switch (s) {
+				case MapLines m -> m.setter().set(saved, shown, new ArrayList<>());
+				case EventLines e -> e.setter().set(saved, shown, new ArrayList<>());
+				default -> ((TextList) s).setter().accept(saved, shown);
+			}
 			ConfigNormalizer.normalize(saved, new ArrayList<>());
 			CubeWheelConfig plain = nulled();
 			ConfigNormalizer.normalize(plain, new ArrayList<>());
@@ -329,5 +355,109 @@ class SettingsSpecTest {
 		ConfigNormalizer.normalize(c, new ArrayList<>());
 		assertEquals(8, l.getter().apply(c).size());
 		assertEquals("/cmd0", l.getter().apply(c).get(0));
+	}
+
+	@Test
+	void eventsCategoryFollowsTrackerWithItsThreeGroups() {
+		Category e = SettingsSpec.categories().get(3);
+		assertEquals("Events", e.name());
+		assertEquals(List.of("Panel & alerts", "Schedule", "Boss event slice"), e.groups().stream().map(Group::name).toList());
+		assertEquals(List.of("events.enabled", "events.show", "events.alertMinutes", "events.timezone"), ids(e.groups().get(0)));
+		assertEquals(List.of("events.schedule"), ids(e.groups().get(1)));
+		assertEquals(List.of("events.bossMinutes", "events.bossWarps"), ids(e.groups().get(2)));
+		assertInstanceOf(EventLines.class, byId("events.schedule"));
+		assertInstanceOf(MapLines.class, byId("events.bossWarps"));
+		assertTrue(byId("events.schedule").tooltip().contains("KOTH | at 00:30, 02:30"));
+		assertTrue(byId("events.schedule").tooltip().contains("Boss | every 2h from 01:30 | Europe/London | off"));
+		assertTrue(byId("events.bossWarps").tooltip().contains("(?i)cursed witch -> /warp cursedwitch"));
+		IntRange show = (IntRange) byId("events.show");
+		assertEquals(1, show.min());
+		assertEquals(10, show.max());
+		IntRange alert = (IntRange) byId("events.alertMinutes");
+		assertEquals(0, alert.min());
+		assertEquals(60, alert.max());
+		IntRange boss = (IntRange) byId("events.bossMinutes");
+		assertEquals(1, boss.min());
+		assertEquals(180, boss.max());
+	}
+
+	@Test
+	void defaultScheduleRoundTripsThroughItsLines() {
+		EventLines e = (EventLines) byId("events.schedule");
+		CubeWheelConfig c = DefaultConfig.create();
+		List<String> problems = new ArrayList<>();
+		e.setter().set(c, e.getter().apply(c), problems);
+		assertTrue(problems.isEmpty());
+		assertEquals(e.defaultValue(), e.getter().apply(c));
+		assertEquals(DefaultConfig.events().size(), c.events.schedule.size());
+		MapLines w = (MapLines) byId("events.bossWarps");
+		w.setter().set(c, w.getter().apply(c), problems);
+		assertTrue(problems.isEmpty());
+		assertEquals(DefaultConfig.bossWarps(), c.events.bossWarps);
+	}
+
+	@Test
+	void problemsNameTheSettingAndItsOwnFormat() {
+		CubeWheelConfig c = DefaultConfig.create();
+		List<String> problems = new ArrayList<>();
+		((MapLines) byId("tracker.sources")).setter().set(c, List.of("foo"), problems);
+		((MapLines) byId("tracker.sidebarLinks")).setter().set(c, List.of("bar"), problems);
+		((MapLines) byId("events.bossWarps")).setter().set(c, List.of("baz"), problems);
+		((EventLines) byId("events.schedule")).setter().set(c, List.of("KOTH", "A | at 1:00 | X | Y"), problems);
+		assertEquals(List.of(
+				"Menu sources: \"foo\" ignored: expected  source id -> regex",
+				"Sidebar links: \"bar\" ignored: expected  sidebar key -> regex",
+				"Boss warps: \"baz\" ignored: expected  location regex -> command",
+				"Schedule: \"KOTH\" ignored: expected  name | when",
+				"Schedule: \"A | at 1:00 | X | Y\" ignored: more than one timezone"), problems);
+	}
+
+	@Test
+	void aBadEventLineIsNotStoredAndTheGoodOnesAre() {
+		EventLines e = (EventLines) byId("events.schedule");
+		CubeWheelConfig c = DefaultConfig.create();
+		List<String> problems = new ArrayList<>();
+		e.setter().set(c, List.of("KOTH | at 00:30, 02:30", "no when", ""), problems);
+		assertEquals(List.of("KOTH | at 00:30, 02:30"), e.getter().apply(c));
+		assertEquals(1, problems.size());
+	}
+
+	/**
+	 * Every public field of {@code type} as a dotted path; nested config objects are walked and a Position expands to
+	 * its corner, x and y. Skips configVersion (a stamp) and the wheel (its own editor).
+	 */
+	private static void collectPaths(Class<?> type, String prefix, Set<String> out) throws ReflectiveOperationException {
+		for (Field f : type.getFields()) {
+			if (Modifier.isStatic(f.getModifiers())) continue;
+			String path = prefix + f.getName();
+			if (path.equals("wheel") || path.equals("configVersion")) continue;
+			Class<?> t = f.getType();
+			if (t == CubeWheelConfig.Position.class) {
+				for (String part : List.of("corner", "x", "y")) out.add(path + "." + part);
+			} else if (t.getDeclaringClass() == CubeWheelConfig.class) {
+				collectPaths(t, path + ".", out);
+			} else {
+				out.add(path);
+			}
+		}
+	}
+
+	@Test
+	void everyConfigFieldHasExactlyOneSettingAndEverySettingNamesARealField() throws ReflectiveOperationException {
+		Set<String> fields = new java.util.TreeSet<>();
+		collectPaths(CubeWheelConfig.class, "", fields);
+		assertTrue(fields.contains("tracker.local.blocks"), "the walk reaches nested objects: " + fields);
+		assertTrue(fields.contains("tracker.jobsPanel.position.corner"), fields.toString());
+		assertFalse(fields.contains("wheel"));
+		assertFalse(fields.contains("configVersion"));
+
+		List<String> settingIds = all().stream().map(Setting::id).toList();
+		Set<String> uncovered = new java.util.TreeSet<>(fields);
+		uncovered.removeAll(settingIds);
+		Set<String> unknown = new java.util.TreeSet<>(settingIds);
+		unknown.removeAll(fields);
+		assertTrue(uncovered.isEmpty(), "config fields without a setting in SettingsSpec (add one, or exclude on purpose): " + uncovered);
+		assertTrue(unknown.isEmpty(), "settings that name no config field: " + unknown);
+		assertEquals(settingIds.size(), new HashSet<>(settingIds).size(), "each field is bound by exactly one setting");
 	}
 }

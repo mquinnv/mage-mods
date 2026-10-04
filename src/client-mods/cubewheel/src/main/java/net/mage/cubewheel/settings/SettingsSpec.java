@@ -22,7 +22,7 @@ public final class SettingsSpec {
 	public static final String HUD_PANELS = "HUD panels";
 
 	/** One editable config field. {@code id} is its JSON path ("dailyReward.dailyHours"), stable across versions. */
-	public sealed interface Setting permits Toggle, IntRange, DoubleRange, Choice, Text, TextList, MapLines {
+	public sealed interface Setting permits Toggle, IntRange, DoubleRange, Choice, Text, TextList, MapLines, EventLines {
 		String id();
 
 		String label();
@@ -65,7 +65,17 @@ public final class SettingsSpec {
 	public record MapLines(String id, String label, String tooltip, Function<CubeWheelConfig, List<String>> getter,
 			LinesSetter setter, List<String> defaultValue) implements Setting {}
 
-	/** Stores edited lines into a config; lines it cannot parse are described in {@code problems}, not dropped silently. */
+	/**
+	 * The event schedule edited as text lines, one {@code name | when [| timezone] [| off]} per row (see {@link Lines}).
+	 * Getter and setter work like {@link MapLines}'s.
+	 */
+	public record EventLines(String id, String label, String tooltip, Function<CubeWheelConfig, List<String>> getter,
+			LinesSetter setter, List<String> defaultValue) implements Setting {}
+
+	/**
+	 * Stores edited lines into a config; lines it cannot parse are described in {@code problems}, not dropped silently.
+	 * Each problem names the setting and the format it expected, so it reads on its own in chat.
+	 */
 	@FunctionalInterface
 	public interface LinesSetter {
 		void set(CubeWheelConfig config, List<String> lines, List<String> problems);
@@ -170,7 +180,7 @@ public final class SettingsSpec {
 						new Group("Exact positions", positions(d), true))),
 				new Category("Tracker", List.of(
 						new Group("Sources & refresh", List.of(
-								mapLines(d, "tracker.sources", "Menu sources",
+								mapLines(d, "tracker.sources", "Menu sources", "source id -> regex",
 										"Which tracker source a menu belongs to. One line per source:"
 												+ " \"source id -> regex\", e.g. \"jobs -> (?i)jobs\". A menu whose title"
 												+ " matches the regex is read as that source; the first match wins. Menus are also"
@@ -181,7 +191,7 @@ public final class SettingsSpec {
 												+ " menu. A missing \"/\" is added and at most "
 												+ ConfigStore.MAX_REFRESH_COMMANDS + " are kept.",
 										c -> c.tracker.refreshCommands, (c, v) -> c.tracker.refreshCommands = v),
-								mapLines(d, "tracker.sidebarLinks", "Sidebar links",
+								mapLines(d, "tracker.sidebarLinks", "Sidebar links", "sidebar key -> regex",
 										"Follows a sidebar value live. One line per link: \"sidebar key -> regex\", e.g."
 												+ " \"Skills -> (?i)reach [\\d,]+ skill level\". The entry whose name matches the"
 												+ " regex shows that sidebar line's current value.",
@@ -223,6 +233,37 @@ public final class SettingsSpec {
 								textList(d, "tracker.local.specialWorlds", "Special worlds",
 										"Worlds that count as \"special worlds (/worlds)\".",
 										c -> c.tracker.local.specialWorlds, (c, v) -> c.tracker.local.specialWorlds = v))))),
+				new Category("Events", List.of(
+						new Group("Panel & alerts", List.of(
+								toggle(d, "events.enabled", "Enabled",
+										"Master switch for the panel and the alerts.",
+										c -> c.events.enabled, (c, v) -> c.events.enabled = v),
+								intRange(d, "events.show", "Events shown",
+										"How many upcoming events the panel lists.",
+										1, 10, c -> c.events.show, (c, v) -> c.events.show = v),
+								intRange(d, "events.alertMinutes", "Alert minutes",
+										"Chat alert this many minutes before an event starts; 0 = no alerts.",
+										0, 60, c -> c.events.alertMinutes, (c, v) -> c.events.alertMinutes = v),
+								text(d, "events.timezone", "Time zone",
+										"Time zone for entries without their own; the wiki's \"EST\" times are New York"
+												+ " wall-clock times. An unknown zone falls back to the default.",
+										c -> c.events.timezone, (c, v) -> c.events.timezone = v))),
+						new Group("Schedule", List.of(
+								eventLines(d, "events.schedule", "Schedule",
+										"One event per line: \"name | when [| timezone] [| off]\". \"when\" is \"at 08:00, 13:00\""
+												+ " or \"every 3h from 00:15\"; the optional zone overrides the Time zone above and"
+												+ " \"off\" keeps the line but disables it. Examples: \"KOTH | at 00:30, 02:30\" and"
+												+ " \"Boss | every 2h from 01:30 | Europe/London | off\"."))),
+						new Group("Boss event slice", List.of(
+								intRange(d, "events.bossMinutes", "Boss minutes",
+										"The \"Boss event\" slice shows a spawn this many minutes after its last sign of life"
+												+ " (the spawn, or a kill it made).",
+										1, 180, c -> c.events.bossMinutes, (c, v) -> c.events.bossMinutes = v),
+								mapLines(d, "events.bossWarps", "Boss warps", "location regex -> command",
+										"What the slice sends for a boss spawn. One line per rule: \"location regex -> command\","
+												+ " e.g. \"(?i)cursed witch -> /warp cursedwitch\". The regex is matched against"
+												+ " \"Boss · Location\"; the first match wins.",
+										c -> c.events.bossWarps, (c, m) -> c.events.bossWarps = m))))),
 				new Category("Daily reward", List.of(
 						new Group("Daily reward (/cow)", List.of(
 								toggle(d, "dailyReward.enabled", "Badge",
@@ -320,11 +361,30 @@ public final class SettingsSpec {
 				(c, v) -> set.accept(c, new ArrayList<>(v)), def);
 	}
 
-	private static MapLines mapLines(CubeWheelConfig defaults, String id, String label, String tooltip,
+	private static MapLines mapLines(CubeWheelConfig defaults, String id, String label, String format, String tooltip,
 			Function<CubeWheelConfig, Map<String, String>> get, BiConsumer<CubeWheelConfig, Map<String, String>> set) {
 		List<String> def = List.copyOf(Lines.mapLines(get.apply(defaults)));
 		// A null map means "the defaults" (ConfigNormalizer fills it), so that is what the editor shows.
 		return new MapLines(id, label, tooltip, c -> get.apply(c) == null ? def : Lines.mapLines(get.apply(c)),
-				(c, lines, problems) -> set.accept(c, Lines.parseMap(lines, problems)), def);
+				(c, lines, problems) -> set.accept(c, Lines.parseMap(lines, named(label, problems), format)), def);
+	}
+
+	private static EventLines eventLines(CubeWheelConfig defaults, String id, String label, String tooltip) {
+		List<String> def = List.copyOf(Lines.eventLines(defaults.events.schedule == null
+				? DefaultConfig.events() : defaults.events.schedule));
+		// A null schedule means "the defaults" (ConfigNormalizer fills it), so that is what the editor shows.
+		return new EventLines(id, label, tooltip,
+				c -> c.events.schedule == null ? def : Lines.eventLines(c.events.schedule),
+				(c, lines, problems) -> c.events.schedule = Lines.parseEvents(lines, named(label, problems)), def);
+	}
+
+	/** A problem list that prefixes each entry with the setting's label ({@code Sources: "foo" ignored: ...}). */
+	private static List<String> named(String label, List<String> problems) {
+		return new ArrayList<>() {
+			@Override
+			public boolean add(String problem) {
+				return problems.add(label + ": " + problem);
+			}
+		};
 	}
 }
