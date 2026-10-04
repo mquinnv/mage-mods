@@ -78,14 +78,121 @@ class StatusTest {
 	}
 
 	@Test void formats() {
-		assertEquals("6:00 AM", StatusFormat.gameTime(0));
-		assertEquals("12:00 PM", StatusFormat.gameTime(6_000));
-		assertEquals("3:00 PM", StatusFormat.gameTime(9_000));
-		assertEquals("12:00 AM", StatusFormat.gameTime(18_000));
-		assertEquals("6:00 AM", StatusFormat.gameTime(24_000 * 5));
-		assertEquals("5:09 PM", StatusFormat.clock(17, 9));
+		assertEquals("6:00", StatusFormat.gameTime(0));
+		assertEquals("12:00", StatusFormat.gameTime(6_000));
+		assertEquals("15:00", StatusFormat.gameTime(9_000));
+		assertEquals("14:20", StatusFormat.gameTime(8_334));
+		assertEquals("0:00", StatusFormat.gameTime(18_000));
+		assertEquals("6:00", StatusFormat.gameTime(24_000 * 5));
+		assertEquals("4:35p", StatusFormat.clock(16, 35));
+		assertEquals("5:09p", StatusFormat.clock(17, 9));
+		assertEquals("12:00a", StatusFormat.clock(0, 0));
+		assertEquals("12:30p", StatusFormat.clock(12, 30));
 		assertEquals("Dark Forest", StatusFormat.biome("minecraft:dark_forest"));
-		assertEquals("West -X", StatusFormat.facing("west"));
-		assertEquals("0.00 m/s", StatusFormat.speed(-1));
+		assertEquals("4.3 b/s", StatusFormat.speed(4.32));
+		assertEquals("0.0 b/s", StatusFormat.speed(-1));
+	}
+
+	@Test void coordinatesArePlainNumbers() {
+		assertEquals("123  64  -456", StatusFormat.coords(123, 64, -456));
+		assertEquals("0  -60  0", StatusFormat.coords(0, -60, 0));
+	}
+
+	@Test void facingIsALetterAndTheAxisItPointsAlong() {
+		assertEquals("N -Z", StatusFormat.facing("north"));
+		assertEquals("S +Z", StatusFormat.facing("south"));
+		assertEquals("E +X", StatusFormat.facing("EAST"));
+		assertEquals("W -X", StatusFormat.facing("west"));
+		assertEquals("up", StatusFormat.facing("up"));
+		assertEquals("", StatusFormat.facing(null));
+	}
+
+	@Test void wearColourByRemainingDurability() {
+		assertEquals(StatusFormat.WORN_OK, StatusFormat.wearColor(1));
+		assertEquals(StatusFormat.WORN_OK, StatusFormat.wearColor(0.25));
+		assertEquals(0xFFFFFF55, StatusFormat.wearColor(0.24));
+		assertEquals(0xFFFFFF55, StatusFormat.wearColor(0.10));
+		assertEquals(0xFFFF5555, StatusFormat.wearColor(0.09));
+		assertEquals(0xFFFF5555, StatusFormat.wearColor(0));
+	}
+
+	// Set bonus text, from real ManaCube lore (cubewheel-captures 2026-09-30/2026-10-01 jsonl, kind "container",
+	// items[].lore; formatting codes are already stripped there).
+
+	/** Snowy Helmet (2026-10-01): the bonus is the "FULL SET EFFECTS:" block, after its "(Requires 4/4 pieces)". */
+	private static final List<String> SNOWY_HELMET = List.of("Unbreakable", "Snowy Helmet", "",
+			"ITEM EFFECTS: (When Attacked)", "➟ Spawn Arctic Fox Pack", "", "Duration: 45s", "Cooldown: 120s", "",
+			"FULL SET EFFECTS:", "(Requires 4/4 pieces)", "➟ -50% Armor Effect Cooldowns", "➟ Snowy Particles", "",
+			"Season Vault Access ✔", "");
+
+	/** Obsidian Chestplate (2026-09-30): older style, the effects listed right above "(Requires 4/4 pieces)". */
+	private static final List<String> OBSIDIAN_CHESTPLATE = List.of("Obsidian Armor Chestplate", "",
+			"ITEM EFFECTS: (When Worn)", "➤ + Strength II", "➤ + Fire Resistance", "➤ Mining Fatigue", "➤ Slowness",
+			"(Requires 4/4 pieces)");
+
+	/** Morend Leggings (2026-10-01): a full-set block with no requirement line, one effect wrapped onto two lines. */
+	private static final List<String> MOREND_LEGGINGS = List.of("Unbreakable", "Morend Leggings", "",
+			"FULL SET EFFECTS: (While Worn)", "➟ 5% Chance to get 3x drops from", "   World Monsters & Resources",
+			"➟ Speed V in Worlds", "➟ Strength II", "");
+
+	/** Dragonscale Leggings (2026-10-01): the piece's own ITEM EFFECTS are not the set bonus. */
+	private static final List<String> DRAGONSCALE_LEGGINGS = List.of("Unbreakable", "Dragonscale Leggings Red", "",
+			"ITEM EFFECTS: (When Worn)", "➟ +20% Extra Damage to Tangleroot", "   & Sandara Monsters", "",
+			"FULL SET EFFECTS: (When Worn)", "➟ +20% MCMMO Boost", "", "Season Vault Access ✔", "HOLY PROTECTION",
+			"Signed by Goreguttss", "");
+
+	/** Warden Helmet (2026-10-01): "(Full Set Required)" instead of a piece count. */
+	private static final List<String> WARDEN_HELMET = List.of("Unbreakable", "Warden Helmet", "", "FULL SET EFFECTS:",
+			"(Full Set Required)", "➟ Absorption II", "➟ Speed IV in Resource World",
+			"➟ 30% MCMMO Boost in Resource World", "");
+
+	/** Dragon Boots (2026-10-01): "Dragon Armor Set:" then the effects, then the requirement. */
+	private static final List<String> DRAGON_BOOTS = List.of("○ Speed III", "o <9 Available>", "", "Dragon Armor Set:",
+			"➤ Drops 2x more heads", "➤ Permanent Speed II Effect", "(Requires 4/4 pieces)", "",
+			"Exclusive Chinese New Year Crate", "Season Vault Access ✔");
+
+	/** Pharaoh's Helmet (2026-10-01): an item ability, then the set bonus. */
+	private static final List<String> PHARAOH_HELMET = List.of("Unbreakable", "Pharaoh's Helmet", "",
+			"ITEM EFFECTS: (Shift While Wearing)", "➟ Heal Players Around You", "Duration 15s", "Radius: 5",
+			"Cooldown 60s", "", "FULL SET EFFECTS: (When Worn)", "➟ 15% Bonus Damage to Sandara Monsters",
+			"➟ +2 Hearts", "");
+
+	@Test void bonusFromAFullSetEffectsBlock() {
+		assertEquals("-50% Armor Effect Cooldowns · Snowy Particles", ArmorSet.bonus(SNOWY_HELMET));
+		assertEquals("+20% MCMMO Boost", ArmorSet.bonus(DRAGONSCALE_LEGGINGS));
+		assertEquals("Absorption II · Speed IV in Resource World · 30% MCMMO Boost in Resource World",
+				ArmorSet.bonus(WARDEN_HELMET));
+		assertEquals("15% Bonus Damage to Sandara Monsters · +2 Hearts", ArmorSet.bonus(PHARAOH_HELMET));
+	}
+
+	@Test void aWrappedEffectIsJoinedIntoOne() {
+		assertEquals("5% Chance to get 3x drops from World Monsters & Resources · Speed V in Worlds · Strength II",
+				ArmorSet.bonus(MOREND_LEGGINGS));
+	}
+
+	@Test void bonusFromTheEffectsRightAboveTheRequirement() {
+		assertEquals("+Strength II · +Fire Resistance · Mining Fatigue · Slowness", ArmorSet.bonus(OBSIDIAN_CHESTPLATE));
+		assertEquals("Drops 2x more heads · Permanent Speed II Effect", ArmorSet.bonus(DRAGON_BOOTS));
+		assertEquals(4, ArmorSet.requirement(DRAGON_BOOTS));
+	}
+
+	@Test void noStatedBonusGivesNothing() {
+		assertEquals("", ArmorSet.bonus(List.of("Unbreakable", "Giant Boots", "", "Only obtainable by killing Bosses")));
+		assertEquals("", ArmorSet.bonus(List.of("ITEM EFFECTS: (When Worn)", "➟ Speed IV", "")));
+		assertEquals("", ArmorSet.bonus(null));
+		assertEquals("", ArmorSet.bonus(List.of()));
+	}
+
+	@Test void theShownSetCarriesItsBonus() {
+		ArmorSet s = ArmorSet.of(Arrays.asList("SNOWY HELMET", "SNOWY CHESTPLATE", "SNOWY LEGGINGS", null),
+				Arrays.asList(List.of(), SNOWY_HELMET, List.of(), List.of()));
+		assertEquals("Snowy", s.name());
+		assertEquals("-50% Armor Effect Cooldowns · Snowy Particles", s.bonus());
+		assertTrue(s.bonusUnmet());
+		// Another set's bonus does not label the shown one.
+		ArmorSet t = ArmorSet.of(Arrays.asList("DRAGON HELMET", "DRAGON BOOTS", "SNOWY LEGGINGS", null),
+				Arrays.asList(List.of(), List.of(), SNOWY_HELMET, List.of()));
+		assertEquals("", t.bonus());
+		assertEquals("", ArmorSet.NONE.bonus());
 	}
 }
