@@ -9,6 +9,7 @@ import net.mage.cubewheel.settings.SettingsSpec.Choice;
 import net.mage.cubewheel.settings.SettingsSpec.DoubleRange;
 import net.mage.cubewheel.settings.SettingsSpec.Group;
 import net.mage.cubewheel.settings.SettingsSpec.IntRange;
+import net.mage.cubewheel.settings.SettingsSpec.MapLines;
 import net.mage.cubewheel.settings.SettingsSpec.Setting;
 import net.mage.cubewheel.settings.SettingsSpec.Text;
 import net.mage.cubewheel.settings.SettingsSpec.TextList;
@@ -37,12 +38,12 @@ class SettingsSpecTest {
 	@Test
 	void categoriesInOrderWithTheirSettings() {
 		List<Category> cats = SettingsSpec.categories();
-		assertEquals(List.of("General", "HUD panels", "Daily reward", "SVA"),
+		assertEquals(List.of("General", "HUD panels", "Tracker", "Daily reward", "SVA"),
 				cats.stream().map(Category::name).toList());
 		assertEquals(List.of("enabled", "serverHosts", "vaultCount", "listThreshold"), ids(cats.get(0)));
 		assertEquals(List.of("dailyReward.enabled", "dailyReward.dailyHours", "dailyReward.weeklyDays",
-				"dailyReward.monthlyDays", "dailyReward.menuTitlePattern"), ids(cats.get(2)));
-		assertEquals(List.of("svas.enabled", "svas.tooltip"), ids(cats.get(3)));
+				"dailyReward.monthlyDays", "dailyReward.menuTitlePattern"), ids(cats.get(3)));
+		assertEquals(List.of("svas.enabled", "svas.tooltip"), ids(cats.get(4)));
 	}
 
 	@Test
@@ -177,6 +178,14 @@ class SettingsSpecTest {
 					l.setter().accept(c, v);
 					assertEquals(v, l.getter().apply(c), s.id());
 				}
+				case MapLines m -> {
+					List<String> v = List.of("zeta -> (?i)z", "alpha -> a+", "mid -> m");
+					assertNotEquals(v, m.defaultValue(), s.id());
+					List<String> problems = new ArrayList<>();
+					m.setter().set(c, v, problems);
+					assertEquals(v, m.getter().apply(c), s.id() + " keeps order");
+					assertTrue(problems.isEmpty(), s.id());
+				}
 			}
 		}
 	}
@@ -192,6 +201,7 @@ class SettingsSpecTest {
 				case Choice ch -> { assertEquals(ch.defaultValue(), ch.getter().apply(fresh), s.id()); yield ch.defaultValue(); }
 				case Text t -> { assertEquals(t.defaultValue(), t.getter().apply(fresh), s.id()); yield t.defaultValue(); }
 				case TextList l -> { assertEquals(l.defaultValue(), l.getter().apply(fresh), s.id()); yield l.defaultValue(); }
+				case MapLines m -> { assertEquals(m.defaultValue(), m.getter().apply(fresh), s.id()); yield m.defaultValue(); }
 			};
 			assertNotNull(def, s.id());
 		}
@@ -229,5 +239,95 @@ class SettingsSpecTest {
 	void idsAreUnique() {
 		Set<String> seen = new HashSet<>();
 		for (Setting s : all()) assertTrue(seen.add(s.id()), "duplicate id " + s.id());
+	}
+
+	private static Setting byId(String id) {
+		return all().stream().filter(s -> s.id().equals(id)).findFirst().orElseThrow();
+	}
+
+	/** A config with every defaultable map and list left null, as an old or hand-edited file may have it. */
+	private static CubeWheelConfig nulled() {
+		CubeWheelConfig c = new CubeWheelConfig();
+		c.serverHosts = null;
+		c.tracker.sources = null;
+		c.tracker.sidebarLinks = null;
+		c.tracker.refreshCommands = null;
+		c.tracker.local.worlds = null;
+		c.tracker.local.specialWorlds = null;
+		return c;
+	}
+
+	private static List<String> shown(Setting s, CubeWheelConfig c) {
+		return s instanceof MapLines m ? m.getter().apply(c) : ((TextList) s).getter().apply(c);
+	}
+
+	@Test
+	void trackerCategoryFollowsHudPanelsWithItsTwoGroups() {
+		Category t = SettingsSpec.categories().get(2);
+		assertEquals("Tracker", t.name());
+		assertEquals(List.of("Sources & refresh", "Local counting"), t.groups().stream().map(Group::name).toList());
+		assertEquals(List.of("tracker.sources", "tracker.refreshCommands", "tracker.sidebarLinks",
+				"tracker.survivalSidebarPattern"), ids(t.groups().get(0)));
+		assertEquals(List.of("tracker.local.enabled", "tracker.local.blocks", "tracker.local.kills", "tracker.local.fish",
+				"tracker.local.shear", "tracker.local.milk", "tracker.local.areaBreaks", "tracker.local.worlds",
+				"tracker.local.specialWorlds"), ids(t.groups().get(1)));
+		assertTrue(byId("tracker.survivalSidebarPattern").tooltip().contains("Empty"));
+		assertTrue(byId("tracker.refreshCommands").tooltip().contains("8"));
+	}
+
+	@Test
+	void nullMapsAndListsShowTheDefaultsAndSavingThemUnchangedKeepsBehaviour() {
+		for (String id : List.of("tracker.sources", "tracker.sidebarLinks", "tracker.refreshCommands",
+				"tracker.local.worlds", "tracker.local.specialWorlds", "serverHosts")) {
+			Setting s = byId(id);
+			List<String> shown = shown(s, nulled());
+			assertEquals(s instanceof MapLines m ? m.defaultValue() : ((TextList) s).defaultValue(), shown, id);
+
+			// Writing the shown value back and normalising gives what normalising the null would have.
+			CubeWheelConfig saved = nulled();
+			if (s instanceof MapLines m) m.setter().set(saved, shown, new ArrayList<>());
+			else ((TextList) s).setter().accept(saved, shown);
+			ConfigNormalizer.normalize(saved, new ArrayList<>());
+			CubeWheelConfig plain = nulled();
+			ConfigNormalizer.normalize(plain, new ArrayList<>());
+			assertEquals(shown(s, plain), shown(s, saved), id);
+		}
+	}
+
+	@Test
+	void defaultMapsRoundTripThroughLinesUnchanged() {
+		CubeWheelConfig c = DefaultConfig.create();
+		for (String id : List.of("tracker.sources", "tracker.sidebarLinks")) {
+			MapLines m = (MapLines) byId(id);
+			List<String> problems = new ArrayList<>();
+			m.setter().set(c, m.getter().apply(c), problems);
+			assertEquals(m.defaultValue(), m.getter().apply(c), id);
+			assertTrue(problems.isEmpty(), id);
+		}
+		assertEquals(DefaultConfig.trackerSources(), c.tracker.sources);
+		assertEquals(DefaultConfig.sidebarLinks(), c.tracker.sidebarLinks);
+	}
+
+	@Test
+	void aBadMapLineSurfacesAsAProblemAndIsNotStored() {
+		MapLines m = (MapLines) byId("tracker.sources");
+		CubeWheelConfig c = DefaultConfig.create();
+		List<String> problems = new ArrayList<>();
+		m.setter().set(c, List.of("jobs -> (?i)jobs", "no arrow here", "", "empty ->  "), problems);
+		assertEquals(List.of("jobs -> (?i)jobs"), m.getter().apply(c));
+		assertEquals(2, problems.size());
+		assertTrue(problems.get(0).contains("no arrow here"), problems.toString());
+	}
+
+	@Test
+	void refreshCommandsAreCappedByTheNormalizerAsTheTooltipSays() {
+		TextList l = (TextList) byId("tracker.refreshCommands");
+		CubeWheelConfig c = DefaultConfig.create();
+		List<String> many = new ArrayList<>();
+		for (int i = 0; i < 12; i++) many.add("cmd" + i);
+		l.setter().accept(c, many);
+		ConfigNormalizer.normalize(c, new ArrayList<>());
+		assertEquals(8, l.getter().apply(c).size());
+		assertEquals("/cmd0", l.getter().apply(c).get(0));
 	}
 }

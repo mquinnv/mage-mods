@@ -24,6 +24,7 @@ import net.mage.cubewheel.settings.SettingsSpec.Choice;
 import net.mage.cubewheel.settings.SettingsSpec.DoubleRange;
 import net.mage.cubewheel.settings.SettingsSpec.Group;
 import net.mage.cubewheel.settings.SettingsSpec.IntRange;
+import net.mage.cubewheel.settings.SettingsSpec.MapLines;
 import net.mage.cubewheel.settings.SettingsSpec.Setting;
 import net.mage.cubewheel.settings.SettingsSpec.Text;
 import net.mage.cubewheel.settings.SettingsSpec.TextList;
@@ -50,6 +51,8 @@ public final class SettingsScreens {
 		CubeWheelConfig cfg;
 		/** The built YACL config, so a save can re-sync its options; set before the screen exists. */
 		YetAnotherConfigLib screen;
+		/** Lines the setters skipped since the last save (a malformed map line); reported in chat on save. */
+		final List<String> problems = new ArrayList<>();
 
 		Draft(CubeWheelConfig cfg) {
 			this.cfg = cfg;
@@ -93,6 +96,8 @@ public final class SettingsScreens {
 		for (Setting setting : group.settings()) {
 			if (setting instanceof TextList list) {
 				lists.add(listOption(list, draft));
+			} else if (setting instanceof MapLines map) {
+				lists.add(mapOption(map, draft));
 			} else {
 				plain.option(option(setting, draft));
 				plainCount++;
@@ -139,6 +144,7 @@ public final class SettingsScreens {
 					.controller(StringControllerBuilder::create)
 					.build();
 			case TextList l -> throw new IllegalArgumentException("list setting " + l.id() + " is a group, not an option");
+			case MapLines m -> throw new IllegalArgumentException("list setting " + m.id() + " is a group, not an option");
 		};
 	}
 
@@ -150,6 +156,18 @@ public final class SettingsScreens {
 					List<String> v = l.getter().apply(draft.cfg);
 					return v == null ? new ArrayList<>() : new ArrayList<>(v);
 				}, v -> l.setter().accept(draft.cfg, v))
+				.controller(StringControllerBuilder::create)
+				.initial("")
+				.build();
+	}
+
+	/** A map setting as a list option of {@code key -> value} lines; lines that do not parse land in {@code draft.problems}. */
+	private static ListOption<String> mapOption(MapLines m, Draft draft) {
+		return ListOption.<String>createBuilder()
+				.name(Component.literal(m.label()))
+				.description(describe(m))
+				.binding(m.defaultValue(), () -> new ArrayList<>(m.getter().apply(draft.cfg)),
+						v -> m.setter().set(draft.cfg, v, draft.problems))
 				.controller(StringControllerBuilder::create)
 				.initial("")
 				.build();
@@ -223,12 +241,14 @@ public final class SettingsScreens {
 	private static void save(ConfigStore store, Draft draft) {
 		List<String> warnings;
 		try {
-			warnings = store.apply(draft.cfg);
+			warnings = new ArrayList<>(draft.problems);
+			warnings.addAll(store.apply(draft.cfg));
 		} catch (IOException e) {
 			CubeWheelClient.LOG.error("[cubewheel] could not save settings", e);
 			chat(Component.literal("[CubeWheel] could not save: " + e.getMessage()).withStyle(ChatFormatting.RED));
 			return;
 		}
+		draft.problems.clear();
 		draft.cfg = ConfigStore.copyOf(store.current()); // the applied draft is live now; keep editing a copy
 		resync(draft.screen);
 		for (String w : warnings) chat(Component.literal("[CubeWheel] " + w).withStyle(ChatFormatting.YELLOW));

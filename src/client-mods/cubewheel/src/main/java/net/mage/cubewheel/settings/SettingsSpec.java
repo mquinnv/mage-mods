@@ -1,9 +1,12 @@
 package net.mage.cubewheel.settings;
 
+import net.mage.cubewheel.config.ConfigStore;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.config.DefaultConfig;
+import net.mage.cubewheel.config.Lines;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -19,7 +22,7 @@ public final class SettingsSpec {
 	public static final String HUD_PANELS = "HUD panels";
 
 	/** One editable config field. {@code id} is its JSON path ("dailyReward.dailyHours"), stable across versions. */
-	public sealed interface Setting permits Toggle, IntRange, DoubleRange, Choice, Text, TextList {
+	public sealed interface Setting permits Toggle, IntRange, DoubleRange, Choice, Text, TextList, MapLines {
 		String id();
 
 		String label();
@@ -54,6 +57,19 @@ public final class SettingsSpec {
 	/** A list-of-strings field: an editable list, one entry per row. The setter stores a mutable copy. */
 	public record TextList(String id, String label, String tooltip, Function<CubeWheelConfig, List<String>> getter,
 			BiConsumer<CubeWheelConfig, List<String>> setter, List<String> defaultValue) implements Setting {}
+
+	/**
+	 * A string-to-string map field edited as text lines, one {@code key -> value} per row (see {@link Lines}). The
+	 * getter shows the map as lines; the setter parses lines back and reports each skipped line in {@code problems}.
+	 */
+	public record MapLines(String id, String label, String tooltip, Function<CubeWheelConfig, List<String>> getter,
+			LinesSetter setter, List<String> defaultValue) implements Setting {}
+
+	/** Stores edited lines into a config; lines it cannot parse are described in {@code problems}, not dropped silently. */
+	@FunctionalInterface
+	public interface LinesSetter {
+		void set(CubeWheelConfig config, List<String> lines, List<String> problems);
+	}
 
 	/** A titled group of settings within a category; {@code collapsed} groups start folded. */
 	public record Group(String name, List<Setting> settings, boolean collapsed) {
@@ -152,6 +168,61 @@ public final class SettingsSpec {
 												+ " vault fill.",
 										c -> c.charms.enabled, (c, v) -> c.charms.enabled = v))),
 						new Group("Exact positions", positions(d), true))),
+				new Category("Tracker", List.of(
+						new Group("Sources & refresh", List.of(
+								mapLines(d, "tracker.sources", "Menu sources",
+										"Which tracker source a menu belongs to. One line per source:"
+												+ " \"source id -> regex\", e.g. \"jobs -> (?i)jobs\". A menu whose title"
+												+ " matches the regex is read as that source; the first match wins. Menus are also"
+												+ " recognised by their items, so a title regex is often not needed.",
+										c -> c.tracker.sources, (c, m) -> c.tracker.sources = m),
+								textList(d, "tracker.refreshCommands", "Refresh commands",
+										"Sent one after another by the \"Refresh trackers\" key; each should open a progress"
+												+ " menu. A missing \"/\" is added and at most "
+												+ ConfigStore.MAX_REFRESH_COMMANDS + " are kept.",
+										c -> c.tracker.refreshCommands, (c, v) -> c.tracker.refreshCommands = v),
+								mapLines(d, "tracker.sidebarLinks", "Sidebar links",
+										"Follows a sidebar value live. One line per link: \"sidebar key -> regex\", e.g."
+												+ " \"Skills -> (?i)reach [\\d,]+ skill level\". The entry whose name matches the"
+												+ " regex shows that sidebar line's current value.",
+										c -> c.tracker.sidebarLinks, (c, m) -> c.tracker.sidebarLinks = m),
+								text(d, "tracker.survivalSidebarPattern", "Survival sidebar pattern",
+										"Regex on the sidebar title: menu scanning, refresh runs and local counting only run"
+												+ " while it matches (ManaCube hosts other gamemodes on the same address)."
+												+ " Empty switches this check off.",
+										c -> c.tracker.survivalSidebarPattern,
+										(c, v) -> c.tracker.survivalSidebarPattern = v))),
+						new Group("Local counting", List.of(
+								toggle(d, "tracker.local.enabled", "Enabled",
+										"Master switch: when off nothing is counted and stored estimates are not shown"
+												+ " (they are not deleted).",
+										c -> c.tracker.local.enabled, (c, v) -> c.tracker.local.enabled = v),
+								toggle(d, "tracker.local.blocks", "Blocks",
+										"Count blocks you break.",
+										c -> c.tracker.local.blocks, (c, v) -> c.tracker.local.blocks = v),
+								toggle(d, "tracker.local.kills", "Kills",
+										"Count mobs you kill.",
+										c -> c.tracker.local.kills, (c, v) -> c.tracker.local.kills = v),
+								toggle(d, "tracker.local.fish", "Fish",
+										"Count fish you catch.",
+										c -> c.tracker.local.fish, (c, v) -> c.tracker.local.fish = v),
+								toggle(d, "tracker.local.shear", "Shearing",
+										"Count shears used on sheep (and other shearables) once the server confirms the shear.",
+										c -> c.tracker.local.shear, (c, v) -> c.tracker.local.shear = v),
+								toggle(d, "tracker.local.milk", "Milking",
+										"Count empty buckets used on cows (and other milkable mobs) once the server keeps"
+												+ " the milk bucket.",
+										c -> c.tracker.local.milk, (c, v) -> c.tracker.local.milk = v),
+								toggle(d, "tracker.local.areaBreaks", "Area breaks",
+										"Count blocks the server breaks for you (mcMMO Tree Feller, harvester and hammer"
+												+ " area tools). Needs Blocks.",
+										c -> c.tracker.local.areaBreaks, (c, v) -> c.tracker.local.areaBreaks = v),
+								textList(d, "tracker.local.worlds", "Worlds",
+										"World names recognised at the start of an objective's noun (\"Wolfhaven Resources\").",
+										c -> c.tracker.local.worlds, (c, v) -> c.tracker.local.worlds = v),
+								textList(d, "tracker.local.specialWorlds", "Special worlds",
+										"Worlds that count as \"special worlds (/worlds)\".",
+										c -> c.tracker.local.specialWorlds, (c, v) -> c.tracker.local.specialWorlds = v))))),
 				new Category("Daily reward", List.of(
 						new Group("Daily reward (/cow)", List.of(
 								toggle(d, "dailyReward.enabled", "Badge",
@@ -242,8 +313,18 @@ public final class SettingsSpec {
 
 	private static TextList textList(CubeWheelConfig defaults, String id, String label, String tooltip,
 			Function<CubeWheelConfig, List<String>> get, BiConsumer<CubeWheelConfig, List<String>> set) {
+		List<String> def = List.copyOf(get.apply(defaults));
 		// Copies both ways: the default must not alias a config's list, and a config keeps a list it may edit.
-		return new TextList(id, label, tooltip, get, (c, v) -> set.accept(c, new ArrayList<>(v)),
-				List.copyOf(get.apply(defaults)));
+		// A null list means "the defaults" (ConfigNormalizer fills it), so that is what the editor shows.
+		return new TextList(id, label, tooltip, c -> get.apply(c) == null ? def : get.apply(c),
+				(c, v) -> set.accept(c, new ArrayList<>(v)), def);
+	}
+
+	private static MapLines mapLines(CubeWheelConfig defaults, String id, String label, String tooltip,
+			Function<CubeWheelConfig, Map<String, String>> get, BiConsumer<CubeWheelConfig, Map<String, String>> set) {
+		List<String> def = List.copyOf(Lines.mapLines(get.apply(defaults)));
+		// A null map means "the defaults" (ConfigNormalizer fills it), so that is what the editor shows.
+		return new MapLines(id, label, tooltip, c -> get.apply(c) == null ? def : Lines.mapLines(get.apply(c)),
+				(c, lines, problems) -> set.accept(c, Lines.parseMap(lines, problems)), def);
 	}
 }
