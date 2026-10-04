@@ -340,11 +340,10 @@ public final class LocalSignals {
 			String bottle = RemovalKills.bottleLoot(heldItem);
 			if (bottle == null && target instanceof LivingEntity) return;
 			kills.onDamage(target.getId(), player.getId(), tick);
-			removals.hit(target.getId(), System.currentTimeMillis());
+			removals.used(target.getId(), System.currentTimeMillis()); // not an attack: never a monster kill alone
 			removals.fallback(target.getId(), bottle);
 			captureEntity("use", target, describe(target) + "; held " + heldItem);
 			probe(target);
-			hitModel(target.getId(), player.getId());
 		} catch (Throwable t) {
 			fail(Hook.ATTACK, t);
 		}
@@ -460,7 +459,7 @@ public final class LocalSignals {
 							: removals.awaitingLoot(id) ? "local hit, pending: waiting for loot line"
 							: removals.settled(id) ? "local hit, already counted or refused"
 							: !survivalMode(mc.player) ? "local hit, not in survival mode" : null;
-					if (why == null && removals.claim(id, true, true)) {
+					if (why == null && removals.claim(id, true, true, inHitboxWindow(mc.player.getId()))) {
 						onRemovalKill(entity);
 					} else {
 						captureEntity("removed", entity, why == null ? "local hit" : why);
@@ -483,11 +482,11 @@ public final class LocalSignals {
 		String typeId = entity.typeHolder().getRegisteredName();
 		Optional<RemovalKills.Hint> hint = removals.hint(entity.getId());
 		if (hint.isEmpty()) {
+			// Only a tag by the hitbox's own model: its own tag may go in the same packet, leaving a neighbour's.
 			NearbyProbe.Result again = NearbyProbe.of(entity, false);
-			if (again.hint() != null) {
+			if (removals.acceptReprobe(entity.getId(), again.hint(), again.modelKeys())) {
 				removals.remember(entity.getId(), again.hint());
-				removals.model(entity.getId(), again.modelKeys());
-				removals.settleModel(entity.getId()); // its siblings by the tag found now
+				removals.settleModel(entity.getId(), inHitboxWindow(Minecraft.getInstance().player.getId()));
 				hint = Optional.of(again.hint());
 			}
 		}
@@ -503,8 +502,8 @@ public final class LocalSignals {
 			capture("kill", typeId, h.name(), "removal, method " + h.method().code + " (" + h.source() + "), local hit", at, added);
 			return;
 		}
-		// A Firefly Bottle used on it: a catch, never a monster kill.
-		boolean generic = ModelHitbox.isModelHitbox(NearbyProbe.hitbox(entity)) && removals.fallback(entity.getId()).isEmpty();
+		// Only an attacked model hitbox: not a right-clicked NPC/mount/crate, nor a Firefly Bottle catch.
+		boolean generic = removals.generic(entity.getId(), ModelHitbox.isModelHitbox(NearbyProbe.hitbox(entity)));
 		RemovalKills.Removed r = new RemovalKills.Removed(entity.getId(), typeId, rawName(entity), at, generic);
 		removals.awaitLoot(r, System.currentTimeMillis()).ifPresent(loot -> creditLoot(r, loot));
 	}
@@ -889,10 +888,18 @@ public final class LocalSignals {
 	private static void hitModel(int entityId, int playerId) {
 		ClientLevel level = Minecraft.getInstance().level;
 		if (level == null || !hitboxShape(level.getEntity(entityId))) return;
+		long now = System.currentTimeMillis();
 		for (int sibling : removals.siblings(entityId)) {
 			// Only hitboxes: two plain mobs by the same hologram are not one model, and a refresh would credit a death.
-			if (hitboxShape(level.getEntity(sibling))) kills.onDamage(sibling, playerId, tick);
+			if (!hitboxShape(level.getEntity(sibling))) continue;
+			kills.onDamage(sibling, playerId, tick);
+			removals.hit(sibling, now); // attacked through the model
 		}
+	}
+
+	/** Siblings the local player hit within the hitbox window count with a claimed removal (see {@link RemovalKills#claim}). */
+	private static java.util.function.IntPredicate inHitboxWindow(int playerId) {
+		return sibling -> kills.hitByWithin(sibling, playerId, tick, RemovalKills.HITBOX_WINDOW_TICKS);
 	}
 
 	/** An interaction or an invisible entity: what a custom model's hitbox looks like (it gets the longer window). */

@@ -10,6 +10,7 @@ import net.mage.cubewheel.tracker.TrackerStore;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import java.util.function.IntPredicate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -124,6 +125,8 @@ class SandaraKillTest {
 		return new RemovalKills.Hint("Viper 75⺛", RemovalKills.Method.LINKED, "tag minecraft:text_display #" + tagId, tagId);
 	}
 
+	static final IntPredicate IN_WINDOW = id -> true;
+
 	@Test void siblingHitboxesOfOneModelCountOnce() {
 		// Real ids, 14:14:00: interaction 73770303 on cloud 73770302, slime 62315 on cloud 62314, both by the model's
 		// bone cloud 73770284 and named by text_display 73772565. The slime's removal and the interaction's both
@@ -134,22 +137,59 @@ class SandaraKillTest {
 		r.remember(62315, viperTag(73772565));
 		r.model(62315, List.of(62314, 73770284));
 		assertEquals(Set.of(73770303), r.siblings(62315));
-		assertTrue(r.claim(62315, true, true));
-		assertFalse(r.claim(73770303, true, true), "the interaction belongs to the Viper already counted");
+		assertTrue(r.claim(62315, true, true, IN_WINDOW));
+		assertFalse(r.claim(73770303, true, true, IN_WINDOW), "the interaction belongs to the Viper already counted");
 		assertTrue(r.settled(73772565), "the name tag is settled too");
 		// Another snake nearby is untouched.
 		r.remember(80000001, viperTag(80000009));
 		r.model(80000001, List.of(80000002, 80000003));
-		assertTrue(r.claim(80000001, true, true));
+		assertTrue(r.claim(80000001, true, true, IN_WINDOW));
 	}
 
-	@Test void hitboxesSharingOnlyTheirNameTagAreSiblings() {
+	@Test void hitboxesSharingOnlyTheirNameTagAreNotSiblings() {
+		// NameResolver takes the nearest tag within 3 blocks: two mobs side by side can both pick the same one.
 		RemovalKills r = new RemovalKills();
 		r.remember(1, viperTag(9));
+		r.model(1, List.of(101, 102));
 		r.remember(2, viperTag(9));
-		assertEquals(Set.of(2), r.siblings(1));
-		assertTrue(r.claim(1, true, true));
-		assertFalse(r.claim(2, true, true));
+		r.model(2, List.of(201, 202));
+		assertEquals(Set.of(), r.siblings(1));
+		r.remember(3, viperTag(9)); // no model keys at all
+		assertEquals(Set.of(), r.siblings(3));
+	}
+
+	@Test void twoManaWolvesSideBySideBothCount() {
+		// Each wolf has its own hitbox cloud and bone cloud; both resolved the nearer wolf's name tag (method b).
+		RemovalKills r = new RemovalKills();
+		RemovalKills.Hint wolf = new RemovalKills.Hint("Mana Wolf", RemovalKills.Method.LINKED, "tag minecraft:text_display #50", 50);
+		r.remember(1, wolf);
+		r.model(1, List.of(11, 12));
+		r.remember(2, wolf);
+		r.model(2, List.of(21, 22));
+		assertTrue(r.claim(1, true, true, IN_WINDOW));
+		assertTrue(r.claim(2, true, true, IN_WINDOW));
+	}
+
+	@Test void aSharedBoneCloudWithDifferentTagsIsNotOneModel() {
+		// A slime can pick up a neighbouring model's bone cloud; its own tag tells it apart.
+		RemovalKills r = new RemovalKills();
+		r.remember(1, viperTag(9));
+		r.model(1, List.of(101, 284));
+		r.remember(2, viperTag(8));
+		r.model(2, List.of(201, 284));
+		assertEquals(Set.of(), r.siblings(1));
+		assertTrue(r.claim(1, true, true, IN_WINDOW));
+		assertTrue(r.claim(2, true, true, IN_WINDOW));
+	}
+
+	@Test void onlySiblingsHitWithinTheWindowAreSettled() {
+		RemovalKills r = new RemovalKills();
+		r.model(1, List.of(101, 284));
+		r.model(2, List.of(201, 284));
+		r.model(3, List.of(301, 284));
+		assertTrue(r.claim(1, true, true, id -> id == 2));
+		assertFalse(r.claim(2, true, true, IN_WINDOW), "hit recently: the same model");
+		assertTrue(r.claim(3, true, true, IN_WINDOW), "not hit within the window: left alone");
 	}
 
 	@Test void unknownModelsHaveNoSiblings() {
@@ -159,8 +199,54 @@ class SandaraKillTest {
 		r.model(3, List.of());
 		assertEquals(Set.of(), r.siblings(1));
 		assertEquals(Set.of(), r.siblings(3));
-		assertTrue(r.claim(1, true, true));
-		assertTrue(r.claim(2, true, true));
+		assertTrue(r.claim(1, true, true, IN_WINDOW));
+		assertTrue(r.claim(2, true, true, IN_WINDOW));
+	}
+
+	// ---- attack, not use ----
+
+	@Test void aRightClickedModelIsNoMonsterKill() {
+		// ModelEngine NPCs, mounts and crates are interaction-on-cloud too: right-clicking one, then its removal
+		// (a dismount, a despawn), is not a kill.
+		RemovalKills r = new RemovalKills();
+		r.used(5, 1_000);
+		assertFalse(r.attacked(5));
+		assertFalse(r.generic(5, true));
+		r.hit(6, 1_000);
+		assertTrue(r.attacked(6));
+		assertTrue(r.generic(6, true));
+		assertFalse(r.generic(6, false), "not a model hitbox");
+		// A Firefly Bottle used on it: a catch.
+		r.hit(7, 1_000);
+		r.fallback(7, "Firefly");
+		assertFalse(r.generic(7, true));
+	}
+
+	@Test void aUseStillOpensTheLootWindowLikeAHit() {
+		RemovalKills r = new RemovalKills();
+		r.used(5, 1_000);
+		r.onActionBar("+1 Firefly", 1_200);
+		assertEquals(java.util.Optional.of(List.of("Firefly")),
+				r.awaitLoot(new RemovalKills.Removed(5, "minecraft:interaction", "Interaction", SANDARA), 1_400));
+	}
+
+	// ---- looking again on removal ----
+
+	@Test void aTagFoundOnRemovalCountsOnlyForTheSameModel() {
+		RemovalKills r = new RemovalKills();
+		r.model(1, List.of(101, 284));
+		// The re-probe still sees the hitbox's own model: its tag is accepted.
+		assertTrue(r.acceptReprobe(1, viperTag(9), List.of(101, 284)));
+		// The mob's model is gone already (same packet); a neighbour's tag and bones are all that is left.
+		assertFalse(r.acceptReprobe(1, viperTag(8), List.of(999)));
+		// Nothing known of the hitbox's model at hit time: a tag found now cannot be checked.
+		assertFalse(r.acceptReprobe(2, viperTag(8), List.of(999)));
+		// A tag already counted (a neighbour's) is never used again.
+		r.settle(7);
+		assertFalse(r.acceptReprobe(1, viperTag(7), List.of(101, 284)));
+		assertFalse(r.acceptReprobe(1, null, List.of(101, 284)));
+		// Its own custom name is always its own.
+		assertTrue(r.acceptReprobe(3, new RemovalKills.Hint("Tiger", RemovalKills.Method.OWN, "custom name"), List.of()));
 	}
 
 	@Test void hittingASlimeKeepsTheModelsInteractionInsideItsWindow() {

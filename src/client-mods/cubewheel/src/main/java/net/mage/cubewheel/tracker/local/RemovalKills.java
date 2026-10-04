@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -13,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.IntPredicate;
 
 /**
  * Kills that show up only as a removal: ManaCube's custom-model mobs (tigers in Tangleroot) are an
@@ -96,6 +96,7 @@ public final class RemovalKills {
 	private final Map<Integer, Long> firstHit = new LinkedHashMap<>();
 	private final Map<Integer, String> fallbacks = new LinkedHashMap<>();
 	private final Map<Integer, Set<Integer>> models = new LinkedHashMap<>();
+	private final Set<Integer> attacked = new LinkedHashSet<>();
 
 	/** Remembers what was found for hit entity {@code id} ({@code hint} may be null: looked, found nothing). */
 	public void remember(int id, Hint hint) {
@@ -106,7 +107,7 @@ public final class RemovalKills {
 
 	/**
 	 * Remembers which model hit entity {@code id} belongs to: ids of entities only that model has (its own cloud
-	 * vehicle, the cloud carrying the model's bones). With its hint's name tag they tell its sibling hitboxes.
+	 * vehicle, the cloud carrying the model's bones). They tell its sibling hitboxes.
 	 */
 	public void model(int id, Collection<Integer> keys) {
 		models.remove(id);
@@ -117,26 +118,43 @@ public final class RemovalKills {
 	}
 
 	/**
-	 * Other remembered hit entities of the same model as {@code id}: sharing a model key or the name tag of their
-	 * hint. One model counts once; a hit on any of them keeps the others' hit recent.
+	 * Other remembered hit entities of the same model as {@code id}: sharing a model key, and not named by two
+	 * different tags. A shared name tag alone never links them: the nearest tag within 3 blocks can be a
+	 * neighbour's (two Mana Wolves side by side), and a slime can pick up a neighbouring model's bone cloud, which
+	 * its own tag then tells apart. One model counts once; a hit on any of them keeps the others' hit recent.
 	 */
 	public Set<Integer> siblings(int id) {
-		Set<Integer> mine = modelKeys(id);
+		Set<Integer> mine = models.getOrDefault(id, Set.of());
 		if (mine.isEmpty()) return Set.of();
-		Set<Integer> others = new LinkedHashSet<>(models.keySet());
-		others.addAll(hints.keySet());
-		others.remove(id);
+		int myTag = tag(id);
 		Set<Integer> out = new LinkedHashSet<>();
-		for (int other : others) {
-			if (!Collections.disjoint(mine, modelKeys(other))) out.add(other);
+		for (Map.Entry<Integer, Set<Integer>> e : models.entrySet()) {
+			int other = e.getKey();
+			if (other == id || Collections.disjoint(mine, e.getValue())) continue;
+			int otherTag = tag(other);
+			if (myTag >= 0 && otherTag >= 0 && myTag != otherTag) continue;
+			out.add(other);
 		}
 		return out;
 	}
 
-	private Set<Integer> modelKeys(int id) {
-		Set<Integer> keys = new HashSet<>(models.getOrDefault(id, Set.of()));
-		hint(id).filter(h -> h.sourceId() >= 0).ifPresent(h -> keys.add(h.sourceId()));
-		return keys;
+	/** The id of the name tag that named hit entity {@code id}, or -1. */
+	private int tag(int id) {
+		return hint(id).map(Hint::sourceId).orElse(-1);
+	}
+
+	/**
+	 * A tag found by looking again when {@code id} was removed ({@code keys}: the model keys seen then) names it only
+	 * if the hitbox's model, known from hit time, is still what is around it, and the tag was not already counted
+	 * (it may be a neighbour's: the mob's own tag can go in the same packet). Otherwise the kill stays unnamed.
+	 */
+	public boolean acceptReprobe(int id, Hint hint, Collection<Integer> keys) {
+		if (hint == null) return false;
+		if (hint.method() == Method.OWN) return true; // its own custom name: nobody else's
+		if (keys == null) return false;
+		if (hint.sourceId() >= 0 && settled.contains(hint.sourceId())) return false;
+		Set<Integer> known = models.getOrDefault(id, Set.of());
+		return !known.isEmpty() && !Collections.disjoint(known, keys);
 	}
 
 	/** Was entity {@code id} already looked at (so the nearby query runs once per entity)? */
@@ -150,12 +168,37 @@ public final class RemovalKills {
 	}
 
 	/**
-	 * The local player hit (or used an item on) entity {@code id} at {@code at} ms. The first hit is kept:
+	 * The local player attacked (or damaged) entity {@code id} at {@code at} ms. The first hit is kept:
 	 * hitting again after the loot appeared must not hide that loot.
 	 */
 	public void hit(int id, long at) {
+		used(id, at);
+		attacked.remove(id);
+		attacked.add(id);
+		trim(attacked, MAX_HINTS);
+	}
+
+	/**
+	 * The local player used an item on entity {@code id} at {@code at} ms (right-click): it opens the loot window
+	 * like a hit, but is no attack, so its removal is never a monster kill by itself (see {@link #generic}).
+	 */
+	public void used(int id, long at) {
 		if (firstHit.putIfAbsent(id, at) != null) return;
 		trim(firstHit.keySet(), MAX_HINTS);
+	}
+
+	/** Did the local player attack entity {@code id} (not just use an item on it)? */
+	public boolean attacked(int id) {
+		return attacked.contains(id);
+	}
+
+	/**
+	 * Does an unnamed removal of {@code id} count as a monster kill? Only a model hitbox ({@link ModelHitbox}) the
+	 * player attacked: right-clicking a ModelEngine NPC, mount or crate and seeing it go is no kill, nor is a Firefly
+	 * Bottle used on it (a catch).
+	 */
+	public boolean generic(int id, boolean modelHitbox) {
+		return modelHitbox && attacked(id) && fallback(id).isEmpty();
 	}
 
 	/** Loot to assume for {@code id} when no loot line names it (a Firefly Bottle used on it: "Firefly"). */
@@ -195,17 +238,26 @@ public final class RemovalKills {
 	public boolean claim(int id, boolean recentLocalHit, boolean near) {
 		if (!recentLocalHit || !near || settled.contains(id)) return false;
 		settle(id);
-		settleModel(id);
 		return true;
 	}
 
 	/**
-	 * The model of claimed entity {@code id} was counted: its sibling hitboxes and its name tag never count again
-	 * (a Viper's slime and its interaction were both claimed with the same tag, 2026-10-01). Call again after the
-	 * hint changed (a re-probe on removal).
+	 * {@link #claim(int, boolean, boolean)}, and when it counts, its model counts with it ({@link #settleModel}):
+	 * siblings the player hit within the hitbox window ({@code inWindow}) never count again.
 	 */
-	public void settleModel(int id) {
-		for (int sibling : siblings(id)) settle(sibling);
+	public boolean claim(int id, boolean recentLocalHit, boolean near, IntPredicate inWindow) {
+		if (!claim(id, recentLocalHit, near)) return false;
+		settleModel(id, inWindow);
+		return true;
+	}
+
+	/**
+	 * The model of claimed entity {@code id} was counted: its sibling hitboxes last hit within the window
+	 * ({@code inWindow}) and its name tag never count again (a Viper's slime and its interaction were both claimed
+	 * with the same tag, 2026-10-01). Call again after the hint changed (a re-probe on removal).
+	 */
+	public void settleModel(int id, IntPredicate inWindow) {
+		for (int sibling : siblings(id)) if (inWindow == null || inWindow.test(sibling)) settle(sibling);
 		hint(id).filter(h -> h.sourceId() >= 0).ifPresent(h -> settle(h.sourceId()));
 	}
 
@@ -273,6 +325,7 @@ public final class RemovalKills {
 	public void clear() {
 		hints.clear();
 		models.clear();
+		attacked.clear();
 		settled.clear();
 		pending.clear();
 		lootLines.clear();
