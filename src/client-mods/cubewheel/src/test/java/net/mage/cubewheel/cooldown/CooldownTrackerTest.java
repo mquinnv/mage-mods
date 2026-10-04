@@ -13,6 +13,17 @@ import org.junit.jupiter.api.Test;
 class CooldownTrackerTest {
 	private static final List<Ability> RIGHT = List.of(new Ability(Action.USE, false, 30_000, "Right-Click"));
 
+	/** The Champion potion's "consume" ability read "Eat" (Michael 2026-10-03): drinks say "Drink". */
+	@Test void consumedDrinksSayDrink() {
+		assertEquals("Drink", CooldownTracker.shownTrigger("Eat", "minecraft:potion"));
+		assertEquals("Drink", CooldownTracker.shownTrigger("Eat", "minecraft:honey_bottle"));
+		assertEquals("Drink", CooldownTracker.shownTrigger("Eat", "minecraft:milk_bucket"));
+		assertEquals("Drink", CooldownTracker.shownTrigger("Eat", "minecraft:ominous_bottle"));
+		assertEquals("Eat", CooldownTracker.shownTrigger("Eat", "minecraft:golden_apple"));
+		assertEquals("Eat", CooldownTracker.shownTrigger("Eat", null));
+		assertEquals("R", CooldownTracker.shownTrigger("R", "minecraft:potion")); // only the consume label changes
+	}
+
 	@Test void useStartsACountdownKeyedByItemName() {
 		CooldownTracker t = new CooldownTracker();
 		assertTrue(t.trigger("Samurai Katana", RIGHT, Action.USE, false, 1_000));

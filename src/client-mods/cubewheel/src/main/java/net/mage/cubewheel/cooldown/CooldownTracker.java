@@ -101,6 +101,15 @@ public final class CooldownTracker {
 		return a.sneak() && a.action() != Action.SNEAK ? "\u21E7" + base : base;
 	}
 
+	/** Items you drink rather than eat (the lore only says "consume" for both). */
+	private static final java.util.Set<String> DRINKS =
+			java.util.Set.of("minecraft:potion", "minecraft:honey_bottle", "minecraft:milk_bucket", "minecraft:ominous_bottle");
+
+	/** The trigger as shown for an item ({@code itemId} may be null): "Eat" reads "Drink" for drinks. */
+	public static String shownTrigger(String trigger, String itemId) {
+		return "Eat".equals(trigger) && itemId != null && DRINKS.contains(itemId) ? "Drink" : trigger;
+	}
+
 	private static final java.util.Set<String> SMALL_WORDS = java.util.Set.of("of", "the", "a", "an", "and", "in", "on", "to");
 
 	/**

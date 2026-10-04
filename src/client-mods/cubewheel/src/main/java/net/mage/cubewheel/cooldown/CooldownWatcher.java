@@ -245,7 +245,9 @@ public final class CooldownWatcher {
 				long left = e.endsAt() - now;
 				int color = left < ENDING_SOON_MS ? Panel.YELLOW : Panel.WHITE;
 				// "R  Phoenix Staff   12s": the trigger in the tag column, a short name, the time on the right.
-				lines.add(new Panel.Line(e.trigger(), Panel.GRAY, e.label(), color, Durations.shortCountdown(left))
+				String itemId = e.icon() instanceof ItemStack s && !s.isEmpty() ? s.typeHolder().getRegisteredName() : null;
+				lines.add(new Panel.Line(CooldownTracker.shownTrigger(e.trigger(), itemId), Panel.GRAY, e.label(), color,
+						Durations.shortCountdown(left))
 						.withIcon(e.icon()));
 			}
 		}
