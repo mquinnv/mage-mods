@@ -482,15 +482,16 @@ public final class LocalSignals {
 		String typeId = entity.typeHolder().getRegisteredName();
 		Optional<RemovalKills.Hint> hint = removals.hint(entity.getId());
 		if (hint.isEmpty()) {
-			// Only a tag by the hitbox's own model: its own tag may go in the same packet, leaving a neighbour's.
+			// Only a tag tied to the hitbox's own model: its own tag may go in the same packet, leaving a neighbour's.
 			NearbyProbe.Result again = NearbyProbe.of(entity, false);
-			if (removals.acceptReprobe(entity.getId(), again.hint(), again.modelKeys())) {
+			if (removals.acceptReprobe(entity.getId(), again.hint(), again.tagTies())) {
 				removals.remember(entity.getId(), again.hint());
 				removals.settleModel(entity.getId(), inHitboxWindow(Minecraft.getInstance().player.getId()));
 				hint = Optional.of(again.hint());
 			}
 		}
-		if (hint.isPresent()) {
+		// A tag names a kill only after an attack (or a Firefly Bottle): a right-clicked NPC/mount/crate is no kill.
+		if (hint.isPresent() && removals.nameCounts(entity.getId(), hint.get())) {
 			RemovalKills.Hint h = hint.get();
 			Signal.MobKilled facts = EntityFacts.of(entity, at, h.name(), 1);
 			// A name from another entity, or an invisible hitbox: the hitbox's type ("slime") is not the mob.

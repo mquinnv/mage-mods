@@ -34,9 +34,10 @@ final class NearbyProbe {
 
 	/**
 	 * The name hint (or null), the model keys (its cloud vehicle, the nearest cloud carrying model bones; empty for an
-	 * entity with its own name) and, when {@code forCapture}, what was around.
+	 * entity with its own name), what the hint's tag is tied to (see {@link RemovalKills#acceptReprobe}) and, when
+	 * {@code forCapture}, what was around.
 	 */
-	record Result(RemovalKills.Hint hint, List<Integer> modelKeys, List<CaptureLog.Nearby> near) {}
+	record Result(RemovalKills.Hint hint, List<Integer> modelKeys, List<Integer> tagTies, List<CaptureLog.Nearby> near) {}
 
 	private NearbyProbe() {}
 
@@ -44,7 +45,7 @@ final class NearbyProbe {
 		if (target.hasCustomName()) {
 			String own = target.getCustomName().getString();
 			if (!own.isBlank()) {
-				return new Result(new RemovalKills.Hint(own, RemovalKills.Method.OWN, "custom name"), List.of(),
+				return new Result(new RemovalKills.Hint(own, RemovalKills.Method.OWN, "custom name"), List.of(), List.of(),
 						forCapture ? around(target, new ArrayList<>(), new ArrayList<>()) : List.of());
 			}
 		}
@@ -54,7 +55,19 @@ final class NearbyProbe {
 		Optional<NameResolver.Candidate> pick = NameResolver.pick(candidates);
 		RemovalKills.Hint hint = pick.map(c -> new RemovalKills.Hint(c.name(), RemovalKills.Method.LINKED,
 				c.relation().name().toLowerCase(java.util.Locale.ROOT) + " " + c.source(), c.entityId())).orElse(null);
-		return new Result(hint, modelKeys, forCapture ? near : List.of());
+		return new Result(hint, modelKeys, pick.map(c -> tagTies(target, c)).orElse(List.of()), forCapture ? near : List.of());
+	}
+
+	/** The picked tag's id, the entity it rides, and the target when one rides the other. */
+	private static List<Integer> tagTies(Entity target, NameResolver.Candidate c) {
+		List<Integer> ties = new ArrayList<>();
+		if (c.entityId() < 0) return ties;
+		ties.add(c.entityId());
+		Entity tag = target.level().getEntity(c.entityId());
+		Entity v = tag == null ? null : tag.getVehicle();
+		if (v != null) ties.add(v.getId());
+		if (c.relation() == NameResolver.Relation.RIDER || c.relation() == NameResolver.Relation.VEHICLE) ties.add(target.getId());
+		return ties;
 	}
 
 	/** What {@link ModelHitbox} needs of a removed entity; one bounded query for model parts. */

@@ -232,21 +232,46 @@ class SandaraKillTest {
 
 	// ---- looking again on removal ----
 
-	@Test void aTagFoundOnRemovalCountsOnlyForTheSameModel() {
+	@Test void aTagFoundOnRemovalCountsOnlyWhenTheTagIsTiedToTheModel() {
+		// tagTies: what the found tag is tied to (itself, the entity it rides, the hitbox if it rides it or carries it).
 		RemovalKills r = new RemovalKills();
 		r.model(1, List.of(101, 284));
-		// The re-probe still sees the hitbox's own model: its tag is accepted.
-		assertTrue(r.acceptReprobe(1, viperTag(9), List.of(101, 284)));
-		// The mob's model is gone already (same packet); a neighbour's tag and bones are all that is left.
-		assertFalse(r.acceptReprobe(1, viperTag(8), List.of(999)));
-		// Nothing known of the hitbox's model at hit time: a tag found now cannot be checked.
-		assertFalse(r.acceptReprobe(2, viperTag(8), List.of(999)));
+		// A tag riding the model's bone cloud, or riding the hitbox itself, is the model's own.
+		assertTrue(r.acceptReprobe(1, viperTag(9), List.of(9, 284)));
+		assertTrue(r.acceptReprobe(1, viperTag(9), List.of(9, 1)));
+		// A neighbour's tag is nearest at removal while this model's clouds are still there: it rides its own cloud.
+		assertFalse(r.acceptReprobe(1, viperTag(8), List.of(8, 555)));
+		// Nothing known of the hitbox's model at hit time, and the tag is not on the hitbox: cannot be checked.
+		assertFalse(r.acceptReprobe(2, viperTag(8), List.of(8, 555)));
+		assertTrue(r.acceptReprobe(2, viperTag(8), List.of(8, 2)), "a tag riding the hitbox is its own");
 		// A tag already counted (a neighbour's) is never used again.
 		r.settle(7);
-		assertFalse(r.acceptReprobe(1, viperTag(7), List.of(101, 284)));
+		assertFalse(r.acceptReprobe(1, viperTag(7), List.of(7, 284)));
 		assertFalse(r.acceptReprobe(1, null, List.of(101, 284)));
+		assertFalse(r.acceptReprobe(1, viperTag(9), null));
 		// Its own custom name is always its own.
 		assertTrue(r.acceptReprobe(3, new RemovalKills.Hint("Tiger", RemovalKills.Method.OWN, "custom name"), List.of()));
+	}
+
+	// ---- a name needs an attack ----
+
+	@Test void aRightClickedHitboxWithATagNearbyIsNoKill() {
+		// A ModelEngine NPC/mount/crate: right-clicked (no Firefly Bottle), named by its tag, then removed.
+		RemovalKills r = new RemovalKills();
+		r.used(5, 1_000);
+		r.remember(5, viperTag(9));
+		assertFalse(r.nameCounts(5, r.hint(5).orElseThrow()));
+		// The same hitbox attacked is a kill named by its tag.
+		r.hit(5, 1_100);
+		assertTrue(r.nameCounts(5, r.hint(5).orElseThrow()));
+	}
+
+	@Test void aBottledFireflyAndAnOwnNameStillCountWithoutAnAttack() {
+		RemovalKills r = new RemovalKills();
+		r.used(6, 1_000);
+		r.fallback(6, "Firefly");
+		assertTrue(r.nameCounts(6, new RemovalKills.Hint("Firefly", RemovalKills.Method.LINKED, "rider", 60)));
+		assertTrue(r.nameCounts(7, new RemovalKills.Hint("Tiger", RemovalKills.Method.OWN, "custom name")));
 	}
 
 	@Test void hittingASlimeKeepsTheModelsInteractionInsideItsWindow() {

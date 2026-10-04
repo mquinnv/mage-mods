@@ -144,17 +144,30 @@ public final class RemovalKills {
 	}
 
 	/**
-	 * A tag found by looking again when {@code id} was removed ({@code keys}: the model keys seen then) names it only
-	 * if the hitbox's model, known from hit time, is still what is around it, and the tag was not already counted
-	 * (it may be a neighbour's: the mob's own tag can go in the same packet). Otherwise the kill stays unnamed.
+	 * A tag found by looking again when {@code id} was removed names it only if the tag itself is tied to this
+	 * hitbox's model: {@code tagTies} (the tag's id, the entity it rides, and the hitbox when one rides the other)
+	 * meets the hitbox or its model keys from hit time (it rides the hitbox, its cloud or the bone cloud). The
+	 * nearest tag at removal may be a neighbour's (the mob's own tag can go in the same packet) while this model's
+	 * clouds are still there, so nearness proves nothing. A tag already counted is never used again. Otherwise the
+	 * kill stays unnamed (generic for a model hitbox).
 	 */
-	public boolean acceptReprobe(int id, Hint hint, Collection<Integer> keys) {
+	public boolean acceptReprobe(int id, Hint hint, Collection<Integer> tagTies) {
 		if (hint == null) return false;
 		if (hint.method() == Method.OWN) return true; // its own custom name: nobody else's
-		if (keys == null) return false;
+		if (tagTies == null) return false;
 		if (hint.sourceId() >= 0 && settled.contains(hint.sourceId())) return false;
-		Set<Integer> known = models.getOrDefault(id, Set.of());
-		return !known.isEmpty() && !Collections.disjoint(known, keys);
+		Set<Integer> mine = new LinkedHashSet<>(models.getOrDefault(id, Set.of()));
+		mine.add(id);
+		return !Collections.disjoint(mine, tagTies);
+	}
+
+	/**
+	 * Does name {@code hint} count removed entity {@code id} as a kill? Its own name always does; a name from another
+	 * entity (a tag) only if the player attacked it, or used a Firefly Bottle on it: right-clicking a ModelEngine
+	 * NPC, mount or crate by its name tag, then seeing it go, is no kill.
+	 */
+	public boolean nameCounts(int id, Hint hint) {
+		return hint != null && (hint.method() == Method.OWN || attacked(id) || fallback(id).isPresent());
 	}
 
 	/** Was entity {@code id} already looked at (so the nearby query runs once per entity)? */
