@@ -8,6 +8,8 @@ import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
 import dev.isxander.yacl3.api.OptionGroup;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
+import dev.isxander.yacl3.api.controller.CyclingListControllerBuilder;
+import dev.isxander.yacl3.api.controller.DoubleSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
@@ -16,7 +18,10 @@ import net.mage.cubewheel.CubeWheelClient;
 import net.mage.cubewheel.config.ConfigStore;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.config.DefaultConfig;
+import net.mage.cubewheel.hud.ArrangeScreen;
 import net.mage.cubewheel.settings.SettingsSpec.Category;
+import net.mage.cubewheel.settings.SettingsSpec.Choice;
+import net.mage.cubewheel.settings.SettingsSpec.DoubleRange;
 import net.mage.cubewheel.settings.SettingsSpec.Group;
 import net.mage.cubewheel.settings.SettingsSpec.IntRange;
 import net.mage.cubewheel.settings.SettingsSpec.Setting;
@@ -67,6 +72,7 @@ public final class SettingsScreens {
 				tab.option(LabelOption.create(Component.literal(
 						"cubewheel.json has an error and was not loaded. Saving here replaces it.").withStyle(ChatFormatting.RED)));
 			}
+			if (category.name().equals(SettingsSpec.HUD_PANELS)) tab.option(arrangeButton());
 			for (Group group : category.groups()) addGroup(tab, group, draft);
 			if (i == 0) tab.group(tools(store, draft));
 			yacl.category(tab.build());
@@ -80,7 +86,8 @@ public final class SettingsScreens {
 	 * (a YACL list option is a group itself and cannot sit inside another).
 	 */
 	private static void addGroup(ConfigCategory.Builder tab, Group group, Draft draft) {
-		OptionGroup.Builder plain = OptionGroup.createBuilder().name(Component.literal(group.name()));
+		OptionGroup.Builder plain = OptionGroup.createBuilder().name(Component.literal(group.name()))
+				.collapsed(group.collapsed());
 		List<ListOption<String>> lists = new ArrayList<>();
 		int plainCount = 0;
 		for (Setting setting : group.settings()) {
@@ -110,6 +117,21 @@ public final class SettingsScreens {
 					.binding(r.defaultValue(), () -> r.getter().apply(draft.cfg), v -> r.setter().accept(draft.cfg, v))
 					.controller(o -> IntegerSliderControllerBuilder.create(o).range(r.min(), r.max()).step(1))
 					.build();
+			case DoubleRange r -> Option.<Double>createBuilder()
+					.name(Component.literal(r.label()))
+					.description(describe(r))
+					.binding(r.defaultValue(), () -> r.getter().apply(draft.cfg), v -> r.setter().accept(draft.cfg, v))
+					.controller(o -> DoubleSliderControllerBuilder.create(o).range(r.min(), r.max()).step(r.step()))
+					.build();
+			case Choice ch -> Option.<String>createBuilder()
+					.name(Component.literal(ch.label()))
+					.description(describe(ch))
+					.binding(ch.defaultValue(), () -> known(ch, ch.getter().apply(draft.cfg)),
+							v -> ch.setter().accept(draft.cfg, v))
+					.controller(o -> CyclingListControllerBuilder.create(o)
+							.values(ch.options().stream().map(Choice.Entry::value).toList())
+							.formatValue(v -> Component.literal(labelOf(ch, v))))
+					.build();
 			case Text t -> Option.<String>createBuilder()
 					.name(Component.literal(t.label()))
 					.description(describe(t))
@@ -135,6 +157,28 @@ public final class SettingsScreens {
 
 	private static OptionDescription describe(Setting s) {
 		return OptionDescription.of(Component.literal(s.tooltip()));
+	}
+
+	/** The value if the choice offers it, else the default (a cycling button cannot show a value outside its list). */
+	private static String known(Choice ch, String value) {
+		return ch.options().stream().anyMatch(e -> e.value().equals(value)) ? value : ch.defaultValue();
+	}
+
+	private static String labelOf(Choice ch, String value) {
+		return ch.options().stream().filter(e -> e.value().equals(value)).map(Choice.Entry::label).findFirst().orElse(value);
+	}
+
+	/**
+	 * The HUD tab's "Arrange panels..." button. It does not edit the draft, so it is a plain button; it swaps to the
+	 * drag screen, which saves positions itself, so unsaved edits here are dropped.
+	 */
+	private static ButtonOption arrangeButton() {
+		return ButtonOption.createBuilder()
+				.name(Component.literal("Arrange panels…"))
+				.description(OptionDescription.of(Component.literal(
+						"Drag the panels into place on the real HUD. Save first; unsaved changes here are dropped.")))
+				.action((screen, button) -> Minecraft.getInstance().gui.setScreen(new ArrangeScreen()))
+				.build();
 	}
 
 	private static String nonNull(String s) {
