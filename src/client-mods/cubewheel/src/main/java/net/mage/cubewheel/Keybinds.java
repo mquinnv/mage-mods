@@ -19,6 +19,7 @@ public final class Keybinds {
 	public static KeyMapping svaCatalog;
 	public static KeyMapping jobsPanel;
 	public static KeyMapping arrange;
+	public static KeyMapping settings;
 
 	public static void register() {
 		KeyMapping.Category category =
@@ -33,6 +34,7 @@ public final class Keybinds {
 		svaCatalog = key("key.cubewheel.sva_catalog", InputConstants.UNKNOWN.getValue(), category);
 		jobsPanel = key("key.cubewheel.jobs_panel", InputConstants.UNKNOWN.getValue(), category);
 		arrange = key("key.cubewheel.arrange", InputConstants.UNKNOWN.getValue(), category);
+		settings = key("key.cubewheel.settings", InputConstants.UNKNOWN.getValue(), category);
 	}
 
 	private static KeyMapping key(String name, int code, KeyMapping.Category category) {

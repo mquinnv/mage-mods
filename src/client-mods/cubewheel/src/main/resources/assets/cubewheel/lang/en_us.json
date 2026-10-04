@@ -9,5 +9,6 @@
   "key.cubewheel.events_hud": "Toggle event HUD",
   "key.cubewheel.sva_catalog": "Open SVA catalog",
   "key.cubewheel.jobs_panel": "Toggle jobs panel",
-  "key.cubewheel.arrange": "Move HUD panels"
+  "key.cubewheel.arrange": "Move HUD panels",
+  "key.cubewheel.settings": "Open CubeWheel settings"
 }

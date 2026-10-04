@@ -18,6 +18,7 @@ import net.mage.cubewheel.live.LiveWatcher;
 import net.mage.cubewheel.mixin.BossHealthOverlayAccessor;
 import net.mage.cubewheel.mixin.HudAccessor;
 import net.mage.cubewheel.mixin.LerpingBossEventAccessor;
+import net.mage.cubewheel.settings.SettingsScreens;
 import net.mage.cubewheel.sidebar.SidebarWatcher;
 import net.mage.cubewheel.sva.mc.SvaClient;
 import net.mage.cubewheel.tracker.ContainerHook;
@@ -127,6 +128,8 @@ public final class CubeWheelClient implements ClientModInitializer {
 		// Opened on the next tick: a wheel click runs this while the wheel screen is closing, which would replace it.
 		ClientActions.register("arrange", () -> Minecraft.getInstance().execute(
 				() -> Minecraft.getInstance().gui.setScreen(new net.mage.cubewheel.hud.ArrangeScreen())));
+		ClientActions.register("settings", () -> Minecraft.getInstance().execute(
+				() -> Minecraft.getInstance().gui.setScreen(SettingsScreens.root(null))));
 		ClientTickEvents.START_CLIENT_TICK.register(mc -> {
 			try {
 				RefreshController.sampleInput(mc);
@@ -171,6 +174,11 @@ public final class CubeWheelClient implements ClientModInitializer {
 			if (pressed(Keybinds.arrange) && mc.gui.screen() == null) mc.gui.setScreen(new net.mage.cubewheel.hud.ArrangeScreen());
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] arrange key handler failed", e);
+		}
+		try {
+			if (pressed(Keybinds.settings) && mc.gui.screen() == null) mc.gui.setScreen(SettingsScreens.root(null));
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] settings key handler failed", e);
 		}
 		EventHud.tick(mc); // catches and logs its own failures
 		try {
@@ -350,6 +358,11 @@ public final class CubeWheelClient implements ClientModInitializer {
 
 	private static void handleReloadKey(Minecraft mc) {
 		if (!pressed(Keybinds.reload)) return;
+		reloadAndReport(mc);
+	}
+
+	/** Re-reads cubewheel.json and reports the result (error, or success plus warnings) in chat. */
+	public static void reloadAndReport(Minecraft mc) {
 		String err = config.reload();
 		if (err != null) LOG.warn("[cubewheel] reload failed: {}", err);
 		if (mc.player == null) return;
