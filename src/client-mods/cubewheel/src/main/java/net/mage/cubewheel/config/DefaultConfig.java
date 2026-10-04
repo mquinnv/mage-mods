@@ -14,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 8;
+	public static final int CONFIG_VERSION = 9;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 
@@ -73,6 +73,8 @@ public final class DefaultConfig {
 		// A boss's own warp first (the first match wins; rules are tried against "boss · location").
 		// The Cursed Witch (a mini boss "at Morend") has its own warp, per Michael 2026-10-03.
 		m.put("(?i)cursed witch", "/warp cursedwitch");
+		// The Golden Knight (a mini boss at a Tangleroots location) is best reached from outside, per Michael 2026-10-03.
+		m.put("(?i)golden knight", "/warp tanglerootoutside");
 		// Confirmed by Michael 2026-10-02.
 		m.put("(?i)wolfhaven mines", "/warp managolem");
 		m.put("(?i)tangleroots? volcano", "/warp volcanogolem");

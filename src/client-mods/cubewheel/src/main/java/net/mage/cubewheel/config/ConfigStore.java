@@ -105,7 +105,7 @@ public final class ConfigStore {
 	 * Version 5: the tracker leaves the top right for a panel that takes the Jobs panel's corner and offset, so it
 	 * stacks under it. Version 6: chains of outer tiers become arcs.
 	 * Version 8: a wheel with no Settings entry gains one at the end of {@link DefaultConfig#MORE} (top level if
-	 * that ring is missing or full).
+	 * that ring is missing or full). Version 9: the Golden Knight's boss warp rule is added (see below).
 	 */
 	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
@@ -131,20 +131,27 @@ public final class ConfigStore {
 		if (c.configVersion < 6 && c.wheel != null && WheelUpgrade.chainsToArcs(c.wheel)) {
 			notes.add("wheel: entries beyond a slice now fan out around it (arcs) instead of sticking out");
 		}
+		// The boss rules new in versions 7 (the Cursed Witch's own warp) and 9 (the Golden Knight's) go first, ahead
+		// of the world rules; rules you removed on purpose stay removed.
 		if (c.configVersion < 7 && c.events != null && c.events.bossWarps != null) {
-			// The rule new in version 7 (the Cursed Witch's own warp) goes first, ahead of the world rules; rules you
-			// removed on purpose stay removed.
-			Map<String, String> merged = new LinkedHashMap<>();
-			String witch = "(?i)cursed witch";
-			if (!c.events.bossWarps.containsKey(witch)) merged.put(witch, DefaultConfig.bossWarps().get(witch));
-			merged.putAll(c.events.bossWarps);
-			c.events.bossWarps = merged;
+			c.events.bossWarps = withRuleFirst(c.events.bossWarps, "(?i)cursed witch");
 		}
 		if (c.configVersion < 8 && c.wheel != null && addSettingsLeaf(c.wheel)) {
 			notes.add("wheel: added " + DefaultConfig.MORE + " › Settings (also /cubewheel)");
 		}
+		if (c.configVersion < 9 && c.events != null && c.events.bossWarps != null) {
+			c.events.bossWarps = withRuleFirst(c.events.bossWarps, "(?i)golden knight");
+		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;
+	}
+
+	/** {@code rules} with the default rule for {@code key} put first, unless the file already has that key. */
+	private static Map<String, String> withRuleFirst(Map<String, String> rules, String key) {
+		Map<String, String> merged = new LinkedHashMap<>();
+		if (!rules.containsKey(key)) merged.put(key, DefaultConfig.bossWarps().get(key));
+		merged.putAll(rules);
+		return merged;
 	}
 
 	/**

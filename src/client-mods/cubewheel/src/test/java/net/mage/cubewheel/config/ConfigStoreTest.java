@@ -8,6 +8,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import net.mage.cubewheel.ClientActions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -57,9 +58,30 @@ class ConfigStoreTest {
 		ConfigStore s = new ConfigStore(f);
 		assertNull(s.reload());
 		List<String> keys = new ArrayList<>(s.current().events.bossWarps.keySet());
-		assertEquals("(?i)cursed witch", keys.get(0));
+		assertEquals(List.of("(?i)golden knight", "(?i)cursed witch"), keys.subList(0, 2));
 		assertTrue(keys.indexOf("(?i)cursed witch") < keys.indexOf("(?i)morend"));
 		assertEquals("/home boss", s.current().events.bossWarps.get("(?i)my spot"));
+	}
+
+	@Test void aVersion8FileGainsTheGoldenKnightRuleAheadOfItsOwn() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, """
+		  {"configVersion": 8, "events": {"bossWarps": {"(?i)morend": "/warp morend", "(?i)my spot": "/home boss"}}}""");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		List<String> keys = new ArrayList<>(s.current().events.bossWarps.keySet());
+		assertEquals(List.of("(?i)golden knight", "(?i)morend", "(?i)my spot"), keys);
+		assertEquals("/warp tanglerootoutside", s.current().events.bossWarps.get("(?i)golden knight"));
+		assertTrue(Files.readString(f).replaceAll("\\s", "").contains("\"configVersion\":" + DefaultConfig.CONFIG_VERSION));
+	}
+
+	@Test void aCurrentFileWithoutTheGoldenKnightRuleStaysWithoutIt() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{\"configVersion\": " + DefaultConfig.CONFIG_VERSION
+				+ ", \"events\": {\"bossWarps\": {\"(?i)morend\": \"/warp morend\"}}}");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(Map.of("(?i)morend", "/warp morend"), s.current().events.bossWarps);
 	}
 
 	@Test void arcEntriesKeepOnlyPlainCommands() throws Exception {

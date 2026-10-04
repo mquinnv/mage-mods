@@ -61,6 +61,13 @@ class BossTest {
 		assertEquals("/warp managolem", BossSlice.warpFor(new BossParser.Spawn("Mana Golem", "Wolfhaven Mines", false), w));
 	}
 
+	/** 2026-10-03: the Golden Knight (a mini boss at a Tangleroots location) goes to /warp tanglerootoutside. */
+	@Test void theGoldenKnightHasItsOwnWarp() {
+		Map<String, String> w = DefaultConfig.bossWarps();
+		assertEquals("/warp tanglerootoutside", BossSlice.warpFor(new BossParser.Spawn("Golden Knight", "Tangleroots Forest", true), w));
+		assertEquals("/warp tangleroots", BossSlice.warpFor(new BossParser.Spawn("Forest Guardian", "Tangleroots Forest", false), w));
+	}
+
 	@Test void defaultWarpsForEachLocation() {
 		Map<String, String> w = DefaultConfig.bossWarps();
 		assertEquals("/warp boss", BossSlice.warpFor("Boss Arena", w));
