@@ -10,6 +10,11 @@ public final class CommandSender {
 	/** Sends a command (leading "/" optional). Returns false, and logs, when refused. */
 	public static boolean send(String commandWithSlash) {
 		if (commandWithSlash == null || commandWithSlash.isBlank()) return false;
+		if (ClientActions.is(commandWithSlash)) { // runs on any server; never sent, logged or noted to capture
+			boolean ran = ClientActions.run(commandWithSlash);
+			if (!ran) CubeWheelClient.LOG.warn("[cubewheel] unknown client action {}", commandWithSlash.trim());
+			return ran;
+		}
 		String cmd = commandWithSlash.trim();
 		if (cmd.startsWith("/")) cmd = cmd.substring(1);
 		if (!ServerGate.active(CubeWheelClient.config().current())) {

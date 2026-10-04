@@ -201,7 +201,8 @@ public final class ConfigNormalizer {
 				if (hasCommand == (n.children != null)) continue; // need exactly one
 				if (hasCommand) {
 					String cmd = n.command.trim();
-					n.command = cmd.startsWith("/") ? cmd : "/" + cmd;
+					// client actions (cubewheel:...) are never server commands, so they keep no slash
+					n.command = cmd.startsWith("/") || net.mage.cubewheel.ClientActions.is(cmd) ? cmd : "/" + cmd;
 				} else {
 					n.command = null;
 					n.children = normalizeNodes(n.children);

@@ -124,6 +124,9 @@ public final class CubeWheelClient implements ClientModInitializer {
 		PanelsHud.register();
 		SvaClient.init(configDir);
 		Keybinds.register();
+		// Opened on the next tick: a wheel click runs this while the wheel screen is closing, which would replace it.
+		ClientActions.register("arrange", () -> Minecraft.getInstance().execute(
+				() -> Minecraft.getInstance().gui.setScreen(new net.mage.cubewheel.hud.ArrangeScreen())));
 		ClientTickEvents.START_CLIENT_TICK.register(mc -> {
 			try {
 				RefreshController.sampleInput(mc);
