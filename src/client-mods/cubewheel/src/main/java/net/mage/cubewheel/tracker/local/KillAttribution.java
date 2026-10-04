@@ -7,12 +7,15 @@ import java.util.Map;
 /**
  * Remembers, per entity, the last player that damaged it (from damage-event cause ids and own attacks).
  * A death counts for the local player if that player was the last to hit it within
- * {@link #MEMORY_TICKS}, like vanilla's lastHurtByPlayer that plugins read through getKiller().
+ * {@link #MEMORY_TICKS}, like vanilla's lastHurtByPlayer that plugins read through getKiller(). Hits are kept
+ * {@link #RETAIN_TICKS} for removal kills, whose hitbox window is longer ({@link RemovalKills#HITBOX_WINDOW_TICKS}).
  * Bounded to {@link #MAX} entities. Pure: no Minecraft/Fabric imports.
  */
 public final class KillAttribution {
 	public static final int MAX = 512;
 	public static final int MEMORY_TICKS = 100;
+	/** How long a hit is kept at all: the longest window anything asks about. */
+	public static final int RETAIN_TICKS = Math.max(MEMORY_TICKS, RemovalKills.HITBOX_WINDOW_TICKS);
 
 	private record Hit(int playerId, long tick) {}
 
@@ -63,7 +66,7 @@ public final class KillAttribution {
 	}
 
 	public void expire(long tick) {
-		lastHit.values().removeIf(h -> tick - h.tick() > MEMORY_TICKS);
+		lastHit.values().removeIf(h -> tick - h.tick() > RETAIN_TICKS);
 	}
 
 	public int size() {

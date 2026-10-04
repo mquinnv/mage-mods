@@ -20,6 +20,7 @@ import net.mage.cubewheel.tracker.local.KillAttribution;
 import net.mage.cubewheel.tracker.local.LocalCounter;
 import net.mage.cubewheel.tracker.local.LootLine;
 import net.mage.cubewheel.tracker.local.LootMatch;
+import net.mage.cubewheel.tracker.local.ModelHitbox;
 import net.mage.cubewheel.tracker.local.PendingBreaks;
 import net.mage.cubewheel.tracker.local.QuestCompleted;
 import net.mage.cubewheel.tracker.local.PendingMilk;
@@ -55,6 +56,8 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.vehicle.VehicleEntity;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.Shearable;
 import net.minecraft.world.entity.animal.cow.AbstractCow;
@@ -317,6 +320,7 @@ public final class LocalSignals {
 			watchStack(target);
 			captureEntity("attack", target, describe(target));
 			probe(target);
+			hitModel(target.getId(), player.getId());
 		} catch (Throwable t) {
 			fail(Hook.ATTACK, t);
 		}
@@ -340,6 +344,7 @@ public final class LocalSignals {
 			removals.fallback(target.getId(), bottle);
 			captureEntity("use", target, describe(target) + "; held " + heldItem);
 			probe(target);
+			hitModel(target.getId(), player.getId());
 		} catch (Throwable t) {
 			fail(Hook.ATTACK, t);
 		}
@@ -360,6 +365,7 @@ public final class LocalSignals {
 					removals.hit(entityId, System.currentTimeMillis());
 					watchStack(target);
 					probe(target); // area hits (a katana's sweep) have no attack callback
+					hitModel(entityId, causeId);
 				}
 			}
 		} catch (Throwable t) {
@@ -441,9 +447,12 @@ public final class LocalSignals {
 				int id = ids.getInt(i);
 				if (!kills.tracks(id) && !stacks.watching(id)) continue;
 				Entity entity = mc.level.getEntity(id);
-				if (entity != null && !(entity instanceof Player)) {
-					int window = "minecraft:interaction".equals(entity.typeHolder().getRegisteredName())
-							? RemovalKills.HITBOX_WINDOW_TICKS : RemovalKills.WINDOW_TICKS;
+				if (entity != null && neverAKill(entity)) {
+					// A deflected breeze wind charge was "killed" through a nearby armor stand's tag (2026-10-01).
+					captureEntity("removed", entity, "hit, but a projectile or vehicle is never a kill");
+				} else if (entity != null && !(entity instanceof Player)) {
+					// Model hitboxes go 2-4.6 s after the last hit on them (an interaction, an invisible slime).
+					int window = hitboxShape(entity) ? RemovalKills.HITBOX_WINDOW_TICKS : RemovalKills.WINDOW_TICKS;
 					boolean recent = kills.hitByWithin(id, mc.player.getId(), tick, window);
 					boolean near = entity.distanceTo(mc.player) <= REMOVAL_KILL_RANGE;
 					String why = !recent ? (kills.hitBy(id, mc.player.getId(), tick) ? "local hit, too long ago" : "no recent local hit")
@@ -464,13 +473,23 @@ public final class LocalSignals {
 		}
 	}
 
-	/** A removal counted as a kill: named from the hint found at hit time, else from the next loot line. */
+	/**
+	 * A removal counted as a kill: named from the hint found at hit time (looked for again now if there was none: the
+	 * tag may have rendered since), else from the next loot line; a model hitbox nothing names still counts as a
+	 * monster.
+	 */
 	private static void onRemovalKill(Entity entity) {
 		WorldInfo at = world();
 		String typeId = entity.typeHolder().getRegisteredName();
 		Optional<RemovalKills.Hint> hint = removals.hint(entity.getId());
-		if (hint.isEmpty() && !removals.seen(entity.getId())) {
-			hint = Optional.ofNullable(NearbyProbe.of(entity, false).hint());
+		if (hint.isEmpty()) {
+			NearbyProbe.Result again = NearbyProbe.of(entity, false);
+			if (again.hint() != null) {
+				removals.remember(entity.getId(), again.hint());
+				removals.model(entity.getId(), again.modelKeys());
+				removals.settleModel(entity.getId()); // its siblings by the tag found now
+				hint = Optional.of(again.hint());
+			}
 		}
 		if (hint.isPresent()) {
 			RemovalKills.Hint h = hint.get();
@@ -484,11 +503,16 @@ public final class LocalSignals {
 			capture("kill", typeId, h.name(), "removal, method " + h.method().code + " (" + h.source() + "), local hit", at, added);
 			return;
 		}
-		RemovalKills.Removed r = new RemovalKills.Removed(entity.getId(), typeId, rawName(entity), at);
+		// A Firefly Bottle used on it: a catch, never a monster kill.
+		boolean generic = ModelHitbox.isModelHitbox(NearbyProbe.hitbox(entity)) && removals.fallback(entity.getId()).isEmpty();
+		RemovalKills.Removed r = new RemovalKills.Removed(entity.getId(), typeId, rawName(entity), at, generic);
 		removals.awaitLoot(r, System.currentTimeMillis()).ifPresent(loot -> creditLoot(r, loot));
 	}
 
-	/** Method c: credit the one kill objective the loot names; else method d (unattributed, capture only). */
+	/**
+	 * Method c: credit the one kill objective the loot names (and, for a model hitbox, the generic kill objectives);
+	 * else method d (unnamed: a model hitbox counts for the generic kill objectives only).
+	 */
 	private static void creditLoot(RemovalKills.Removed r, List<String> loot) {
 		creditLoot(r, loot, "loot");
 	}
@@ -503,11 +527,12 @@ public final class LocalSignals {
 				creditLoot(r, List.of(bottle.get()), "held item");
 				return;
 			}
-			capture("kill", r.typeId(), r.name(), "removal, method d (" + from + " " + loot + " names no single kill objective), local hit",
-					r.world(), List.of());
+			capture("kill", r.typeId(), r.name(), "removal, method d (" + from + " " + loot + " names no single kill objective"
+					+ (r.modelHitbox() ? "; model hitbox: generic" : "") + "), local hit", r.world(), genericKill(r));
 			return;
 		}
-		List<LocalCounter.Contribution> added = LocalCounter.credit(credit.get().ruleIds(), store, System.currentTimeMillis());
+		List<LocalCounter.Contribution> added = LocalCounter.lootKill(credit.get().ruleIds(), r.modelHitbox(), r.world(),
+				store, local().worlds, System.currentTimeMillis());
 		if (!added.isEmpty()) saveThrottle.markDirty();
 		capture("kill", r.typeId(), credit.get().target(), "removal, method c (" + from + " " + loot + " -> " + credit.get().target() + "), local hit",
 				r.world(), added);
@@ -571,13 +596,14 @@ public final class LocalSignals {
 		for (RemovalKills.Resolved r : removals.onActionBar(text, now)) creditLoot(r.removed(), r.loot());
 	}
 
-	/** Once per hit mob: remembers what names it and, while capturing, writes what is around it. */
+	/** Once per hit mob: remembers what names it, its model, and, while capturing, writes what is around it. */
 	private static void probe(Entity target) {
 		if (removals.seen(target.getId())) return;
 		CaptureLog capture = CubeWheelClient.capture();
 		boolean forCapture = capture != null && capture.enabled();
 		NearbyProbe.Result r = NearbyProbe.of(target, forCapture);
 		removals.remember(target.getId(), r.hint());
+		removals.model(target.getId(), r.modelKeys());
 		if (forCapture) {
 			capture.nearby(target.getId(), target.typeHolder().getRegisteredName(), rawName(target), r.near(),
 					new ArrayList<>(world().tokens()), System.currentTimeMillis());
@@ -821,7 +847,8 @@ public final class LocalSignals {
 						continue;
 					}
 					capture("kill", r.typeId(), r.name(), "removal, method d (no name tag, no loot line within "
-							+ RemovalKills.LOOT_WAIT_MS + " ms), local hit", r.world(), List.of());
+							+ RemovalKills.LOOT_WAIT_MS + " ms" + (r.modelHitbox() ? "; model hitbox: generic" : "") + "), local hit",
+							r.world(), genericKill(r));
 				}
 			}
 			if (store != null && saveThrottle.shouldSave(System.currentTimeMillis())) store.save();
@@ -854,6 +881,39 @@ public final class LocalSignals {
 	}
 
 	// ---- helpers ----
+
+	/**
+	 * A local hit on one hitbox of a custom-model mob is a hit on the model: its other hitboxes' hits are refreshed,
+	 * so the interaction hit once and then left for the slimes is still ours when it is removed.
+	 */
+	private static void hitModel(int entityId, int playerId) {
+		ClientLevel level = Minecraft.getInstance().level;
+		if (level == null || !hitboxShape(level.getEntity(entityId))) return;
+		for (int sibling : removals.siblings(entityId)) {
+			// Only hitboxes: two plain mobs by the same hologram are not one model, and a refresh would credit a death.
+			if (hitboxShape(level.getEntity(sibling))) kills.onDamage(sibling, playerId, tick);
+		}
+	}
+
+	/** An interaction or an invisible entity: what a custom model's hitbox looks like (it gets the longer window). */
+	private static boolean hitboxShape(Entity e) {
+		return e != null && (ModelHitbox.INTERACTION.equals(e.typeHolder().getRegisteredName()) || e.isInvisible());
+	}
+
+	/** Projectiles and vehicles: their removal is never a kill, whatever was hit. */
+	private static boolean neverAKill(Entity e) {
+		return e instanceof Projectile || e instanceof VehicleEntity || ModelHitbox.neverAKill(e.typeHolder().getRegisteredName());
+	}
+
+	/** Method d for a model hitbox: a monster kill nothing names counts for the generic kill objectives only. */
+	private static List<LocalCounter.Contribution> genericKill(RemovalKills.Removed r) {
+		TrackerStore store = CubeWheelClient.tracker();
+		if (!r.modelHitbox() || store == null) return List.of();
+		List<LocalCounter.Contribution> added = LocalCounter.genericKill(r.world(), store, local().worlds,
+				System.currentTimeMillis(), Set.of());
+		if (!added.isEmpty()) saveThrottle.markDirty();
+		return added;
+	}
 
 	private static List<LocalCounter.Contribution> count(Signal signal) {
 		TrackerStore store = CubeWheelClient.tracker();

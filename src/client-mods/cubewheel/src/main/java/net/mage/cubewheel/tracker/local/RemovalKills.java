@@ -2,7 +2,10 @@ package net.mage.cubewheel.tracker.local;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -15,9 +18,10 @@ import java.util.Set;
  * Kills that show up only as a removal: ManaCube's custom-model mobs (tigers in Tangleroot) are an
  * unnamed hitbox the server removes without a death event. A removal counts once when the local player
  * hit the entity within {@link #WINDOW_TICKS} and it was still close (the caller decides both), unless the
- * id was already settled by a death or a stack drop. The kill is named from a hint remembered at hit time
- * (own custom name, a linked or nearby name tag), else from a loot action bar (see {@link LootMatch}), else
- * from a fallback remembered at hit time (a Firefly Bottle used on it), else it stays unattributed. The loot
+ * id was already settled by a death, a stack drop or a sibling hitbox of the same model ({@link #siblings}).
+ * The kill is named from a hint remembered at hit time (own custom name, a linked or nearby name tag), else
+ * from a loot action bar (see {@link LootMatch}), else from a fallback remembered at hit time (a Firefly
+ * Bottle used on it), else it stays unnamed (a model hitbox then still counts as a monster). The loot
  * line often arrives before the removal (fireflies: ~0.5-1 s), so a line counts from the first local hit on
  * the entity (at most {@link #LOOT_BEFORE_MS} before the removal) until {@link #LOOT_WAIT_MS} after it; a
  * line seen before the removal names one removal only. Everything is bounded. Pure: no Minecraft/Fabric imports.
@@ -25,10 +29,11 @@ import java.util.Set;
 public final class RemovalKills {
 	public static final int WINDOW_TICKS = 30;
 	/**
-	 * An interaction hitbox (Sandara rattlesnakes: a cloud carrying an interaction and invisible slimes) is removed
-	 * about 3 s after the kill, so its window is longer (capture 2026-10-01).
+	 * A model hitbox (Sandara rattlesnakes: an interaction riding a cloud, and invisible slimes) is removed 2.0-4.6 s
+	 * after the last hit on it (capture 2026-10-01, 4 of 19 past 4 s), so its window is longer. Hits on a sibling
+	 * hitbox of the same model also refresh it (see {@link #siblings}).
 	 */
-	public static final int HITBOX_WINDOW_TICKS = 80;
+	public static final int HITBOX_WINDOW_TICKS = 120;
 	/** A loot message at most this old at the removal (and not older than the first hit) is used at once. */
 	public static final long LOOT_BEFORE_MS = 5000;
 	public static final long LOOT_WAIT_MS = 1500;
@@ -48,11 +53,25 @@ public final class RemovalKills {
 		}
 	}
 
-	/** A name for a hit entity, found at hit time; {@code source} explains it for capture. */
-	public record Hint(String name, Method method, String source) {}
+	/**
+	 * A name for a hit entity, found at hit time; {@code source} explains it for capture, {@code sourceId} is the
+	 * entity that carried it (a name tag; -1 for the entity's own name or unknown).
+	 */
+	public record Hint(String name, Method method, String source, int sourceId) {
+		public Hint(String name, Method method, String source) {
+			this(name, method, source, -1);
+		}
+	}
 
-	/** A removal kill still to be named. */
-	public record Removed(int entityId, String typeId, String name, WorldInfo world) {}
+	/**
+	 * A removal kill still to be named; {@code modelHitbox}: a custom-model mob's hitbox (see {@link ModelHitbox}), so
+	 * it counts as a monster kill even if nothing names it.
+	 */
+	public record Removed(int entityId, String typeId, String name, WorldInfo world, boolean modelHitbox) {
+		public Removed(int entityId, String typeId, String name, WorldInfo world) {
+			this(entityId, typeId, name, world, false);
+		}
+	}
 
 	/** A pending removal and the loot items that name it. */
 	public record Resolved(Removed removed, List<String> loot) {}
@@ -76,12 +95,48 @@ public final class RemovalKills {
 	private final Deque<Seen> lootLines = new ArrayDeque<>();
 	private final Map<Integer, Long> firstHit = new LinkedHashMap<>();
 	private final Map<Integer, String> fallbacks = new LinkedHashMap<>();
+	private final Map<Integer, Set<Integer>> models = new LinkedHashMap<>();
 
 	/** Remembers what was found for hit entity {@code id} ({@code hint} may be null: looked, found nothing). */
 	public void remember(int id, Hint hint) {
 		hints.remove(id);
 		hints.put(id, Optional.ofNullable(hint));
 		trim(hints.keySet(), MAX_HINTS);
+	}
+
+	/**
+	 * Remembers which model hit entity {@code id} belongs to: ids of entities only that model has (its own cloud
+	 * vehicle, the cloud carrying the model's bones). With its hint's name tag they tell its sibling hitboxes.
+	 */
+	public void model(int id, Collection<Integer> keys) {
+		models.remove(id);
+		Set<Integer> k = new LinkedHashSet<>();
+		if (keys != null) for (Integer key : keys) if (key != null) k.add(key);
+		if (!k.isEmpty()) models.put(id, Set.copyOf(k));
+		trim(models.keySet(), MAX_HINTS);
+	}
+
+	/**
+	 * Other remembered hit entities of the same model as {@code id}: sharing a model key or the name tag of their
+	 * hint. One model counts once; a hit on any of them keeps the others' hit recent.
+	 */
+	public Set<Integer> siblings(int id) {
+		Set<Integer> mine = modelKeys(id);
+		if (mine.isEmpty()) return Set.of();
+		Set<Integer> others = new LinkedHashSet<>(models.keySet());
+		others.addAll(hints.keySet());
+		others.remove(id);
+		Set<Integer> out = new LinkedHashSet<>();
+		for (int other : others) {
+			if (!Collections.disjoint(mine, modelKeys(other))) out.add(other);
+		}
+		return out;
+	}
+
+	private Set<Integer> modelKeys(int id) {
+		Set<Integer> keys = new HashSet<>(models.getOrDefault(id, Set.of()));
+		hint(id).filter(h -> h.sourceId() >= 0).ifPresent(h -> keys.add(h.sourceId()));
+		return keys;
 	}
 
 	/** Was entity {@code id} already looked at (so the nearby query runs once per entity)? */
@@ -140,7 +195,18 @@ public final class RemovalKills {
 	public boolean claim(int id, boolean recentLocalHit, boolean near) {
 		if (!recentLocalHit || !near || settled.contains(id)) return false;
 		settle(id);
+		settleModel(id);
 		return true;
+	}
+
+	/**
+	 * The model of claimed entity {@code id} was counted: its sibling hitboxes and its name tag never count again
+	 * (a Viper's slime and its interaction were both claimed with the same tag, 2026-10-01). Call again after the
+	 * hint changed (a re-probe on removal).
+	 */
+	public void settleModel(int id) {
+		for (int sibling : siblings(id)) settle(sibling);
+		hint(id).filter(h -> h.sourceId() >= 0).ifPresent(h -> settle(h.sourceId()));
 	}
 
 	/**
@@ -206,6 +272,7 @@ public final class RemovalKills {
 
 	public void clear() {
 		hints.clear();
+		models.clear();
 		settled.clear();
 		pending.clear();
 		lootLines.clear();

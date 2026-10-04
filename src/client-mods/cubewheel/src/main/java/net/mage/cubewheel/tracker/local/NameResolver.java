@@ -16,8 +16,15 @@ public final class NameResolver {
 	/** How a candidate relates to the hit entity; declaration order is preference. */
 	public enum Relation { RIDER, VEHICLE, TAG, OTHER }
 
-	/** A named entity near the hit entity; {@code source} describes it for capture ("text_display #12"). */
-	public record Candidate(Relation relation, String name, double distanceSq, String source) {}
+	/**
+	 * A named entity near the hit entity; {@code source} describes it for capture ("text_display #12"),
+	 * {@code entityId} is its id (-1 if unknown).
+	 */
+	public record Candidate(Relation relation, String name, double distanceSq, String source, int entityId) {
+		public Candidate(Relation relation, String name, double distanceSq, String source) {
+			this(relation, name, distanceSq, source, -1);
+		}
+	}
 
 	private NameResolver() {}
 

@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -222,7 +223,7 @@ public final class TrackerStore {
 			}
 			ObjectiveParser.parse(info, tokens).ifPresent(r -> out.put(t.id(), r));
 		}
-		active = Map.copyOf(out);
+		active = Collections.unmodifiableMap(out); // entry order: credits and the popup are the same every run
 		activeTokens = tokens;
 		return active;
 	}
