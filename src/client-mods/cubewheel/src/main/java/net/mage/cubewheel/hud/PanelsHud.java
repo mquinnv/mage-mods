@@ -125,9 +125,11 @@ public final class PanelsHud implements HudElement {
 	/** A line's text width, its icon included. */
 	private static int textWidth(Font font, Panel.Line l) {
 		if (!l.pieces().isEmpty()) {
-			int w = -PIECE_GAP;
+			// As drawn: an icon, then its text and a gap; icon-only pieces sit tight together.
+			int w = 0;
 			for (Panel.Piece piece : l.pieces()) {
-				w += PIECE_GAP + font.width(piece.text()) + (piece.icon() instanceof ItemStack s && !s.isEmpty() ? ICON_W : 0);
+				w += (piece.icon() instanceof ItemStack s && !s.isEmpty() ? ICON_W : 0)
+						+ (piece.text().isEmpty() ? 0 : font.width(piece.text()) + PIECE_GAP);
 			}
 			return w;
 		}
@@ -210,6 +212,7 @@ public final class PanelsHud implements HudElement {
 						g.pose().popMatrix();
 						tx += ICON_W;
 					}
+					if (piece.text().isEmpty()) continue; // icon-only pieces sit tight together
 					g.text(font, piece.text(), tx, ly, piece.color());
 					tx += font.width(piece.text()) + PIECE_GAP;
 				}

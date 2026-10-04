@@ -60,7 +60,8 @@ public final class CharmsPanel {
 				if (worn) amulets.add(0, piece);
 				else amulets.add(piece);
 			} else {
-				talismans.add(new Panel.Piece(Icons.stack(charm.icon()), charm.text(), Panel.YELLOW));
+				// Just what it sells, as an icon after one "Auto$" label (lifetime earnings read as noise).
+				talismans.add(new Panel.Piece(Icons.stack(charm.icon()), "", Panel.YELLOW));
 			}
 		}
 		InvMeter.Level level = InvMeter.level(used, SLOTS);
@@ -68,7 +69,10 @@ public final class CharmsPanel {
 		String vaults = vaultLine(LiveWatcher.vaultCount(cfg.vaultCount), LiveWatcher.vaultFill());
 		lines.add(new Panel.Line("", 0, "Inv " + used + "/" + SLOTS, colour, vaults, Panel.GRAY).withProgress(used / (double) SLOTS));
 		List<Panel.Piece> charms = new ArrayList<>(amulets);
-		charms.addAll(talismans);
+		if (!talismans.isEmpty()) {
+			charms.add(new Panel.Piece(null, "Auto$", Panel.YELLOW));
+			charms.addAll(talismans);
+		}
 		if (!charms.isEmpty()) lines.add(Panel.Line.pieces(charms));
 		CubeWheelConfig.Position p = cfg.charms.position;
 		return Optional.of(new Panel("", lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
