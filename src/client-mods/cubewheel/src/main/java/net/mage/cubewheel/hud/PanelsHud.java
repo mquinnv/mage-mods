@@ -17,8 +17,8 @@ import net.minecraft.world.item.ItemStack;
 
 /**
  * Draws CubeWheel's small panels (events, boosters, cooldowns, jobs, tracker) in one HUD element so panels sharing
- * a corner can stack (see {@link HudLayout}). A panel with a {@link Panel.Side} gets it as a second column right of
- * its lines (see {@link TwoColumn}), under the title, which spans both. Attached right after {@link TrackerHud}, which
+ * a corner can stack (see {@link HudLayout}). A panel's {@link Panel.Grid} goes under its lines, past a thin rule, in
+ * columns that only grow until the world changes (see {@link GridLayout}). Attached right after {@link TrackerHud}, which
  * reports the vanilla effect icons' height; that is reserved in the top-right corner so nothing overlaps them. Each source is asked every frame; it must be cheap and return
  * empty when it has nothing to show or is gated off. A failing source is logged once and skipped.
  */
@@ -42,12 +42,14 @@ public final class PanelsHud implements HudElement {
 	private static final int MAX_CONTENT_W = 170;
 	/** The empty part of a row's progress bar. */
 	private static final int METER_TRACK = 0x18FFFFFF;
-	/** The thin line between a panel's two columns. */
+	/** The thin rule over a grid and the dividers between its columns. */
 	private static final int DIVIDER = 0x40FFFFFF;
-	/** An empty armor slot in a side column: a faint square where the item would be. */
-	private static final int EMPTY_SLOT = 0x20FFFFFF;
-	/** A side column's item bar: this tall, centred on its item. */
-	private static final int SLOT_BAR_H = 4;
+	/** The rule's row: a pixel of space, the rule, a pixel of space. */
+	private static final int RULE_H = 3;
+	/** A grid cell is at most this wide; longer text is cut with "…". */
+	private static final int MAX_CELL_W = 110;
+	/** A piece's wear bar, as Minecraft draws a durability bar: 13 px wide, 2 px from the item's left, 13 px down. */
+	private static final int WEAR_W = 13;
 
 	/** A panel source, given the current time in epoch ms. */
 	public interface Source extends Function<Long, Optional<Panel>> {}
@@ -62,12 +64,9 @@ public final class PanelsHud implements HudElement {
 	public record Placed(int source, String title, HudLayout.Box box) {}
 
 	private static volatile List<Placed> lastPlaced = List.of();
-	/**
-	 * Per source: its width only grows, for panels with a second column (the Status panel's digits change every
-	 * frame). Reset when the world changes.
-	 */
-	private static final java.util.Map<Integer, SteadyWidth> STEADY = new java.util.HashMap<>();
-	private static Object steadyLevel;
+	/** Per source with a grid: its column widths, which only grow until the world changes. */
+	private static final java.util.Map<Integer, GridLayout> GRIDS = new java.util.HashMap<>();
+	private static Object gridLevel;
 
 	/**
 	 * Adds a source; panels in one corner are stacked in registration order. {@code position} reads its position in
@@ -116,7 +115,7 @@ public final class PanelsHud implements HudElement {
 		for (int i = 0; i < SOURCES.size(); i++) {
 			try {
 				Optional<Panel> p = SOURCES.get(i).apply(now);
-				if (p.isPresent() && !p.get().lines().isEmpty()) {
+				if (p.isPresent() && (!p.get().lines().isEmpty() || p.get().grid() != null)) {
 					panels.add(p.get());
 					sources.add(i);
 				}
@@ -125,15 +124,18 @@ public final class PanelsHud implements HudElement {
 				FAILED.set(i, true);
 			}
 		}
-		if (mc.level != steadyLevel) {
-			steadyLevel = mc.level;
-			STEADY.values().forEach(SteadyWidth::reset);
+		if (mc.level != gridLevel) {
+			gridLevel = mc.level;
+			GRIDS.values().forEach(GridLayout::reset);
 		}
 		int[] widths = new int[panels.size()];
+		List<int[]> columns = new ArrayList<>(panels.size());
 		for (int k = 0; k < panels.size(); k++) {
 			Panel p = panels.get(k);
-			widths[k] = p.side() == null ? width(mc.font, p)
-					: STEADY.computeIfAbsent(sources.get(k), i -> new SteadyWidth()).apply(width(mc.font, p));
+			int[] cols = p.grid() == null ? null
+					: GRIDS.computeIfAbsent(sources.get(k), i -> new GridLayout()).columns(cellWidths(mc.font, p.grid()));
+			columns.add(cols);
+			widths[k] = width(mc.font, p, cols);
 		}
 		// Panels stacked in one corner share the widest one's width, so they line up as one column.
 		java.util.Map<HudLayout.Corner, Integer> cornerWidth = new java.util.EnumMap<>(HudLayout.Corner.class);
@@ -146,7 +148,7 @@ public final class PanelsHud implements HudElement {
 			Panel p = panels.get(k);
 			try {
 				int w = p.corner() == HudLayout.Corner.CUSTOM ? widths[k] : cornerWidth.get(p.corner());
-				placed.add(new Placed(sources.get(k), p.title(), draw(g, mc.font, layout, p, w)));
+				placed.add(new Placed(sources.get(k), p.title(), draw(g, mc.font, layout, p, w, columns.get(k))));
 			} catch (RuntimeException e) {
 				CubeWheelClient.LOG.error("[cubewheel] HUD panel draw failed", e);
 			}
@@ -154,10 +156,9 @@ public final class PanelsHud implements HudElement {
 		lastPlaced = List.copyOf(placed);
 	}
 
-	/** A row's height: text rows {@code lh}, rows of pieces a full-size icon, a row with a light disc the disc. */
+	/** A row's height: text rows {@code lh}, rows of pieces a full-size icon. */
 	private static int rowHeight(Panel.Line l, int lh) {
 		if (!l.pieces().isEmpty()) return BIG_ICON + 1;
-		if (l.light() >= 0) return Math.max(lh, LightDisc.SIZE + 1);
 		return l.gauge() >= 0 ? lh + GAUGE_H + 1 : lh;
 	}
 
@@ -177,32 +178,69 @@ public final class PanelsHud implements HudElement {
 
 	/** True for a line without a tag or right part: it may run across the whole width. */
 	private static boolean heading(Panel.Line l) {
-		return l.tag().isEmpty() && l.right().isEmpty() && l.light() < 0;
+		return l.tag().isEmpty() && l.right().isEmpty();
 	}
 
-	/** The width of a line's right part: its text, or its light disc. */
-	private static int rightWidth(Font font, Panel.Line l) {
-		return l.light() >= 0 ? LightDisc.SIZE : font.width(l.right());
-	}
-
-	/** Content width of {@code p}'s lines (the left column when it has a side). */
+	/** Content width of {@code p}'s lines; loose lines take what the rest makes. */
 	private static int linesWidth(Font font, Panel p) {
 		int tagW = 0, textW = 0, rightW = 0;
 		for (Panel.Line l : p.lines()) {
 			if (!l.tag().isEmpty()) tagW = Math.max(tagW, font.width(l.tag()) + COLUMN_GAP);
-			if (!heading(l) && rightWidth(font, l) > 0) rightW = Math.max(rightW, rightWidth(font, l) + COLUMN_GAP);
+			if (!l.right().isEmpty()) rightW = Math.max(rightW, font.width(l.right()) + COLUMN_GAP);
 		}
 		for (Panel.Line l : p.lines()) {
+			if (l.loose()) continue;
 			// Headings (no tag, no right part) may run across the whole width.
 			textW = Math.max(textW, textWidth(font, l) - (heading(l) ? tagW + rightW : 0));
 		}
 		return Math.min(MAX_CONTENT_W, tagW + textW + rightW);
 	}
 
-	/** Content width of {@code p}: its lines and side column, at least its title (see {@link #draw}). */
-	private static int width(Font font, Panel p) {
-		int side = p.side() == null ? 0 : p.side().width();
-		return Math.max(font.width(p.title()), TwoColumn.width(linesWidth(font, p), side));
+	/** Content width of {@code p}: its lines, its grid's {@code columns} (null = none), at least its title. */
+	private static int width(Font font, Panel p, int[] columns) {
+		int w = Math.max(font.width(p.title()), linesWidth(font, p));
+		return columns == null ? w : Math.max(w, GridLayout.width(columns));
+	}
+
+	/** Each grid cell's natural width (at most {@link #MAX_CELL_W}), by row and column. */
+	private static int[][] cellWidths(Font font, Panel.Grid grid) {
+		int[][] out = new int[grid.rows().size()][];
+		for (int r = 0; r < out.length; r++) {
+			List<Panel.Cell> row = grid.rows().get(r);
+			out[r] = new int[row.size()];
+			for (int c = 0; c < row.size(); c++) {
+				Panel.Cell cell = row.get(c);
+				int right = cellRightWidth(font, cell);
+				int w = smallIconW(cell.icon()) + font.width(cell.text()) + (right == 0 ? 0 : COLUMN_GAP + right);
+				out[r][c] = Math.min(MAX_CELL_W, w);
+			}
+		}
+		return out;
+	}
+
+	/** The width of a cell's right part: its light disc, or its small item and text (0 = none). */
+	private static int cellRightWidth(Font font, Panel.Cell cell) {
+		if (cell.light() >= 0) return LightDisc.SIZE;
+		return smallIconW(cell.rightIcon()) + (cell.right().isEmpty() ? 0 : font.width(cell.right()));
+	}
+
+	private static int smallIconW(Object icon) {
+		return icon instanceof ItemStack s && !s.isEmpty() ? ICON_W : 0;
+	}
+
+	/** A half-size (8 px) item with its top left at {@code x}, {@code y}. */
+	private static void smallItem(GuiGraphicsExtractor g, ItemStack stack, int x, int y) {
+		g.pose().pushMatrix();
+		g.pose().translate(x, y - 0.5f);
+		g.pose().scale(0.5f, 0.5f);
+		g.item(stack, 0, 0);
+		g.pose().popMatrix();
+	}
+
+	/** A grid row's height: a text row, or the light disc's when a cell has one. */
+	private static int gridRowHeight(List<Panel.Cell> row, int lh) {
+		for (Panel.Cell c : row) if (c.light() >= 0) return Math.max(lh, LightDisc.SIZE + 1);
+		return lh;
 	}
 
 	/** {@code s} cut with "…" to at most {@code max} pixels. */
@@ -212,27 +250,31 @@ public final class PanelsHud implements HudElement {
 		return font.plainSubstrByWidth(s, max - font.width("…")).stripTrailing() + "…";
 	}
 
-	private static HudLayout.Box draw(GuiGraphicsExtractor g, Font font, HudLayout layout, Panel p, int width) {
+	/** {@code columns}: the grid's column widths (null without a grid), as measured for this frame. */
+	private static HudLayout.Box draw(GuiGraphicsExtractor g, Font font, HudLayout layout, Panel p, int width, int[] columns) {
 		// Columns: tag (aligned), text, right-aligned part.
 		int tagW = 0;
 		for (Panel.Line l : p.lines()) if (!l.tag().isEmpty()) tagW = Math.max(tagW, font.width(l.tag()) + COLUMN_GAP);
-		Panel.Side side = p.side();
-		int sideW = side == null ? 0 : side.width();
-		int total = Math.max(width, width(font, p));
-		// The lines get what the side column leaves (all of it without one); stretched panels widen the lines.
-		int w = TwoColumn.leftWidth(total, sideW);
+		int w = Math.max(width, width(font, p, columns));
 		int lh = font.lineHeight + 1;
 		// A panel with an empty title has no title row (the compact Charms panel).
 		int titleRows = p.title().isEmpty() ? 0 : 1;
 		// Rows of pieces show their icons at full size, so they are taller than text rows.
 		int linesH = 0;
 		for (Panel.Line l : p.lines()) linesH += rowHeight(l, lh);
-		int h = lh * titleRows + Math.max(linesH, sideHeight(side, lh));
-		HudLayout.Box box = layout.place(p.corner(), p.x(), p.y(), total + 2 * PAD, h + 2 * PAD);
+		int gridH = 0;
+		if (p.grid() != null) {
+			if (!p.lines().isEmpty()) gridH += RULE_H;
+			for (List<Panel.Cell> row : p.grid().rows()) gridH += gridRowHeight(row, lh);
+		}
+		int h = lh * titleRows + linesH + gridH;
+		HudLayout.Box box = layout.place(p.corner(), p.x(), p.y(), w + 2 * PAD, h + 2 * PAD);
 		int x = box.x() + PAD, y = box.y() + PAD;
 		g.fill(box.x(), box.y(), box.x() + box.w(), box.y() + box.h(), BACKDROP);
 		if (titleRows > 0) g.text(font, p.title(), x, y, GOLD);
-		if (side != null) drawSide(g, font, side, x + w, y + lh * titleRows, box.y() + box.h() - PAD, lh);
+		if (p.grid() != null) {
+			drawGrid(g, font, p.grid(), GridLayout.stretch(columns, w), x, y + lh * titleRows + linesH, !p.lines().isEmpty(), lh);
+		}
 		int ly = y + lh * titleRows - lh;
 		int lastH = lh;
 		for (int i = 0; i < p.lines().size(); i++) {
@@ -253,11 +295,7 @@ public final class PanelsHud implements HudElement {
 				if (fill > left) g.fill(left, ly - 1, fill, ly + lh - 1, Panel.meterColor(l.progress()));
 			}
 			if (l.icon() instanceof ItemStack stack && !stack.isEmpty()) {
-				g.pose().pushMatrix();
-				g.pose().translate(tx, ly - 0.5f);
-				g.pose().scale(0.5f, 0.5f);
-				g.item(stack, 0, 0);
-				g.pose().popMatrix();
+				smallItem(g, stack, tx, ly);
 				tx += ICON_W;
 			}
 			if (!l.pieces().isEmpty()) {
@@ -265,6 +303,12 @@ public final class PanelsHud implements HudElement {
 				for (Panel.Piece piece : l.pieces()) {
 					if (piece.icon() instanceof ItemStack stack && !stack.isEmpty()) {
 						g.item(stack, tx, ly);
+						if (piece.wear() >= 0) {
+							// Minecraft's durability bar: a black track with the remaining part in colour on top.
+							g.fill(tx + 2, ly + 13, tx + 2 + WEAR_W, ly + 15, 0xFF000000);
+							int fill = (int) Math.round(WEAR_W * Math.min(1, piece.wear()));
+							if (fill > 0) g.fill(tx + 2, ly + 13, tx + 2 + fill, ly + 14, piece.wearColor());
+						}
 						tx += BIG_ICON_W;
 					}
 					if (piece.text().isEmpty()) continue; // icon-only pieces sit tight together
@@ -274,13 +318,9 @@ public final class PanelsHud implements HudElement {
 				continue;
 			}
 			// Names use all the room the panel has; only what really does not fit is cut.
-			int rightW = rightWidth(font, l);
-			int room = x + w - tx - (rightW == 0 ? 0 : rightW + COLUMN_GAP);
-			// The light disc's row is taller than its text: the text is centred in it.
-			int ty = l.light() >= 0 ? ly + (lastH - lh) / 2 : ly;
-			g.text(font, fit(font, l.text(), room), tx, ty, l.color());
-			if (l.light() >= 0) drawLight(g, font, l.light(), x + w - LightDisc.SIZE, ly - 1 + (lastH - LightDisc.SIZE) / 2);
-			else if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), ly, l.rightColor());
+			int room = x + w - tx - (l.right().isEmpty() ? 0 : font.width(l.right()) + COLUMN_GAP);
+			g.text(font, fit(font, l.text(), room), tx, ly, l.color());
+			if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), ly, l.rightColor());
 			if (l.gauge() >= 0) {
 				// A capacity gauge: a thin bar under the row, across the panel, on its own dark track.
 				int top = ly + font.lineHeight, end = x + w;
@@ -292,37 +332,54 @@ public final class PanelsHud implements HudElement {
 		return box;
 	}
 
-	/** A side column's height: a full-size item row per slot, then its text lines. */
-	private static int sideHeight(Panel.Side side, int lh) {
-		return side == null ? 0 : side.slots().size() * BIG_ICON + side.lines().size() * lh;
+	/**
+	 * {@code grid} from {@code top}, in {@code cols} starting at {@code x}: a rule over it when lines come before
+	 * ({@code ruled}), a divider between the columns, and each cell's text with its right part at the column's edge.
+	 */
+	private static void drawGrid(GuiGraphicsExtractor g, Font font, Panel.Grid grid, int[] cols, int x, int top, boolean ruled, int lh) {
+		int end = x + GridLayout.width(cols);
+		if (ruled) {
+			g.fill(x, top + 1, end, top + 2, DIVIDER);
+			top += RULE_H;
+		}
+		int gridH = 0;
+		for (List<Panel.Cell> row : grid.rows()) gridH += gridRowHeight(row, lh);
+		for (int c = 0, cx = x; c < cols.length - 1; cx += cols[c] + GridLayout.GAP, c++) {
+			int d = cx + cols[c] + GridLayout.GAP / 2;
+			g.fill(d, top, d + 1, top + gridH - 1, DIVIDER);
+		}
+		int cy = top;
+		for (List<Panel.Cell> row : grid.rows()) {
+			int rh = gridRowHeight(row, lh);
+			int cx = x;
+			for (int c = 0; c < row.size() && c < cols.length; c++) {
+				drawCell(g, font, row.get(c), cx, cy, cols[c], rh, lh);
+				cx += cols[c] + GridLayout.GAP;
+			}
+			cy += rh;
+		}
 	}
 
-	/**
-	 * {@code side} right of lines that end at {@code linesEnd}, from {@code top}; the divider runs down to
-	 * {@code bottom}. Each slot: its item (or a faint square for an empty one) and its bar across the rest of the
-	 * column; then the text lines, their right parts at the column's right edge.
-	 */
-	private static void drawSide(GuiGraphicsExtractor g, Font font, Panel.Side side, int linesEnd, int top, int bottom, int lh) {
-		int divider = linesEnd + TwoColumn.GAP / 2;
-		g.fill(divider, top, divider + 1, bottom, DIVIDER);
-		int sx = linesEnd + TwoColumn.GAP, end = sx + side.width();
-		int sy = top;
-		for (Panel.Slot slot : side.slots()) {
-			if (slot.icon() instanceof ItemStack stack && !stack.isEmpty()) g.item(stack, sx, sy);
-			else g.fill(sx + 2, sy + 2, sx + BIG_ICON - 2, sy + BIG_ICON - 2, EMPTY_SLOT);
-			if (slot.fraction() >= 0) {
-				int bx = sx + BIG_ICON_W, by = sy + (BIG_ICON - SLOT_BAR_H) / 2;
-				int fill = bx + (int) Math.round((end - bx) * Math.max(0, Math.min(1, slot.fraction())));
-				g.fill(bx, by, end, by + SLOT_BAR_H, GAUGE_TRACK);
-				if (fill > bx) g.fill(bx, by, fill, by + SLOT_BAR_H, slot.color());
-			}
-			sy += BIG_ICON;
+	/** One grid cell in a column {@code w} wide and a row {@code rh} tall from {@code cy}; text centred in the row. */
+	private static void drawCell(GuiGraphicsExtractor g, Font font, Panel.Cell cell, int cx, int cy, int w, int rh, int lh) {
+		int ty = cy + (rh - lh) / 2;
+		int tx = cx;
+		if (cell.icon() instanceof ItemStack stack && !stack.isEmpty()) {
+			smallItem(g, stack, tx, ty);
+			tx += ICON_W;
 		}
-		for (Panel.Line l : side.lines()) {
-			int rightW = l.right().isEmpty() ? 0 : font.width(l.right());
-			g.text(font, fit(font, l.text(), side.width() - (rightW == 0 ? 0 : rightW + COLUMN_GAP)), sx, sy, l.color());
-			if (rightW > 0) g.text(font, l.right(), end - rightW, sy, l.rightColor());
-			sy += lh;
+		int right = cellRightWidth(font, cell);
+		int room = cx + w - tx - (right == 0 ? 0 : right + COLUMN_GAP);
+		g.text(font, fit(font, cell.text(), room), tx, ty, cell.color());
+		if (cell.light() >= 0) {
+			drawLight(g, font, cell.light(), cx + w - LightDisc.SIZE, cy - 1 + (rh - LightDisc.SIZE) / 2);
+		} else if (right > 0) {
+			int rx = cx + w - right;
+			if (cell.rightIcon() instanceof ItemStack stack && !stack.isEmpty()) {
+				smallItem(g, stack, rx, ty);
+				rx += ICON_W;
+			}
+			g.text(font, cell.right(), rx, ty, cell.rightColor());
 		}
 	}
 

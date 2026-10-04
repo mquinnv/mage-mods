@@ -4,11 +4,11 @@ import java.util.List;
 
 /**
  * One small HUD panel: a gold title and coloured lines, drawn at a corner + offset (see {@link HudLayout}), with an
- * optional second column on the right ({@code side}, null = none; the Status panel's armor).
+ * optional {@code grid} under the lines (null = none; the Status panel's info).
  * Pure: no Minecraft/Fabric imports.
  */
-public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int x, int y, Side side) {
-	/** A one-column panel. */
+public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int x, int y, Grid grid) {
+	/** A panel of lines only. */
 	public Panel(String title, List<Line> lines, HudLayout.Corner corner, int x, int y) {
 		this(title, lines, corner, x, y, null);
 	}
@@ -50,46 +50,65 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 	}
 
 	/**
-	 * A second column, {@code width} pixels wide, to the right of a panel's lines past a thin divider (see
-	 * {@link TwoColumn}): {@code slots} as rows of a full-size item with a bar beside it, then {@code lines} under them
-	 * (their {@code text} and {@code right} parts only).
+	 * Cells in aligned columns under a panel's lines, past a thin rule, with a thin divider between the columns (see
+	 * {@link GridLayout}). {@code rows}: each a list of cells, left to right.
 	 */
-	public record Side(int width, List<Slot> slots, List<Line> lines) {}
+	public record Grid(List<List<Cell>> rows) {}
 
 	/**
-	 * One row of a {@link Side}: an item ({@code icon}: an ItemStack; null or empty = an empty slot, drawn dim) and a
-	 * bar beside it filled to {@code fraction} (0..1) in {@code color}; a negative fraction draws no bar.
+	 * One cell of a {@link Grid}: an optional small item ({@code icon}: an ItemStack; null = none) before its
+	 * {@code text}, and pinned to the cell's right edge either a right part (an optional small {@code rightIcon} and
+	 * {@code right}) or a light-level disc ({@code light} 0..15, see {@link LightDisc}; -1 = none).
 	 */
-	public record Slot(Object icon, double fraction, int color) {}
+	public record Cell(Object icon, String text, int color, Object rightIcon, String right, int rightColor, int light) {
+		/** A text and its value at the cell's right edge. */
+		public static Cell split(String text, String right, int color) {
+			return new Cell(null, text, color, null, right, color, -1);
+		}
 
-	/** One item picture ({@code icon}: an ItemStack; null = none) and a few characters, in a row of pieces. */
-	public record Piece(Object icon, String text, int color) {}
+		/** A text with a light-level disc at the cell's right edge ({@code level} clamped to 0..15). */
+		public static Cell disc(String text, int color, int level) {
+			return new Cell(null, text, color, null, "", color, Math.max(0, Math.min(15, level)));
+		}
+	}
+
+	/**
+	 * One item picture ({@code icon}: an ItemStack; null = none) and a few characters, in a row of pieces; with a
+	 * thin {@code wear} bar (0..1, in {@code wearColor}; negative = none) at the foot of its picture, where Minecraft
+	 * draws a durability bar.
+	 */
+	public record Piece(Object icon, String text, int color, double wear, int wearColor) {
+		/** No wear bar. */
+		public Piece(Object icon, String text, int color) {
+			this(icon, text, color, -1, 0);
+		}
+	}
 
 	/**
 	 * A row: an optional short {@code tag} in its own coloured column, the {@code text}, and an optional
-	 * {@code right} part aligned to the panel's right edge (so counts line up in a proportional font), or a light-level
-	 * disc there ({@code light} 0..15, see {@link LightDisc}; -1 = none).
+	 * {@code right} part aligned to the panel's right edge (so counts line up in a proportional font). A {@code loose}
+	 * line takes the width the panel has without widening it, cut with "…" to fit.
 	 */
 	public record Line(String tag, int tagColor, String text, int color, String right, int rightColor, int accent,
-			Object icon, double progress, List<Piece> pieces, double gauge, int light) {
+			Object icon, double progress, List<Piece> pieces, double gauge, boolean loose) {
 		/** No accent bar, no icon, no meter. */
 		public Line(String tag, int tagColor, String text, int color, String right, int rightColor) {
-			this(tag, tagColor, text, color, right, rightColor, 0, null, -1, List.of(), -1, -1);
+			this(tag, tagColor, text, color, right, rightColor, 0, null, -1, List.of(), -1, false);
 		}
 
 		/** This line with a bar in {@code argb} along the panel's left edge (0 = none). */
 		public Line withAccent(int argb) {
-			return new Line(tag, tagColor, text, color, right, rightColor, argb, icon, progress, pieces, gauge, light);
+			return new Line(tag, tagColor, text, color, right, rightColor, argb, icon, progress, pieces, gauge, loose);
 		}
 
 		/** This line with a small item picture before its text ({@code icon}: an ItemStack; null = none). */
 		public Line withIcon(Object icon) {
-			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, progress, pieces, gauge, light);
+			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, progress, pieces, gauge, loose);
 		}
 
 		/** This line with a thin progress meter under it ({@code fraction} 0..1; negative = none). */
 		public Line withProgress(double fraction) {
-			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, fraction, pieces, gauge, light);
+			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, fraction, pieces, gauge, loose);
 		}
 
 		/**
@@ -97,18 +116,17 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 		 * {@code fraction} 0..1; negative = none).
 		 */
 		public Line withGauge(double fraction) {
-			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, progress, pieces, fraction, light);
+			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, progress, pieces, fraction, loose);
 		}
 
-		/** This line with a light-level disc ({@code level} 0..15) pinned to the right edge, in place of a right part. */
-		public Line withLight(int level) {
-			return new Line(tag, tagColor, text, color, "", rightColor, accent, icon, progress, pieces, gauge,
-					Math.max(0, Math.min(15, level)));
+		/** This line not counted in the panel's width: it gets the width the rest makes, cut to fit. */
+		public Line withLoose() {
+			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, progress, pieces, gauge, true);
 		}
 
 		/** A row of small icon + text pieces side by side instead of the text (e.g. the Charms panel's charms). */
 		public static Line pieces(List<Piece> pieces) {
-			return new Line("", 0, "", WHITE, "", WHITE, 0, null, -1, List.copyOf(pieces), -1, -1);
+			return new Line("", 0, "", WHITE, "", WHITE, 0, null, -1, List.copyOf(pieces), -1, false);
 		}
 
 		/** The right part in the text's colour. */

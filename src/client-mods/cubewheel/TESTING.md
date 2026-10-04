@@ -155,9 +155,10 @@ Bind "Refresh trackers" under Options > Controls > Key Binds > CubeWheel first.
 
 ## Status panel
 
-- [ ] One box, two columns: left "X  Y  Z" with "N -Z"/"E +X"…, the biome with a round light disc (black in the dark, yellow in daylight, its number readable), "fps" and "b/s", a grass block before the game time and a globe before the clock.
-- [ ] Right: four armor rows (item + durability bar; a faint square for an empty slot; no bar on unbreakable pieces), then "<Set>  n/4" (green at 4/4) and the set bonus text in at most two lines; yellow "⚠ no set bonus" when too few pieces are worn.
-- [ ] Settings → Status → "Armor set" off: the right column goes. Arrange screen: the Status panel drags by its whole box.
+- [ ] Top row: helmet, chestplate, leggings, boots, a dot, the main- and off-hand items (empty slots left out), then "<Set> n/4" (count green at 4/4). Under it the set bonus on one line, cut with "…"; yellow "⚠ no set bonus" when too few pieces are worn; no second row for plain armor.
+- [ ] A damaged breakable piece or tool under 25% durability shows Minecraft's thin bar on its icon (yellow, red under 10%); ManaCube "Unbreakable" gear never does.
+- [ ] Under a thin rule, a 2×2 grid: "X Y Z  E +X" | biome with the light disc / "fps  b/s" | grass-block game time and globe clock. The columns line up, and walking around (digits changing) does not make the box or the panels below it twitch.
+- [ ] Settings → Status → "Armor set" off: only the grid stays. Arrange screen: the Status panel drags by its whole box.
 
 ## Live estimates (local counting)
 

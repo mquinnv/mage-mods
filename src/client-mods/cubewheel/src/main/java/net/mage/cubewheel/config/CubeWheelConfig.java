@@ -46,7 +46,7 @@ public final class CubeWheelConfig {
 
 	public static final class Status {
 		public boolean enabled = true;
-		/** Show the armor column: each piece with its durability, the worn set ("Phoenix 4/4") and its set bonus. */
+		/** Show the gear row: armor and held items, the worn set ("Phoenix 4/4") and its set bonus. */
 		public boolean armor = true;
 		/** Top left; registered first, so the Jobs and Tracker panels stack under it. */
 		public Position position = DefaultConfig.statusPosition();

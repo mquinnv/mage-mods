@@ -126,7 +126,8 @@ public final class SettingsSpec {
 										"Show the Status panel: armor set, coordinates, biome, light, FPS, speed and time.",
 										c -> c.status.enabled, (c, v) -> c.status.enabled = v),
 								toggle(d, "status.armor", "Armor set",
-										"Show the armor column: each piece with its durability, the worn set (\"Phoenix 4/4\") and its set bonus.",
+										"Show the gear row: armor and held items (a bar on a piece wearing out), the worn set (\"Phoenix 4/4\") and its"
+												+ " set bonus.",
 										c -> c.status.armor, (c, v) -> c.status.armor = v))),
 						new Group("Events", List.of(
 								toggle(d, "events.hudVisible", "Show panel",

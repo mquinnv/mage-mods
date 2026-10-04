@@ -4,7 +4,6 @@ import net.mage.cubewheel.CubeWheelClient;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.hud.HudLayout;
 import net.mage.cubewheel.hud.Panel;
-import net.mage.cubewheel.hud.TwoColumn;
 import net.mage.cubewheel.wheel.Icons;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -12,7 +11,6 @@ import java.util.List;
 import java.util.Optional;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -22,50 +20,40 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemLore;
 
 /**
- * The "Status" panel (top left, above Jobs), one box in two columns. Left: coordinates and facing ("123  64  -456
- * E +X"), biome and a light-level disc, FPS and speed, game time and the real clock behind their item icons. Right,
- * while {@code status.armor}: each armor piece with its durability bar, then the set you wear ("Phoenix 4/4") and
- * what its set bonus does (or "⚠ no set bonus" when too few pieces are worn). Drawn by
- * {@link net.mage.cubewheel.hud.PanelsHud} in CubeWheel's style; replaces SimpleHUD Enhanced's status text and
- * equipment display. Shown wherever you play while {@code status.enabled}.
+ * The "Status" panel (top left, above Jobs). While {@code status.armor}: a gear row (the armor pieces, a dot, the
+ * main- and off-hand items, then the set you wear, "Phoenix 4/4") and under it what the set bonus does, or
+ * "⚠ no set bonus" when too few pieces are worn. A piece wearing out gets Minecraft's thin durability bar on its
+ * icon. Then, past a rule, a 2×2 grid: coordinates and facing | biome and a light-level disc / FPS and speed | game
+ * time and the real clock behind their item icons. Drawn by {@link net.mage.cubewheel.hud.PanelsHud} in CubeWheel's
+ * style; replaces SimpleHUD Enhanced's status text and equipment display. Shown wherever you play while
+ * {@code status.enabled}.
  */
 public final class StatusPanel {
 	private static final EquipmentSlot[] ARMOR = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
+	/** The gear row's slots: the armor, then main and off hand. */
+	private static final EquipmentSlot[] GEAR = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET,
+			EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND};
 	private static final int GREY = 0xFFAAAAAA;
 	/** A set bonus that is not on (fewer pieces than a full set, no requirement stated). */
 	private static final int DIM = 0xFF707070;
-	/** An armor row: the full-size item, a gap, and at least this much bar. */
-	private static final int SLOT_ROW_W = 18 + 30;
-	/** Space between the set's name and its count. */
-	private static final int COUNT_GAP = 4;
-	/** The set bonus gets at most this many lines under the set's name. */
-	private static final int BONUS_LINES = 2;
 
 	/** Replaces the set bonus when the lore's bonus needs more pieces than are worn. */
 	private static final String NO_BONUS = "⚠ no set bonus";
+	/** Between the armor and the held items. The leading space evens the gap after the item icons. */
+	private static final String DOT = " ·";
 	private static final String GAME_TIME_ICON = "minecraft:grass_block";
 	/** Minecraft's globe. */
 	private static final String CLOCK_ICON = "minecraft:globe_banner_pattern";
 
 	/**
-	 * The armor items {@link #set} and {@link #sideLines} were made from, by identity: the server sends a new stack
-	 * when a piece changes, so lore is parsed only then, not every frame.
+	 * The armor items {@link #set} was made from, by identity: the server sends a new stack when a piece changes, so
+	 * lore is parsed only then, not every frame.
 	 */
 	private static final Object[] worn = new Object[ARMOR.length];
 	private static ArmorSet set = ArmorSet.NONE;
-	private static boolean unbreakable(ItemStack s) {
-		if (s.has(DataComponents.UNBREAKABLE)) return true;
-		ItemLore lore = s.get(DataComponents.LORE);
-		if (lore == null) return false;
-		for (Component c : lore.lines()) {
-			if (c.getString().replaceAll("§.", "").toLowerCase(java.util.Locale.ROOT).contains("unbreakable")) return true;
-		}
-		return false;
-	}
-
-	/** The armor column's width and text lines for {@link #set}; null until made for it. */
-	private static List<Panel.Line> sideLines;
-	private static int sideWidth;
+	/** Per {@link #GEAR} slot: the item last checked for "Unbreakable" (by identity), and the answer. */
+	private static final Object[] checked = new Object[GEAR.length];
+	private static final boolean[] unbreakable = new boolean[GEAR.length];
 
 	private static double lastX, lastZ;
 	private static boolean hasLast;
@@ -96,20 +84,20 @@ public final class StatusPanel {
 		Minecraft mc = Minecraft.getInstance();
 		LocalPlayer p = mc.player;
 		if (!cfg.status.enabled || p == null || mc.level == null) return Optional.empty();
-		List<Panel.Line> lines = new ArrayList<>();
+		List<Panel.Line> lines = new ArrayList<>(2);
+		if (cfg.status.armor) gear(p, lines);
 		BlockPos pos = p.blockPosition();
-		lines.add(Panel.Line.split(StatusFormat.coords(pos.getX(), pos.getY(), pos.getZ()),
-				StatusFormat.facing(p.getDirection().getName()), Panel.WHITE));
 		String biome = mc.level.getBiome(pos).unwrapKey().map(k -> StatusFormat.biome(k.identifier().toString())).orElse("");
-		lines.add(new Panel.Line(biome, Panel.WHITE).withLight(mc.level.getMaxLocalRawBrightness(pos)));
-		lines.add(Panel.Line.split(mc.getFps() + " fps", StatusFormat.speed(speed), Panel.WHITE));
 		LocalTime clock = LocalTime.now();
-		lines.add(Panel.Line.pieces(List.of(
-				new Panel.Piece(Icons.stack(GAME_TIME_ICON), StatusFormat.gameTime(mc.level.getOverworldClockTime()), GREY),
-				new Panel.Piece(Icons.stack(CLOCK_ICON), StatusFormat.clock(clock.getHour(), clock.getMinute()), GREY))));
-		Panel.Side side = cfg.status.armor ? armor(p, mc.font) : null;
+		Panel.Grid grid = new Panel.Grid(List.of(
+				List.of(Panel.Cell.split(StatusFormat.coords(pos.getX(), pos.getY(), pos.getZ()),
+								StatusFormat.facing(p.getDirection().getName()), Panel.WHITE),
+						Panel.Cell.disc(biome, Panel.WHITE, mc.level.getMaxLocalRawBrightness(pos))),
+				List.of(Panel.Cell.split(mc.getFps() + " fps", StatusFormat.speed(speed), Panel.WHITE),
+						new Panel.Cell(Icons.stack(GAME_TIME_ICON), StatusFormat.gameTime(mc.level.getOverworldClockTime()), GREY,
+								Icons.stack(CLOCK_ICON), StatusFormat.clock(clock.getHour(), clock.getMinute()), GREY, -1))));
 		CubeWheelConfig.Position at = cfg.status.position;
-		return Optional.of(new Panel("Status", lines, HudLayout.Corner.parse(at.corner), at.x, at.y, side));
+		return Optional.of(new Panel("Status", lines, HudLayout.Corner.parse(at.corner), at.x, at.y, grid));
 	}
 
 	/**
@@ -125,10 +113,7 @@ public final class StatusPanel {
 				changed = true;
 			}
 		}
-		if (changed) {
-			set = readSet(p);
-			sideLines = null;
-		}
+		if (changed) set = readSet(p);
 		return set;
 	}
 
@@ -143,54 +128,62 @@ public final class StatusPanel {
 				continue;
 			}
 			names.add(s.getHoverName().getString());
-			ItemLore lore = s.get(DataComponents.LORE);
-			lores.add(lore == null ? List.of() : lore.lines().stream().map(Component::getString).toList());
+			lores.add(lore(s));
 		}
 		return ArmorSet.of(names, lores);
 	}
 
-	/**
-	 * The right column: head to feet, each piece, with a durability bar only while it wears out (yellow under 25%, red
-	 * under 10%; never for an unbreakable piece), then "Phoenix  4/4" (the count green at 4/4) and the set bonus, word-wrapped to the column.
-	 */
-	private static Panel.Side armor(LocalPlayer p, Font font) {
-		List<Panel.Slot> slots = new ArrayList<>(4);
-		for (EquipmentSlot slot : ARMOR) {
-			ItemStack s = p.getItemBySlot(slot);
-			if (s.isEmpty()) {
-				slots.add(new Panel.Slot(null, -1, 0));
-				continue;
-			}
-			double left = s.isDamageableItem() && s.getMaxDamage() > 0 ? 1 - s.getDamageValue() / (double) s.getMaxDamage() : -1;
-			// A bar only as a warning: a piece wearing out (under 25%), never a ManaCube "Unbreakable" one, which says
-			// so in its lore while still reporting durability (Michael 2026-10-04).
-			if (left >= StatusFormat.WEAR_LOW || unbreakable(s)) left = -1;
-			slots.add(new Panel.Slot(s, left, left < 0 ? 0 : StatusFormat.wearColor(left)));
-		}
-		ArmorSet set = armorSet(p);
-		if (sideLines == null) sideText(set, font);
-		return new Panel.Side(sideWidth, slots, sideLines);
+	private static List<String> lore(ItemStack s) {
+		ItemLore lore = s.get(DataComponents.LORE);
+		return lore == null ? List.of() : lore.lines().stream().map(Component::getString).toList();
 	}
 
-	/** The armor column's width and its text lines for {@code set}: made once per change of armor. */
-	private static void sideText(ArmorSet set, Font font) {
-		boolean unmet = set.bonusUnmet();
-		// The bonus is on when the stated requirement is met; with none stated ("FULL SET EFFECTS"), at a full set.
-		boolean on = set.required() > 0 ? !unmet : set.matching() == 4;
-		String count = set.worn() == 0 ? "" : set.count();
-		int natural = Math.max(SLOT_ROW_W, font.width(set.name()) + (count.isEmpty() ? 0 : COUNT_GAP + font.width(count)));
-		if (unmet) natural = Math.max(natural, font.width(NO_BONUS));
-		else natural = Math.max(natural, Math.min(TwoColumn.SIDE_MAX_W, font.width(set.bonus())));
-		int width = TwoColumn.sideWidth(natural);
-		List<Panel.Line> lines = new ArrayList<>();
-		lines.add(new Panel.Line("", 0, set.name(), set.worn() == 0 ? GREY : unmet ? Panel.YELLOW : Panel.WHITE, count,
-				set.matching() == 4 ? Panel.GREEN : unmet ? Panel.YELLOW : Panel.WHITE));
-		if (unmet) {
-			lines.add(new Panel.Line(NO_BONUS, Panel.YELLOW));
-		} else {
-			for (String l : TwoColumn.wrap(set.bonus(), width, font::width, BONUS_LINES)) lines.add(new Panel.Line(l, on ? GREY : DIM));
+	/**
+	 * The gear row and the set bonus row. Empty slots are left out; the dot only sits between armor and held items.
+	 * The set's name and count follow (the count green at 4/4, both yellow when the bonus is not met); with no armor
+	 * and nothing held, "No armor".
+	 */
+	private static void gear(LocalPlayer p, List<Panel.Line> lines) {
+		List<Panel.Piece> strip = new ArrayList<>(9);
+		boolean armor = false, dotted = false;
+		for (int i = 0; i < GEAR.length; i++) {
+			ItemStack s = p.getItemBySlot(GEAR[i]);
+			if (s.isEmpty()) continue;
+			if (i < ARMOR.length) {
+				armor = true;
+			} else if (armor && !dotted) {
+				strip.add(new Panel.Piece(null, DOT, GREY));
+				dotted = true;
+			}
+			strip.add(piece(i, s));
 		}
-		sideWidth = width;
-		sideLines = List.copyOf(lines);
+		ArmorSet set = armorSet(p);
+		boolean unmet = set.bonusUnmet();
+		if (set.worn() > 0) {
+			// A leading space evens the gap after the item icons, which sit tight.
+			strip.add(new Panel.Piece(null, " " + set.name(), unmet ? Panel.YELLOW : Panel.WHITE));
+			strip.add(new Panel.Piece(null, set.count(), set.matching() == 4 ? Panel.GREEN : unmet ? Panel.YELLOW : Panel.WHITE));
+		} else if (strip.isEmpty()) {
+			strip.add(new Panel.Piece(null, set.name(), GREY));
+		}
+		lines.add(Panel.Line.pieces(strip));
+		if (unmet) {
+			lines.add(new Panel.Line(NO_BONUS, Panel.YELLOW).withLoose());
+		} else if (!set.bonus().isEmpty()) {
+			// The bonus is on when the stated requirement is met; with none stated, at a full set.
+			boolean on = set.required() > 0 || set.matching() == 4;
+			lines.add(new Panel.Line(set.bonus(), on ? GREY : DIM).withLoose());
+		}
+	}
+
+	/** An item of the gear row, with a wear bar only while it wears out (see {@link StatusFormat#wear}). */
+	private static Panel.Piece piece(int slot, ItemStack s) {
+		if (s != checked[slot]) {
+			checked[slot] = s;
+			unbreakable[slot] = s.has(DataComponents.UNBREAKABLE) || StatusFormat.unbreakableLore(lore(s));
+		}
+		double left = s.isDamageableItem() && s.getMaxDamage() > 0 ? 1 - s.getDamageValue() / (double) s.getMaxDamage() : -1;
+		double wear = StatusFormat.wear(left, unbreakable[slot]);
+		return new Panel.Piece(s, "", Panel.WHITE, wear, wear < 0 ? 0 : StatusFormat.wearColor(wear));
 	}
 }

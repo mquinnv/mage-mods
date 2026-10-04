@@ -215,4 +215,21 @@ class StatusTest {
 				Arrays.asList(List.of(), List.of(), MOREND_LEGGINGS, List.of()));
 		assertFalse(full.bonusUnmet());
 	}
+
+	@Test void aWearBarOnlyWhileWearingOutAndNeverWhenUnbreakable() {
+		assertEquals(-1, StatusFormat.wear(1.0, false));
+		assertEquals(-1, StatusFormat.wear(StatusFormat.WEAR_LOW, false));
+		assertEquals(0.2, StatusFormat.wear(0.2, false), 1e-9);
+		assertEquals(0.0, StatusFormat.wear(0.0, false), 1e-9);
+		assertEquals(-1, StatusFormat.wear(0.05, true));
+		assertEquals(-1, StatusFormat.wear(-1, false)); // takes no damage
+	}
+
+	@Test void unbreakableFromTheLore() {
+		// Snowy Helmet's and the Season 10 Challenge Sword's lore (cubewheel-captures 2026-10-01).
+		assertTrue(StatusFormat.unbreakableLore(SNOWY_HELMET));
+		assertTrue(StatusFormat.unbreakableLore(List.of("Mob Kills: 30", "○ Stasis III", "§7Unbreakable", "Season 10 Challenge Sword")));
+		assertFalse(StatusFormat.unbreakableLore(DRAGON_BOOTS));
+		assertFalse(StatusFormat.unbreakableLore(null));
+	}
 }

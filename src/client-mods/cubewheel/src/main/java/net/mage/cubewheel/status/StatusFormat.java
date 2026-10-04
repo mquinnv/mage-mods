@@ -61,11 +61,29 @@ public final class StatusFormat {
 		return String.format(Locale.ROOT, "%.1f b/s", Math.max(0, blocksPerSecond));
 	}
 
-	/** A durability bar's colour for the fraction {@code remaining}: red under 10%, yellow under 25%, else green. */
 	/** Below this fraction of durability left a piece is wearing out (yellow; its bar shows). */
 	public static final double WEAR_LOW = 0.25;
 
+	/** A durability bar's colour for the fraction {@code remaining}: red under 10%, yellow under 25%, else green. */
 	public static int wearColor(double remaining) {
 		return remaining < 0.10 ? WORN_OUT : remaining < WEAR_LOW ? WORN_LOW : WORN_OK;
+	}
+
+	/**
+	 * The wear bar for an item with {@code remaining} durability (0..1; negative = it takes no damage): shown only as
+	 * a warning, while it wears out (under {@link #WEAR_LOW}), and never for an unbreakable item, which ManaCube
+	 * gear says in its lore while still reporting durability (Michael 2026-10-04). Negative = no bar.
+	 */
+	public static double wear(double remaining, boolean unbreakable) {
+		return remaining < 0 || remaining >= WEAR_LOW || unbreakable ? -1 : remaining;
+	}
+
+	/** True when a lore line says "Unbreakable" (formatting codes ignored), as ManaCube gear does. */
+	public static boolean unbreakableLore(java.util.List<String> lore) {
+		if (lore == null) return false;
+		for (String line : lore) {
+			if (line != null && line.replaceAll("§.", "").toLowerCase(Locale.ROOT).contains("unbreakable")) return true;
+		}
+		return false;
 	}
 }
