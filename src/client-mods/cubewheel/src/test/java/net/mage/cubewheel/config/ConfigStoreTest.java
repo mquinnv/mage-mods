@@ -377,4 +377,53 @@ class ConfigStoreTest {
 		assertEquals("bottom_right", s.current().tracker.position.corner);
 		assertEquals(10, s.current().tracker.position.y);
 	}
+
+	@Test void copyOfIsEqualButIndependent() {
+		CubeWheelConfig orig = DefaultConfig.create();
+		CubeWheelConfig copy = ConfigStore.copyOf(orig);
+		assertNotSame(orig, copy);
+		com.google.gson.Gson g = new com.google.gson.Gson();
+		assertEquals(g.toJson(orig), g.toJson(copy));
+		String label = orig.wheel.get(0).label;
+		int x = orig.events.position.x;
+		copy.wheel.get(0).label = "Changed";
+		copy.events.position.x = x + 7;
+		assertEquals(label, orig.wheel.get(0).label);
+		assertEquals(x, orig.events.position.x);
+	}
+
+	@Test void applyNormalizesSwapsSavesAndReturnsWarnings() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		CubeWheelConfig draft = ConfigStore.copyOf(s.current());
+		draft.configVersion = 1;
+		draft.listThreshold = 99;
+		draft.events.bossWarps.put("(unclosed", "/warp x");
+		List<String> warnings = s.apply(draft);
+		assertEquals(1, warnings.size());
+		assertSame(draft, s.current());
+		assertEquals(16, s.current().listThreshold);
+		assertEquals(DefaultConfig.CONFIG_VERSION, s.current().configVersion);
+		assertTrue(s.lastLoadOk());
+		ConfigStore again = new ConfigStore(f);
+		assertNull(again.reload());
+		assertEquals(16, again.current().listThreshold);
+		assertEquals(List.of(), s.apply(ConfigStore.copyOf(s.current())));
+	}
+
+	@Test void applyOverwritesABrokenFile() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{ not json");
+		ConfigStore s = new ConfigStore(f);
+		assertNotNull(s.reload());
+		assertFalse(s.lastLoadOk());
+		CubeWheelConfig draft = DefaultConfig.create();
+		draft.vaultCount = 12;
+		s.apply(draft);
+		assertTrue(s.lastLoadOk());
+		ConfigStore again = new ConfigStore(f);
+		assertNull(again.reload());
+		assertEquals(12, again.current().vaultCount);
+	}
 }

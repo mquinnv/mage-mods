@@ -2,7 +2,7 @@ package net.mage.cubewheel.events;
 
 import net.mage.cubewheel.CubeWheelClient;
 import net.mage.cubewheel.ServerGate;
-import net.mage.cubewheel.config.ConfigStore;
+import net.mage.cubewheel.config.ConfigNormalizer;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.hud.Durations;
 import net.mage.cubewheel.hud.HudLayout;
@@ -64,10 +64,10 @@ public final class EventHud {
 
 	private static void rebuild(CubeWheelConfig cfg) {
 		List<EventTimer.Def> defs = new ArrayList<>();
-		ZoneId fallback = ConfigStore.zone(cfg.events.timezone);
+		ZoneId fallback = ConfigNormalizer.zone(cfg.events.timezone);
 		for (CubeWheelConfig.EventDef d : cfg.events.schedule) {
 			if (!d.enabled) continue;
-			ZoneId zone = d.timezone == null || d.timezone.isBlank() ? fallback : ConfigStore.zone(d.timezone);
+			ZoneId zone = d.timezone == null || d.timezone.isBlank() ? fallback : ConfigNormalizer.zone(d.timezone);
 			if (zone == null) continue;
 			try {
 				defs.add(new EventTimer.Def(d.name, EventSchedule.parse(d.when), zone));
