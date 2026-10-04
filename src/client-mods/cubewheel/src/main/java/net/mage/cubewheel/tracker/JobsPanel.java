@@ -43,8 +43,9 @@ public final class JobsPanel {
 		// Only the industry of the tool in hand; a non-tool keeps whichever it last showed.
 		net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
 		if (player != null) {
-			String held = ToolIndustry.of(net.minecraft.core.registries.BuiltInRegistries.ITEM
-					.getKey(player.getMainHandItem().getItem()).toString());
+			var hand = player.getMainHandItem();
+			String held = ToolIndustry.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(hand.getItem()).toString(),
+					hand.getHoverName().getString());
 			if (held != null) focused = held;
 		}
 		m = JobsPanelModel.focus(m, focused);

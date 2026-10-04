@@ -19,6 +19,18 @@ class ToolIndustryTest {
 		assertEquals("Fishing", ToolIndustry.of("minecraft:fishing_rod"));
 	}
 
+	/** The Phoenix Staff is a netherite hoe underneath but a weapon (Michael 2026-10-03): magic weapons are Hunting. */
+	@Test void magicWeaponsBuiltOnToolsAreHunting() {
+		assertEquals("Hunting", ToolIndustry.of("minecraft:netherite_hoe", "PHOENIX STAFF OF THE SUN"));
+		assertEquals("Hunting", ToolIndustry.of("minecraft:diamond_hoe", "§6Frost Wand"));
+		assertEquals("Hunting", ToolIndustry.of("minecraft:golden_shovel", "Storm Scepter"));
+		assertEquals("Hunting", ToolIndustry.of("minecraft:iron_pickaxe", "Plasma Blaster"));
+		assertEquals("Farming", ToolIndustry.of("minecraft:netherite_hoe", "RELIC HOE"));
+		assertEquals("Mining", ToolIndustry.of("minecraft:diamond_pickaxe", "Silky"));
+		assertEquals("Farming", ToolIndustry.of("minecraft:netherite_hoe", null));
+		assertNull(ToolIndustry.of("minecraft:torch", "Staff of Light")); // only tools and weapons change the panel
+	}
+
 	@Test void anythingElseLeavesThePanelAlone() {
 		assertNull(ToolIndustry.of("minecraft:torch"));
 		assertNull(ToolIndustry.of("minecraft:air"));
