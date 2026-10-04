@@ -65,6 +65,20 @@ class WheelEditsTest {
 		assertEquals(Kind.LIVE_RING, rows.get(2).kind());
 	}
 
+	@Test void aNodeWithBothAnArcAndChildrenListsTheArcFirst() {
+		WheelNode ring = WheelNode.ring("R", null, WheelNode.leaf("C0", null, "/c0"), WheelNode.leaf("C1", null, "/c1"));
+		ring.arc = new ArrayList<>(List.of(WheelNode.leaf("A0", null, "/a0"), WheelNode.leaf("A1", null, "/a1")));
+		WheelNode live = WheelNode.dynamic("V", null, "vaults", WheelNode.leaf("X", null, "/x"));
+		live.arc = new ArrayList<>(List.of(WheelNode.leaf("LA", null, "/la")));
+		List<Row> rows = WheelEdits.rows(new ArrayList<>(List.of(ring, live)));
+		assertEquals(List.of("R", "A0", "A1", "C0", "C1", "V", "LA", "X"), rows.stream().map(r -> r.node().label).toList());
+		assertEquals(List.of(Kind.RING, Kind.ARC_ENTRY, Kind.ARC_ENTRY, Kind.LEAF, Kind.LEAF, Kind.LIVE_RING, Kind.ARC_ENTRY, Kind.LEAF),
+			rows.stream().map(Row::kind).toList());
+		assertEquals(List.of(0, 1, 1, 1, 1, 0, 1, 1), rows.stream().map(Row::depth).toList());
+		assertEquals(Path.top(0).arcEntry(1), rows.get(2).path());
+		assertEquals(Path.top(0).child(0), rows.get(3).path());
+	}
+
 	@Test void aLiveRingListsItsExtrasAndARingItsChildren() {
 		List<Row> rows = WheelEdits.rows(wheel());
 		Row party = rows.stream().filter(r -> r.path().equals(VAULTS.child(0))).findFirst().orElseThrow();
