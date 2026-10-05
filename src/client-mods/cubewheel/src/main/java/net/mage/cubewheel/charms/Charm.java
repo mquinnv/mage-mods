@@ -37,7 +37,8 @@ public record Charm(Kind kind, String icon, String text) {
 			if (effect == null && e.find()) effect = e.group(1).trim();
 		}
 		String text = all.toString().toLowerCase(Locale.ROOT);
-		if (n.contains("talisman")) return Optional.of(talisman(text, all.toString()));
+		// The name says what it sells as often as the lore does ("Slayer Talisman").
+		if (n.contains("talisman")) return Optional.of(talisman(n + " " + text, all.toString()));
 		if (n.contains("amulet") || n.contains("pendant") || text.contains("equip a pendant")) {
 			return Optional.of(amulet(text, effect));
 		}
@@ -49,7 +50,8 @@ public record Charm(Kind kind, String icon, String text) {
 		String icon = lower.contains("soul") ? "minecraft:soul_lantern"
 				: lower.contains("crop") || lower.contains("harvest") || lower.contains("farm") ? "minecraft:wheat"
 				: lower.contains("fish") ? "minecraft:cod"
-				: lower.contains("mob") || lower.contains("drop") || lower.contains("loot") || lower.contains("hunt") ? "minecraft:zombie_head"
+				: lower.contains("mob") || lower.contains("drop") || lower.contains("loot") || lower.contains("hunt")
+						|| lower.contains("slay") || lower.contains("kill") || lower.contains("monster") ? "minecraft:zombie_head"
 				: "minecraft:emerald";
 		Matcher m = EARNED.matcher(raw);
 		String earned = m.find() ? money(Double.parseDouble(m.group(1).replace(",", ""))) : "";
@@ -76,7 +78,19 @@ public record Charm(Kind kind, String icon, String text) {
 		return String.valueOf((long) v);
 	}
 
+	private static final String SMALL_CAPS = "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ";
+
+	/** Formatting codes dropped and ManaCube's small-caps letters ("ᴍᴏʙ ᴅʀᴏᴘꜱ") folded to plain ones. */
 	private static String clean(String s) {
-		return s == null ? "" : FORMATTING.matcher(s).replaceAll("").trim();
+		if (s == null) return "";
+		String t = FORMATTING.matcher(s).replaceAll("").trim();
+		StringBuilder b = null;
+		for (int i = 0; i < t.length(); i++) {
+			int k = SMALL_CAPS.indexOf(t.charAt(i));
+			if (k < 0) continue;
+			if (b == null) b = new StringBuilder(t);
+			b.setCharAt(i, (char) ('a' + k));
+		}
+		return b == null ? t : b.toString();
 	}
 }

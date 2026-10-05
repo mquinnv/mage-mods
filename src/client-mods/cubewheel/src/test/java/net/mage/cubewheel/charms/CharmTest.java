@@ -32,6 +32,14 @@ class CharmTest {
 		assertEquals("invis", mermaid.text());
 	}
 
+	/** A mob-drop talisman showed the emerald fallback (Michael 2026-10-04): match its name and small-caps lore too. */
+	@Test void mobDropTalismansShowAMobWhateverTheWording() {
+		assertEquals("minecraft:zombie_head", parse("Slayer Talisman", "Automatically sells your loot items").icon());
+		assertEquals("minecraft:zombie_head", parse("Mob Drop Talisman", "Automatically sells items").icon());
+		assertEquals("minecraft:zombie_head", parse("ᴛᴀʟɪꜱᴍᴀɴ", "Automatically sells ᴍᴏʙ ᴅʀᴏᴘꜱ").icon());
+		assertEquals("minecraft:zombie_head", parse("Talisman", "Sells what monsters drop when killed").icon());
+	}
+
 	@Test void sellingTalismansAreDollarAndWhatTheySell() {
 		Charm farm = parse("FARMING TALISMAN", "Farming Talisman", "", "Automatically sells harvested crops",
 				"Total items sold: 48,631", "Total earned: $217,633.69", "");
