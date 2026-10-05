@@ -112,4 +112,21 @@ class BackgroundSaverTest {
 		read.load();
 		assertEquals(2, read.all().size());
 	}
+
+	@Test void aSaveThatCannotBeQueuedDoesNotBlockLaterOnes() throws Exception {
+		Path file = dir.resolve("t.json");
+		AtomicInteger calls = new AtomicInteger();
+		Manual bg = new Manual();
+		Executor flaky = r -> {
+			if (calls.incrementAndGet() == 1) throw new java.util.concurrent.RejectedExecutionException("shut down");
+			bg.execute(r);
+		};
+		BackgroundSaver s = new BackgroundSaver(file, "test", flaky);
+		s.saveLater(() -> "lost");
+		assertFalse(s.pending()); // cleared, not stuck
+		s.saveLater(() -> "later");
+		assertEquals(1, bg.tasks.size());
+		bg.runAll();
+		assertEquals("later", Files.readString(file));
+	}
 }

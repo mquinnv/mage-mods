@@ -163,7 +163,10 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, mc) -> {
 			sidebar.flush();
 			flushTrackerSaves();
+			capture.flush(); // capture lines still buffered on the IO thread
 		});
+		// A crash or kill skips CLIENT_STOPPING: still write what capture has buffered, waiting a bounded time.
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> capture.flush(2_000), "CubeWheel capture flush"));
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> {
 			sidebar.flush();
 			flushTrackerSaves();
@@ -234,9 +237,13 @@ public final class CubeWheelClient implements ClientModInitializer {
 		}
 		try {
 			pollHudCapture(mc);
-			capture.tick(System.currentTimeMillis()); // flushes captured lines about once a second
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] action-bar/boss-bar capture failed", e);
+		}
+		try {
+			capture.tick(System.currentTimeMillis()); // flushes captured lines about once a second
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] capture flush tick failed", e);
 		}
 		try {
 			if (pressed(Keybinds.refresh)) RefreshController.request(mc, false);

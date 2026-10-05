@@ -382,9 +382,14 @@ public final class CaptureLog {
 
 	/** Writes every line handed over so far to disk, waiting up to a few seconds for the writing thread (quit). */
 	public void flush() {
+		flush(5_000);
+	}
+
+	/** As {@link #flush()}, waiting at most {@code timeoutMs} (a shutdown hook must not hang the exit). */
+	public void flush(long timeoutMs) {
 		if (executor == null) return;
 		try {
-			CompletableFuture.runAsync(this::flushWriter, executor).get(5, TimeUnit.SECONDS);
+			CompletableFuture.runAsync(this::flushWriter, executor).get(timeoutMs, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		} catch (ExecutionException | TimeoutException | RuntimeException e) {

@@ -64,8 +64,21 @@ public final class BackgroundSaver {
 	 */
 	public void saveLater(Supplier<String> content) {
 		Pending p = new Pending(seq.incrementAndGet(), content);
-		if (pending.getAndSet(p) == null) executor.execute(this::drain);
+		if (pending.getAndSet(p) != null) return; // a queued task will write this one
+		try {
+			executor.execute(this::drain);
+		} catch (RuntimeException e) {
+			// Not queued: clear the slot so the next save queues again (and flush/saveNow still see this one if kept).
+			pending.compareAndSet(p, null);
+			if (!scheduleFailureLogged) {
+				scheduleFailureLogged = true;
+				LOG.warn("[cubewheel] could not queue a save of {}: {}", what, e.toString());
+			}
+		}
 	}
+
+	/** A failure to queue a save is logged once, not on every save. */
+	private volatile boolean scheduleFailureLogged;
 
 	/** Writes {@code content} now, on this thread; a save still waiting (older) is dropped. False if it failed. */
 	public boolean saveNow(String content) {
