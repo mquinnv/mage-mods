@@ -11,6 +11,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import net.mage.cubewheel.tracker.ContainerScanner.ItemView;
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,6 +21,12 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +34,11 @@ import org.slf4j.LoggerFactory;
  * Capture mode: while enabled, appends raw chat messages and container contents as JSON lines to
  * {@code dir/<yyyy-MM-dd>.jsonl} (UTC) so parsers can be tuned against real server output.
  * No Minecraft/Fabric imports; IO errors are logged, never thrown.
+ *
+ * <p>With an {@code executor} (in game: {@link net.mage.cubewheel.io.BackgroundSaver#IO}) lines are serialized and
+ * written on that one thread, to a day file kept open, and flushed at most once a second ({@link #tick}) and on
+ * {@link #flush}; the client thread only builds each line's JSON tree, which nothing touches after. Without one
+ * (tests) each line is written and flushed on the calling thread.
  */
 public final class CaptureLog {
 	private static final Logger LOG = LoggerFactory.getLogger("cubewheel");
@@ -44,6 +56,15 @@ public final class CaptureLog {
 			double distance) {}
 
 	private final Path dir;
+	/** Where lines are written; null = on the calling thread, flushed per line. */
+	private final Executor executor;
+	/** The open day file and its writer: touched only on the writing thread (or under {@link #writeLock}). */
+	private Path openFile;
+	private Writer out;
+	private final Object writeLock = new Object();
+	/** Lines written since the last flush (background mode); set on the writer thread, read by {@link #tick}. */
+	private final AtomicBoolean unflushed = new AtomicBoolean();
+	private long lastFlushAt;
 	private boolean enabled;
 	// Dedupe state, reset whenever capture is switched on so the current state is recorded again.
 	private String lastOverlayChat;
@@ -55,7 +76,13 @@ public final class CaptureLog {
 	private long lastCommandAt;
 
 	public CaptureLog(Path dir) {
+		this(dir, null);
+	}
+
+	/** Writes on {@code executor} (a single thread); null writes on the calling thread. */
+	public CaptureLog(Path dir, Executor executor) {
 		this.dir = dir;
+		this.executor = executor;
 	}
 
 	public Path dir() {
@@ -68,6 +95,7 @@ public final class CaptureLog {
 
 	public void toggle() {
 		enabled = !enabled;
+		if (!enabled) close(); // writes what is buffered and lets the file go
 		lastOverlayChat = null;
 		lastActionBar = null;
 		lastBossBars = List.of();
@@ -201,6 +229,25 @@ public final class CaptureLog {
 		return arr;
 	}
 
+	/**
+	 * As {@link #chat(String, String, boolean, long)} with the component's JSON tree itself (not parsed back from a
+	 * string); it is written as it is and must not be changed afterwards.
+	 */
+	public void chat(JsonElement json, String text, boolean overlay, long now) {
+		if (!enabled) return;
+		if (overlay) {
+			if (Objects.equals(text, lastOverlayChat)) return;
+			lastOverlayChat = text;
+		}
+		JsonObject o = new JsonObject();
+		o.addProperty("t", now);
+		o.addProperty("kind", "chat");
+		if (overlay) o.addProperty("overlay", true);
+		o.add("json", json == null ? JsonNull.INSTANCE : json);
+		o.addProperty("text", text);
+		append(o, now);
+	}
+
 	/** A regular chat game message; see {@link #chat(String, String, boolean, long)}. */
 	public void chat(String json, String text, long now) {
 		chat(json, text, false, now);
@@ -213,17 +260,7 @@ public final class CaptureLog {
 	 */
 	public void chat(String json, String text, boolean overlay, long now) {
 		if (!enabled) return;
-		if (overlay) {
-			if (Objects.equals(text, lastOverlayChat)) return;
-			lastOverlayChat = text;
-		}
-		JsonObject o = new JsonObject();
-		o.addProperty("t", now);
-		o.addProperty("kind", "chat");
-		if (overlay) o.addProperty("overlay", true);
-		o.add("json", parseOrString(json));
-		o.addProperty("text", text);
-		append(o, now);
+		chat(json(json), text, overlay, now);
 	}
 
 	/** Current action-bar text as held by the HUD; written only when it changed. Null (nothing shown yet) is ignored. */
@@ -285,7 +322,8 @@ public final class CaptureLog {
 		append(o, now);
 	}
 
-	private static JsonElement parseOrString(String json) {
+	/** {@code json} as a JSON tree when it parses, else as a string; JSON null for null. */
+	public static JsonElement json(String json) {
 		if (json == null) return JsonNull.INSTANCE;
 		try {
 			return JsonParser.parseString(json);
@@ -296,12 +334,107 @@ public final class CaptureLog {
 
 	private void append(JsonObject line, long now) {
 		Path file = dir.resolve(DAY.format(Instant.ofEpochMilli(now)) + ".jsonl");
+		if (executor == null) {
+			write(file, line, true);
+			return;
+		}
 		try {
-			Files.createDirectories(dir);
-			Files.writeString(file, GSON.toJson(line) + "\n", StandardCharsets.UTF_8,
-					StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-		} catch (IOException | RuntimeException e) {
+			executor.execute(() -> write(file, line, false));
+		} catch (RuntimeException e) {
 			LOG.warn("[cubewheel] capture write to {} failed: {}", file, e.toString());
+		}
+	}
+
+	/** Appends {@code line} to {@code file}, (re)opening the writer when the day changed; flushes if {@code flush}. */
+	private void write(Path file, JsonObject line, boolean flush) {
+		synchronized (writeLock) {
+			try {
+				if (!file.equals(openFile) || out == null) {
+					closeWriter();
+					Files.createDirectories(dir);
+					out = Files.newBufferedWriter(file, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+					openFile = file;
+				}
+				out.write(GSON.toJson(line));
+				out.write('\n');
+				if (flush) out.flush();
+				else unflushed.set(true);
+			} catch (IOException | RuntimeException e) {
+				LOG.warn("[cubewheel] capture write to {} failed: {}", file, e.toString());
+				closeWriter(); // try a fresh writer for the next line
+			}
+		}
+	}
+
+	/**
+	 * Client tick: in background mode, flushes what was written at most once a second, on the writing thread, so the
+	 * file is never more than about a second behind.
+	 */
+	public void tick(long now) {
+		if (executor == null || now - lastFlushAt < 1000 || !unflushed.get()) return;
+		lastFlushAt = now;
+		try {
+			executor.execute(this::flushWriter);
+		} catch (RuntimeException e) {
+			LOG.warn("[cubewheel] capture flush failed: {}", e.toString());
+		}
+	}
+
+	/** Writes every line handed over so far to disk, waiting up to a few seconds for the writing thread (quit). */
+	public void flush() {
+		if (executor == null) return;
+		try {
+			CompletableFuture.runAsync(this::flushWriter, executor).get(5, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		} catch (ExecutionException | TimeoutException | RuntimeException e) {
+			LOG.warn("[cubewheel] capture flush failed: {}", e.toString());
+		}
+	}
+
+	/** Capture switched off: what is buffered goes to disk and the file is closed, on the writing thread. */
+	private void close() {
+		if (executor == null) {
+			synchronized (writeLock) {
+				closeWriter();
+			}
+			return;
+		}
+		try {
+			executor.execute(() -> {
+				synchronized (writeLock) {
+					closeWriter();
+				}
+			});
+		} catch (RuntimeException e) {
+			LOG.warn("[cubewheel] capture close failed: {}", e.toString());
+		}
+	}
+
+	private void flushWriter() {
+		synchronized (writeLock) {
+			unflushed.set(false);
+			if (out == null) return;
+			try {
+				out.flush();
+			} catch (IOException e) {
+				LOG.warn("[cubewheel] capture write to {} failed: {}", openFile, e.toString());
+				closeWriter();
+			}
+		}
+	}
+
+	/** Flushes and closes the open writer, if any (holding {@link #writeLock}). */
+	private void closeWriter() {
+		Writer w = out;
+		out = null;
+		openFile = null;
+		unflushed.set(false);
+		if (w == null) return;
+		try {
+			w.close();
+		} catch (IOException e) {
+			LOG.warn("[cubewheel] capture close failed: {}", e.toString());
 		}
 	}
 }

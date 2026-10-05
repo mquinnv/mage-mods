@@ -97,7 +97,8 @@ public final class CubeWheelClient implements ClientModInitializer {
 		RadialScreen.placeholderPending = () -> homesFetcher.isLoading(System.currentTimeMillis());
 		tracker = new TrackerStore(configDir.resolve("cubewheel-tracker.json"));
 		tracker.load();
-		capture = new CaptureLog(configDir.resolve("cubewheel-captures"));
+		// Written on CubeWheel's IO thread: chat capture never waits for the disk.
+		capture = new CaptureLog(configDir.resolve("cubewheel-captures"), net.mage.cubewheel.io.BackgroundSaver.IO);
 		// Capture listens first and always allows, so it also records the /homes replies the next listener hides.
 		ClientReceiveMessageEvents.ALLOW_GAME.register(CubeWheelClient::captureChat);
 		ClientReceiveMessageEvents.ALLOW_GAME.register(homesFetcher::onGameMessage);
@@ -166,6 +167,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> {
 			sidebar.flush();
 			flushTrackerSaves();
+			capture.flush(); // capture lines still buffered on the IO thread
 		});
 		LOG.info("[cubewheel] initialised");
 	}
@@ -232,6 +234,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		}
 		try {
 			pollHudCapture(mc);
+			capture.tick(System.currentTimeMillis()); // flushes captured lines about once a second
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] action-bar/boss-bar capture failed", e);
 		}
@@ -366,15 +369,17 @@ public final class CubeWheelClient implements ClientModInitializer {
 		capture.bossBars(bars, now);
 	}
 
-	/** The component's JSON form (registry-aware when in a world); falls back to toString(). */
-	private static String componentJson(Component message) {
+	/**
+	 * The component's JSON form (registry-aware when in a world), handed to the capture as it is rather than printed
+	 * and parsed back; falls back to toString() (kept as JSON if it parses, else a string, as before).
+	 */
+	private static JsonElement componentJson(Component message) {
 		Minecraft mc = Minecraft.getInstance();
 		DynamicOps<JsonElement> ops = mc.level != null
 				? mc.level.registryAccess().createSerializationContext(JsonOps.INSTANCE)
 				: JsonOps.INSTANCE;
 		return ComponentSerialization.CODEC.encodeStart(ops, message).result()
-				.map(JsonElement::toString)
-				.orElseGet(message::toString);
+				.orElseGet(() -> CaptureLog.json(message.toString()));
 	}
 
 	private static void handleWheelKey(Minecraft mc) {
