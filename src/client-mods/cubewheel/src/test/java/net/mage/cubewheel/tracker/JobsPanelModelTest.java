@@ -2,6 +2,8 @@ package net.mage.cubewheel.tracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
@@ -145,5 +147,42 @@ class JobsPanelModelTest {
 		List<TrackerRow> rows = s.hudSections(1, false, null, List.of(), Mode.OFF, JobsPanelModel::isJob)
 				.stream().flatMap(sec -> sec.rows().stream()).toList();
 		assertEquals(List.of("pquests:Miner"), TrackerStoreWorldFilterTest.ids(rows)); // and jobs take no line of the cap
+	}
+
+	/** In a mana world every doable listing across all industries is shown (Michael 2026-10-07). */
+	@Test void inWorldDropsOtherWorldRowsAndHeadingsLeftEmpty() {
+		Model all = new Model("Jobs · Crate 4/5", List.of(
+				new Line("", "⚒ Farming", "", Tone.INDUSTRY),
+				new Line("TR", "Acacia Logs", "0/630", Tone.CURRENT),
+				new Line("", "Wheat", "40/200", Tone.NEUTRAL),
+				new Line("", "⚒ Hunting", "", Tone.INDUSTRY),
+				new Line("IH", "Zombie Moose", "58/70", Tone.OTHER_WORLD),
+				new Line("", "⚒ Mining", "", Tone.INDUSTRY),
+				new Line("", "Gold", "23/152", Tone.NEUTRAL),
+				new Line("IH", "Ice Crystals", "0/85", Tone.OTHER_WORLD)));
+		Model in = JobsPanelModel.inWorld(all);
+		assertEquals(List.of("⚒ Farming", "Acacia Logs", "Wheat", "⚒ Mining", "Gold"),
+				in.lines().stream().map(Line::text).toList());
+		assertEquals("Jobs · Crate 4/5", in.title());
+	}
+
+	@Test void inWorldKeepsFinishedRowsForOtherWorlds() {
+		Model all = new Model("Jobs", List.of(
+				new Line("", "⚒ Hunting", "", Tone.INDUSTRY),
+				new Line("SA", "Rattle Snakes", "58/58 ✓", Tone.DONE),
+				new Line("WH", "Wolves", "~20/20 ✓?", Tone.AT_CAP),
+				new Line("IH", "Zombie Moose", "58/70", Tone.OTHER_WORLD)));
+		assertEquals(List.of("⚒ Hunting", "Rattle Snakes", "Wolves"),
+				JobsPanelModel.inWorld(all).lines().stream().map(Line::text).toList());
+	}
+
+	@Test void inWorldShowsEverythingRatherThanNothing() {
+		Model all = new Model("Jobs", List.of(
+				new Line("", "⚒ Hunting", "", Tone.INDUSTRY),
+				new Line("IH", "Zombie Moose", "58/70", Tone.OTHER_WORLD),
+				new Line("", "⚒ Mining", "", Tone.INDUSTRY),
+				new Line("IH", "Ice Crystals", "0/85", Tone.OTHER_WORLD)));
+		assertSame(all, JobsPanelModel.inWorld(all)); // nothing doable here: everything rather than a blank panel
+		assertNull(JobsPanelModel.inWorld(null));
 	}
 }
