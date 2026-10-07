@@ -176,6 +176,35 @@ class ManaCubeMenusTest {
 		assertTrue(store.all().stream().noneMatch(t -> t.name().endsWith("Oak Logs")));
 	}
 
+	/** The Mining listings page, captured 2026-10-01 14:34. */
+	static ItemView miningIndustry(int slot) {
+		return item(slot, "MINING INDUSTRY", "", "Level: 3 120 XP", "Jobs Completed: 7", "Streak: 7");
+	}
+	static final ItemView MINING_BEGINNER = item(12, "Beginner Objective", "Mine 51/245 Coal", "", "Reward",
+			"- 20 Job XP", "", "㎋ Click to complete job");
+	static final ItemView MINING_HEAVY = item(14, "Heavy Objective", "Mine 0/830 resources in Icehaven", "",
+			"Hand In:", "", "Reward", "- 80 Job XP", "", "㎋ Click to complete job");
+	static final ItemView MINING_EXPERIENCED = item(16, "Experienced Objective", "Mine 160/201 Sandara Iron", "",
+			"Reward", "- 40 Job XP", "", "㎋ Click to complete job");
+
+	@Test void listingMissingMidClickIsNotForgotten() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		ContainerScanner.scan("jobs", List.of(miningIndustry(0), MINING_BEGINNER, MINING_HEAVY, MINING_EXPERIENCED), store, 0);
+		String iron = Trackable.idOf("jobs", "Mining Experienced · Mine Sandara Iron");
+		assertTrue(store.addEstimate(iron, 7, 5));
+		// Clicking a listing makes ManaCube re-send the page with that slot empty for a moment (14:34:25 in
+		// the capture): the Experienced tier is simply absent, not replaced, so its entry and estimate stay.
+		assertEquals(0, ContainerScanner.scan("jobs", List.of(miningIndustry(0), MINING_BEGINNER, MINING_HEAVY), store, 1_000));
+		assertEquals(160, find(store, "Mining Experienced · Mine Sandara Iron").current(), 1e-9);
+		assertEquals(7, store.estimate(iron).orElseThrow().count());
+		// A different job in the same tier is a hand-in replacement or a reroll: the old one is forgotten.
+		ItemView crystals = item(16, "Experienced Objective", "Mine 0/85 Icehaven Ice Crystals", "", "Reward",
+				"- 40 Job XP", "", "㎋ Click to complete job");
+		ContainerScanner.scan("jobs", List.of(miningIndustry(0), MINING_BEGINNER, MINING_HEAVY, crystals), store, 2_000);
+		assertTrue(store.all().stream().noneMatch(t -> t.name().endsWith("Sandara Iron")), store.all().toString());
+		assertEquals(85, find(store, "Mining Experienced · Mine Icehaven Ice Crystals").max(), 1e-9);
+	}
+
 	@Test void jobsMainMenuKeepsItsGoldenCrateEntry() {
 		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
 		store.update("jobs", "GOLDEN CRATE", new ProgressExtractor.Progress(4, 5), 0);

@@ -51,6 +51,7 @@ public final class ContainerScanner {
 		String industry = industry(items);
 		boolean listingsPage = false;
 		Set<String> listed = new HashSet<>();
+		Set<String> tiersSeen = new HashSet<>();
 		int updated = 0;
 		for (ItemView item : items) {
 			if (item == null || item.lore() == null) continue;
@@ -71,6 +72,7 @@ public final class ContainerScanner {
 				listingObjective = objective;
 				display = jobListingName(industry, tier.group(1), objective);
 				listed.add(display);
+				tiersSeen.add(titleCase(tier.group(1)));
 				p = ProgressExtractor.extract(List.of(objective));
 			} else {
 				if (PROGRESS_LINE_SOURCES.contains(source) && !MenuClassifier.anyLineStarts(lore, "progress")
@@ -93,11 +95,18 @@ public final class ContainerScanner {
 			if (changed) updated++;
 		}
 		if (listingsPage && industry != null) {
-			// Listings of this industry that are no longer offered were rerolled or completed.
+			// A stored listing of this industry whose tier now shows a different job was rerolled or handed in.
+			// A tier that is simply absent is left alone: clicking a listing (to hand in, or by accident) makes
+			// ManaCube re-send the page with that slot empty for a moment while it processes the click
+			// (capture 2026-10-01 14:34:25), and forgetting on that read dropped the entry and its local
+			// estimate until the next read re-added it at zero.
 			String prefix = industry + " ";
-			updated += store.forgetUnpinned(t -> source.equals(t.source()) && t.name() != null
-					&& t.name().startsWith(prefix) && isJobListingName(t.name().substring(prefix.length()))
-					&& !listed.contains(t.name()));
+			updated += store.forgetUnpinned(t -> {
+				if (!source.equals(t.source()) || t.name() == null || !t.name().startsWith(prefix)) return false;
+				String rest = t.name().substring(prefix.length());
+				return isJobListingName(rest) && tiersSeen.contains(rest.substring(0, rest.indexOf(" · ")))
+						&& !listed.contains(t.name());
+			});
 		}
 		return updated;
 	}
