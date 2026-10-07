@@ -32,12 +32,15 @@ class CharmTest {
 		assertEquals("invis", mermaid.text());
 	}
 
-	/** A mob-drop talisman showed the emerald fallback (Michael 2026-10-04): match its name and small-caps lore too. */
-	@Test void mobDropTalismansShowAMobWhateverTheWording() {
-		assertEquals("minecraft:zombie_head", parse("Slayer Talisman", "Automatically sells your loot items").icon());
-		assertEquals("minecraft:zombie_head", parse("Mob Drop Talisman", "Automatically sells items").icon());
-		assertEquals("minecraft:zombie_head", parse("ᴛᴀʟɪꜱᴍᴀɴ", "Automatically sells ᴍᴏʙ ᴅʀᴏᴘꜱ").icon());
-		assertEquals("minecraft:zombie_head", parse("Talisman", "Sells what monsters drop when killed").icon());
+	/**
+	 * A mob-drop talisman showed the emerald fallback (Michael 2026-10-04): match its name and small-caps lore too.
+	 * Mob drops are a sword, souls a head (Michael 2026-10-07).
+	 */
+	@Test void mobDropTalismansShowASwordWhateverTheWording() {
+		assertEquals("minecraft:iron_sword", parse("Slayer Talisman", "Automatically sells your loot items").icon());
+		assertEquals("minecraft:iron_sword", parse("Mob Drop Talisman", "Automatically sells items").icon());
+		assertEquals("minecraft:iron_sword", parse("ᴛᴀʟɪꜱᴍᴀɴ", "Automatically sells ᴍᴏʙ ᴅʀᴏᴘꜱ").icon());
+		assertEquals("minecraft:iron_sword", parse("Talisman", "Sells what monsters drop when killed").icon());
 	}
 
 	@Test void sellingTalismansAreDollarAndWhatTheySell() {
@@ -50,8 +53,8 @@ class CharmTest {
 		assertEquals("minecraft:cod", fish.icon());
 		assertEquals("$", fish.text());
 		Charm mobs = parse("Hunting Talisman", "Automatically sells mob drops", "Total earned: $1,234,567.00");
-		assertEquals("minecraft:zombie_head", mobs.icon());
-		assertEquals("minecraft:soul_lantern", parse("Soul Talisman", "Automatically sells mob drops for souls").icon());
+		assertEquals("minecraft:iron_sword", mobs.icon());
+		assertEquals("minecraft:player_head", parse("Soul Talisman", "Automatically sells mob drops for souls").icon());
 		assertEquals("$1.2M", mobs.text());
 	}
 

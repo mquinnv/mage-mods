@@ -46,12 +46,13 @@ public record Charm(Kind kind, String icon, String text) {
 	}
 
 	private static Charm talisman(String lower, String raw) {
-		// What it sells, as the thing itself (Michael 2026-10-03: crops, mobs, souls read better than tools).
-		String icon = lower.contains("soul") ? "minecraft:soul_lantern"
+		// Michael 2026-10-07: a head for souls (what you sell), a sword for mob drops (no single item); crops and fish
+		// stay the thing itself.
+		String icon = lower.contains("soul") ? "minecraft:player_head"
 				: lower.contains("crop") || lower.contains("harvest") || lower.contains("farm") ? "minecraft:wheat"
 				: lower.contains("fish") ? "minecraft:cod"
 				: lower.contains("mob") || lower.contains("drop") || lower.contains("loot") || lower.contains("hunt")
-						|| lower.contains("slay") || lower.contains("kill") || lower.contains("monster") ? "minecraft:zombie_head"
+						|| lower.contains("slay") || lower.contains("kill") || lower.contains("monster") ? "minecraft:iron_sword"
 				: "minecraft:emerald";
 		Matcher m = EARNED.matcher(raw);
 		String earned = m.find() ? money(Double.parseDouble(m.group(1).replace(",", ""))) : "";
