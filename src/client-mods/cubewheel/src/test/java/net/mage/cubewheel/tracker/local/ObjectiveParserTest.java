@@ -86,6 +86,11 @@ class ObjectiveParserTest {
 		assertTrue(parse("Harvest 5/0 Cherry Logs").isEmpty());
 	}
 
+	@Test void excavateIsABreak() {
+		// Jobs menu 2026-10-07: "Mining Beginner · Excavate Dirt" lists "Excavate 0/814 Dirt".
+		assertEquals(Optional.of(rule(Kind.BREAK, 814, new Named("dirt"), new AnyWorld())), parse("Excavate 0/814 Dirt"));
+	}
+
 	@Test void harvestOfANonCropFallsBackToBreak() {
 		assertEquals(Optional.of(rule(Kind.BREAK, 10, new Named("oak log"), new AnyWorld())), parse("Harvest 10 Oak Logs"));
 		assertEquals(Optional.of(rule(Kind.HARVEST, 10, new Named("potato"), new AnyWorld())), parse("Harvest 10 Potatoes"));

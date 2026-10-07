@@ -23,7 +23,8 @@ import java.util.regex.Pattern;
  */
 public final class ObjectiveParser {
 	private static final Pattern GRAMMAR = Pattern.compile(
-			"^(?<verb>harvest or mine|harvest|mine|break|chop|dig|gather|kill|slay|slaughter|defeat|catch|fish|shear|milk)"
+			// "Excavate 0/814 Dirt" (jobs menu, 2026-10-07) is a break, like "dig".
+			"^(?<verb>harvest or mine|harvest|mine|break|chop|dig|excavate|gather|kill|slay|slaughter|defeat|catch|fish|shear|milk)"
 			// A /jobs listing embeds its counter: "Harvest 3,127/4,773 Cherry Logs"; the target is the max.
 			+ "\\s+(?:\\d[\\d,]*\\s*/\\s*)?(?<n>\\d[\\d,]*)\\s+(?<noun>.+?)(?:\\s+in\\s+(?<in>.+))?$",
 			Pattern.CASE_INSENSITIVE);
