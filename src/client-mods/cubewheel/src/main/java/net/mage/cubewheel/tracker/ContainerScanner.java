@@ -19,6 +19,16 @@ public final class ContainerScanner {
 	private static final Pattern COUNTER = Pattern.compile(
 			"\\s*(?<![\\d.,])\\d[\\d,]*(?:\\.\\d+)?[kKmM]?\\s*/\\s*\\d[\\d,]*(?:\\.\\d+)?[kKmM]?(?![A-Za-z\\d])");
 
+	/**
+	 * Sources whose items are tracked only when they say "Progress: …" (or are marked complete). Quest menus
+	 * are recognised by one item's lore mentioning a quest with a Progress line, so an unrelated menu can be
+	 * tagged as one: the auction house was (Michael, 2026-10-07), and every listing with a percentage or ratio
+	 * in its lore ("Item sales are taxed 3%", "+10% Woodcutting MCMMO XP") became a tracker entry. Real quest
+	 * items always carry an explicit Progress line. Job listings, prestige ranks and challenges keep their
+	 * counters inside the objective text and are not gated.
+	 */
+	private static final Set<String> PROGRESS_LINE_SOURCES = Set.of("pquests", "menu");
+
 	/** One non-empty container slot: registry id, hover name and lore lines as plain strings. */
 	public record ItemView(int slot, String id, String name, List<String> lore) {}
 
@@ -63,6 +73,10 @@ public final class ContainerScanner {
 				listed.add(display);
 				p = ProgressExtractor.extract(List.of(objective));
 			} else {
+				if (PROGRESS_LINE_SOURCES.contains(source) && !MenuClassifier.anyLineStarts(lore, "progress")
+						&& !isMarkedComplete(lore)) {
+					continue;
+				}
 				p = ProgressExtractor.extract(lore);
 				display = null;
 			}

@@ -50,7 +50,8 @@ public final class MenuClassifier {
 		return false;
 	}
 
-	private static boolean anyLineStarts(List<String> lore, String prefix) {
+	/** True when a lore line, stripped and trimmed, starts with {@code prefix} (lower case). */
+	static boolean anyLineStarts(List<String> lore, String prefix) {
 		for (String line : lore) {
 			if (line != null && ContainerScanner.strip(line).trim().toLowerCase(Locale.ROOT).startsWith(prefix)) return true;
 		}

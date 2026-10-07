@@ -294,7 +294,9 @@ host gate. Refreshing elsewhere says "Tracker refresh only works in ManaCube Sur
 
 The tracker reads what you open. When you open a menu whose title matches a `tracker.sources` regex (defaults:
 `/jobs`, `/pquests`, `/prestige`, `/challenges`), the mod reads item names and lore in the top
-container (never your inventory) and records the entries that show progress. Consequences:
+container (never your inventory) and records the entries that show progress; in a quest menu only items
+with a `Progress:` line (or marked completed) are recorded, so a stray percentage in some other item's lore
+is not tracked. Consequences:
 
 - **Data is only as fresh as the last time you opened that menu** (or pressed the refresh key, or
   a linked sidebar value changed, see below). The HUD shows an age suffix ("now", "5m", ...).
