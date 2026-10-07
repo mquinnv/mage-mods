@@ -77,6 +77,22 @@ class StatusTest {
 		assertEquals("Golden", ArmorSet.base("✦ GOLDEN HELMET ✦"));
 	}
 
+	/** Fish gear gains "MYTHICAL" at level 2 (Michael 2026-10-07): "MYTHICAL HUNTER BOOTS" still belongs to Hunter. */
+	@Test void levelledMythicalPieceStaysInItsSet() {
+		ArmorSet s = ArmorSet.of(List.of("MYTHICAL HUNTER BOOTS", "HUNTER LEGGINGS", "HUNTER CHESTPLATE", "HUNTER HELMET"));
+		assertEquals("Hunter", s.name());
+		assertEquals(4, s.matching());
+		assertEquals(4, s.worn());
+		assertEquals("Hunter", ArmorSet.base("§dMythical Hunter Helmet"));
+	}
+
+	/** "Legendary" is a real set name, not a level prefix: it is kept. */
+	@Test void legendaryIsASetNameNotALevel() {
+		ArmorSet s = ArmorSet.of(List.of("LEGENDARY HELMET"));
+		assertEquals("Legendary", s.name());
+		assertEquals("Mythicalist", ArmorSet.base("MYTHICALIST BOOTS")); // only the whole word is a level
+	}
+
 	@Test void formats() {
 		assertEquals("6:00", StatusFormat.gameTime(0));
 		assertEquals("12:00", StatusFormat.gameTime(6_000));

@@ -30,6 +30,13 @@ public record ArmorSet(String name, int matching, int worn, int required, String
 	private static final Pattern PIECE = Pattern.compile(
 			"(?i)\\s*\\b(helmet|helm|cap|hood|crown|mask|hat|chestplate|chest|tunic|breastplate|plate|robe|vest|"
 					+ "leggings|legs|pants|greaves|trousers|boots|shoes|sandals|slippers|piece)\\b\\s*$");
+	/**
+	 * A level prefix that is not part of the set name: ManaCube's fish gear carries nothing at level 1 and gains
+	 * "MYTHICAL" at level 2 ("MYTHICAL HUNTER BOOTS", Michael 2026-10-07), so without this the levelled piece read as
+	 * its own "Mythical Hunter" set and the Hunter bonus showed unmet while the server still granted it. Only the
+	 * whole leading word goes; "LEGENDARY HELMET" is a real set name and keeps it.
+	 */
+	private static final Pattern LEVEL_PREFIX = Pattern.compile("(?i)^mythical\\b\\s*");
 
 	/** A set with no stated bonus (what callers that only know names get). */
 	public ArmorSet(String name, int matching, int worn) {
@@ -165,9 +172,13 @@ public record ArmorSet(String name, int matching, int worn, int required, String
 		return required > 0 && matching < required;
 	}
 
-	/** "PHOENIX HELMET" -> "Phoenix"; "Mana Boots of Speed" keeps the words after the piece out of it. */
+	/**
+	 * "PHOENIX HELMET" -> "Phoenix"; "Mana Boots of Speed" keeps the words after the piece out of it;
+	 * "MYTHICAL HUNTER BOOTS" -> "Hunter" (see {@link #LEVEL_PREFIX}).
+	 */
 	static String base(String name) {
 		String n = FORMATTING.matcher(name).replaceAll("").replaceAll("[^\\p{L}\\p{N}' ]", " ").replaceAll("\\s+", " ").trim();
+		n = LEVEL_PREFIX.matcher(n).replaceFirst("");
 		String lower = n.toLowerCase(Locale.ROOT);
 		int of = lower.indexOf(" of ");
 		if (of > 0) n = n.substring(0, of).trim(); // "Boots of Speed" style: the set word comes first
