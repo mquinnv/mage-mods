@@ -520,11 +520,9 @@ Jobs · Golden Crate 4/5
 - With `tracker.worldFilter` on (`sort`/`hide`) and the world known, listings naming the current world are
   white, those naming no world light grey and those naming another world dark grey (`hide` does not drop
   them here).
-- Holding a tool narrows the panel to that tool's industry (a hoe shows Farming; a non-tool keeps the last
-  one), plus any other industry's listings you made progress on recently. In a mana world the tool is
-  ignored instead: every listing you can work on there is shown across all industries, listings naming
+- Every listing across all industries is shown, whatever you hold. In a mana world, listings naming
   another world drop out (finished ones stay: they still have to be handed in) and an industry left
-  with nothing drops with them. Leaving the world brings back the held tool's industry.
+  with nothing drops with them; leaving the world brings everything back.
 - Entries hidden in the picker (right-click) stay hidden here too.
 - While the panel is on, the Tracker panel shows no job entries, pinned or not; turn it off (`tracker.jobsPanel.enabled`
   or the "Toggle jobs panel" key) to get them back there.

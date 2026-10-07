@@ -174,38 +174,11 @@ public final class JobsPanelModel {
 	}
 
 	/**
-	 * {@code industry}'s heading and entries, plus any other industry's entries with recent progress under their own
-	 * heading (what you were just working on stays, whatever is held; Michael 2026-10-04). The title is kept. The
-	 * whole model when {@code industry} is null or has no entries, so the panel never goes blank.
-	 */
-	public static Model focus(Model all, String industry) {
-		if (all == null || industry == null) return all;
-		List<Line> out = new ArrayList<>();
-		boolean in = false, any = false;
-		Line heading = null; // another industry's heading, added before its first recent entry
-		for (Line l : all.lines()) {
-			if (l.tone() == Tone.INDUSTRY) {
-				in = industryName(l.text()).equalsIgnoreCase(industry);
-				heading = in ? null : l;
-				if (in) out.add(l);
-			} else if (in) {
-				out.add(l);
-				any = true;
-			} else if (l.activity() != Activity.NONE) {
-				if (heading != null) out.add(heading);
-				heading = null;
-				out.add(l);
-			}
-		}
-		return any ? new Model(all.title(), List.copyOf(out)) : all;
-	}
-
-	/**
-	 * Every entry that can be worked on in the world you are in, whatever is held: rows naming another world are
-	 * dropped, and so is an industry heading left with no rows under it; the rest keep their order. Finished and
-	 * at-cap rows stay even for another world (they still have to be handed in), as do rows naming no world. The
-	 * title is kept. The whole model when nothing but headings would survive, so the panel never goes blank. Takes
-	 * the place of {@link #focus} while in a mana world (Michael 2026-10-07).
+	 * Every entry that can be worked on in the world you are in: rows naming another world are dropped, and so is
+	 * an industry heading left with no rows under it; the rest keep their order. Finished and at-cap rows stay even
+	 * for another world (they still have to be handed in), as do rows naming no world. The title is kept. The whole
+	 * model when nothing but headings would survive, so the panel never goes blank. The only narrowing the panel
+	 * ever does, applied while in a mana world (Michael 2026-10-07).
 	 */
 	public static Model inWorld(Model all) {
 		if (all == null) return all;

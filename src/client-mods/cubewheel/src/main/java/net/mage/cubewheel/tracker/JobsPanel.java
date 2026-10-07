@@ -23,9 +23,6 @@ public final class JobsPanel {
 	private static final int NEUTRAL_COLOR = 0xFFCCCCCC;
 	private static final int OTHER_WORLD_COLOR = 0xFF808080;
 
-	/** The industry the panel shows (that of the last tool held); null until a tool has been held: all of them. */
-	private static String focused;
-
 	private JobsPanel() {}
 
 	public static Optional<Panel> panel(long now) {
@@ -40,17 +37,9 @@ public final class JobsPanel {
 				t -> WorldScope.relevance(store.scope(t, worlds), at), worlds, now,
 				id -> store.activity(id, now), t -> store.scope(t, worlds));
 		if (m.lines().isEmpty()) return Optional.empty();
-		// Only the industry of the tool in hand (a non-tool keeps whichever it last showed) — except in a mana
-		// world, where every listing doable there is shown whatever is held (Michael 2026-10-07). The held
-		// tool is still tracked there, so leaving the world resumes its industry.
-		net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
-		if (player != null) {
-			var hand = player.getMainHandItem();
-			String held = ToolIndustry.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(hand.getItem()).toString(),
-					hand.getHoverName().getString());
-			if (held != null) focused = held;
-		}
-		m = at != null && at.special() ? JobsPanelModel.inWorld(m) : JobsPanelModel.focus(m, focused);
+		// Every listing across all industries, whatever is held; only the world narrows it: in a mana world,
+		// listings naming another world drop out (Michael 2026-10-07).
+		m = at != null && at.special() ? JobsPanelModel.inWorld(m) : m;
 		List<Panel.Line> lines = new ArrayList<>(m.lines().size());
 		for (JobsPanelModel.Line l : m.lines()) {
 			// A fish target takes its rarity colour (as the server draws it); the count keeps the progress colour.
