@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 /**
  * An amulet/pendant or talisman in your inventory, boiled down to an icon and a few characters from its own lore:
  * the Undead Amulet ("Deal +50% damage to all Undead Monsters") is a zombie head and "+50%", the Farming Talisman
- * ("Automatically sells harvested crops", "Total earned: $217,633.69") a hoe and "$217k". Nothing is hard-coded per
+ * ("Automatically sells harvested crops", "Total earned: $217,633.69") wheat and "$217k". Nothing is hard-coded per
  * item, so new ones read the same way. Pure: no Minecraft/Fabric imports.
  */
 public record Charm(Kind kind, String icon, String text) {
@@ -46,9 +46,9 @@ public record Charm(Kind kind, String icon, String text) {
 	}
 
 	private static Charm talisman(String lower, String raw) {
-		// Michael 2026-10-07: a head for souls (what you sell), a sword for mob drops (no single item); crops and fish
-		// stay the thing itself.
-		String icon = lower.contains("soul") ? "minecraft:player_head"
+		// Michael 2026-10-07: a skeleton skull for souls (a mob head, what you sell; the undead amulet keeps the
+		// zombie head), a sword for mob drops (no single item); crops and fish stay the thing itself.
+		String icon = lower.contains("soul") ? "minecraft:skeleton_skull"
 				: lower.contains("crop") || lower.contains("harvest") || lower.contains("farm") ? "minecraft:wheat"
 				: lower.contains("fish") ? "minecraft:cod"
 				: lower.contains("mob") || lower.contains("drop") || lower.contains("loot") || lower.contains("hunt")

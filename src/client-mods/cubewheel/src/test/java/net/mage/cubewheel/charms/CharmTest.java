@@ -54,7 +54,7 @@ class CharmTest {
 		assertEquals("$", fish.text());
 		Charm mobs = parse("Hunting Talisman", "Automatically sells mob drops", "Total earned: $1,234,567.00");
 		assertEquals("minecraft:iron_sword", mobs.icon());
-		assertEquals("minecraft:player_head", parse("Soul Talisman", "Automatically sells mob drops for souls").icon());
+		assertEquals("minecraft:skeleton_skull", parse("Soul Talisman", "Automatically sells mob drops for souls").icon());
 		assertEquals("$1.2M", mobs.text());
 	}
 
