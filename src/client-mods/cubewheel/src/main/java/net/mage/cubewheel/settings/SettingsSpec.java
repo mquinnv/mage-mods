@@ -184,6 +184,11 @@ public final class SettingsSpec {
 										"Show the Charms panel: inventory fill, the worn amulet and carried talismans,"
 												+ " vault fill.",
 										c -> c.charms.enabled, (c, v) -> c.charms.enabled = v))),
+						new Group("Focus", List.of(
+								toggle(d, "focus.enabled", "Enabled",
+										"Show the Focus panel: the job or quest you last made progress on, with its"
+												+ " objective, a big progress bar, your pace and the reward.",
+										c -> c.focus.enabled, (c, v) -> c.focus.enabled = v))),
 						new Group("Progress popup", List.of(
 								toggle(d, "toast.enabled", "Enabled",
 										"A short line under the crosshair when local counting adds progress to a tracked"
@@ -327,6 +332,7 @@ public final class SettingsSpec {
 		position(out, d, "boosters", "Boosters", c -> c.boosters.position);
 		position(out, d, "cooldowns", "Cooldowns", c -> c.cooldowns.position);
 		position(out, d, "charms", "Charms", c -> c.charms.position);
+		position(out, d, "focus", "Focus", c -> c.focus.position);
 		return out;
 	}
 

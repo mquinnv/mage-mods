@@ -47,6 +47,8 @@ public final class TrackerStore {
 		List<String> hidden = new ArrayList<>();
 		Map<String, ObjectiveInfo> objectives = new LinkedHashMap<>();
 		Map<String, Estimate> estimates = new LinkedHashMap<>();
+		/** A job listing's reward lines ("20 Job XP (Hunting)", "$70,000"), by entry id (Focus panel). */
+		Map<String, List<String>> rewards = new LinkedHashMap<>();
 	}
 
 	/** Minimum last-seen advance that counts as a change on its own (TrackerFormat.age shows "now" below this). */
@@ -68,6 +70,8 @@ public final class TrackerStore {
 	private Set<String> hidden = new LinkedHashSet<>();
 	private Map<String, ObjectiveInfo> objectives = new LinkedHashMap<>();
 	private Map<String, Estimate> estimates = new LinkedHashMap<>();
+	/** A job listing's reward lines by entry id (see {@link #setRewards}). */
+	private Map<String, List<String>> rewards = new LinkedHashMap<>();
 	private final Map<String, Accuracy> accuracy = new HashMap<>();
 	/** Not persisted: when each entry last made progress this session (local count or a higher server value). */
 	private final Map<String, Long> progressAt = new HashMap<>();
@@ -198,6 +202,22 @@ public final class TrackerStore {
 		objectives.put(id, info);
 		rulesDirty = true;
 		return true;
+	}
+
+	/** Stores the reward lines of listing {@code id} (empty: none); returns true if they changed. */
+	public boolean setRewards(String id, List<String> lines) {
+		if (id == null) return false;
+		List<String> clean = lines == null ? List.of() : List.copyOf(lines);
+		if (clean.isEmpty()) return rewards.remove(id) != null;
+		if (clean.equals(rewards.get(id))) return false;
+		rewards.put(id, clean);
+		return true;
+	}
+
+	/** The reward lines of listing {@code id}, as scanned ("20 Job XP (Hunting)", "$70,000"); empty if none. */
+	public List<String> rewards(String id) {
+		List<String> r = id == null ? null : rewards.get(id);
+		return r == null ? List.of() : r;
 	}
 
 	public Optional<ObjectiveInfo> objective(String id) {
@@ -502,6 +522,7 @@ public final class TrackerStore {
 		estimates.keySet().removeIf(k -> !items.containsKey(baseId(k)));
 		hidden.retainAll(items.keySet());
 		scopes.keySet().retainAll(items.keySet());
+		rewards.keySet().retainAll(items.keySet());
 		rulesDirty = true;
 		return before - items.size();
 	}
@@ -514,6 +535,7 @@ public final class TrackerStore {
 		estimates.keySet().removeIf(k -> !items.containsKey(baseId(k)));
 		hidden.retainAll(items.keySet());
 		scopes.keySet().retainAll(items.keySet());
+		rewards.keySet().retainAll(items.keySet());
 		rulesDirty = true;
 		return before - items.size();
 	}
@@ -531,6 +553,7 @@ public final class TrackerStore {
 		Set<String> newHidden = new LinkedHashSet<>();
 		Map<String, ObjectiveInfo> newObjectives = new LinkedHashMap<>();
 		Map<String, Estimate> newEstimates = new LinkedHashMap<>();
+		Map<String, List<String>> newRewards = new LinkedHashMap<>();
 		if (snap != null) {
 			if (snap.items != null) {
 				for (Trackable t : snap.items) {
@@ -559,12 +582,18 @@ public final class TrackerStore {
 					if (est != null && est.count() > 0 && t != null && !t.complete()) newEstimates.put(id, est);
 				});
 			}
+			if (snap.rewards != null) {
+				snap.rewards.forEach((id, lines) -> {
+					if (id != null && lines != null && !lines.isEmpty() && newItems.containsKey(id)) newRewards.put(id, List.copyOf(lines));
+				});
+			}
 		}
 		items = newItems;
 		pins = newPins;
 		hidden = newHidden;
 		objectives = newObjectives;
 		estimates = newEstimates;
+		rewards = newRewards;
 		accuracy.clear();
 		scopes.clear();
 		rulesDirty = true;
@@ -604,6 +633,7 @@ public final class TrackerStore {
 		snap.hidden = new ArrayList<>(hidden);
 		snap.objectives = new LinkedHashMap<>(objectives);
 		snap.estimates = new LinkedHashMap<>(estimates);
+		snap.rewards = new LinkedHashMap<>(rewards);
 		return snap;
 	}
 }

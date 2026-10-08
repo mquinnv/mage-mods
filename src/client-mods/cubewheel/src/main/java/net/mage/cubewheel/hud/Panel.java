@@ -95,25 +95,25 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 	 * line takes the width the panel has without widening it, cut with "…" to fit.
 	 */
 	public record Line(String tag, int tagColor, String text, int color, String right, int rightColor, int accent,
-			Object icon, double progress, List<Piece> pieces, double gauge, boolean loose) {
+			Object icon, double progress, List<Piece> pieces, double gauge, boolean loose, boolean tall) {
 		/** No accent bar, no icon, no meter. */
 		public Line(String tag, int tagColor, String text, int color, String right, int rightColor) {
-			this(tag, tagColor, text, color, right, rightColor, 0, null, -1, List.of(), -1, false);
+			this(tag, tagColor, text, color, right, rightColor, 0, null, -1, List.of(), -1, false, false);
 		}
 
 		/** This line with a bar in {@code argb} along the panel's left edge (0 = none). */
 		public Line withAccent(int argb) {
-			return new Line(tag, tagColor, text, color, right, rightColor, argb, icon, progress, pieces, gauge, loose);
+			return new Line(tag, tagColor, text, color, right, rightColor, argb, icon, progress, pieces, gauge, loose, tall);
 		}
 
 		/** This line with a small item picture before its text ({@code icon}: an ItemStack; null = none). */
 		public Line withIcon(Object icon) {
-			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, progress, pieces, gauge, loose);
+			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, progress, pieces, gauge, loose, tall);
 		}
 
 		/** This line with a thin progress meter under it ({@code fraction} 0..1; negative = none). */
 		public Line withProgress(double fraction) {
-			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, fraction, pieces, gauge, loose);
+			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, fraction, pieces, gauge, loose, tall);
 		}
 
 		/**
@@ -121,17 +121,22 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 		 * {@code fraction} 0..1; negative = none).
 		 */
 		public Line withGauge(double fraction) {
-			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, progress, pieces, fraction, loose);
+			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, progress, pieces, fraction, loose, tall);
 		}
 
 		/** This line not counted in the panel's width: it gets the width the rest makes, cut to fit. */
 		public Line withLoose() {
-			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, progress, pieces, gauge, true);
+			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, progress, pieces, gauge, true, tall);
+		}
+
+		/** This line twice a text row tall, its text centred: a big progress bar (the Focus panel). */
+		public Line withTall() {
+			return new Line(tag, tagColor, text, color, right, rightColor, accent, icon, progress, pieces, gauge, loose, true);
 		}
 
 		/** A row of small icon + text pieces side by side instead of the text (e.g. the Charms panel's charms). */
 		public static Line pieces(List<Piece> pieces) {
-			return new Line("", 0, "", WHITE, "", WHITE, 0, null, -1, List.copyOf(pieces), -1, false);
+			return new Line("", 0, "", WHITE, "", WHITE, 0, null, -1, List.copyOf(pieces), -1, false, false);
 		}
 
 		/** The right part in the text's colour. */

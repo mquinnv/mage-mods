@@ -49,6 +49,7 @@ public final class ProgressToastHud implements HudElement {
 
 	/** The store counted ({@code units} &gt; 0) or took back ({@code units} &lt; 0) progress for {@code key}. */
 	private static void onProgress(String key, long units) {
+		net.mage.cubewheel.tracker.FocusPanel.onProgress(key, units); // the Focus panel follows the last credit
 		CubeWheelConfig.Toast cfg = CubeWheelClient.config().current().toast;
 		if (cfg == null || !cfg.enabled) return;
 		CubeWheelConfig.Tracker tracker = CubeWheelClient.config().current().tracker;

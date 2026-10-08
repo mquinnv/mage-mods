@@ -183,6 +183,7 @@ public final class PanelsHud implements HudElement {
 	private static int rowHeight(Panel.Line l, int lh) {
 		if (!l.pieces().isEmpty()) return pictured(l) ? BIG_ICON + 1 : lh;
 		if (bigIcon(l)) return BIG_ICON + 1;
+		if (l.tall()) return 2 * lh;
 		return l.gauge() >= 0 ? lh + GAUGE_H + 1 : lh;
 	}
 
@@ -336,10 +337,10 @@ public final class PanelsHud implements HudElement {
 				int left = tx - 1;
 				int end = x + w + 1;
 				int fill = left + (int) Math.round((end - left) * Math.min(1, l.progress()));
-				g.fill(left, ly - 1, end, ly + lh - 1, METER_TRACK);
-				if (fill > left) g.fill(left, ly - 1, fill, ly + lh - 1, Panel.meterColor(l.progress()));
+				g.fill(left, ly - 1, end, ly + lastH - 1, METER_TRACK);
+				if (fill > left) g.fill(left, ly - 1, fill, ly + lastH - 1, Panel.meterColor(l.progress()));
 			}
-			int textY = ly;
+			int textY = l.tall() ? ly + (lastH - lh) / 2 : ly;
 			if (l.icon() instanceof ItemStack stack && !stack.isEmpty()) {
 				if (bigIcon(l)) {
 					g.item(stack, tx, ly);
@@ -377,7 +378,7 @@ public final class PanelsHud implements HudElement {
 			// Names use all the room the panel has; only what really does not fit is cut.
 			int room = x + w - tx - (l.right().isEmpty() ? 0 : font.width(l.right()) + COLUMN_GAP);
 			g.text(font, fit(font, l.text(), room), tx, textY, l.color());
-			if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), ly, l.rightColor());
+			if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), textY, l.rightColor());
 			if (l.gauge() >= 0) {
 				// A capacity gauge: a thin bar under the row, across the panel, on its own dark track.
 				int top = ly + font.lineHeight, end = x + w;

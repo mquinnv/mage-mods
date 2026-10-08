@@ -270,6 +270,22 @@ class ManaCubeMenusTest {
 				ProgressExtractor.extract(List.of("Reward: 1/2 claims", "Progress: 3/8")));
 	}
 
+	/** A listing's reward lines are kept for the Focus panel, and survive a save and load. */
+	@Test void rewardLinesAreStoredPerListing() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		ContainerScanner.scan("jobs", JOB_LISTINGS, store, 0);
+		assertEquals(List.of("20 Job XP", "$58,000", "1 Golden Key"), store.rewards("jobs:Farming Beginner · Harvest Acacia Logs"));
+		assertEquals(List.of("40 Job XP"), store.rewards("jobs:Farming Experienced · Catch Tangleroots Fireflies"));
+		assertEquals(List.of(), store.rewards("jobs:nope"));
+		assertEquals(List.of("20 Job XP (Hunting)", "$70,000"), ContainerScanner.rewards(List.of("Help defeat 1 Golden Knight", "",
+				"Reward", "- 20 Job XP (Hunting)", "- $70,000", "", "㎋ Click to complete job")));
+		assertEquals(List.of(), ContainerScanner.rewards(List.of("Harvest 0/10 Wheat", "", "Hand In:", "- ✖ 0/5 Wheat")));
+		store.save();
+		TrackerStore back = new TrackerStore(dir.resolve("t.json"));
+		back.load();
+		assertEquals(List.of("20 Job XP", "$58,000", "1 Golden Key"), back.rewards("jobs:Farming Beginner · Harvest Acacia Logs"));
+	}
+
 	/** A one-off boss job (2026-10-08) has no counter in its objective line; it is tracked as 0 of its stated number. */
 	@Test void aListingWithoutACounterIsTrackedAsZeroOfItsNumber() {
 		TrackerStore store = new TrackerStore(dir.resolve("t.json"));

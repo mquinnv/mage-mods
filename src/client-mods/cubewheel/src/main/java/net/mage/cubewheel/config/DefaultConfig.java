@@ -277,6 +277,11 @@ public final class DefaultConfig {
 		return new CubeWheelConfig.Position("bottom_center", 0, 62);
 	}
 
+	/** Bottom left (Michael 2026-10-08); it shares that corner with chat, which fades. */
+	public static CubeWheelConfig.Position focusPosition() {
+		return new CubeWheelConfig.Position("bottom_left", 4, 4);
+	}
+
 	public static CubeWheelConfig.Position statusPosition() {
 		return new CubeWheelConfig.Position("top_left", 4, 4);
 	}

@@ -45,7 +45,7 @@ public final class RuleMatcher {
 		return switch (signal) {
 			case Signal.BlockBroken b -> blockMatches(rule, b);
 			case Signal.MobKilled m -> rule.kind() == CounterRule.Kind.KILL && !m.groups().contains("player")
-					&& targetMatches(rule.what(), m.typeId(), m.name(), m.groups());
+					&& targetMatches(rule.what(), m.typeId(), m.name(), m.groups(), !(rule.world() instanceof AnyWorld));
 			case Signal.FishCaught f -> rule.kind() == CounterRule.Kind.FISH && fishMatches(rule.what(), f.species());
 			case Signal.Sheared s -> rule.kind() == CounterRule.Kind.SHEAR
 					&& targetMatches(rule.what(), s.typeId(), s.name(), java.util.Set.of("mob"));
@@ -100,6 +100,16 @@ public final class RuleMatcher {
 	 * "wolf" and "mana wolf").
 	 */
 	static boolean targetMatches(CounterRule.Target what, String id, String name, java.util.Set<String> groups) {
+		return targetMatches(what, id, name, groups, false);
+	}
+
+	/**
+	 * As above; {@code worldScoped}: the rule names a world (or needs a special one), so its noun may carry the
+	 * world's prefix that the mob itself does not: "Slay 68 Magic Mooshrooms in Wolfhaven" counts a mooshroom named
+	 * "Mooshroom 40⺛" (capture 2026-10-08). A bare rule never matches that way: "Slay 50 Wolves" must not count a
+	 * Mana Wolf by its last word (that direction is the other clause, a name ending in the noun).
+	 */
+	static boolean targetMatches(CounterRule.Target what, String id, String name, java.util.Set<String> groups, boolean worldScoped) {
 		return switch (what) {
 			case Any a -> true;
 			case Group g -> groups.contains(g.group());
@@ -115,7 +125,10 @@ public final class RuleMatcher {
 						|| fromName.equals(want) || fromName.endsWith(" " + want)
 						// "Rattle Snakes" vs a "Rattlesnake" mob or a "rattlesnake" id
 						|| (want.indexOf(' ') > 0 && (fromName.replace(" ", "").equals(compactWant)
-								|| fromId.replace(" ", "").equals(compactWant)));
+								|| fromId.replace(" ", "").equals(compactWant)))
+						// "Magic Mooshrooms in Wolfhaven" vs the mooshroom named "Mooshroom": the world's prefix
+						|| (worldScoped && want.indexOf(' ') > 0
+								&& (!fromName.isEmpty() && want.endsWith(" " + fromName) || !fromId.isEmpty() && want.endsWith(" " + fromId)));
 			}
 		};
 	}

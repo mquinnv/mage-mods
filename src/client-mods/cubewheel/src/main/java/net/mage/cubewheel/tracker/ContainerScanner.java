@@ -96,6 +96,8 @@ public final class ContainerScanner {
 			// The objective text feeds local counting (tracker.local); a read is authoritative, so any
 			// estimate for this entry was just dropped by update().
 			changed |= store.setObjective(Trackable.idOf(source, display), ObjectiveExtractor.extract(name, lore, listingObjective));
+			// A listing's reward lines ("- 20 Job XP (Hunting)", "- $70,000") feed the Focus panel.
+			if (listingObjective != null) changed |= store.setRewards(Trackable.idOf(source, display), rewards(lore));
 			if (seen != null) seen.accept(Trackable.idOf(source, display));
 			if (changed) updated++;
 		}
@@ -114,6 +116,27 @@ public final class ContainerScanner {
 			});
 		}
 		return updated;
+	}
+
+	/**
+	 * The reward lines under a listing's "Reward" heading, without their "- ": "20 Job XP (Hunting)", "$70,000",
+	 * "1 Golden Key"; the list ends at the first line that is blank or not a "- " item. Empty without a heading.
+	 */
+	static List<String> rewards(List<String> lore) {
+		List<String> out = new ArrayList<>();
+		boolean in = false;
+		for (String raw : lore) {
+			String line = raw == null ? "" : raw.trim();
+			if (!in) {
+				if (line.equalsIgnoreCase("reward") || line.equalsIgnoreCase("rewards") || line.equalsIgnoreCase("reward:")
+						|| line.equalsIgnoreCase("rewards:")) in = true;
+				continue;
+			}
+			if (!line.startsWith("-")) break;
+			String item = line.substring(1).trim();
+			if (!item.isEmpty()) out.add(item);
+		}
+		return out;
 	}
 
 	/** A listing objective's stated number, as 0/N, when it has no "current/max" counter: "Help defeat 1 Golden Knight". */

@@ -135,10 +135,13 @@ public final class CubeWheelClient implements ClientModInitializer {
 		PanelsHud.add(PanelsHud.perTick(net.mage.cubewheel.status.StatusPanel::panel, c -> c.status.position), c -> c.status.position,
 				DefaultConfig::statusPosition); // top left, above Jobs
 		PanelsHud.add(EventHud::panel, c -> c.events.position, DefaultConfig::eventsPosition);
-		PanelsHud.add(PanelsHud.perTick(JobsPanel::panel, c -> c.tracker.jobsPanel.position), c -> c.tracker.jobsPanel.position,
-				DefaultConfig::jobsPanelPosition);
+		// Quests above Jobs in the left column (Michael 2026-10-08).
 		PanelsHud.add(PanelsHud.perTick(TrackerPanel::panel, c -> c.tracker.position), c -> c.tracker.position,
-				DefaultConfig::trackerPosition); // under the Jobs panel
+				DefaultConfig::trackerPosition);
+		PanelsHud.add(PanelsHud.perTick(JobsPanel::panel, c -> c.tracker.jobsPanel.position), c -> c.tracker.jobsPanel.position,
+				DefaultConfig::jobsPanelPosition); // under the Quests panel
+		PanelsHud.add(PanelsHud.perTick(net.mage.cubewheel.tracker.FocusPanel::panel, c -> c.focus.position), c -> c.focus.position,
+				DefaultConfig::focusPosition); // bottom left: the entry you last made progress on
 		PanelsHud.add(BoosterWatcher::panel, c -> c.boosters.position, DefaultConfig::boostersPosition);
 		PanelsHud.add(CooldownWatcher::panel, c -> c.cooldowns.position, DefaultConfig::cooldownsPosition);
 		PanelsHud.add(PanelsHud.perTick(net.mage.cubewheel.charms.CharmsPanel::panel, c -> c.charms.position), c -> c.charms.position,

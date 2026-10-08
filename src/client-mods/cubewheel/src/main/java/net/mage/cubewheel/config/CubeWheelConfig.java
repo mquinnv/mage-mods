@@ -28,6 +28,7 @@ public final class CubeWheelConfig {
 	public Status status = new Status();
 
 	public Charms charms = new Charms();
+	public Focus focus = new Focus();
 	/** The popup under the crosshair when local counting adds progress to a tracked entry. */
 	public Toast toast = new Toast();
 
@@ -42,6 +43,12 @@ public final class CubeWheelConfig {
 	public static final class Charms {
 		public boolean enabled = true;
 		public Position position = DefaultConfig.charmsPosition();
+	}
+
+	/** The Focus panel: the entry you last made progress on, with a big progress bar, pace and rewards. */
+	public static final class Focus {
+		public boolean enabled = true;
+		public Position position = DefaultConfig.focusPosition();
 	}
 
 	public static final class Status {

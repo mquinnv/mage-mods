@@ -101,7 +101,7 @@ public final class JobsPanel {
 	}
 
 	/** World tags in each mana world's colour. */
-	private static int worldTagColor(String tag) {
+	static int worldTagColor(String tag) {
 		return switch (tag) {
 			case "WH" -> 0xFFB8C7D9; // Wolfhaven: steel
 			case "TR" -> 0xFF5FD35F; // Tangleroots: jungle green
