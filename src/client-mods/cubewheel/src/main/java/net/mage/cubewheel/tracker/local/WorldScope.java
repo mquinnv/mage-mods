@@ -105,4 +105,20 @@ public final class WorldScope {
 		if (scope.special() && at.special()) return Relevance.CURRENT;
 		return Relevance.OTHER;
 	}
+
+	/**
+	 * True when {@code rule} cannot be worked on in {@code at}: a bare vanilla job naming a specific thing
+	 * ("Mine 245 Coal", "Harvest 850 Beetroot", "Slay 120 Zombies", "Catch 61 YellowSeaShroom": world
+	 * {@link CounterRule.AnyWorld}, target {@link CounterRule.Named}) while in a mana world. The mana worlds have
+	 * their own variants of those things and ManaCube does not credit the bare job there
+	 * ({@code RuleMatcher} already refuses mana-world ore for such rules), so the Jobs panel treats the listing as
+	 * another world's (Michael 2026-10-07). Anything else stays possible: {@link CounterRule.Any} and
+	 * {@link CounterRule.Group} targets (Resources, Monsters, Fish, ores, crops) exist everywhere, rules naming a
+	 * world or needing a special one are judged by {@link #relevance}, and a null rule (nothing parsed) is unknown,
+	 * not impossible. False outside a known mana world and for a null {@code at}.
+	 */
+	public static boolean impossibleIn(CounterRule rule, WorldInfo at) {
+		if (at == null || !at.known() || !at.special() || rule == null) return false;
+		return rule.world() instanceof CounterRule.AnyWorld && rule.what() instanceof CounterRule.Named;
+	}
 }

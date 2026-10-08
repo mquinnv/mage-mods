@@ -5,12 +5,14 @@ import net.mage.cubewheel.ServerGate;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.hud.HudLayout;
 import net.mage.cubewheel.hud.Panel;
+import net.mage.cubewheel.tracker.local.CounterRule;
 import net.mage.cubewheel.tracker.local.WorldInfo;
 import net.mage.cubewheel.tracker.local.WorldScope;
 import net.mage.cubewheel.tracker.local.mc.LocalSignals;
 import net.mage.cubewheel.wheel.Icons;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -32,9 +34,15 @@ public final class JobsPanel {
 		WorldScope.Mode mode = WorldScope.Mode.parse(cfg.tracker.worldFilter);
 		WorldInfo at = mode == WorldScope.Mode.OFF ? null : LocalSignals.currentWorld();
 		List<String> worlds = cfg.tracker.local.worlds;
+		// In a mana world a bare vanilla job ("Mine 245 Coal") is impossible, so it reads as another world's and
+		// inWorld() below drops it (Michael 2026-10-07). activeRules holds only incomplete entries, which is fine:
+		// finished rows keep their DONE tone whatever the relevance says. A multi-objective entry is keyed per
+		// objective ("id#sub0"); its first parsed objective stands for the entry.
+		Map<String, CounterRule> rules = at != null && at.special() ? store.activeRules(worlds) : Map.of();
 		JobsPanelModel.Model m = JobsPanelModel.build(store.rows(cfg.tracker.local.enabled), store::isHidden,
 				id -> store.objective(id).orElse(null),
-				t -> WorldScope.relevance(store.scope(t, worlds), at), worlds, now,
+				t -> WorldScope.impossibleIn(ruleOf(rules, t.id()), at) ? WorldScope.Relevance.OTHER
+						: WorldScope.relevance(store.scope(t, worlds), at), worlds, now,
 				id -> store.activity(id, now), t -> store.scope(t, worlds));
 		if (m.lines().isEmpty()) return Optional.empty();
 		// Every listing across all industries, whatever is held; only the world narrows it: in a mana world,
@@ -59,6 +67,15 @@ public final class JobsPanel {
 		}
 		CubeWheelConfig.Position p = cfg.tracker.jobsPanel.position;
 		return Optional.of(new Panel(m.title(), lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
+	}
+
+	/** Entry {@code id}'s rule in {@code rules}: under its own id, else its first objective's {@code id#subN} key; null if none. */
+	static CounterRule ruleOf(Map<String, CounterRule> rules, String id) {
+		if (rules.isEmpty() || id == null) return null;
+		CounterRule r = rules.get(id);
+		if (r != null) return r;
+		for (Map.Entry<String, CounterRule> e : rules.entrySet()) if (id.equals(TrackerStore.baseId(e.getKey()))) return e.getValue();
+		return null;
 	}
 
 	/** The bar marking an entry you made progress on: bright for the last couple of minutes, dim for a while after. */

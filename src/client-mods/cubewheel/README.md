@@ -521,8 +521,10 @@ Jobs · Golden Crate 4/5
   white, those naming no world light grey and those naming another world dark grey (`hide` does not drop
   them here).
 - Every listing across all industries is shown, whatever you hold. In a mana world, listings naming
-  another world drop out (finished ones stay: they still have to be handed in) and an industry left
-  with nothing drops with them; leaving the world brings everything back.
+  another world drop out, as do listings for vanilla things that world does not have (bare
+  Mine/Harvest/Slay/Catch jobs naming a specific ore, crop, log, mob or fish; finished ones stay: they
+  still have to be handed in) and an industry left with nothing drops with them; leaving the world
+  brings everything back.
 - Entries hidden in the picker (right-click) stay hidden here too.
 - While the panel is on, the Tracker panel shows no job entries, pinned or not; turn it off (`tracker.jobsPanel.enabled`
   or the "Toggle jobs panel" key) to get them back there.
