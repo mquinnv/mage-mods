@@ -5,6 +5,7 @@ import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.hud.Fit;
 import net.mage.cubewheel.hud.HudLayout;
 import net.mage.cubewheel.hud.Panel;
+import net.mage.cubewheel.tracker.local.mc.LocalSignals;
 import net.mage.cubewheel.wheel.Icons;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -23,8 +24,9 @@ import net.minecraft.world.item.component.ItemLore;
 
 /**
  * The "Status" panel (top left, above Jobs). While {@code status.armor}: a gear row (the armor pieces, a dot, the
- * main- and off-hand items, then the set you wear, "Phoenix 4/4") and under it what the set bonus does, or
- * "⚠ no set bonus" when too few pieces are worn. A piece wearing out gets Minecraft's thin durability bar on its
+ * main- and off-hand items, then the set you wear, "Phoenix 4/4") and under it what the set bonus does (an effect
+ * that only applies "in Resource World" dimmed while you are not there), or "⚠ no set bonus" when too few pieces
+ * are worn. A piece wearing out gets Minecraft's thin durability bar on its
  * icon. Then, past a rule, a 2×2 grid: coordinates and facing | biome and a light-level disc / FPS and speed | game
  * time and the real clock behind their item icons. Drawn by {@link net.mage.cubewheel.hud.PanelsHud} in CubeWheel's
  * style; replaces SimpleHUD Enhanced's status text and equipment display. Shown wherever you play while
@@ -177,9 +179,12 @@ public final class StatusPanel {
 		if (unmet) {
 			lines.add(new Panel.Line(NO_BONUS, Panel.YELLOW).withLoose());
 		} else if (!set.bonus().isEmpty()) {
-			// The bonus is on when the stated requirement is met; with none stated, at a full set.
+			// The bonus is on when the stated requirement is met; with none stated, at a full set. Each effect is
+			// its own piece, so one that only applies in the Resource World (minecraft:resource_world, whose tokens
+			// carry "resource") can dim on its own elsewhere; outside a level the world is UNKNOWN (no tokens).
 			boolean on = set.required() > 0 || set.matching() == 4;
-			lines.add(new Panel.Line(set.bonus(), on ? GREY : DIM).withLoose());
+			boolean resource = LocalSignals.currentWorld().tokens().contains("resource");
+			lines.add(Panel.Line.pieces(StatusFormat.bonusPieces(set.bonus(), on, resource, GREY, DIM)).withLoose());
 		}
 	}
 

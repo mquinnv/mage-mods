@@ -27,6 +27,11 @@ public record ArmorSet(String name, int matching, int worn, int required, String
 	private static final Pattern BULLET = Pattern.compile("^\\s*[➟➤•►▸»]\\s*(.*)$");
 	/** Between effects in {@link #bonus}. */
 	private static final String JOIN = " · ";
+	/**
+	 * An effect's "in Resource World" qualifier (see {@link #resourceWorldOnly}). Only this place: "in Worlds"
+	 * (Morend) and the like are not read.
+	 */
+	private static final Pattern RESOURCE_WORLD_ONLY = Pattern.compile("(?i)\\bin (the )?resource world$");
 	private static final Pattern PIECE = Pattern.compile(
 			"(?i)\\s*\\b(helmet|helm|cap|hood|crown|mask|hat|chestplate|chest|tunic|breastplate|plate|robe|vest|"
 					+ "leggings|legs|pants|greaves|trousers|boots|shoes|sandals|slippers|piece)\\b\\s*$");
@@ -165,6 +170,25 @@ public record ArmorSet(String name, int matching, int worn, int required, String
 	/** An indented line carrying on the effect above it ("   World Monsters & Resources"). */
 	private static boolean continuation(String line) {
 		return !line.isBlank() && Character.isWhitespace(line.charAt(0));
+	}
+
+	/**
+	 * The effects of a {@link #bonus} again, one by one: "Absorption II · Speed IV in Resource World" ->
+	 * ["Absorption II", "Speed IV in Resource World"]; none for "" or null.
+	 */
+	public static List<String> effects(String bonus) {
+		if (bonus == null || bonus.isEmpty()) return List.of();
+		return List.of(bonus.split(Pattern.quote(JOIN)));
+	}
+
+	/**
+	 * True for an effect the set only grants in ManaCube's Resource World, which its lore ends with "in Resource
+	 * World": the Warden set (captured 2026-10-01) reads "➟ Absorption II", "➟ Speed IV in Resource World",
+	 * "➟ 30% MCMMO Boost in Resource World", and the last two do nothing in the main overworld or a mana world
+	 * (Michael 2026-10-07). Case-insensitive, trailing spaces allowed; "Speed V in Worlds" is not it.
+	 */
+	public static boolean resourceWorldOnly(String effect) {
+		return effect != null && RESOURCE_WORLD_ONLY.matcher(effect.trim()).find();
 	}
 
 	/** True when a set bonus is stated and fewer pieces are worn than it needs. */

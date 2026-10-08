@@ -1,7 +1,10 @@
 package net.mage.cubewheel.status;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import net.mage.cubewheel.hud.Panel;
 
 /** Text and colours for the Status panel. Pure: no Minecraft/Fabric imports. */
 public final class StatusFormat {
@@ -14,8 +17,26 @@ public final class StatusFormat {
 
 	/** Separators in a biome id's path. */
 	private static final Pattern BIOME_SEPARATOR = Pattern.compile("[_/]");
+	/** Between the effects of the set bonus row. */
+	private static final String EFFECT_DOT = "·";
 
 	private StatusFormat() {}
+
+	/**
+	 * The set bonus row: each effect of {@code bonus} (see {@link ArmorSet#effects}) as its own piece, a dot piece
+	 * between them. While the bonus is {@code on}, an effect is {@code lit} unless it only applies in the Resource
+	 * World ({@link ArmorSet#resourceWorldOnly}) and you are not there ({@code inResourceWorld}): then it is
+	 * {@code dim}. A bonus that is not on is dim throughout. Empty for an empty bonus.
+	 */
+	public static List<Panel.Piece> bonusPieces(String bonus, boolean on, boolean inResourceWorld, int lit, int dim) {
+		List<Panel.Piece> out = new ArrayList<>();
+		for (String effect : ArmorSet.effects(bonus)) {
+			if (!out.isEmpty()) out.add(new Panel.Piece(null, EFFECT_DOT, on ? lit : dim));
+			boolean applies = on && (inResourceWorld || !ArmorSet.resourceWorldOnly(effect));
+			out.add(new Panel.Piece(null, effect, applies ? lit : dim));
+		}
+		return out;
+	}
 
 	/** Overworld clock ticks to 24-hour "14:20" (tick 0 is 6:00): short, and unlike the real clock beside it. */
 	public static String gameTime(long ticks) {

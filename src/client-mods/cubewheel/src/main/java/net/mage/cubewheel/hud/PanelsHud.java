@@ -179,10 +179,16 @@ public final class PanelsHud implements HudElement {
 		lastPlaced = List.copyOf(placed);
 	}
 
-	/** A row's height: text rows {@code lh}, rows of pieces a full-size icon. */
+	/** A row's height: text rows {@code lh}, rows of pieces with an item picture a full-size icon. */
 	private static int rowHeight(Panel.Line l, int lh) {
-		if (!l.pieces().isEmpty()) return BIG_ICON + 1;
+		if (!l.pieces().isEmpty()) return pictured(l) ? BIG_ICON + 1 : lh;
 		return l.gauge() >= 0 ? lh + GAUGE_H + 1 : lh;
+	}
+
+	/** True when a row of pieces has an item picture in it (text-only rows, like the set bonus, stay text height). */
+	private static boolean pictured(Panel.Line l) {
+		for (Panel.Piece piece : l.pieces()) if (piece.icon() instanceof ItemStack s && !s.isEmpty()) return true;
+		return false;
 	}
 
 	/** A line's text width, its icon included. */
@@ -329,7 +335,7 @@ public final class PanelsHud implements HudElement {
 				tx += ICON_W;
 			}
 			if (!l.pieces().isEmpty()) {
-				int textY = ly + (BIG_ICON - font.lineHeight) / 2;
+				int textY = pictured(l) ? ly + (BIG_ICON - font.lineHeight) / 2 : ly;
 				for (Panel.Piece piece : l.pieces()) {
 					if (piece.icon() instanceof ItemStack stack && !stack.isEmpty()) {
 						g.item(stack, tx, ly);
@@ -342,8 +348,13 @@ public final class PanelsHud implements HudElement {
 						tx += BIG_ICON_W;
 					}
 					if (piece.text().isEmpty()) continue; // icon-only pieces sit tight together
-					g.text(font, piece.text(), tx, textY, piece.color());
-					tx += font.width(piece.text()) + PIECE_GAP;
+					// A loose row of pieces is cut to the panel's width like a loose text line: "…" on the piece that
+					// no longer fits, and nothing after it.
+					String text = l.loose() ? fit(font, piece.text(), x + w - tx) : piece.text();
+					if (text.isEmpty()) break;
+					g.text(font, text, tx, textY, piece.color());
+					if (!text.equals(piece.text())) break;
+					tx += font.width(text) + PIECE_GAP;
 				}
 				continue;
 			}

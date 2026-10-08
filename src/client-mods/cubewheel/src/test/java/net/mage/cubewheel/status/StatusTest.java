@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import net.mage.cubewheel.hud.Panel;
 import org.junit.jupiter.api.Test;
 
 class StatusTest {
@@ -247,5 +248,48 @@ class StatusTest {
 		assertTrue(StatusFormat.unbreakableLore(List.of("Mob Kills: 30", "○ Stasis III", "Unbreakable", "Season 10 Challenge Sword")));
 		assertFalse(StatusFormat.unbreakableLore(DRAGON_BOOTS));
 		assertFalse(StatusFormat.unbreakableLore(null));
+	}
+
+	// The set bonus row as pieces (Michael 2026-10-07): the Warden set's "Speed IV in Resource World" and
+	// "30% MCMMO Boost in Resource World" only apply in the Resource World (dimension minecraft:resource_world).
+
+	@Test void effectsAreTheBonusSplitOnItsJoin() {
+		assertEquals(List.of("Absorption II", "Speed IV in Resource World", "30% MCMMO Boost in Resource World"),
+				ArmorSet.effects(ArmorSet.bonus(WARDEN_HELMET)));
+		assertEquals(List.of("+20% MCMMO Boost"), ArmorSet.effects("+20% MCMMO Boost"));
+		assertEquals(List.of(), ArmorSet.effects(""));
+		assertEquals(List.of(), ArmorSet.effects(null));
+	}
+
+	@Test void resourceWorldOnlyEffects() {
+		assertTrue(ArmorSet.resourceWorldOnly("Speed IV in Resource World"));
+		assertTrue(ArmorSet.resourceWorldOnly("30% MCMMO Boost in Resource World"));
+		assertTrue(ArmorSet.resourceWorldOnly("Speed IV in the Resource World"));
+		assertTrue(ArmorSet.resourceWorldOnly("Speed IV IN RESOURCE WORLD  ")); // case and trailing spaces
+		assertFalse(ArmorSet.resourceWorldOnly("Absorption II"));
+		assertFalse(ArmorSet.resourceWorldOnly("Speed V in Worlds")); // other qualifiers are left alone
+		assertFalse(ArmorSet.resourceWorldOnly("Resource World Speed IV"));
+		assertFalse(ArmorSet.resourceWorldOnly(""));
+		assertFalse(ArmorSet.resourceWorldOnly(null));
+	}
+
+	@Test void bonusPiecesDimResourceWorldEffectsOutsideIt() {
+		String bonus = ArmorSet.bonus(WARDEN_HELMET);
+		int lit = 1, dim = 2;
+		List<Panel.Piece> outside = StatusFormat.bonusPieces(bonus, true, false, lit, dim);
+		assertEquals(List.of("Absorption II", "·", "Speed IV in Resource World", "·", "30% MCMMO Boost in Resource World"),
+				outside.stream().map(Panel.Piece::text).toList());
+		assertEquals(List.of(lit, lit, dim, lit, dim), outside.stream().map(Panel.Piece::color).toList());
+		// In the Resource World every effect is lit.
+		assertEquals(List.of(lit, lit, lit, lit, lit),
+				StatusFormat.bonusPieces(bonus, true, true, lit, dim).stream().map(Panel.Piece::color).toList());
+		// A bonus that is not on stays dim throughout, wherever you are.
+		assertEquals(List.of(dim, dim, dim, dim, dim),
+				StatusFormat.bonusPieces(bonus, false, true, lit, dim).stream().map(Panel.Piece::color).toList());
+		// "in Worlds" is not the Resource World qualifier: lit when on.
+		assertEquals(List.of(lit, lit, lit, lit, lit),
+				StatusFormat.bonusPieces(ArmorSet.bonus(MOREND_LEGGINGS), true, false, lit, dim).stream()
+						.map(Panel.Piece::color).toList());
+		assertTrue(StatusFormat.bonusPieces("", true, true, lit, dim).isEmpty());
 	}
 }
