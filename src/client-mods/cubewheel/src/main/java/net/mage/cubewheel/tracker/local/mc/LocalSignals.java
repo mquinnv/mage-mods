@@ -327,7 +327,10 @@ public final class LocalSignals {
 			kills.onDamage(target.getId(), player.getId(), tick);
 			removals.hit(target.getId(), System.currentTimeMillis());
 			watchStack(target);
-			captureEntity("attack", target, describe(target));
+			// "probed before": this id was met within STALE_MS, so no new nearby probe runs for it (capture 2026-10-08:
+			// a Void Scuttler's slime was already known and already settled at its first captured hit).
+			captureEntity("attack", target, describe(target) + (removals.seen(target.getId()) ? "; probed before" : "")
+					+ (removals.settled(target.getId()) ? "; settled " + removals.settledAgeMs(target.getId()) + " ms ago" : ""));
 			probe(target);
 			hitModel(target.getId(), player.getId());
 		} catch (Throwable t) {
@@ -453,6 +456,7 @@ public final class LocalSignals {
 			if (!enabled(Hook.REMOVE) || !local().kills) return;
 			Minecraft mc = Minecraft.getInstance();
 			if (mc.level == null || mc.player == null) return;
+			removals.tick(System.currentTimeMillis()); // settled marks and probes older than STALE_MS no longer hold
 			for (int i = 0; i < ids.size(); i++) {
 				int id = ids.getInt(i);
 				if (!kills.tracks(id) && !stacks.watching(id)) continue;
@@ -468,7 +472,7 @@ public final class LocalSignals {
 					String why = !recent ? (kills.hitBy(id, mc.player.getId(), tick) ? "local hit, too long ago" : "no recent local hit")
 							: !near ? "local hit, too far to be a kill"
 							: removals.awaitingLoot(id) ? "local hit, pending: waiting for loot line"
-							: removals.settled(id) ? "local hit, already counted or refused"
+							: removals.settled(id) ? "local hit, already counted or refused (settled " + removals.settledAgeMs(id) + " ms ago)"
 							: !survivalMode(mc.player) ? "local hit, not in survival mode" : null;
 					if (why == null && removals.claim(id, true, true, inHitboxWindow(mc.player.getId()))) {
 						onRemovalKill(entity);

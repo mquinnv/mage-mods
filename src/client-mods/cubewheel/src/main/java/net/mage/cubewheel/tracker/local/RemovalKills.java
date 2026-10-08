@@ -41,6 +41,15 @@ public final class RemovalKills {
 	public static final int MAX_HINTS = 256;
 	public static final int MAX_SETTLED = 512;
 	public static final int MAX_PENDING = 16;
+	/**
+	 * How long a settled id stays settled, and a remembered probe stays current. Everything a settled id guards (the
+	 * corpse removal after a death, a model's other hitboxes and tag going with it, a stack drop's removal) happens
+	 * within seconds. The server re-tracks a mob it stopped tracking under the same id, and a pack of scuttlers lets
+	 * a sweep touch the next one while the first is claimed, so an id kept settled for good refused real kills: a
+	 * Void Scuttler hit 27 times and removed was "already counted or refused" (capture 2026-10-08, 1 of 5 counted).
+	 * After this, the id is a fresh entity again: probed anew on the next hit, claimable on removal.
+	 */
+	public static final long STALE_MS = 30_000;
 
 	/** How a removal kill was named: a own custom name, b linked/nearby entity, c loot line, d none. */
 	public enum Method {
@@ -89,8 +98,14 @@ public final class RemovalKills {
 		}
 	}
 
-	private final Map<Integer, Optional<Hint>> hints = new LinkedHashMap<>();
-	private final Set<Integer> settled = new LinkedHashSet<>();
+	/** A probe's result and when it was remembered (the clock then). */
+	private record Remembered(Optional<Hint> hint, long at) {}
+
+	private final Map<Integer, Remembered> hints = new LinkedHashMap<>();
+	/** Settled ids and when (the clock then). */
+	private final Map<Integer, Long> settled = new LinkedHashMap<>();
+	/** The latest time (ms) any caller mentioned; settle/remember stamp with it, so their signatures stay time-free. */
+	private long clock;
 	private final Deque<Pending> pending = new ArrayDeque<>();
 	private final Deque<Seen> lootLines = new ArrayDeque<>();
 	private final Map<Integer, Long> firstHit = new LinkedHashMap<>();
@@ -101,8 +116,19 @@ public final class RemovalKills {
 	/** Remembers what was found for hit entity {@code id} ({@code hint} may be null: looked, found nothing). */
 	public void remember(int id, Hint hint) {
 		hints.remove(id);
-		hints.put(id, Optional.ofNullable(hint));
+		hints.put(id, new Remembered(Optional.ofNullable(hint), clock));
 		trim(hints.keySet(), MAX_HINTS);
+	}
+
+	/** Moves the clock to {@code now} (never back): what {@link #settle} and {@link #remember} are stamped with. */
+	public void tick(long now) {
+		if (now > clock) clock = now;
+	}
+
+	/** Ms since {@code id} was settled, or -1 if it is not (any more). */
+	public long settledAgeMs(int id) {
+		Long at = settled.get(id);
+		return at == null || clock - at > STALE_MS ? -1 : clock - at;
 	}
 
 	/**
@@ -155,7 +181,7 @@ public final class RemovalKills {
 		if (hint == null) return false;
 		if (hint.method() == Method.OWN) return true; // its own custom name: nobody else's
 		if (tagTies == null) return false;
-		if (hint.sourceId() >= 0 && settled.contains(hint.sourceId())) return false;
+		if (hint.sourceId() >= 0 && settled(hint.sourceId())) return false;
 		Set<Integer> mine = new LinkedHashSet<>(models.getOrDefault(id, Set.of()));
 		mine.add(id);
 		return !Collections.disjoint(mine, tagTies);
@@ -170,14 +196,18 @@ public final class RemovalKills {
 		return hint != null && (hint.method() == Method.OWN || attacked(id) || fallback(id).isPresent());
 	}
 
-	/** Was entity {@code id} already looked at (so the nearby query runs once per entity)? */
+	/**
+	 * Was entity {@code id} looked at within {@link #STALE_MS} (so the nearby query runs once per entity, and again
+	 * for one met long ago: the server re-tracks a mob under the same id, and its tag may have changed)?
+	 */
 	public boolean seen(int id) {
-		return hints.containsKey(id);
+		Remembered r = hints.get(id);
+		return r != null && clock - r.at() <= STALE_MS;
 	}
 
 	public Optional<Hint> hint(int id) {
-		Optional<Hint> h = hints.get(id);
-		return h == null ? Optional.empty() : h;
+		Remembered r = hints.get(id);
+		return r == null ? Optional.empty() : r.hint();
 	}
 
 	/**
@@ -185,6 +215,7 @@ public final class RemovalKills {
 	 * hitting again after the loot appeared must not hide that loot.
 	 */
 	public void hit(int id, long at) {
+		tick(at);
 		used(id, at);
 		attacked.remove(id);
 		attacked.add(id);
@@ -196,6 +227,7 @@ public final class RemovalKills {
 	 * like a hit, but is no attack, so its removal is never a monster kill by itself (see {@link #generic}).
 	 */
 	public void used(int id, long at) {
+		tick(at);
 		if (firstHit.putIfAbsent(id, at) != null) return;
 		trim(firstHit.keySet(), MAX_HINTS);
 	}
@@ -233,23 +265,24 @@ public final class RemovalKills {
 		return s.contains("firefly bottle") ? "Firefly" : null;
 	}
 
-	/** {@code id} was counted (or refused) by a death or stack path: a later removal never counts. */
+	/** {@code id} was counted (or refused) by a death or stack path: a removal within {@link #STALE_MS} never counts. */
 	public void settle(int id) {
 		settled.remove(id);
-		settled.add(id);
-		trim(settled, MAX_SETTLED);
+		settled.put(id, clock);
+		trim(settled.keySet(), MAX_SETTLED);
 	}
 
+	/** Settled within {@link #STALE_MS}. */
 	public boolean settled(int id) {
-		return settled.contains(id);
+		return settledAgeMs(id) >= 0;
 	}
 
 	/**
 	 * Entity {@code id} was removed. True (once per id) when it counts as a kill: hit by the local player
-	 * within {@link #WINDOW_TICKS} ({@code recentLocalHit}) and still close ({@code near}), not yet settled.
+	 * within {@link #WINDOW_TICKS} ({@code recentLocalHit}) and still close ({@code near}), not settled.
 	 */
 	public boolean claim(int id, boolean recentLocalHit, boolean near) {
-		if (!recentLocalHit || !near || settled.contains(id)) return false;
+		if (!recentLocalHit || !near || settled(id)) return false;
 		settle(id);
 		return true;
 	}
@@ -280,6 +313,7 @@ public final class RemovalKills {
 	 * and it waits up to {@link #LOOT_WAIT_MS} for the next one.
 	 */
 	public Optional<List<String>> awaitLoot(Removed r, long now) {
+		tick(now);
 		Long hitAt = firstHit.get(r.entityId());
 		long from = Math.max(now - LOOT_BEFORE_MS, hitAt == null ? Long.MIN_VALUE : hitAt);
 		for (Iterator<Seen> it = lootLines.descendingIterator(); it.hasNext(); ) {
@@ -296,6 +330,7 @@ public final class RemovalKills {
 
 	/** An action-bar message: if it holds loot, it names every pending removal (returned, no longer pending). */
 	public List<Resolved> onActionBar(String text, long now) {
+		tick(now);
 		List<String> loot = LootLine.items(text);
 		if (loot.isEmpty()) return List.of();
 		Seen seen = new Seen(List.copyOf(loot), now);
@@ -312,6 +347,8 @@ public final class RemovalKills {
 
 	/** Removals that waited longer than {@link #LOOT_WAIT_MS} for loot (unattributed); no longer pending. */
 	public List<Removed> expire(long now) {
+		tick(now);
+		settled.values().removeIf(at -> clock - at > STALE_MS);
 		List<Removed> out = new ArrayList<>();
 		for (Iterator<Pending> it = pending.iterator(); it.hasNext(); ) {
 			Pending p = it.next();
