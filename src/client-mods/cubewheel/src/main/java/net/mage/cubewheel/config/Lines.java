@@ -45,8 +45,8 @@ public final class Lines {
 	}
 
 	/**
-	 * One {@code name | when [| timezone] [| off]} line per event. The timezone is written only when set, {@code off}
-	 * only when the event is disabled.
+	 * One {@code name | when [| timezone] [| off] [| pinned]} line per event. The timezone is written only when set,
+	 * {@code off} only when the event is disabled, {@code pinned} only when it is pinned.
 	 */
 	public static List<String> eventLines(List<CubeWheelConfig.EventDef> defs) {
 		List<String> out = new ArrayList<>();
@@ -54,14 +54,16 @@ public final class Lines {
 			StringBuilder sb = new StringBuilder().append(d.name).append(" | ").append(d.when);
 			if (d.timezone != null && !d.timezone.isBlank()) sb.append(" | ").append(d.timezone);
 			if (!d.enabled) sb.append(" | off");
+			if (d.pinned) sb.append(" | pinned");
 			out.add(sb.toString());
 		}
 		return out;
 	}
 
 	/**
-	 * Parses {@code name | when [| timezone] [| off]} lines. Blank lines are skipped silently; a line missing its name or
-	 * {@code when}, or naming two timezones, is skipped and described in {@code problems}. Empty extra parts are ignored.
+	 * Parses {@code name | when [| timezone] [| off] [| pinned]} lines ({@code off} and {@code pinned} in any order, any
+	 * case). Blank lines are skipped silently; a line missing its name or {@code when}, or naming two timezones, is
+	 * skipped and described in {@code problems}. Empty extra parts are ignored.
 	 */
 	public static List<CubeWheelConfig.EventDef> parseEvents(List<String> lines, List<String> problems) {
 		List<CubeWheelConfig.EventDef> out = new ArrayList<>();
@@ -81,6 +83,7 @@ public final class Lines {
 				String part = parts[i].trim();
 				if (part.isEmpty()) continue;
 				if (part.equalsIgnoreCase("off")) def.enabled = false;
+				else if (part.equalsIgnoreCase("pinned")) def.pinned = true;
 				else if (def.timezone == null) def.timezone = part;
 				else {
 					problems.add("\"" + line + "\" ignored: more than one timezone");

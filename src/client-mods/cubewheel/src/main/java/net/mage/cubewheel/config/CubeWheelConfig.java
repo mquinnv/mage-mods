@@ -125,6 +125,8 @@ public final class CubeWheelConfig {
 		/** Optional; falls back to {@code events.timezone}. */
 		public String timezone;
 		public boolean enabled = true;
+		/** Always listed in the Events panel, after the soonest ones if it is not among them (missing = false). */
+		public boolean pinned;
 
 		public EventDef() {}
 

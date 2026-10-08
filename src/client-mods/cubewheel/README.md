@@ -187,7 +187,8 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `events.show` | Upcoming events listed, 1–10 | `3` |
 | `events.alertMinutes` | Chat alert this many minutes before a start, 0–60 (0 = off) | `5` |
 | `events.timezone` | Time zone of the schedule's times (entries may set their own `timezone`) | `"America/New_York"` |
-| `events.schedule` | List of `{"name", "when"}` (optional `timezone`, `enabled`) | from ManaCube's wiki, see below |
+| `events.schedule` | List of `{"name", "when"}` (optional `timezone`, `enabled`, `pinned`) | from ManaCube's wiki, see below |
+| `events.schedule[].pinned` | Always list this event's next start, after the `events.show` soonest if it is not among them (see [Event timer](#event-timer)) | `false` (`true` for Mana Pond) |
 | `events.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `events.bossWarps` | Boss location regex -> command for the Boss event slice; invalid entries are dropped with a warning | see [Boss event slice](#boss-event-slice) |
 | `events.bossMinutes` | How long the Boss event slice shows a spawn, 1–180 | `15` |
@@ -601,7 +602,10 @@ milk, a quest completed in chat), a short line appears just below the crosshair 
 ### Event timer
 
 An **Events** panel lists the next `events.show` (3) Survival events with a countdown, soonest first:
-`Golden Knight · 14:02` (yellow within 5 minutes). Each event appears once, with its next start. When a start is
+`Golden Knight · 14:02` (yellow within 5 minutes). Each event appears once, with its next start. A schedule
+entry with `"pinned": true` (the Mana Pond by default) is always listed: among the soonest if it is one of them,
+else after them. While the Mana Pond runs its boss bar ("Mana Pond (Spawn) 120/256") replaces the countdown with
+a green `Mana Pond · NOW 120/256`; when the bar goes the countdown to its next start returns. When a start is
 `events.alertMinutes` (5) minutes away, a gold chat line (only you see it) says `[CubeWheel] KOTH starts in 5
 min (12:30)` in your computer's local time; once per start, also if you join inside the window. Bind "Toggle
 event HUD" to hide or show the panel (saved like the tracker HUD toggle; alerts do not depend on it).
@@ -618,18 +622,21 @@ LPS was announced for 13:00 EDT):
 | Golden Knight | `every 3h from 00:15` |
 | Cursed Witch | `every 3h from 01:15` |
 | Desert Golem | `every 3h from 02:15` |
+| Mana Pond | `at 03:00, 06:00, 10:00, 15:00, 18:00, 22:00` (pinned; from the sign at the pond, 2026-10-07) |
 
 Only what the page states is included. It says KOTH "runs every two hours" but lists no 8:30, and the boss list
-has no 11:30; the listed times are used. Magic Pond, Morender Dragon and Shadow Sorcerer have no times (the
-last two are triggered by player progress). **In-game `/events` is authoritative**: if it disagrees, edit
-`events.schedule` and reload. `when` is either `at HH:MM, HH:MM, ...` (24-hour, or `8:00AM`/`1:00 PM`) or
-`every Nh from HH:MM` / `every Nh at :MM` (from that time until midnight, every day). Example:
+has no 11:30; the listed times are used. The Mana Pond's times are not on the page (they come from the sign at
+the pond; it runs about 5m20s). Morender Dragon and Shadow Sorcerer have no times (they are triggered by player
+progress). **In-game `/events` is authoritative**: if it disagrees, edit `events.schedule` and reload. `when` is
+either `at HH:MM, HH:MM, ...` (24-hour, or `8:00AM`/`1:00 PM`) or `every Nh from HH:MM` / `every Nh at :MM`
+(from that time until midnight, every day). Example:
 
 ```json
 "events": {
   "schedule": [
     { "name": "KOTH", "when": "every 2h from 00:30" },
-    { "name": "My thing", "when": "at 20:00", "timezone": "Europe/London", "enabled": true }
+    { "name": "My thing", "when": "at 20:00", "timezone": "Europe/London", "enabled": true },
+    { "name": "Mana Pond", "when": "at 03:00, 06:00, 10:00, 15:00, 18:00, 22:00", "enabled": true, "pinned": true }
   ]
 }
 ```

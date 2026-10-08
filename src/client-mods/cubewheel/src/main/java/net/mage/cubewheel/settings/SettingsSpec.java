@@ -268,9 +268,10 @@ public final class SettingsSpec {
 										c -> c.events.timezone, (c, v) -> c.events.timezone = v))),
 						new Group("Schedule", List.of(
 								eventLines(d, "events.schedule", "Schedule",
-										"One event per line: \"name | when [| timezone] [| off]\". \"when\" is \"at 08:00, 13:00\""
-												+ " or \"every 3h from 00:15\"; the optional zone overrides the Time zone above and"
-												+ " \"off\" keeps the line but disables it. Examples: \"KOTH | at 00:30, 02:30\" and"
+										"One event per line: \"name | when [| timezone] [| off] [| pinned]\". \"when\" is \"at 08:00, 13:00\""
+												+ " or \"every 3h from 00:15\"; the optional zone overrides the Time zone above,"
+												+ " \"off\" keeps the line but disables it and \"pinned\" always lists its next start."
+												+ " Examples: \"KOTH | at 00:30, 02:30\", \"Mana Pond | at 03:00, 06:00 | pinned\" and"
 												+ " \"Boss | every 2h from 01:30 | Europe/London | off\"."))),
 						new Group("Boss event slice", List.of(
 								intRange(d, "events.bossMinutes", "Boss minutes",

@@ -12,11 +12,15 @@ import java.util.Set;
  * Upcoming scheduled events and "starts soon" alerts. Pure: no Minecraft/Fabric imports.
  */
 public final class EventTimer {
-	/** One configured event. */
-	public record Def(String name, EventSchedule schedule, ZoneId zone) {}
+	/** One configured event; a {@code pinned} one is always listed (see {@link #upcoming}). */
+	public record Def(String name, EventSchedule schedule, ZoneId zone, boolean pinned) {
+		public Def(String name, EventSchedule schedule, ZoneId zone) {
+			this(name, schedule, zone, false);
+		}
+	}
 
 	/** One start of an event. */
-	public record Occurrence(String name, Instant start, ZoneId zone) {
+	public record Occurrence(String name, Instant start, ZoneId zone, boolean pinned) {
 		String key() {
 			return name + "@" + start.toEpochMilli();
 		}
@@ -37,12 +41,21 @@ public final class EventTimer {
 		return t;
 	}
 
-	/** The next start of every event, soonest first, at most {@code max}. */
+	/**
+	 * The next start of every event, soonest first: the {@code max} soonest, then every pinned event's next start that
+	 * is not among them (the Mana Pond, Michael 2026-10-07), those still in time order.
+	 */
 	public List<Occurrence> upcoming(Instant now, int max) {
-		List<Occurrence> out = new ArrayList<>(defs.size());
-		for (Def d : defs) out.add(new Occurrence(d.name(), d.schedule().next(now, d.zone()), d.zone()));
-		out.sort(Comparator.comparing(Occurrence::start).thenComparing(Occurrence::name));
-		return out.size() > max ? List.copyOf(out.subList(0, Math.max(0, max))) : out;
+		List<Occurrence> all = new ArrayList<>(defs.size());
+		for (Def d : defs) all.add(new Occurrence(d.name(), d.schedule().next(now, d.zone()), d.zone(), d.pinned()));
+		all.sort(Comparator.comparing(Occurrence::start).thenComparing(Occurrence::name));
+		int soonest = Math.max(0, Math.min(max, all.size()));
+		if (soonest == all.size()) return all;
+		List<Occurrence> out = new ArrayList<>(all.subList(0, soonest));
+		for (Occurrence o : all.subList(soonest, all.size())) {
+			if (o.pinned()) out.add(o);
+		}
+		return List.copyOf(out);
 	}
 
 	/**

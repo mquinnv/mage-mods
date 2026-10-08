@@ -361,24 +361,48 @@ public final class CubeWheelClient implements ClientModInitializer {
 		if (!capture.enabled() || mc.player == null || !ServerGate.active(config.current())) return;
 		long now = System.currentTimeMillis();
 		String actionBarText;
-		List<CaptureLog.BossBar> bars = new ArrayList<>();
 		try {
 			Component actionBar = ((HudAccessor) mc.gui.hud).cubewheel$getOverlayMessage();
 			actionBarText = actionBar == null ? null : actionBar.getString();
+		} catch (VirtualMachineError e) {
+			throw e;
+		} catch (Throwable t) {
+			hudAccessorsFailed(t);
+			return;
+		}
+		List<CaptureLog.BossBar> bars = bossBars(mc);
+		if (bars == null) return;
+		capture.actionBar(actionBarText, now);
+		capture.bossBars(bars, now);
+	}
+
+	/**
+	 * The boss bars on screen (name, server-set progress), for the capture and the live events (the Mana Pond's
+	 * "Mana Pond (Spawn) 120/256"). Read-only. Null once the accessor mixins proved unusable this session.
+	 */
+	public static List<CaptureLog.BossBar> bossBars(Minecraft mc) {
+		if (hudCaptureDisabled) return null;
+		List<CaptureLog.BossBar> bars = new ArrayList<>();
+		try {
 			for (LerpingBossEvent e : ((BossHealthOverlayAccessor) mc.gui.hud.getBossOverlay()).cubewheel$getEvents().values()) {
 				bars.add(new CaptureLog.BossBar(e.getName().getString(), ((LerpingBossEventAccessor) e).cubewheel$getTargetPercent()));
 			}
 		} catch (VirtualMachineError e) {
 			throw e;
 		} catch (Throwable t) {
-			// The accessor mixins are optional (required=false): if one did not apply (e.g. a field was
-			// renamed in a Minecraft update) the casts/calls fail here. Disable once, don't spam per tick.
-			hudCaptureDisabled = true;
-			LOG.warn("[cubewheel] action-bar/boss-bar capture disabled for this session (mixin accessor unavailable): {}", t.toString());
-			return;
+			hudAccessorsFailed(t);
+			return null;
 		}
-		capture.actionBar(actionBarText, now);
-		capture.bossBars(bars, now);
+		return bars;
+	}
+
+	/**
+	 * The accessor mixins are optional (required=false): if one did not apply (e.g. a field was renamed in a
+	 * Minecraft update) the casts/calls fail. Disable once, don't spam per tick.
+	 */
+	private static void hudAccessorsFailed(Throwable t) {
+		hudCaptureDisabled = true;
+		LOG.warn("[cubewheel] action-bar/boss-bar reading disabled for this session (mixin accessor unavailable): {}", t.toString());
 	}
 
 	/**

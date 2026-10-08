@@ -83,6 +83,30 @@ class LinesTest {
 		for (int i = 0; i < defs.size(); i++) same(defs.get(i), back.get(i));
 	}
 
+	/** A pinned event (Mana Pond, Michael 2026-10-07) keeps its pin through the settings editor. */
+	@Test
+	void eventPinnedRoundTrips() {
+		CubeWheelConfig.EventDef pond = new CubeWheelConfig.EventDef("Mana Pond", "at 03:00, 06:00");
+		pond.pinned = true;
+		CubeWheelConfig.EventDef all = new CubeWheelConfig.EventDef("X", "at 01:00");
+		all.timezone = "UTC";
+		all.enabled = false;
+		all.pinned = true;
+		List<String> lines = Lines.eventLines(List.of(pond, all));
+		assertEquals(List.of("Mana Pond | at 03:00, 06:00 | pinned", "X | at 01:00 | UTC | off | pinned"), lines);
+		List<String> problems = new ArrayList<>();
+		List<CubeWheelConfig.EventDef> back = Lines.parseEvents(lines, problems);
+		assertTrue(problems.isEmpty());
+		same(pond, back.get(0));
+		same(all, back.get(1));
+		// Any order, any case; a plain line is not pinned.
+		List<CubeWheelConfig.EventDef> r = Lines.parseEvents(List.of("A | at 01:00 | PINNED | off", "B | at 02:00"), problems);
+		assertTrue(problems.isEmpty());
+		assertTrue(r.get(0).pinned);
+		assertFalse(r.get(0).enabled);
+		assertFalse(r.get(1).pinned);
+	}
+
 	@Test
 	void eventOffIsCaseInsensitiveAndBlankLinesSkipped() {
 		List<String> problems = new ArrayList<>();
@@ -107,5 +131,6 @@ class LinesTest {
 		assertEquals(a.when, b.when);
 		assertEquals(a.timezone, b.timezone);
 		assertEquals(a.enabled, b.enabled);
+		assertEquals(a.pinned, b.pinned);
 	}
 }

@@ -375,6 +375,7 @@ class SettingsSpecTest {
 		assertInstanceOf(MapLines.class, byId("events.bossWarps"));
 		assertTrue(byId("events.schedule").tooltip().contains("KOTH | at 00:30, 02:30"));
 		assertTrue(byId("events.schedule").tooltip().contains("Boss | every 2h from 01:30 | Europe/London | off"));
+		assertTrue(byId("events.schedule").tooltip().contains("pinned"));
 		assertTrue(byId("events.bossWarps").tooltip().contains("(?i)cursed witch -> /warp cursedwitch"));
 		IntRange show = (IntRange) byId("events.show");
 		assertEquals(1, show.min());

@@ -309,6 +309,11 @@ public final class DefaultConfig {
 		l.add(new CubeWheelConfig.EventDef("Golden Knight", "every 3h from 00:15"));
 		l.add(new CubeWheelConfig.EventDef("Cursed Witch", "every 3h from 01:15"));
 		l.add(new CubeWheelConfig.EventDef("Desert Golem", "every 3h from 02:15"));
+		// The Mana Pond (times from the sign at the pond, Michael 2026-10-07): pinned, so the panel always lists its
+		// next start, and shown live ("NOW 120/256") from its boss bar while it runs (~5m20s).
+		CubeWheelConfig.EventDef pond = new CubeWheelConfig.EventDef("Mana Pond", "at 03:00, 06:00, 10:00, 15:00, 18:00, 22:00");
+		pond.pinned = true;
+		l.add(pond);
 		return l;
 	}
 

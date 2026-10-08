@@ -296,13 +296,34 @@ class ConfigStoreTest {
 		assertEquals(3, e.show);
 		assertEquals(5, e.alertMinutes);
 		assertEquals("America/New_York", e.timezone);
-		assertEquals(List.of("LPS", "KOTH", "Boss", "Golden Knight", "Cursed Witch", "Desert Golem"),
+		assertEquals(List.of("LPS", "KOTH", "Boss", "Golden Knight", "Cursed Witch", "Desert Golem", "Mana Pond"),
 				e.schedule.stream().map(d -> d.name).toList());
 		for (CubeWheelConfig.EventDef d : e.schedule) net.mage.cubewheel.events.EventSchedule.parse(d.when);
+		// The Mana Pond (schedule from the sign at the pond, Michael 2026-10-07) is pinned; nothing else is.
+		CubeWheelConfig.EventDef pond = e.schedule.get(6);
+		assertEquals("at 03:00, 06:00, 10:00, 15:00, 18:00, 22:00", pond.when);
+		assertTrue(pond.enabled);
+		assertTrue(pond.pinned);
+		assertEquals(List.of("Mana Pond"), e.schedule.stream().filter(d -> d.pinned).map(d -> d.name).toList());
 		Files.writeString(f, "{\"events\": {}}");
 		assertNull(s.reload());
-		assertEquals(6, s.current().events.schedule.size());
+		assertEquals(7, s.current().events.schedule.size());
 		assertTrue(s.warnings().isEmpty());
+	}
+
+	@Test void aScheduleEntryWithoutPinnedIsNotPinned() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{\"events\": {\"schedule\": ["
+				+ "{\"name\": \"KOTH\", \"when\": \"every 2h from 00:30\"},"
+				+ "{\"name\": \"Mana Pond\", \"when\": \"at 03:00\", \"enabled\": true, \"pinned\": true}]}}");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		List<CubeWheelConfig.EventDef> sched = s.current().events.schedule;
+		assertEquals(List.of(false, true), sched.stream().map(d -> d.pinned).toList());
+		assertTrue(s.warnings().isEmpty());
+		// Saved and read back, the pin survives.
+		s.save();
+		assertTrue(Files.readString(f).contains("\"pinned\": true"), Files.readString(f));
 	}
 
 	@Test void badEventEntriesAreDroppedWithWarnings() throws Exception {
