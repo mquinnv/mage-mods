@@ -141,6 +141,11 @@ public final class CubeWheelConfig {
 		public boolean showUses = true;
 		/** Also track mcMMO super-ability cooldowns (Super Breaker, Tree Feller, ...) from their messages. */
 		public boolean mcmmo = true;
+		/**
+		 * Server commands with a cooldown -> placeholder length ("5m"), counted down after the server confirms
+		 * the command and corrected from its refusals (see CommandCooldowns). null = the defaults ({"/heal": "5m"}).
+		 */
+		public Map<String, String> commands;
 		public Position position = DefaultConfig.cooldownsPosition();
 	}
 

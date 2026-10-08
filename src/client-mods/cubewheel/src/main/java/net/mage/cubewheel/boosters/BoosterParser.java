@@ -78,7 +78,8 @@ public final class BoosterParser {
 		return PLAYER_PREFIX.matcher(s).find() || DM_PREFIX.matcher(s).find();
 	}
 
-	private static String clean(String raw) {
+	/** {@code raw} without colour codes and ManaCube's private-use glyphs, trimmed (shared with other chat readers). */
+	public static String clean(String raw) {
 		String s = FORMATTING.matcher(raw).replaceAll("");
 		return GLYPHS.matcher(s).replaceAll("").trim();
 	}

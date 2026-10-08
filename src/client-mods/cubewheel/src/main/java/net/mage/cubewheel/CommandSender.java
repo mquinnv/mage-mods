@@ -27,13 +27,10 @@ public final class CommandSender {
 			return false;
 		}
 		connection.sendCommand(cmd);
-		// Fabric's COMMAND event normally records this too; noting it here keeps capture's afterCommand
-		// right even if that event ever stops covering commands sent by mods.
-		try {
-			if (CubeWheelClient.capture() != null) CubeWheelClient.capture().noteCommand(cmd, System.currentTimeMillis());
-		} catch (RuntimeException e) {
-			CubeWheelClient.LOG.error("[cubewheel] command note failed", e); // the command was sent regardless
-		}
+		// Fabric's COMMAND event normally notes this too (SentCommands passes the duplicate on once); noting it
+		// here keeps capture's afterCommand and the command cooldowns right even if that event ever stops
+		// covering commands sent by mods. Listener failures are logged there; the command was sent regardless.
+		SentCommands.note(cmd, System.currentTimeMillis());
 		return true;
 	}
 }

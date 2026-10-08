@@ -172,7 +172,13 @@ public final class SettingsSpec {
 								toggle(d, "cooldowns.mcmmo", "mcMMO abilities",
 										"Also track mcMMO super-ability cooldowns (Super Breaker, Tree Feller, ...)"
 												+ " from their messages.",
-										c -> c.cooldowns.mcmmo, (c, v) -> c.cooldowns.mcmmo = v))),
+										c -> c.cooldowns.mcmmo, (c, v) -> c.cooldowns.mcmmo = v),
+								mapLines(d, "cooldowns.commands", "Command cooldowns", "command -> length",
+										"Server commands with a cooldown, counted down after the server confirms them and"
+												+ " corrected from its refusals. One line per command: \"command -> placeholder"
+												+ " length\", e.g. \"/heal -> 5m\". The placeholder is used until a refusal"
+												+ " teaches the real length.",
+										c -> c.cooldowns.commands, (c, m) -> c.cooldowns.commands = m))),
 						new Group("Charms", List.of(
 								toggle(d, "charms.enabled", "Enabled",
 										"Show the Charms panel: inventory fill, the worn amulet and carried talismans,"

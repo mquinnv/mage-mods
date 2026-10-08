@@ -64,8 +64,8 @@ Any key or mouse button can be used for the wheel. Each press does its action on
 Top level, in fan order (slice 0 at the top, then clockwise), each with the entries that fan out in its arc
 while it is hovered: Sushi `/warp crops` (Spawners `/warp spawners`), Homes (live, the cached homes), Teleporter
 `/teleporter` (Back), Jobs `/jobs`, Shop `/shop` (Kilton, Auction house), Sell `/sell` (hand, all), Vaults (live:
-PV 1..N, Party vault, All vaults), Heal `/heal` (Fly `/fly`, shown as `Fly: on`/`off`), Isles `/isles` (the six
-Mana worlds), Party
+PV 1..N, Party vault, All vaults), Heal `/heal` (Fly `/fly`, shown as `Fly: on`/`off`; the heal cooldown shows in
+the Cooldowns panel, see [Command cooldowns](#command-cooldowns)), Isles `/isles` (the six Mana worlds), Party
 quests `/pquests` (Prestige, Challenges), Daily reward `/cow` (Crates; live badge, see
 [Daily reward badge](#daily-reward-badge)), Boss event (live, see [Boss event slice](#boss-event-slice)), TPA
 (live, see [Live slices](#live-slices)) and More. More holds Shops (Alchemist, Enchanter, Shop, Auction house,
@@ -199,6 +199,7 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `cooldowns.enabled` | Item ability countdowns (see [Item cooldowns](#item-cooldowns)) | `true` |
 | `cooldowns.showUses` | Also show the held item's `Uses: N` | `true` |
 | `cooldowns.mcmmo` | mcMMO ability countdowns (see [mcMMO ability cooldowns](#mcmmo-ability-cooldowns)); needs `cooldowns.enabled` | `true` |
+| `cooldowns.commands` | Server command -> placeholder cooldown length (`"5m"`, `"2m 30s"`), counted down after the server confirms the command and corrected from its refusals (see [Command cooldowns](#command-cooldowns)); an entry without a command or a parseable length is dropped with a warning; needs `cooldowns.enabled` | `{"/heal": "5m"}` |
 | `cooldowns.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `wheel` | The root ring: a list of nodes | see `DefaultConfig.java` |
 
@@ -707,6 +708,25 @@ With no tool readied yet, "too tired" goes to the most recent activation. Learne
 survive a reconnect, not a game restart). Purely passive: nothing is sent or hidden.
 `cooldowns.mcmmo: false` turns it off.
 
+### Command cooldowns
+
+The same **Cooldowns** panel counts down server commands that have a cooldown, `/heal` by default: `/ Heal · 4:30`
+with a golden apple (yellow in the last 10 s), in the row style of item abilities. It only knows a command was
+sent (typed, or from the wheel) and what the server answers within 3 s:
+
+| Reply within 3 s | Effect |
+|---|---|
+| `You have been healed.` (the only line captured so far) | starts the countdown with the known length: the learned one, else the placeholder from `cooldowns.commands` (`5m` for `/heal`, a guess). Pressing again while it runs and being healed again means the real cooldown is shorter: the countdown restarts and the shorter length is learned |
+| a refusal: a server line naming the command word and a duration, such as `… wait 2m 30s … /heal …` | sets the remaining time; if a success was seen before, learns length = time since that success + remaining |
+| nothing | nothing starts (the command may have failed for another reason) |
+
+**The refusal wording is unverified**: no `/heal` refusal has been captured yet, so the matcher is generic (the
+command word plus any `2m 30s` / `45 seconds` parts, player chat excluded). If `/heal` on cooldown shows nothing, turn
+capture mode on, press it again and send the `"kind":"chat"` line. Learned lengths are stored as whole seconds per
+command in `config/cubewheel-cooldowns.json` (`{"/heal": 450}`), separate from the mcMMO file; running countdowns are
+kept in memory only. Purely passive: nothing is sent or hidden. Other commands can be added to `cooldowns.commands`
+(paper icon, label from the command word), but without a known success line only a refusal can start them.
+
 ## SVA catalog
 
 Press **Open SVA catalog** (unbound by default) for a grid of every Survival SVA (season vault
@@ -822,6 +842,7 @@ Captures contain chat text, including other players' messages; review the file b
   `tracker.survivalSidebarPattern` to match the captured title, or to `""`.
 - Whether the wiki's event times are current (see [Event timer](#event-timer)); compare with `/events`.
 - The exact booster chat wording on Survival (see [Boosters](#boosters)).
+- `/heal`'s cooldown length and its refusal wording (see [Command cooldowns](#command-cooldowns)).
 - The /cow menu's wording and ManaCube's reward reset rule (see [Daily reward badge](#daily-reward-badge)).
 - Boss locations beyond Wolfhaven Mines, Morend, Boss Arena and Sandara Canyon (the warp regexes are
   guesses from the world names).

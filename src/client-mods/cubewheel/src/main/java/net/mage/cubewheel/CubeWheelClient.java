@@ -8,6 +8,7 @@ import net.mage.cubewheel.capture.CaptureLog;
 import net.mage.cubewheel.config.ConfigStore;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.config.WheelNode;
+import net.mage.cubewheel.cooldown.CommandWatcher;
 import net.mage.cubewheel.cooldown.CooldownWatcher;
 import net.mage.cubewheel.cooldown.McmmoWatcher;
 import net.mage.cubewheel.events.EventHud;
@@ -99,6 +100,8 @@ public final class CubeWheelClient implements ClientModInitializer {
 		tracker.load();
 		// Written on CubeWheel's IO thread: chat capture never waits for the disk.
 		capture = new CaptureLog(configDir.resolve("cubewheel-captures"), net.mage.cubewheel.io.BackgroundSaver.IO);
+		// Every command the player sends (typed, or from the wheel via CommandSender) reaches SentCommands' listeners.
+		SentCommands.listen(capture::noteCommand);
 		// Capture listens first and always allows, so it also records the /homes replies the next listener hides.
 		ClientReceiveMessageEvents.ALLOW_GAME.register(CubeWheelClient::captureChat);
 		ClientReceiveMessageEvents.ALLOW_GAME.register(homesFetcher::onGameMessage);
@@ -109,6 +112,8 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ClientSendMessageEvents.COMMAND.register(LiveWatcher::onCommand);
 		McmmoWatcher.init(configDir);
 		ClientReceiveMessageEvents.ALLOW_GAME.register(McmmoWatcher::onGameMessage);
+		CommandWatcher.init(configDir); // listens to SentCommands
+		ClientReceiveMessageEvents.ALLOW_GAME.register(CommandWatcher::onGameMessage);
 		ClientSendMessageEvents.COMMAND.register(homesFetcher::onCommand);
 		ClientSendMessageEvents.COMMAND.register(CubeWheelClient::noteCommand);
 		ContainerHook.register();
@@ -258,10 +263,10 @@ public final class CubeWheelClient implements ClientModInitializer {
 		sidebar.tick(mc); // catches and logs its own failures
 	}
 
-	/** COMMAND listener: remembers the last command so captured menus can say what opened them. */
+	/** COMMAND listener: a command the player typed (or a mod sent) goes to SentCommands' listeners (capture, cooldowns). */
 	private static void noteCommand(String command) {
 		try {
-			capture.noteCommand(command, System.currentTimeMillis());
+			SentCommands.note(command, System.currentTimeMillis());
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] command note failed", e);
 		}

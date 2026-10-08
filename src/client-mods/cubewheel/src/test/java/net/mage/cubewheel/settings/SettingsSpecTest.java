@@ -61,7 +61,10 @@ class SettingsSpecTest {
 		assertEquals(List.of("tracker.hudVisible", "tracker.hudMaxLines", "tracker.nearThreshold", "tracker.worldFilter"),
 				ids(hud.groups().get(3)));
 		assertEquals(List.of("boosters.enabled"), ids(hud.groups().get(4)));
-		assertEquals(List.of("cooldowns.enabled", "cooldowns.showUses", "cooldowns.mcmmo"), ids(hud.groups().get(5)));
+		assertEquals(List.of("cooldowns.enabled", "cooldowns.showUses", "cooldowns.mcmmo", "cooldowns.commands"),
+				ids(hud.groups().get(5)));
+		assertInstanceOf(MapLines.class, byId("cooldowns.commands"));
+		assertTrue(byId("cooldowns.commands").tooltip().contains("/heal -> 5m"));
 		assertEquals(List.of("charms.enabled"), ids(hud.groups().get(6)));
 		assertEquals(List.of("toast.enabled", "toast.seconds"), ids(hud.groups().get(7)));
 		for (int i = 0; i < 8; i++) assertFalse(hud.groups().get(i).collapsed(), hud.groups().get(i).name());
@@ -270,6 +273,7 @@ class SettingsSpecTest {
 		c.tracker.local.specialWorlds = null;
 		c.events.schedule = null;
 		c.events.bossWarps = null;
+		c.cooldowns.commands = null;
 		return c;
 	}
 
@@ -299,7 +303,7 @@ class SettingsSpecTest {
 	void nullMapsAndListsShowTheDefaultsAndSavingThemUnchangedKeepsBehaviour() {
 		for (String id : List.of("tracker.sources", "tracker.sidebarLinks", "tracker.refreshCommands",
 				"tracker.local.worlds", "tracker.local.specialWorlds", "serverHosts", "events.bossWarps",
-				"events.schedule")) {
+				"events.schedule", "cooldowns.commands")) {
 			Setting s = byId(id);
 			List<String> shown = shown(s, nulled());
 			assertEquals(switch (s) {

@@ -43,6 +43,7 @@ public final class ConfigNormalizer {
 		c.boosters.position = normalizePosition(c.boosters.position, DefaultConfig.boostersPosition());
 		normalizeEvents(c, warnings);
 		if (c.cooldowns == null) c.cooldowns = new CubeWheelConfig.Cooldowns();
+		c.cooldowns.commands = normalizeCommandCooldowns(c.cooldowns.commands, warnings);
 		c.cooldowns.position = normalizePosition(c.cooldowns.position, DefaultConfig.cooldownsPosition());
 		if (c.svas == null) c.svas = new CubeWheelConfig.Svas();
 		if (c.charms == null) c.charms = new CubeWheelConfig.Charms();
@@ -84,6 +85,22 @@ public final class ConfigNormalizer {
 				continue;
 			}
 			out.put(e.getKey(), cmd.startsWith("/") ? cmd : "/" + cmd);
+		}
+		return out;
+	}
+
+	/** Keys become "/command" (first word, lower case); a blank key or an unparseable length is dropped with a warning. */
+	private static Map<String, String> normalizeCommandCooldowns(Map<String, String> in, List<String> warnings) {
+		if (in == null) return DefaultConfig.commandCooldowns();
+		Map<String, String> out = new LinkedHashMap<>();
+		for (Map.Entry<String, String> e : in.entrySet()) {
+			String key = net.mage.cubewheel.cooldown.CommandCooldowns.key(e.getKey());
+			java.util.OptionalLong ms = net.mage.cubewheel.hud.Durations.parse(e.getValue());
+			if (key == null || ms.isEmpty() || ms.getAsLong() <= 0) {
+				warnings.add("cooldowns.commands \"" + e.getKey() + "\" ignored: needs a command and a length such as \"5m\"");
+				continue;
+			}
+			out.put(key, e.getValue().trim());
 		}
 		return out;
 	}

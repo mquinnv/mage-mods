@@ -233,8 +233,8 @@ public final class CooldownWatcher {
 	}
 
 	/**
-	 * The "Cooldowns" panel: "R Samurai Katana 4.5s", soonest first, then mcMMO abilities
-	 * ({@link McmmoWatcher#lines}), then the held item's "Uses: N".
+	 * The "Cooldowns" panel: "R Samurai Katana 4.5s", soonest first, then command cooldowns ("/ Heal 4:30",
+	 * {@link CommandWatcher#lines}), then mcMMO abilities ({@link McmmoWatcher#lines}), then the held item's "Uses: N".
 	 */
 	public static Optional<Panel> panel(long now) {
 		CubeWheelConfig cfg = CubeWheelClient.config().current();
@@ -251,6 +251,7 @@ public final class CooldownWatcher {
 						.withIcon(e.icon()));
 			}
 		}
+		lines.addAll(CommandWatcher.lines(now));
 		lines.addAll(McmmoWatcher.lines(now));
 		String uses = heldUses;
 		if (items && cfg.cooldowns.showUses && uses != null) lines.add(new Panel.Line(uses, Panel.GRAY));

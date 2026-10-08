@@ -268,6 +268,18 @@ In Survival with a pickaxe (capture on, so the action-bar/chat lines are recorde
 - [ ] Reconnect mid-countdown: it keeps counting. `"cooldowns": {"mcmmo": false}` + reload: no mcMMO lines (item cooldowns unchanged).
 - [ ] On the hub / another gamemode: nothing is shown. The log has no "[cubewheel] mcMMO cooldown hook failed".
 
+## Command cooldowns (/heal)
+
+In Survival with capture on (the refusal wording is unknown: the `"kind":"chat"` line after a refused /heal is what tunes this).
+
+- [ ] Click Heal on the wheel: on "You have been healed." the Cooldowns panel shows `/ Heal · 5:00` (golden apple) counting down, yellow in the last 10 s; typing `/heal` in chat does the same.
+- [ ] /heal again while it counts: if the server heals you again, the countdown restarts from the shorter time and the log shows `command cooldowns learned: {/heal=N}`; if it refuses with a time left, the countdown jumps to that time and the log shows the learned length (time since the last heal plus the time left). `config/cubewheel-cooldowns.json` has `"/heal": N` (seconds).
+- [ ] A refused /heal whose message shows no countdown: send its capture line.
+- [ ] /heal with no reply within 3 s (e.g. in the hub, or a typo like `/heall`): nothing is shown.
+- [ ] Another player typing "You have been healed." or "wait 5m before /heal" in chat starts nothing.
+- [ ] `"cooldowns": {"enabled": false}` + reload: no panel; `"cooldowns": {"commands": {}}` + reload: no /heal row (item and mcMMO cooldowns unchanged).
+- [ ] Settings › HUD panels › Cooldowns has a "Command cooldowns" list with `/heal -> 5m`. The log has no "[cubewheel] command cooldown hook failed".
+
 ## SVA catalog
 
 Bind "Open SVA catalog" first. Start with `config/cubewheel-cache/` deleted.

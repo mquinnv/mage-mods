@@ -65,6 +65,16 @@ public final class DefaultConfig {
 		return l;
 	}
 
+	/**
+	 * Commands whose cooldown the Cooldowns panel counts down, with a placeholder length used until the server's
+	 * refusals teach the real one. /heal's length is unknown (no refusal captured as of 2026-10-07): 5m is a guess.
+	 */
+	public static Map<String, String> commandCooldowns() {
+		Map<String, String> m = new LinkedHashMap<>();
+		m.put("/heal", "5m");
+		return m;
+	}
+
 	/** Menus read for /cow reward cooldowns (the real title is unconfirmed; menus opened right after /cow always are). */
 	public static final String COW_MENU_TITLE = "(?i)cash ?cow|daily reward";
 
@@ -312,6 +322,7 @@ public final class DefaultConfig {
 		c.tracker.local = local();
 		c.events.schedule = events();
 		c.events.bossWarps = bossWarps();
+		c.cooldowns.commands = commandCooldowns();
 		c.wheel = wheel();
 		return c;
 	}
