@@ -180,8 +180,24 @@ class WheelUpgradeTest {
 		assertEquals(List.of("Outside", "Volcano Golem"), labels(isles.children.get(1).arc));
 		assertEquals("/warp tangleroot", isles.children.get(1).command); // singular on the server
 		assertEquals("/warp tanglerootoutside", isles.children.get(1).arc.get(0).command);
+		assertEquals(List.of("Mana Pond"), labels(isles.children.get(2).arc)); // "we need at least the pond on sandara"
+		assertEquals("/warp pond", isles.children.get(2).arc.get(0).command);
 		assertEquals(List.of("Cursed Witch"), labels(isles.children.get(4).arc));
 		assertEquals("/isles", isles.children.get(6).command);
+	}
+
+	@Test void aVersion10IslesRingGainsTheMissingPlacesKeepingItsOwn() {
+		List<WheelNode> w = new java.util.ArrayList<>();
+		WheelNode ring = WheelNode.ring("Isles", "minecraft:filled_map",
+				WheelNode.leaf("Wolfhaven", null, "/warp wolfhaven").withArc(WheelNode.leaf("Mana Golem", null, "/warp managolem")),
+				WheelNode.leaf("Sandara", null, "/Warp Sandara").withArc(WheelNode.leaf("Mine", null, "/warp mysandara")),
+				WheelNode.leaf("Icehaven", null, "/warp icehaven"));
+		w.add(ring);
+		assertTrue(WheelUpgrade.isleArcs(w));
+		assertEquals(List.of("Mana Golem"), labels(ring.children.get(0).arc)); // already there: not doubled
+		assertEquals(List.of("Mine", "Mana Pond"), labels(ring.children.get(1).arc)); // yours first, the default appended
+		assertNull(ring.children.get(2).arc); // nothing under Icehaven by default
+		assertTrue(!WheelUpgrade.isleArcs(w)); // once
 	}
 
 	@Test void theOldIslesSliceBecomesTheRingKeepingAnIsleWarpYouAdded() {

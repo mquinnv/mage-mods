@@ -108,6 +108,8 @@ public final class ConfigStore {
 	 * that ring is missing or full). Version 9: the Golden Knight's boss warp rule is added (see below). Version 10:
 	 * the Isles slice becomes a ring of the isles with the places under each ({@link WheelUpgrade#islesRing}), and
 	 * the Tangleroot warp is singular everywhere ({@link WheelUpgrade#tanglerootSingular}, boss warp rules too).
+	 * Version 11: each isle in the Isles ring gains the default places under it that it lacks
+	 * ({@link WheelUpgrade#isleArcs}).
 	 */
 	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
@@ -152,6 +154,9 @@ public final class ConfigStore {
 			if (c.events != null && c.events.bossWarps != null) {
 				c.events.bossWarps.replaceAll((k, v) -> "/warp tangleroots".equals(v) ? "/warp tangleroot" : v);
 			}
+		}
+		if (c.configVersion < 11 && c.wheel != null && WheelUpgrade.isleArcs(c.wheel)) {
+			notes.add("wheel: the Isles ring's isles gained the places under them that were missing (the Mana Pond under Sandara)");
 		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;

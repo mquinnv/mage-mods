@@ -14,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 10;
+	public static final int CONFIG_VERSION = 11;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 	/** The progress popup's visible time and the bounds ConfigNormalizer clamps it to. */
@@ -192,7 +192,8 @@ public final class DefaultConfig {
 			leaf("Tangleroot", "minecraft:vine", "/warp tangleroot").withArc(
 				leaf("Outside", "minecraft:jungle_sapling", "/warp tanglerootoutside"),
 				leaf("Volcano Golem", "minecraft:magma_cream", "/warp volcanogolem")),
-			leaf("Sandara", "minecraft:sand", "/warp sandara"),
+			leaf("Sandara", "minecraft:sand", "/warp sandara").withArc(
+				leaf("Mana Pond", "minecraft:water_bucket", "/warp pond")),
 			leaf("Icehaven", "minecraft:packed_ice", "/warp icehaven"),
 			leaf("Morend", "minecraft:end_stone", "/warp morend").withArc(
 				leaf("Cursed Witch", "minecraft:cauldron", "/warp cursedwitch")),

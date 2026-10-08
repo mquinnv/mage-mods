@@ -59,6 +59,10 @@ public final class RadialScreen extends Screen {
 	private static final int RING = 0xC0141418;
 	/** The depth-2 band (where arcs fan out): lighter than the ring. */
 	private static final int BAND2 = 0x70303038;
+	/** The depth-3 band behind an open fan: near solid, so the arc and the world do not show through it. */
+	private static final int SUB_BAND = 0xF4141418;
+	/** Labels of arc entries stepped back behind an open depth-3 fan. */
+	private static final int DIM_LABEL = 0xFF808088;
 	/** Slightly lighter hub inside the dead-zone, behind the ring label. */
 	private static final int HUB = 0xB0202028;
 	/** Soft highlight behind the hovered slice (icon + label). */
@@ -725,7 +729,10 @@ public final class RadialScreen extends Screen {
 
 	private void drawArc(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> arc) {
 		int inner = (int) Math.round(renderedEdge);
-		drawFan(g, cx, cy, arc, arcAngles, arcRadii, arcStep, inner, hoveredArc, true);
+		// While a depth-3 fan is open, the arc's other entries step back (dim, no lit wedge) so the fan reads as the
+		// thing in hand and its parent as the one entry it belongs to.
+		drawFan(g, cx, cy, arc, arcAngles, arcRadii, arcStep, inner, subOpen >= 0 ? subOpen : hoveredArc, RING,
+				subOpen >= 0 ? subOpen : -1);
 		// Dots past an entry that has places of its own: point further out to fan them.
 		for (int j = 0; j < arc.size() && j < arcAngles.length; j++) {
 			List<WheelNode> sub = subArcOf(arc.get(j));
@@ -733,33 +740,36 @@ public final class RadialScreen extends Screen {
 		}
 	}
 
-	/** The depth-3 band: the open arc entry's own places, one band further out. */
+	/** The depth-3 band: the open arc entry's own places, one band further out, on a solid band of its own. */
 	private void drawSub(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> sub) {
 		int inner = (int) Math.round(renderedEdge) + ARC_SPACING;
-		drawFan(g, cx, cy, sub, subAngles, subRadii, subStep, inner, hoveredSub, true);
+		drawFan(g, cx, cy, sub, subAngles, subRadii, subStep, inner, hoveredSub, SUB_BAND, -1);
 	}
 
 	/**
-	 * Draws a fan of entries on the band from {@code inner} to {@code inner + ARC_SPACING}: its span darkened so
-	 * the entries read as one group, the {@code hot} entry's wedge lit.
+	 * Draws a fan of entries on the band from {@code inner} to {@code inner + ARC_SPACING}: its span filled with
+	 * {@code band} so the entries read as one group, the {@code hot} entry's wedge lit. With {@code only} set, every
+	 * other entry is dimmed and none is lit (the arc behind an open depth-3 fan).
 	 */
 	private void drawFan(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> list, double[] angles, double[] radii,
-			double step, int inner, int hot, boolean darken) {
-		if (darken && angles.length > 0) {
+			double step, int inner, int hot, int band, int only) {
+		if (angles.length > 0) {
 			double first = angles[0] - step / 2.0, span = step * angles.length;
-			fillSector(g, cx, cy, inner + ARC_SPACING, inner, first, first + span, RING);
+			fillSector(g, cx, cy, inner + ARC_SPACING, inner, first, first + span, band);
 		}
 		for (int j = 0; j < list.size() && j < angles.length; j++) {
 			WheelNode a = list.get(j);
 			double[] o = RadialMath.offset(angles[j], radii[j]);
 			int x = cx + (int) Math.round(o[0]);
 			int y = cy + (int) Math.round(o[1]);
-			boolean lit = j == hot;
+			boolean lit = j == hot && only < 0;
+			boolean dim = only >= 0 && j != only;
 			// The hovered entry lights up its whole wedge of the band.
 			if (lit) fillSector(g, cx, cy, inner + ARC_SPACING, inner, angles[j] - step / 2.0, angles[j] + step / 2.0, HOVER);
 			ItemStack icon = Icons.stack(a.icon);
-			if (!icon.isEmpty()) g.item(icon, x - 8, y - 8);
-			radialLabel(g, a.label == null ? "" : a.label, x, y, angles[j], lit ? WHITE : GREY);
+			if (!icon.isEmpty() && !dim) g.item(icon, x - 8, y - 8);
+			if (dim) fillRing(g, x, y, 4, 0, DOT); // a dot where its icon was: still there, not in hand
+			radialLabel(g, a.label == null ? "" : a.label, x, y, angles[j], lit || j == only ? WHITE : dim ? DIM_LABEL : GREY);
 		}
 	}
 

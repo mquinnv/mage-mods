@@ -130,6 +130,35 @@ public final class WheelUpgrade {
 	}
 
 	/**
+	 * Version 11 (2026-10-08, "we need at least the pond on sandara"): every isle in an Isles ring gains the places
+	 * {@link DefaultConfig#isles()} lists under that isle (matched by the isle's warp) that its arc lacks (matched by
+	 * command), appended; places of your own and your order are kept. Returns true if anything changed.
+	 */
+	public static boolean isleArcs(List<WheelNode> wheel) {
+		if (wheel == null) return false;
+		boolean changed = false;
+		Map<String, WheelNode> defaults = new LinkedHashMap<>();
+		for (WheelNode d : DefaultConfig.isles().children) if (d.command != null) defaults.put(key(d.command), d);
+		for (WheelNode ring : walk(wheel)) {
+			if (ring.children == null || ring.dynamic != null || !"Isles".equalsIgnoreCase(ring.label == null ? "" : ring.label)) continue;
+			for (WheelNode isle : ring.children) {
+				if (isle == null || isle.command == null) continue;
+				WheelNode d = defaults.get(key(isle.command));
+				if (d == null || d.arc == null) continue;
+				Set<String> has = new HashSet<>();
+				if (isle.arc != null) for (WheelNode a : isle.arc) if (a != null && a.command != null) has.add(key(a.command));
+				for (WheelNode place : d.arc) {
+					if (place.command == null || !has.add(key(place.command))) continue;
+					if (isle.arc == null) isle.arc = new ArrayList<>();
+					isle.arc.add(WheelNode.leaf(place.label, place.icon, place.command));
+					changed = true;
+				}
+			}
+		}
+		return changed;
+	}
+
+	/**
 	 * Also version 10: the Tangleroot warp is singular on the server ("Mini Boss at /warp tangleroot"); every
 	 * "/warp tangleroots" becomes "/warp tangleroot", and a "Tangleroots" label on it "Tangleroot". Returns true if
 	 * anything changed.
