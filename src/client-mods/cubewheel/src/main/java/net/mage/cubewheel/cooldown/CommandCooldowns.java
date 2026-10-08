@@ -50,8 +50,10 @@ public final class CommandCooldowns {
 
 	/** Success lines per command; a command without one can only be started by a refusal. */
 	static final Map<String, Pattern> SUCCESS = Map.of(
-			"/heal", Pattern.compile("(?i)^you have been healed\\.?$"));
-	static final Map<String, String> ICONS = Map.of("/heal", "minecraft:golden_apple");
+			"/heal", Pattern.compile("(?i)^you have been healed\\.?$"),
+			// Not captured yet: the likely wordings (ManaCube's own, Essentials'); a refusal starts it regardless.
+			"/feed", Pattern.compile("(?i)^(you have been fed|your appetite was sated|your hunger has been (satisfied|restored))\\.?$"));
+	static final Map<String, String> ICONS = Map.of("/heal", "minecraft:golden_apple", "/feed", "minecraft:cooked_beef");
 	static final String DEFAULT_ICON = "minecraft:paper";
 
 	private static final Logger LOG = LoggerFactory.getLogger("cubewheel");

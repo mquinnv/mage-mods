@@ -72,6 +72,7 @@ public final class DefaultConfig {
 	public static Map<String, String> commandCooldowns() {
 		Map<String, String> m = new LinkedHashMap<>();
 		m.put("/heal", "10m");
+		m.put("/feed", "10m"); // a guess until a refusal teaches it (Michael 2026-10-08)
 		return m;
 	}
 
@@ -130,8 +131,10 @@ public final class DefaultConfig {
 		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
 			leaf("Party vault", "minecraft:barrel", "/p vault"),
 			leaf("All vaults", "minecraft:chest", "/pv")).shownAsArc());
-		// Heal on the click (its cooldown shows in the Cooldowns panel), Fly in its arc (Michael, 2026-10-07).
-		w.add(leaf("Heal", "minecraft:golden_apple", "/heal").withArc(leaf("Fly", "minecraft:feather", "/fly")));
+		// Heal on the click (its cooldown shows in the Cooldowns panel), Fly and Feed in its arc (Michael, 2026-10-07/08).
+		w.add(leaf("Heal", "minecraft:golden_apple", "/heal").withArc(
+			leaf("Fly", "minecraft:feather", "/fly"),
+			leaf("Feed", "minecraft:cooked_beef", "/feed")));
 		w.add(leaf("Isles", "minecraft:filled_map", "/isles").withArc(
 			leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven"),
 			leaf("Tangleroots", "minecraft:vine", "/warp tangleroots"),
