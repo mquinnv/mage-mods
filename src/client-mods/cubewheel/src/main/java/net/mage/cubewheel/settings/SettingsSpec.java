@@ -119,7 +119,13 @@ public final class SettingsSpec {
 										0, 54, c -> c.vaultCount, (c, v) -> c.vaultCount = v),
 								intRange(d, "listThreshold", "List threshold",
 										"A ring with more entries than this opens as a scrolling list instead.",
-										3, 16, c -> c.listThreshold, (c, v) -> c.listThreshold = v))))),
+										3, 16, c -> c.listThreshold, (c, v) -> c.listThreshold = v))),
+						new Group("Quick keys", List.of(
+								textList(d, "quick.commands", "Quick commands",
+										"One command per line, sent when the matching \"Quick command 1/2/3\" key (Controls ›"
+												+ " CubeWheel) is pressed, e.g. \"/home armor\" on the first line. A blank line's key"
+												+ " does nothing; only the first three lines have keys.",
+										c -> c.quick.commands, (c, v) -> c.quick.commands = v))))),
 				new Category(HUD_PANELS, List.of(
 						new Group("Status", List.of(
 								toggle(d, "status.enabled", "Enabled",

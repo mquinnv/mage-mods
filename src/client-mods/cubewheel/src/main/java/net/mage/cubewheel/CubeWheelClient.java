@@ -235,6 +235,17 @@ public final class CubeWheelClient implements ClientModInitializer {
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] settings key handler failed", e);
 		}
+		try {
+			// Quick keys: one press, one command (CommandSender refuses off-server). Each key is polled every tick.
+			CubeWheelConfig.Quick quick = config().current().quick;
+			for (int i = 0; i < Keybinds.quick.length; i++) {
+				boolean hit = pressed(Keybinds.quick[i]);
+				String command = quick == null ? "" : quick.command(i);
+				if (hit && !command.isBlank() && mc.gui.screen() == null) CommandSender.send(command);
+			}
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] quick key handler failed", e);
+		}
 		EventHud.tick(mc); // catches and logs its own failures
 		try {
 			handleTrackerPickerKey(mc);

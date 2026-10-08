@@ -16,6 +16,24 @@ class ConfigNormalizerTest {
 		assertTrue(warnings.isEmpty());
 	}
 
+	@Test void quickKeysAlwaysHaveOneTrimmedCommandEach() {
+		CubeWheelConfig c = DefaultConfig.create();
+		assertEquals(List.of("", "", ""), c.quick.commands);
+		c.quick = null;
+		ConfigNormalizer.normalize(c, new ArrayList<>());
+		assertEquals(List.of("", "", ""), c.quick.commands);
+		c.quick.commands = new ArrayList<>(List.of(" /home armor "));
+		ConfigNormalizer.normalize(c, new ArrayList<>());
+		assertEquals(List.of("/home armor", "", ""), c.quick.commands);
+		assertEquals("/home armor", c.quick.command(0));
+		assertEquals("", c.quick.command(7));
+		c.quick.commands = new ArrayList<>(List.of("/a", "/b", "/c", "/d"));
+		ConfigNormalizer.normalize(c, new ArrayList<>());
+		assertEquals(List.of("/a", "/b", "/c"), c.quick.commands); // only three keys
+		c.quick.setCommand(2, null);
+		assertEquals("", c.quick.command(2));
+	}
+
 	@Test void toastSecondsAreClampedAndAMissingSectionIsFilled() {
 		CubeWheelConfig c = DefaultConfig.create();
 		assertTrue(c.toast.enabled);

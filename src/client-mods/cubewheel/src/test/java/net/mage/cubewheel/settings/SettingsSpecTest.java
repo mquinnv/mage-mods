@@ -43,7 +43,7 @@ class SettingsSpecTest {
 		List<Category> cats = SettingsSpec.categories();
 		assertEquals(List.of("General", "HUD panels", "Tracker", "Events", "Daily reward", "SVA"),
 				cats.stream().map(Category::name).toList());
-		assertEquals(List.of("enabled", "serverHosts", "vaultCount", "listThreshold"), ids(cats.get(0)));
+		assertEquals(List.of("enabled", "serverHosts", "vaultCount", "listThreshold", "quick.commands"), ids(cats.get(0)));
 		assertEquals(List.of("dailyReward.enabled", "dailyReward.dailyHours", "dailyReward.weeklyDays",
 				"dailyReward.monthlyDays", "dailyReward.menuTitlePattern"), ids(cats.get(4)));
 		assertEquals(List.of("svas.enabled", "svas.tooltip"), ids(cats.get(5)));

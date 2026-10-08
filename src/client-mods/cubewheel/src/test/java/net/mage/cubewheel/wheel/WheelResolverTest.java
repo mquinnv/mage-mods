@@ -29,6 +29,15 @@ class WheelResolverTest {
 		assertEquals("/home Base", out.get(0).command);
 		assertEquals("minecraft:red_bed", out.get(0).icon);
 	}
+	/** 2026-10-08: "i need a quick way to get to /home armor": the slice's own entries are pins, first, never doubled. */
+	@Test void pinnedHomesComeFirstAndAFetchedTwinIsDropped() {
+		WheelNode h = WheelNode.dynamic("H", "minecraft:red_bed", "homes",
+				WheelNode.leaf("Armor", "minecraft:iron_chestplate", "/home armor"));
+		List<WheelNode> out = WheelResolver.children(h, 3, List.of("home", "Armor", "farm"));
+		assertEquals(List.of("Armor", "farm", "home"), out.stream().map(n -> n.label).toList());
+		assertEquals("minecraft:iron_chestplate", out.get(0).icon);
+		assertEquals(List.of("Armor"), WheelResolver.children(h, 3, List.of()).stream().map(n -> n.label).toList());
+	}
 	@Test void leafHasNoChildren() { assertTrue(WheelResolver.children(WheelNode.leaf("a", null, "/a"), 3, List.of()).isEmpty()); }
 	@Test void homesWithNullChildrenDoesNotNpe() {
 		WheelNode h = WheelNode.dynamic("H", null, "homes");

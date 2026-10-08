@@ -51,6 +51,28 @@ public final class CubeWheelConfig {
 		public Position position = DefaultConfig.focusPosition();
 	}
 
+	/**
+	 * Quick keys: the command each of the {@link #KEYS} "Quick command N" keys sends when pressed (blank: the key
+	 * does nothing). Michael 2026-10-08: "i need a quick way to get to /home armor".
+	 */
+	public static final class Quick {
+		public static final int KEYS = 3;
+		public java.util.List<String> commands = new java.util.ArrayList<>(java.util.Collections.nCopies(KEYS, ""));
+
+		/** The command of key {@code i} (0-based), "" when unset. */
+		public String command(int i) {
+			return commands == null || i < 0 || i >= commands.size() || commands.get(i) == null ? "" : commands.get(i);
+		}
+
+		public void setCommand(int i, String command) {
+			if (commands == null) commands = new java.util.ArrayList<>();
+			while (commands.size() <= i) commands.add("");
+			commands.set(i, command == null ? "" : command.trim());
+		}
+	}
+
+	public Quick quick = new Quick();
+
 	public static final class Status {
 		public boolean enabled = true;
 		/** Show the gear row: armor and held items, the worn set ("Phoenix 4/4") and its set bonus. */
