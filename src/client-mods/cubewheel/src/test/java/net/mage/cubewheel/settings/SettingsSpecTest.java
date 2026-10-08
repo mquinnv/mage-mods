@@ -52,7 +52,7 @@ class SettingsSpecTest {
 	@Test
 	void hudPanelsCategoryHasOneGroupPerPanelThenCollapsedExactPositions() {
 		Category hud = SettingsSpec.categories().get(1);
-		assertEquals(List.of("Status", "Events", "Jobs", "Tracker", "Boosters", "Cooldowns", "Charms", "Progress popup",
+		assertEquals(List.of("Status", "Events", "Jobs", "Quests", "Boosters", "Cooldowns", "Charms", "Progress popup",
 				"Exact positions"),
 				hud.groups().stream().map(Group::name).toList());
 		assertEquals(List.of("status.enabled", "status.armor"), ids(hud.groups().get(0)));

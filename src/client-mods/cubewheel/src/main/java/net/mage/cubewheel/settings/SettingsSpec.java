@@ -137,11 +137,11 @@ public final class SettingsSpec {
 						new Group("Jobs", List.of(
 								toggle(d, "tracker.jobsPanel.enabled", "Show panel",
 										"Panel on/off (also the \"Toggle jobs panel\" key). While on, job entries leave"
-												+ " the Tracker panel.",
+												+ " the Quests panel.",
 										c -> c.tracker.jobsPanel.enabled, (c, v) -> c.tracker.jobsPanel.enabled = v))),
-						new Group("Tracker", List.of(
+						new Group("Quests", List.of(
 								toggle(d, "tracker.hudVisible", "Show panel",
-										"Show the Tracker panel with your pinned and nearly finished progress entries.",
+										"Show the Quests panel with your pinned and nearly finished quests, ranks and challenges.",
 										c -> c.tracker.hudVisible, (c, v) -> c.tracker.hudVisible = v),
 								intRange(d, "tracker.hudMaxLines", "Max lines",
 										"How many entries the Tracker panel lists at most.",
@@ -323,7 +323,7 @@ public final class SettingsSpec {
 		position(out, d, "status", "Status", c -> c.status.position);
 		position(out, d, "events", "Events", c -> c.events.position);
 		position(out, d, "tracker.jobsPanel", "Jobs", c -> c.tracker.jobsPanel.position);
-		position(out, d, "tracker", "Tracker", c -> c.tracker.position);
+		position(out, d, "tracker", "Quests", c -> c.tracker.position);
 		position(out, d, "boosters", "Boosters", c -> c.boosters.position);
 		position(out, d, "cooldowns", "Cooldowns", c -> c.cooldowns.position);
 		position(out, d, "charms", "Charms", c -> c.charms.position);
