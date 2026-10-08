@@ -58,18 +58,37 @@ class NoticesTest {
 		assertEquals(List.of(), fired);
 	}
 
-	@Test void setBonusLostAndRegained() {
+	static final long D = Notices.ARMOR_DEBOUNCE_MS;
+
+	@Test void setBonusLostAndRegainedOnceTheChangeHolds() {
 		n.reset(0);
 		n.armor("Phoenix", 4, 4, T);
 		n.armor("Phoenix", 3, 4, T + 50);
 		n.armor("Phoenix", 2, 4, T + 100);
-		assertEquals(List.of("Phoenix set bonus lost (3/4)"), fired);
+		assertEquals(List.of(), fired); // not yet: it has to hold
+		n.armor("Phoenix", 2, 4, T + 100 + D);
+		assertEquals(List.of("Phoenix set bonus lost (2/4)"), fired);
 		assertEquals(Panel.YELLOW, colours.get(0));
-		n.armor("Phoenix", 3, 4, T + 150);
-		n.armor("Phoenix", 4, 4, T + 200);
-		n.armor("Phoenix", 4, 4, T + 250);
-		assertEquals(List.of("Phoenix set bonus lost (3/4)", "Phoenix set bonus active"), fired);
+		n.armor("Phoenix", 3, 4, T + 150 + D);
+		n.armor("Phoenix", 4, 4, T + 200 + D);
+		n.armor("Phoenix", 4, 4, T + 250 + D);
+		assertEquals(List.of("Phoenix set bonus lost (2/4)"), fired);
+		n.armor("Phoenix", 4, 4, T + 200 + 2 * D);
+		assertEquals(List.of("Phoenix set bonus lost (2/4)", "Phoenix set bonus active"), fired);
 		assertEquals(Panel.GREEN, colours.get(1));
+	}
+
+	/** A warp re-sends the inventory a slot at a time: the set reads 3/4 for a few ticks, which is nothing (Michael 2026-10-08). */
+	@Test void aWarpsInventoryBlipIsSilent() {
+		n.reset(0);
+		n.armor("Phoenix", 4, 4, T);
+		n.armor("Phoenix", 4, 4, T + 5_000);
+		n.armor("No armor", 0, 0, T + 5_050);
+		n.armor("Phoenix", 2, 4, T + 5_100);
+		n.armor("Phoenix", 3, 4, T + 5_150);
+		n.armor("Phoenix", 4, 4, T + 5_200);
+		n.armor("Phoenix", 4, 4, T + 5_200 + D);
+		assertEquals(List.of(), fired);
 	}
 
 	@Test void armorUnmetOnJoinIsTheBaseline() {
@@ -78,6 +97,7 @@ class NoticesTest {
 		n.armor("Phoenix", 2, 4, T + 50);
 		assertEquals(List.of(), fired);
 		n.armor("Phoenix", 4, 4, T + 100);
+		n.armor("Phoenix", 4, 4, T + 100 + D);
 		assertEquals(List.of("Phoenix set bonus active"), fired);
 	}
 
@@ -93,10 +113,13 @@ class NoticesTest {
 		n.reset(0);
 		n.armor("Phoenix", 4, 4, T);
 		n.armor("No armor", 0, 0, T + 50);
+		n.armor("No armor", 0, 0, T + 50 + D);
 		assertEquals(List.of("Phoenix set bonus lost"), fired);
-		n.armor("Snowy", 4, 4, T + 100);
+		n.armor("Snowy", 4, 4, T + 100 + D);
+		n.armor("Snowy", 4, 4, T + 100 + 2 * D);
 		assertEquals(List.of("Phoenix set bonus lost", "Snowy set bonus active"), fired);
-		n.armor("Warden", 4, 2, T + 150);
+		n.armor("Warden", 4, 2, T + 150 + 2 * D);
+		n.armor("Warden", 4, 2, T + 150 + 3 * D);
 		assertEquals(List.of("Phoenix set bonus lost", "Snowy set bonus active", "Snowy set bonus lost",
 				"Warden set bonus active"), fired);
 	}
