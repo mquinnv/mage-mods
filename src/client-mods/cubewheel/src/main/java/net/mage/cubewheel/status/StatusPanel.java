@@ -116,6 +116,9 @@ public final class StatusPanel {
 		CubeWheelConfig.Position at = cfg.status.position;
 		// The title carries the key that moves every panel: "Status · move [,]" (Michael 2026-10-08).
 		String title = net.mage.cubewheel.hud.KeyHint.titled("Status", "move", net.mage.cubewheel.Keybinds.arrange);
+		// The SVA catalog's key as well: the titles are where the key hints live (moved off the Charms strip, 2026-10-08).
+		String catalog = net.mage.cubewheel.hud.KeyHint.bracket(net.mage.cubewheel.Keybinds.svaCatalog);
+		if (!catalog.isEmpty()) title += " · SVAs " + catalog;
 		return Optional.of(new Panel(title, lines, HudLayout.Corner.parse(at.corner), at.x, at.y, grid));
 	}
 

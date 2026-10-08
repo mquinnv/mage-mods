@@ -73,9 +73,8 @@ public final class CharmsPanel {
 			charms.add(new Panel.Piece(null, "Auto$", Panel.YELLOW));
 			charms.addAll(talismans);
 		}
-		// The key that opens the SVA catalog, where the charms are explained: "SVAs [/]" (Michael 2026-10-08).
-		String catalog = net.mage.cubewheel.hud.KeyHint.bracket(net.mage.cubewheel.Keybinds.svaCatalog);
-		if (!catalog.isEmpty()) charms.add(new Panel.Piece(null, (charms.isEmpty() ? "" : " ") + "SVAs " + catalog, DIM));
+		// The SVA catalog's key hint lives on the Status panel's title: here it widened the strip above the hotbar
+		// where width is scarce (Michael 2026-10-08).
 		if (!charms.isEmpty()) lines.add(Panel.Line.pieces(charms));
 		CubeWheelConfig.Position p = cfg.charms.position;
 		return Optional.of(new Panel("", lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
