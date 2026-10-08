@@ -47,14 +47,14 @@ public final class StatusFormat {
 	private static final List<Rewrite> EFFECT_REWRITES = List.of(
 			// 1. The dimming already says it only applies in the Resource World.
 			new Rewrite("\\s+in (the )?resource world$", ""),
-			// 2. "Take -10% less Damage" / "Take 15% Less Damage" -> "-10% Damage" / "-15% Damage".
+			// 2. "Take -10% less Damage" / "Take 15% Less Damage" -> "-10% Damage" / "-15% Damage" (then "Dmg", 8).
 			new Rewrite("^take\\s+[+-]?(\\d+)%\\s+less damage", m -> "-" + m.group(1) + "% Damage"),
 			// 3. "Receive 2x Mana" -> "2x Mana"; "Permanent Speed II Effect" -> "Speed II".
 			new Rewrite("^receive\\s+", ""),
 			new Rewrite("^permanent\\s+", ""),
 			new Rewrite("\\s+effect$", ""),
-			// 4. "+20% Extra Damage to Bosses & Minibosses" -> "+20% dmg to bosses".
-			new Rewrite("\\s+extra damage to\\s+", " dmg to "),
+			// 4. "+20% Extra Damage to Bosses & Minibosses" -> "+20% Damage to bosses" (then "Dmg", 8).
+			new Rewrite("\\s+extra damage to\\s+", " Damage to "),
 			new Rewrite("\\bbosses\\s*&\\s*minibosses\\b", "bosses"),
 			new Rewrite("\\bminibosses\\b", "minibosses"),
 			// 5. "5% Chance to get 2x drops from Bosses" -> "5%: 2x boss drops".
@@ -73,7 +73,18 @@ public final class StatusFormat {
 			new Rewrite("^dodge\\s+(\\d+%)\\s+of attacks$", m -> m.group(1) + " dodge"),
 			new Rewrite("\\bextra hearts\\b", "Hearts"),
 			new Rewrite("^(\\d+%)\\s+mcmmo boost\\b", m -> "+" + m.group(1) + " MCMMO"),
-			new Rewrite("^([+-]\\d+%)\\s+mcmmo boost\\b", m -> m.group(1) + " MCMMO"));
+			new Rewrite("^([+-]\\d+%)\\s+mcmmo boost\\b", m -> m.group(1) + " MCMMO"),
+			// 8. Shorter words, last (Michael 2026-10-07): whole words, any case in, this case out. "Invisible to mobs"
+			//    (7 made it from "Invisible to Monsters") is just "Invisible". Speed, Regen, Slowness and the roman
+			//    numerals stay.
+			new Rewrite("\\binvisible to mobs\\b", "Invisible"),
+			new Rewrite("\\bstrength\\b", "Str"),
+			new Rewrite("\\bdamage\\b", "Dmg"),
+			new Rewrite("\\babsorption\\b", "Absorb"),
+			new Rewrite("\\bresistance\\b", "Res"),
+			new Rewrite("\\bhealth boost\\b", "HP Boost"),
+			new Rewrite("\\bmining fatigue\\b", "Fatigue"),
+			new Rewrite("\\bstun immunity\\b", "Stun Immune"));
 
 	private StatusFormat() {}
 
@@ -96,10 +107,11 @@ public final class StatusFormat {
 
 	/**
 	 * A set effect's lore text, shortened so the bonus row fits: the Hunter set's "Strength II · Take -10% less
-	 * Damage · Invisible to Monsters" was cut off after "Damag" (Michael 2026-10-07), and reads "Strength II ·
-	 * -10% Damage · Invisible to mobs". {@link #EFFECT_REWRITES} lists the rewrites, applied in order; what none
-	 * of them matches passes through unchanged ("Strength II", "Speed V in Worlds", "Snowy Particles"). Trimmed,
-	 * inner spaces collapsed. Empty for null.
+	 * Damage · Invisible to Monsters" was cut off after "Damag" (Michael 2026-10-07), and reads "Str II ·
+	 * -10% Dmg · Invisible". {@link #EFFECT_REWRITES} lists the rewrites, applied in order, the phrase rewrites
+	 * first and a word table last (Strength -> Str, Damage -> Dmg, Absorption -> Absorb, Resistance -> Res, Health
+	 * Boost -> HP Boost, Mining Fatigue -> Fatigue, Stun Immunity -> Stun Immune); what none of them matches passes
+	 * through unchanged ("Speed V in Worlds", "Snowy Particles"). Trimmed, inner spaces collapsed. Empty for null.
 	 */
 	public static String shortEffect(String effect) {
 		if (effect == null) return "";
