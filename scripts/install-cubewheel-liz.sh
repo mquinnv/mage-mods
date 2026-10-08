@@ -32,6 +32,12 @@
 # exits 0 without touching the mods folder; this script then reports that her
 # game is running and nothing was changed. Rerun once she has quit.
 #
+# Offline guard: SSM accepts a command for an offline instance and leaves it
+# Pending (or fails it as "Undeliverable" once the agent's connection is marked
+# lost), which looks like a broken install. So the agent's PingStatus is checked
+# first; unless it is Online the script reports that her PC is off and exits 0
+# without uploading anything.
+#
 # ASCII rule: everything sent to PowerShell (code and comments) must be PURE
 # ASCII. SSM/PowerShell mangle non-ASCII (em dashes, curly quotes, ellipses).
 # The parameter JSON is built with python3 json.dumps, never by hand, so the
@@ -87,7 +93,19 @@ SHA_LOCAL="$(shasum -a 256 "${JAR_PATH}" | awk '{print $1}' | tr 'a-f' 'A-F')"
 log "jar     ${JAR_PATH}"
 log "sha256  ${SHA_LOCAL}"
 
-# --- 2. upload + presign ---------------------------------------------------
+# --- 2. is her PC reachable? -----------------------------------------------
+PING_INFO="$(aws --profile "${SSM_PROFILE}" --region "${SSM_REGION}" ssm describe-instance-information \
+  --filters "Key=InstanceIds,Values=${SSM_INSTANCE}" \
+  --query 'InstanceInformationList[0].[PingStatus,LastPingDateTime]' --output text)"
+PING_STATUS="${PING_INFO%%	*}"
+PING_LAST="${PING_INFO#*	}"
+if [ "${PING_STATUS}" != "Online" ]; then
+  echo "SUMMARY: her PC is offline (SSM PingStatus ${PING_STATUS:-unknown}, last ping ${PING_LAST:-unknown}); nothing changed; rerun when it is on."
+  exit 0
+fi
+log "ssm     agent Online (last ping ${PING_LAST})"
+
+# --- 3. upload + presign ---------------------------------------------------
 S3_URI="s3://${S3_BUCKET}/${S3_PREFIX}/${JAR_NAME}"
 log "upload  ${S3_URI}"
 aws --profile "${S3_PROFILE}" --region "${S3_REGION}" s3 cp "${JAR_PATH}" "${S3_URI}" --only-show-errors
@@ -95,7 +113,7 @@ URL="$(aws --profile "${S3_PROFILE}" --region "${S3_REGION}" s3 presign "${S3_UR
 [ -n "${URL}" ] || die "presign returned nothing"
 log "presign ok (${PRESIGN_SECONDS}s)"
 
-# --- 3. build the SSM parameter file ---------------------------------------
+# --- 4. build the SSM parameter file ---------------------------------------
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 PARAMS_FILE="${TMP_DIR}/params.json"
@@ -143,7 +161,7 @@ for line in lines:
 print(json.dumps({"commands": lines}))
 PY
 
-# --- 4. send + poll --------------------------------------------------------
+# --- 5. send + poll --------------------------------------------------------
 log "ssm     send-command to ${SSM_INSTANCE}"
 COMMAND_ID="$(aws --profile "${SSM_PROFILE}" --region "${SSM_REGION}" ssm send-command \
   --document-name AWS-RunPowerShellScript \
@@ -156,6 +174,7 @@ log "ssm     command ${COMMAND_ID}"
 
 INVOCATION_FILE="${TMP_DIR}/invocation.json"
 STATUS="Pending"
+DETAILS=""
 ELAPSED=0
 while :; do
   sleep "${POLL_SECONDS}"
@@ -165,6 +184,7 @@ while :; do
        --instance-id "${SSM_INSTANCE}" --command-id "${COMMAND_ID}" \
        --output json > "${INVOCATION_FILE}" 2>/dev/null; then
     STATUS="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["Status"])' "${INVOCATION_FILE}")"
+    DETAILS="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("StatusDetails",""))' "${INVOCATION_FILE}")"
   fi
   case "${STATUS}" in
     Success|Failed|Cancelled|TimedOut) break ;;
@@ -173,7 +193,7 @@ while :; do
     die "gave up after ${POLL_MAX_SECONDS}s; last status ${STATUS} (command ${COMMAND_ID})"
   fi
 done
-log "ssm     status ${STATUS} after ${ELAPSED}s"
+log "ssm     status ${STATUS} (${DETAILS}) after ${ELAPSED}s"
 
 REMOTE_OUT="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("StandardOutputContent",""), end="")' "${INVOCATION_FILE}")"
 REMOTE_ERR="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("StandardErrorContent",""), end="")' "${INVOCATION_FILE}")"
@@ -186,7 +206,7 @@ if [ -n "${REMOTE_ERR}" ]; then
 fi
 echo "-------------------------"
 
-# --- 5. verdict ------------------------------------------------------------
+# --- 6. verdict ------------------------------------------------------------
 if printf '%s' "${REMOTE_OUT}" | grep -q 'javaw=True'; then
   echo "SUMMARY: her game is running (javaw=True); nothing changed; rerun when it is off."
   exit 0
@@ -196,5 +216,9 @@ if [ "${STATUS}" = "Success" ] \
   echo "SUMMARY: installed ${JAR_NAME} (sha256 ${SHA_LOCAL}) on Liz's PC in ${ELAPSED}s."
   exit 0
 fi
-echo "SUMMARY: install NOT verified (status ${STATUS}); see remote output above." >&2
+if [ "${DETAILS}" = "Undeliverable" ]; then
+  echo "SUMMARY: install NOT delivered; her PC dropped offline (SSM ${STATUS}/${DETAILS}); nothing changed; rerun when it is on." >&2
+  exit 1
+fi
+echo "SUMMARY: install NOT verified (status ${STATUS}/${DETAILS}); see remote output above." >&2
 exit 1
