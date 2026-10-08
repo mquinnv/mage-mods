@@ -40,7 +40,7 @@ public final class PanelsHud implements HudElement {
 	private static final int GAUGE_H = 3;
 	private static final int GAUGE_TRACK = 0x60000000;
 	/** Widest a panel's content may grow; longer names are cut to fit, with "…". */
-	private static final int MAX_CONTENT_W = 170;
+	public static final int MAX_CONTENT_W = 170;
 	/** The empty part of a row's progress bar. */
 	/** The unfilled part of a progress bar: light enough to read as a bar on the backdrop (Michael 2026-10-08). */
 	private static final int METER_TRACK = 0x38FFFFFF;

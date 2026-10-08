@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
+import java.util.function.ToDoubleFunction;
 import java.util.regex.Pattern;
-import net.mage.cubewheel.tracker.local.Estimate;
 import net.mage.cubewheel.tracker.local.ObjectiveInfo;
 
 /**
@@ -16,9 +16,6 @@ import net.mage.cubewheel.tracker.local.ObjectiveInfo;
  * and the listing's reward lines (Michael 2026-10-08). Pure: no Minecraft/Fabric imports.
  */
 public final class FocusPanelModel {
-	/** Pace needs at least this many counted units over at least this long. */
-	static final int PACE_MIN_UNITS = 3;
-	static final long PACE_MIN_MS = 30_000;
 	/** A job listing's name: "Hunting Experienced · Slay Void Scuttler in Morend". */
 	private static final Pattern LISTING =
 			Pattern.compile("^(?:(.+?) )?(Beginner|Experienced|Heavy) · (.+)$", Pattern.CASE_INSENSITIVE);
@@ -37,8 +34,17 @@ public final class FocusPanelModel {
 
 	private FocusPanelModel() {}
 
-	/** The focus for counter {@code key} (an entry id or sub key) at {@code now}; empty if the entry is unknown. */
+	/** As {@link #of(TrackerStore, String, Collection, long, ToDoubleFunction)} with no pace known. */
 	public static Optional<Focus> of(TrackerStore store, String key, Collection<String> worldNames, long now) {
+		return of(store, key, worldNames, now, k -> 0);
+	}
+
+	/**
+	 * The focus for counter {@code key} (an entry id or sub key) at {@code now}; empty if the entry is unknown.
+	 * {@code perMin} gives the key's recent rate ({@link Pace}; 0 = not known yet).
+	 */
+	public static Optional<Focus> of(TrackerStore store, String key, Collection<String> worldNames, long now,
+			ToDoubleFunction<String> perMin) {
 		if (store == null || key == null) return Optional.empty();
 		String id = TrackerStore.baseId(key);
 		Optional<TrackerRow> row = store.row(id);
@@ -63,21 +69,17 @@ public final class FocusPanelModel {
 		String tag = CompactJob.worldTag(store.scope(t, worldNames));
 		double fraction = l.target() > 0 ? Math.max(0, Math.min(1, l.current() / (double) l.target())) : -1;
 		if (l.done()) fraction = 1;
-		String pace = l.done() ? "" : pace(store.estimate(key).orElse(null), l.current(), l.target(), now);
+		String pace = l.done() ? "" : pace(perMin.applyAsDouble(key), l.current(), l.target());
 		return Optional.of(new Focus(heading, tag, objective, l.count(), fraction, l.done(), pace, store.rewards(id)));
 	}
 
 	/**
-	 * "3.2/min · ~19 min left" from an estimate's count over its span ({@link #PACE_MIN_UNITS} units over
-	 * {@link #PACE_MIN_MS} at least); "" otherwise. The span runs to the last counted unit, not to now, so a pause
-	 * does not slow the pace; the time left assumes the pace holds.
+	 * "3.2/min · ~19 min left" from the recent rate {@code perMin} ({@link Pace}: the last few minutes' credits, so
+	 * a fishing session at a fish every few seconds is not averaged with the hours before it); "" when the rate is
+	 * not known yet or the entry is done. The time left assumes the pace holds.
 	 */
-	static String pace(Estimate e, long current, long target, long now) {
-		if (e == null || e.count() < PACE_MIN_UNITS || target <= 0 || current < 0 || current >= target) return "";
-		long span = e.lastAt() - e.since();
-		if (span < PACE_MIN_MS) return "";
-		double perMin = e.count() / (span / 60_000.0);
-		if (perMin <= 0) return "";
+	static String pace(double perMin, long current, long target) {
+		if (perMin <= 0 || target <= 0 || current < 0 || current >= target) return "";
 		long leftMs = Math.round((target - current) / perMin * 60_000);
 		return String.format(Locale.ROOT, "%s/min · ~%s left", rate(perMin), duration(leftMs));
 	}

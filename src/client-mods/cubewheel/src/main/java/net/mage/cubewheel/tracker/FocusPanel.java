@@ -37,12 +37,17 @@ public final class FocusPanel {
 
 	private FocusPanel() {}
 
+	/** The recent rate per key, from the credits ({@link Pace}): the pace and time left shown under the bar. */
+	private static final Pace PACE = new Pace();
+
 	/** The store credited ({@code units} &gt; 0) or took back progress for {@code key}: a credit brings it into focus. */
 	public static void onProgress(String key, long units) {
 		if (key == null || units <= 0) return;
+		long now = System.currentTimeMillis();
+		PACE.credit(key, units, now);
 		synchronized (credited) {
 			credited.remove(key);
-			credited.put(key, System.currentTimeMillis());
+			credited.put(key, now);
 			while (credited.size() > 16) credited.remove(credited.keySet().iterator().next());
 		}
 	}
@@ -56,26 +61,54 @@ public final class FocusPanel {
 		List<String> worlds = cfg.tracker.local.worlds;
 		List<Panel.Line> lines = new ArrayList<>(3 * keys.size());
 		for (String key : keys) {
-			Optional<FocusPanelModel.Focus> focus = FocusPanelModel.of(store, key, worlds, now);
+			Optional<FocusPanelModel.Focus> focus = FocusPanelModel.of(store, key, worlds, now, PACE::perMin);
 			if (focus.isEmpty()) continue;
 			FocusPanelModel.Focus f = focus.get();
-			// The objective has the whole first line: with the heading beside it, a fishing objective ("Catch 4
-			// Common Crayfish in Hot Biomes") was cut to "Catch COMMON…" (Michael 2026-10-08). The heading leads the
-			// dim line under the bar instead.
-			lines.add(new Panel.Line(f.tag(), JobsPanel.worldTagColor(f.tag()), f.objective(), Panel.WHITE, ""));
+			// The objective has the whole first line, and a second when it needs one: a panel's content is capped at
+			// MAX_CONTENT_W, which cut "Catch Uncommon Lobster while fishing in Jungles Biomes" short (Michael
+			// 2026-10-08). The heading went to the dim line under the bar for the same reason.
+			List<String> rows = wrap(f.objective(), f.tag());
+			lines.add(new Panel.Line(f.tag(), JobsPanel.worldTagColor(f.tag()), rows.get(0), Panel.WHITE, ""));
+			for (int i = 1; i < rows.size(); i++) lines.add(new Panel.Line("", 0, rows.get(i), Panel.WHITE, ""));
 			String bar = f.done() ? DONE_LABEL : f.fraction() >= 0 ? f.count() + " · " + f.percent() + "%" : f.count();
 			lines.add(new Panel.Line("", 0, bar, f.done() ? Panel.GREEN : Panel.WHITE, "")
 					.withProgress(f.fraction() >= 0 ? f.fraction() : 0).withTall());
-			// Heading and pace on one dim line, the rewards on their own: one line held all three and lost its end.
+			// Pace first, then the heading, on one dim line: the line is cut at the panel's width and the pace is
+			// the part worth keeping ("the time estimate is getting cut off"). The rewards get their own line.
 			List<String> extra = new ArrayList<>(2);
-			if (!f.heading().isEmpty()) extra.add(f.heading());
 			if (!f.pace().isEmpty()) extra.add(f.pace());
+			if (!f.heading().isEmpty()) extra.add(f.heading());
 			if (!extra.isEmpty()) lines.add(new Panel.Line(String.join(" · ", extra), DIM).withLoose());
 			if (!f.rewards().isEmpty()) lines.add(new Panel.Line(String.join(" · ", f.rewards()), DIM).withLoose());
 		}
 		if (lines.isEmpty()) return Optional.empty();
 		CubeWheelConfig.Position p = cfg.focus.position;
 		return Optional.of(new Panel("Focus", lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
+	}
+
+	/** At most this many rows for an objective; the last is cut with "…" by the renderer if it still overflows. */
+	private static final int MAX_OBJECTIVE_ROWS = 2;
+
+	/**
+	 * {@code text} split at word boundaries into rows that fit the panel's content width beside the {@code tag}
+	 * column, with the game's font; at most {@link #MAX_OBJECTIVE_ROWS}, never empty.
+	 */
+	private static List<String> wrap(String text, String tag) {
+		List<String> rows = new ArrayList<>(MAX_OBJECTIVE_ROWS);
+		try {
+			net.minecraft.client.gui.Font font = net.minecraft.client.Minecraft.getInstance().font;
+			int room = net.mage.cubewheel.hud.PanelsHud.MAX_CONTENT_W - (tag.isEmpty() ? 0 : font.width(tag) + 4);
+			for (net.minecraft.network.chat.FormattedText part
+					: font.getSplitter().splitLines(text, Math.max(40, room), net.minecraft.network.chat.Style.EMPTY)) {
+				// Past the last row, the rest joins it, so the renderer shows the cut ("…") rather than losing it.
+				if (rows.size() == MAX_OBJECTIVE_ROWS) rows.set(MAX_OBJECTIVE_ROWS - 1, rows.get(MAX_OBJECTIVE_ROWS - 1) + " " + part.getString());
+				else rows.add(part.getString());
+			}
+		} catch (RuntimeException e) {
+			rows.clear();
+		}
+		if (rows.isEmpty()) rows.add(text);
+		return rows;
 	}
 
 	/** The keys credited within {@link #WINDOW_MS}, newest first, at most {@link #MAX}; seeded from the store once. */

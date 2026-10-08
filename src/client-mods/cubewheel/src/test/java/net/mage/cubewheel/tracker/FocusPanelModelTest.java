@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import net.mage.cubewheel.tracker.FocusPanelModel.Focus;
-import net.mage.cubewheel.tracker.local.Estimate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -49,26 +48,27 @@ class FocusPanelModelTest {
 		assertEquals(List.of(), f.rewards());
 	}
 
-	@Test void paceComesFromTheEstimateOnceThereIsEnough() {
+	/** 2026-10-08: the rate is the recent one ({@link Pace}), not the stored estimate's average over hours. */
+	@Test void paceComesFromTheRecentRateOnceKnown() {
 		TrackerStore s = store();
 		long t0 = 1_000_000;
 		s.addEstimate(SCUTTLER, 1, t0);
 		s.addEstimate(SCUTTLER, 1, t0 + 20_000);
-		assertEquals("", FocusPanelModel.of(s, SCUTTLER, WORLDS, t0 + 20_000).orElseThrow().pace()); // 2 units
-		s.addEstimate(SCUTTLER, 1, t0 + 60_000); // 3 units in 60 s: 3/min, 60 left: ~20 min
-		Focus f = FocusPanelModel.of(s, SCUTTLER, WORLDS, t0 + 60_000).orElseThrow();
+		s.addEstimate(SCUTTLER, 1, t0 + 60_000); // ~13/73 counted
+		assertEquals("", FocusPanelModel.of(s, SCUTTLER, WORLDS, t0 + 60_000).orElseThrow().pace()); // no rate yet
+		Pace pace = new Pace();
+		for (int i = 0; i <= 3; i++) pace.credit(SCUTTLER, 1, t0 + i * 20_000); // 3 units over 60 s: 3/min, 60 left
+		Focus f = FocusPanelModel.of(s, SCUTTLER, WORLDS, t0 + 60_000, pace::perMin).orElseThrow();
 		assertEquals("~13/73", f.count());
 		assertEquals("3.0/min · ~20 min left", f.pace());
 		assertTrue(f.fraction() > 0.17 && f.fraction() < 0.18);
 	}
 
-	@Test void paceNeedsThirtySecondsAndStopsWhenDone() {
-		Estimate quick = new Estimate(5, 0, 0, 10_000);
-		assertEquals("", FocusPanelModel.pace(quick, 5, 73, 10_000));
-		Estimate fine = new Estimate(12, 0, 0, 60_000);
-		assertEquals("12/min · ~5 min left", FocusPanelModel.pace(fine, 13, 73, 60_000));
-		assertEquals("", FocusPanelModel.pace(fine, 73, 73, 60_000));
-		assertEquals("", FocusPanelModel.pace(null, 1, 73, 0));
+	@Test void paceStopsWhenDoneOrUnknown() {
+		assertEquals("12/min · ~5 min left", FocusPanelModel.pace(12, 13, 73));
+		assertEquals("15/min · ~7 min left", FocusPanelModel.pace(15, 2_386, 2_500)); // 114 fish at one every 4 s
+		assertEquals("", FocusPanelModel.pace(12, 73, 73));
+		assertEquals("", FocusPanelModel.pace(0, 1, 73));
 	}
 
 	@Test void durations() {
