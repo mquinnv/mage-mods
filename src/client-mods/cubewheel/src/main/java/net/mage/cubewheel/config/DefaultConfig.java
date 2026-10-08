@@ -14,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 11;
+	public static final int CONFIG_VERSION = 12;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 	/** The progress popup's visible time and the bounds ConfigNormalizer clamps it to. */
@@ -90,6 +90,8 @@ public final class DefaultConfig {
 		m.put("(?i)cursed witch", "/warp cursedwitch");
 		// The Golden Knight (a mini boss at a Tangleroots location) is best reached from outside, per Michael 2026-10-03.
 		m.put("(?i)golden knight", "/warp tanglerootoutside");
+		// The Great Wolf has its own warp, per Michael 2026-10-08.
+		m.put("(?i)great ?wolf", "/warp greatwolf");
 		// Confirmed by Michael 2026-10-02.
 		m.put("(?i)wolfhaven mines", "/warp managolem");
 		m.put("(?i)tangleroots? volcano", "/warp volcanogolem");
@@ -188,7 +190,8 @@ public final class DefaultConfig {
 	public static WheelNode isles() {
 		return ring("Isles", "minecraft:filled_map",
 			leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven").withArc(
-				leaf("Mana Golem", "minecraft:iron_block", "/warp managolem")),
+				leaf("Mana Golem", "minecraft:iron_block", "/warp managolem"),
+				leaf("Great Wolf", "minecraft:wolf_armor", "/warp greatwolf")),
 			leaf("Tangleroot", "minecraft:vine", "/warp tangleroot").withArc(
 				leaf("Outside", "minecraft:jungle_sapling", "/warp tanglerootoutside"),
 				leaf("Volcano Golem", "minecraft:magma_cream", "/warp volcanogolem")),

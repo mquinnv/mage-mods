@@ -147,7 +147,7 @@ class WheelUpgradeTest {
 	@Test void bossWarpsAndDailyRewardDefaultsAndNormalisation() throws Exception {
 		CubeWheelConfig d = DefaultConfig.create();
 		assertEquals("/warp boss", d.events.bossWarps.get("(?i)boss arena"));
-		assertEquals(11, d.events.bossWarps.size());
+		assertEquals(12, d.events.bossWarps.size());
 		assertEquals(5, d.events.bossMinutes);
 		assertTrue(d.dailyReward.enabled);
 		assertEquals(24, d.dailyReward.dailyHours);
@@ -157,9 +157,9 @@ class WheelUpgradeTest {
 		   "dailyReward": {"dailyHours": 0, "weeklyDays": 99, "menuTitlePattern": "(["}}""");
 		ConfigStore s = new ConfigStore(f);
 		assertNull(s.reload());
-		// Only the boss rules new in versions 7 and 9 are added; the world rules this file left out stay out.
+		// Only the boss rules new in versions 7, 9 and 12 are added; the world rules this file left out stay out.
 		assertEquals(Map.of("(?i)cursed witch", "/warp cursedwitch", "(?i)golden knight", "/warp tanglerootoutside",
-				"(?i)mine", "/warp mines"), s.current().events.bossWarps);
+				"(?i)great ?wolf", "/warp greatwolf", "(?i)mine", "/warp mines"), s.current().events.bossWarps);
 		assertEquals(1, s.current().events.bossMinutes);
 		assertEquals(1, s.current().dailyReward.dailyHours);
 		assertEquals(60, s.current().dailyReward.weeklyDays);
@@ -175,7 +175,7 @@ class WheelUpgradeTest {
 		assertTrue(isles.asArc);
 		assertEquals(List.of("Wolfhaven", "Tangleroot", "Sandara", "Icehaven", "Morend", "Burninglands", "Isles menu"),
 				labels(isles.children));
-		assertEquals(List.of("Mana Golem"), labels(isles.children.get(0).arc));
+		assertEquals(List.of("Mana Golem", "Great Wolf"), labels(isles.children.get(0).arc));
 		assertEquals("/warp managolem", isles.children.get(0).arc.get(0).command);
 		assertEquals(List.of("Outside", "Volcano Golem"), labels(isles.children.get(1).arc));
 		assertEquals("/warp tangleroot", isles.children.get(1).command); // singular on the server
@@ -194,7 +194,7 @@ class WheelUpgradeTest {
 				WheelNode.leaf("Icehaven", null, "/warp icehaven"));
 		w.add(ring);
 		assertTrue(WheelUpgrade.isleArcs(w));
-		assertEquals(List.of("Mana Golem"), labels(ring.children.get(0).arc)); // already there: not doubled
+		assertEquals(List.of("Mana Golem", "Great Wolf"), labels(ring.children.get(0).arc)); // the one it had is not doubled
 		assertEquals(List.of("Mine", "Mana Pond"), labels(ring.children.get(1).arc)); // yours first, the default appended
 		assertNull(ring.children.get(2).arc); // nothing under Icehaven by default
 		assertTrue(!WheelUpgrade.isleArcs(w)); // once
@@ -240,7 +240,8 @@ class WheelUpgradeTest {
 		WheelNode isles = s.current().wheel.get(0);
 		assertTrue(isles.isRing());
 		assertEquals("Tangleroot", isles.children.get(1).label);
-		assertEquals(Map.of("(?i)tangleroot", "/warp tangleroot", "(?i)morend", "/warp morend"), s.current().events.bossWarps);
+		assertEquals(Map.of("(?i)great ?wolf", "/warp greatwolf", "(?i)tangleroot", "/warp tangleroot", "(?i)morend", "/warp morend"),
+				s.current().events.bossWarps); // version 12 adds the Great Wolf's rule too
 		assertTrue(s.warnings().stream().anyMatch(w -> w.contains("Isles opens a ring")), s.warnings().toString());
 	}
 }

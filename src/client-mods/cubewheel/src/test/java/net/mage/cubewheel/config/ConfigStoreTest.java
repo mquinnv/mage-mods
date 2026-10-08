@@ -58,7 +58,7 @@ class ConfigStoreTest {
 		ConfigStore s = new ConfigStore(f);
 		assertNull(s.reload());
 		List<String> keys = new ArrayList<>(s.current().events.bossWarps.keySet());
-		assertEquals(List.of("(?i)golden knight", "(?i)cursed witch"), keys.subList(0, 2));
+		assertEquals(List.of("(?i)great ?wolf", "(?i)golden knight", "(?i)cursed witch"), keys.subList(0, 3)); // newest first
 		assertTrue(keys.indexOf("(?i)cursed witch") < keys.indexOf("(?i)morend"));
 		assertEquals("/home boss", s.current().events.bossWarps.get("(?i)my spot"));
 	}
@@ -70,7 +70,7 @@ class ConfigStoreTest {
 		ConfigStore s = new ConfigStore(f);
 		assertNull(s.reload());
 		List<String> keys = new ArrayList<>(s.current().events.bossWarps.keySet());
-		assertEquals(List.of("(?i)golden knight", "(?i)morend", "(?i)my spot"), keys);
+		assertEquals(List.of("(?i)great ?wolf", "(?i)golden knight", "(?i)morend", "(?i)my spot"), keys);
 		assertEquals("/warp tanglerootoutside", s.current().events.bossWarps.get("(?i)golden knight"));
 		assertTrue(Files.readString(f).replaceAll("\\s", "").contains("\"configVersion\":" + DefaultConfig.CONFIG_VERSION));
 	}

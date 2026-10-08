@@ -66,6 +66,9 @@ class BossTest {
 		Map<String, String> w = DefaultConfig.bossWarps();
 		assertEquals("/warp tanglerootoutside", BossSlice.warpFor(new BossParser.Spawn("Golden Knight", "Tangleroots Forest", true), w));
 		assertEquals("/warp tangleroot", BossSlice.warpFor(new BossParser.Spawn("Forest Guardian", "Tangleroots Forest", false), w));
+		// 2026-10-08: "the boss for the greatwolf is /warp greatwolf"
+		assertEquals("/warp greatwolf", BossSlice.warpFor(new BossParser.Spawn("Great Wolf", "Wolfhaven Forest", false), w));
+		assertEquals("/warp greatwolf", BossSlice.warpFor(new BossParser.Spawn("Greatwolf", "Wolfhaven", false), w));
 	}
 
 	@Test void defaultWarpsForEachLocation() {

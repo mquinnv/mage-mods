@@ -109,7 +109,7 @@ public final class ConfigStore {
 	 * the Isles slice becomes a ring of the isles with the places under each ({@link WheelUpgrade#islesRing}), and
 	 * the Tangleroot warp is singular everywhere ({@link WheelUpgrade#tanglerootSingular}, boss warp rules too).
 	 * Version 11: each isle in the Isles ring gains the default places under it that it lacks
-	 * ({@link WheelUpgrade#isleArcs}).
+	 * ({@link WheelUpgrade#isleArcs}). Version 12: the Great Wolf's boss warp rule, and its place under Wolfhaven.
 	 */
 	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
@@ -157,6 +157,12 @@ public final class ConfigStore {
 		}
 		if (c.configVersion < 11 && c.wheel != null && WheelUpgrade.isleArcs(c.wheel)) {
 			notes.add("wheel: the Isles ring's isles gained the places under them that were missing (the Mana Pond under Sandara)");
+		}
+		if (c.configVersion < 12) {
+			// The Great Wolf's own warp (Michael 2026-10-08): a boss rule ahead of the world rules, and a place under
+			// Wolfhaven in the Isles ring.
+			if (c.events != null && c.events.bossWarps != null) c.events.bossWarps = withRuleFirst(c.events.bossWarps, "(?i)great ?wolf");
+			if (c.wheel != null && WheelUpgrade.isleArcs(c.wheel)) notes.add("wheel: Great Wolf under Wolfhaven in the Isles ring");
 		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;
