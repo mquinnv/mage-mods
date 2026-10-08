@@ -7,6 +7,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.mage.cubewheel.tracker.local.ObjectiveInfo;
+import net.mage.cubewheel.tracker.local.WorldScope;
 
 /**
  * The "Quests" HUD panel (quests, prestige ranks, challenges: everything tracked that is not a job listing), in the
@@ -120,8 +121,15 @@ public final class TrackerPanelModel {
 					right = right + " after \u272A" + nextRank;
 					tone = Tone.BLOCKED;
 				}
-				lines.add(new Line(tag.glyph(), tag.argb(), title(t.source(), label.title(), worldNames),
-						right, tone, act == null ? Activity.NONE : act, JobsPanelModel.progress(r)));
+				String text = title(t.source(), label.title(), worldNames);
+				if (s.kind() == TrackerStore.HudSection.Kind.OTHER_WORLDS) {
+					// Which other world: the Jobs panel's two-letter tag ("the other worlds list ought to actually
+					// have the abbreviation for the world", Michael 2026-10-08).
+					String world = CompactJob.worldTag(WorldScope.of(t.name(), info, worldNames));
+					if (!world.isEmpty()) text = world + " " + text;
+				}
+				lines.add(new Line(tag.glyph(), tag.argb(), text, right, tone, act == null ? Activity.NONE : act,
+						JobsPanelModel.progress(r)));
 				if (info != null && info.subs() != null && info.subs().size() > 1) {
 					// One row per objective, its count in the right column: 50% of "Slay 10 Golden Knights" is 5/10,
 					// plus what was counted locally since that read ("~330/2,500").

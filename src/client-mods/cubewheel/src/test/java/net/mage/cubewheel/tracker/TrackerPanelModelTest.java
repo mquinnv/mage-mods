@@ -146,7 +146,7 @@ class TrackerPanelModelTest {
 		List<String> t = texts(all);
 		int other = t.indexOf("— Other worlds |");
 		assertTrue(other > 0);
-		assertEquals("⚒ Rattle Snakes | 50/58", t.get(other + 1));
+		assertEquals("⚒ SA Rattle Snakes | 50/58", t.get(other + 1)); // which other world: the Jobs panel's tag
 		assertEquals(Tone.OTHER_WORLD, all.get(other + 1).tone());
 	}
 }
