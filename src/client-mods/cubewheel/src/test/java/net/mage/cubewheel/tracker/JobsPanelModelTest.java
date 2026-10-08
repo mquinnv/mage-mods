@@ -85,6 +85,44 @@ class JobsPanelModelTest {
 		assertEquals(Tone.NEUTRAL, m.lines().get(t.indexOf("Deepslate | 10/100")).tone());
 	}
 
+	/** A fishing job whose species the Fishing Log placed: its world as the tag, its biomes as a hint, judged by that world. */
+	@Test void aFishingJobShowsItsSpeciesHabitat() {
+		TrackerStore s = new TrackerStore(dir.resolve("f.json"));
+		s.update("jobs", "Fishing Heavy · Catch Octopus while fishing", new ProgressExtractor.Progress(3, 22), 0);
+		s.setObjective("jobs:Fishing Heavy · Catch Octopus while fishing",
+				TrackerStoreWorldFilterTest.obj("Catch 3/22  Octopus while fishing"));
+		s.update("jobs", "Fishing Beginner · Catch HermitCrab while fishing", new ProgressExtractor.Progress(0, 5), 0);
+		s.setObjective("jobs:Fishing Beginner · Catch HermitCrab while fishing",
+				TrackerStoreWorldFilterTest.obj("Catch 0/5  HermitCrab while fishing"));
+		s.update("jobs", "Fishing Experienced · Catch Cod while fishing", new ProgressExtractor.Progress(1, 4), 0);
+		s.setObjective("jobs:Fishing Experienced · Catch Cod while fishing",
+				TrackerStoreWorldFilterTest.obj("Catch 1/4  Cod while fishing"));
+		FishLog log = new FishLog(null);
+		log.scan(FishLogTest.PAGE);
+		log.scan(List.of(FishLogTest.fish(28, "Octopus", "Total: 8", "", "Found in: Wolfhaven & Plains, Forest, Mountains")));
+		java.util.function.Function<Trackable, FishLog.Habitat> habitats = t -> {
+			java.util.Optional<net.mage.cubewheel.tracker.local.CounterRule> r = net.mage.cubewheel.tracker.local.ObjectiveParser
+					.parse(s.objective(t.id()).orElse(null), TrackerStoreWorldFilterTest.WORLDS);
+			if (r.isEmpty() || !(r.get().what() instanceof net.mage.cubewheel.tracker.local.CounterRule.Named n)) return null;
+			return log.habitat(n.singular()).orElse(null);
+		};
+		WorldInfo sandara = net.mage.cubewheel.tracker.local.WorldResolver.resolve("minecraft:sandara", List.of(),
+				TrackerStoreWorldFilterTest.WORLDS);
+		Model m = JobsPanelModel.build(s.rows(true), s::isHidden, id -> s.objective(id).orElse(null),
+				t -> FishLog.relevance(habitats.apply(t), sandara), TrackerStoreWorldFilterTest.WORLDS, NOW, null, null, habitats);
+		assertEquals(List.of(
+				"⚒ Fishing |",
+				"SA HermitCrab · Hot Biomes | 0/5",
+				"Cod · Everywhere | 1/4",
+				"WH Octopus · Plains, Forest, Mountains | 3/22"), texts(m));
+		assertEquals(Tone.CURRENT, m.lines().get(1).tone());
+		assertEquals(Tone.NEUTRAL, m.lines().get(2).tone());
+		assertEquals(Tone.OTHER_WORLD, m.lines().get(3).tone());
+		// In Sandara the Wolfhaven octopus leaves the panel; the hermit crab and the cod stay.
+		assertEquals(List.of("⚒ Fishing |", "SA HermitCrab · Hot Biomes | 0/5", "Cod · Everywhere | 1/4"),
+				texts(JobsPanelModel.inWorld(m)));
+	}
+
 	@Test void hiddenEntriesAndTheCrateStayHidden() {
 		TrackerStore s = store();
 		s.toggleHidden("jobs:Mining Heavy · Mine Deepslate");

@@ -270,6 +270,21 @@ class ManaCubeMenusTest {
 				ProgressExtractor.extract(List.of("Reward: 1/2 claims", "Progress: 3/8")));
 	}
 
+	/** A one-off boss job (2026-10-08) has no counter in its objective line; it is tracked as 0 of its stated number. */
+	@Test void aListingWithoutACounterIsTrackedAsZeroOfItsNumber() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		ItemView knight = item(12, "Beginner Objective", "Help defeat 1 Golden Knight in Tangleroots", "", "Reward",
+				"- 20 Job XP (Hunting)", "- $70,000", "", "㎋ Click to complete job");
+		ContainerScanner.scan("jobs", List.of(item(0, "HUNTING INDUSTRY", "", "Level: 3 120 XP"), knight), store, 0);
+		Trackable t = find(store, "Hunting Beginner · Help defeat 1 Golden Knight in Tangleroots");
+		assertEquals(0, t.current(), 1e-9);
+		assertEquals(1, t.max(), 1e-9);
+		assertEquals("Help defeat 1 Golden Knight in Tangleroots", store.objective(t.id()).orElseThrow().subs().get(0).text());
+		assertEquals(java.util.Optional.empty(), ContainerScanner.targetOnly("Reach the end"));
+		assertEquals(java.util.Optional.of(new ProgressExtractor.Progress(0, 1_250)),
+				ContainerScanner.targetOnly("Help gather 1,250 Logs"));
+	}
+
 	static Trackable find(TrackerStore store, String name) {
 		return store.all().stream().filter(t -> t.name().equals(name)).findFirst()
 				.orElseThrow(() -> new AssertionError("no trackable named '" + name + "' in " + store.all()));

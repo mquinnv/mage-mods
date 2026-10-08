@@ -18,6 +18,8 @@ public final class ContainerScanner {
 	/** The "current/max" counter inside a job objective ("Harvest 3,127/4,773 Cherry Logs"). */
 	private static final Pattern COUNTER = Pattern.compile(
 			"\\s*(?<![\\d.,])\\d[\\d,]*(?:\\.\\d+)?[kKmM]?\\s*/\\s*\\d[\\d,]*(?:\\.\\d+)?[kKmM]?(?![A-Za-z\\d])");
+	/** The first whole number standing on its own in an objective ("Help defeat 1 Golden Knight": 1). */
+	private static final Pattern TARGET = Pattern.compile("(?<![\\d.,/])(\\d[\\d,]*[kKmM]?)(?![\\d.,/A-Za-z])");
 
 	/**
 	 * Sources whose items are tracked only when they say "Progress: …" (or are marked complete). Quest menus
@@ -74,6 +76,9 @@ public final class ContainerScanner {
 				listed.add(display);
 				tiersSeen.add(titleCase(tier.group(1)));
 				p = ProgressExtractor.extract(List.of(objective));
+				// "Help defeat 1 Golden Knight in Tangleroots" (2026-10-08) carries no counter at all: a one-off boss
+				// job reads as 0 of its stated number until it is handed in (the menu never says otherwise).
+				if (p.isEmpty()) p = targetOnly(objective);
 			} else {
 				if (PROGRESS_LINE_SOURCES.contains(source) && !MenuClassifier.anyLineStarts(lore, "progress")
 						&& !isMarkedComplete(lore)) {
@@ -109,6 +114,15 @@ public final class ContainerScanner {
 			});
 		}
 		return updated;
+	}
+
+	/** A listing objective's stated number, as 0/N, when it has no "current/max" counter: "Help defeat 1 Golden Knight". */
+	static Optional<ProgressExtractor.Progress> targetOnly(String objective) {
+		Matcher m = TARGET.matcher(objective);
+		if (!m.find()) return Optional.empty();
+		java.util.OptionalDouble n = ProgressExtractor.parseNumber(m.group(1));
+		if (n.isEmpty() || !(n.getAsDouble() > 0)) return Optional.empty();
+		return Optional.of(new ProgressExtractor.Progress(0, n.getAsDouble()));
 	}
 
 	/** "Farming Heavy · Harvest Cherry Logs" (without an industry item: "Heavy · Harvest Cherry Logs"). */

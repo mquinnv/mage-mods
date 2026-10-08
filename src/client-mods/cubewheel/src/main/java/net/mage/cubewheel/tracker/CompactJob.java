@@ -9,7 +9,7 @@ final class CompactJob {
 	/** Longest target shown; longer ones are cut with "…". */
 	static final int MAX_TARGET = 40;
 
-	private static final Pattern VERB = Pattern.compile("(?i)^(?:harvest or mine|harvest|mine|break|chop|dig|gather|"
+	private static final Pattern VERB = Pattern.compile("(?i)^(?:help\\s+)?(?:harvest or mine|harvest|mine|break|chop|dig|gather|"
 			+ "kill|slay|slaughter|defeat|catch|fish|shear|milk|cook|collect|craft|smelt|brew|complete|deliver|obtain|get|reach)\\s+");
 	/** A leading amount ("2,500 Skill Level", "15,000 Tangleroots Resources"); the count column shows it. */
 	private static final Pattern LEADING_NUMBER = Pattern.compile("^\\d[\\d,.]*[kKmM]?\\s+");

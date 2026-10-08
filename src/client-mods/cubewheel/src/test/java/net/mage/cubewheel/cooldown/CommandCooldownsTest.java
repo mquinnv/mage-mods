@@ -14,8 +14,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 class CommandCooldownsTest {
 	private static final String HEALED = "§aYou have been healed.";
-	/** Invented wording: no refusal has been captured yet; the matcher is generic (command word + a duration). */
+	/** Invented wording (the matcher is generic: the command word + a duration); the real one is in {@link #REAL_REFUSAL}. */
 	private static final String REFUSED = "§cYou must wait 2m 30s before using /heal again";
+	/** ManaCube's actual refusal, captured 2026-10-08 right after a successful /heal. */
+	private static final String REAL_REFUSAL = "Time before next heal: 9 minutes 58 seconds.";
 	private static final long FIVE_MIN = 300_000;
 
 	private static CommandCooldowns heal(Path file) {
@@ -34,6 +36,18 @@ class CommandCooldownsTest {
 		assertFalse(c.chat(HEALED, 1_900));
 		assertEquals(1_400 + FIVE_MIN, c.rows(1_900).get(0).endsAt());
 		assertTrue(c.rows(1_400 + FIVE_MIN).isEmpty());
+	}
+
+	/** The capture of 2026-10-08: healed, /heal again 1.6 s later, "Time before next heal: 9 minutes 58 seconds." */
+	@Test void theRealRefusalSetsTheRemainingTimeAndLearnsTenMinutes() {
+		CommandCooldowns c = heal(null);
+		c.sent("/heal", 1_791_459_221_000L);
+		assertFalse(c.chat(HEALED, 1_791_459_221_517L));
+		c.sent("/heal", 1_791_459_223_000L);
+		assertTrue(c.chat(REAL_REFUSAL, 1_791_459_223_107L));
+		assertEquals(1_791_459_223_107L + 598_000, c.rows(1_791_459_223_107L).get(0).endsAt());
+		assertEquals(600_000, c.cooldownMs("/heal")); // 1.59 s since the heal + 9m58s left, to the second
+		assertEquals(Map.of("/heal", 600_000L), c.learned());
 	}
 
 	@Test void noReplyWithinThreeSecondsStartsNothing() {

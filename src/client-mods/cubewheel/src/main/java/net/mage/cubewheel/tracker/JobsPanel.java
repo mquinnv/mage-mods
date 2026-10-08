@@ -38,12 +38,25 @@ public final class JobsPanel {
 		// inWorld() below drops it (Michael 2026-10-07). activeRules holds only incomplete entries, which is fine:
 		// finished rows keep their DONE tone whatever the relevance says. A multi-objective entry is keyed per
 		// objective ("id#sub0"); its first parsed objective stands for the entry.
-		Map<String, CounterRule> rules = at != null && at.special() ? store.activeRules(worlds) : Map.of();
+		Map<String, CounterRule> rules = store.activeRules(worlds); // cached by the store
+		// A fishing job's species has a habitat from the Fishing Log ("Burbot: Icehaven & Cold Biomes"): the panel
+		// tags it with that world, hints the biomes, and judges it by that world rather than as a bare vanilla job.
+		FishLog fishLog = CubeWheelClient.fishLog();
+		java.util.function.Function<Trackable, FishLog.Habitat> habitats = t -> {
+			if (fishLog == null) return null;
+			CounterRule r = ruleOf(rules, t.id());
+			if (r == null || r.kind() != CounterRule.Kind.FISH || !(r.what() instanceof CounterRule.Named n)) return null;
+			return fishLog.habitat(n.singular()).orElse(null);
+		};
 		JobsPanelModel.Model m = JobsPanelModel.build(store.rows(cfg.tracker.local.enabled), store::isHidden,
 				id -> store.objective(id).orElse(null),
-				t -> WorldScope.impossibleIn(ruleOf(rules, t.id()), at) ? WorldScope.Relevance.OTHER
-						: WorldScope.relevance(store.scope(t, worlds), at), worlds, now,
-				id -> store.activity(id, now), t -> store.scope(t, worlds));
+				t -> {
+					FishLog.Habitat h = habitats.apply(t);
+					if (h != null) return FishLog.relevance(h, at);
+					return WorldScope.impossibleIn(ruleOf(rules, t.id()), at) ? WorldScope.Relevance.OTHER
+							: WorldScope.relevance(store.scope(t, worlds), at);
+				}, worlds, now,
+				id -> store.activity(id, now), t -> store.scope(t, worlds), habitats);
 		if (m.lines().isEmpty()) return Optional.empty();
 		// Every listing across all industries, whatever is held; only the world narrows it: in a mana world,
 		// listings naming another world drop out (Michael 2026-10-07).

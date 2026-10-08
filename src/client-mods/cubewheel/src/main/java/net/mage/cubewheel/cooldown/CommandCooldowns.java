@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
  *   <li>its success line ({@link #SUCCESS}: "You have been healed.") starts a countdown of the known length
  *   (learned, else the placeholder) and remembers the time; a success while the countdown still runs means the
  *   real cooldown is shorter: it restarts and the length becomes now - last success;</li>
- *   <li>a refusal, i.e. a server line naming the command word and a duration ("... wait 2m 30s ... /heal ..."; the
- *   real wording is unknown), sets the remaining time, and with a known last success learns
+ *   <li>a refusal, i.e. a server line naming the command word and a duration ("Time before next heal: 9 minutes 58
+ *   seconds.", capture 2026-10-08), sets the remaining time, and with a known last success learns
  *   length = (now - last success) + remaining;</li>
  *   <li>nothing within the window: nothing starts (the command may have failed for another reason).</li>
  * </ul>

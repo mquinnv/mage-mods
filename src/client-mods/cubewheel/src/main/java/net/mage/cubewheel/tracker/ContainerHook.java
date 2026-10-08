@@ -120,6 +120,9 @@ public final class ContainerHook {
 				// Other ManaCube gamemodes (SkyBlock, Parkour, hub) have look-alike menus: Survival only.
 				if (!ServerGate.survival(cfg)) return;
 				LiveWatcher.onMenu(title, items, now); // the /cow menu's reward cooldowns; catches its own failures
+				// The Fishing Log (/fish) says where every species is caught; the Jobs panel uses it for fishing jobs.
+				FishLog fishLog = CubeWheelClient.fishLog();
+				if (fishLog != null && fishLog.scan(items) > 0) fishLog.saveInBackground();
 				TrackerStore store = CubeWheelClient.tracker();
 				if (store == null) return;
 				// Facts any menu states about you ("Current Level: 55" on /party) update matching objectives.

@@ -126,6 +126,18 @@ public final class JobsPanelModel {
 	public static Model build(List<TrackerRow> rows, Predicate<String> hidden, Function<String, ObjectiveInfo> objectives,
 			Function<Trackable, WorldScope.Relevance> relevance, java.util.Collection<String> worldNames, long now,
 			Function<String, Activity> activity, Function<Trackable, WorldScope.Scope> scopes) {
+		return build(rows, hidden, objectives, relevance, worldNames, now, activity, scopes, null);
+	}
+
+	/**
+	 * As above; {@code habitats} gives where a fishing job's species is caught (the Fishing Log's "Found in" line;
+	 * null or a null result: unknown). A known habitat puts the species' mana world in the tag column and its
+	 * overworld biomes after the target ("IH Burbot · Cold Biomes"); the relevance passed in decides the tone.
+	 */
+	public static Model build(List<TrackerRow> rows, Predicate<String> hidden, Function<String, ObjectiveInfo> objectives,
+			Function<Trackable, WorldScope.Relevance> relevance, java.util.Collection<String> worldNames, long now,
+			Function<String, Activity> activity, Function<Trackable, WorldScope.Scope> scopes,
+			Function<Trackable, FishLog.Habitat> habitats) {
 		Function<Trackable, WorldScope.Scope> scopeOf = scopes != null ? scopes
 				: t -> WorldScope.of(t.name(), objectives == null ? null : objectives.apply(t.id()), worldNames);
 		String crate = null;
@@ -161,12 +173,19 @@ public final class JobsPanelModel {
 			for (Item it : items) {
 				// Rows run Beginner → Experienced → Heavy, so the left column is free for the world restriction.
 				String tag = CompactJob.worldTag(scopeOf.apply(it.row().item()));
+				String target = CompactJob.target(it.text(), worldNames);
+				FishLog.Habitat habitat = habitats == null ? null : habitats.apply(it.row().item());
+				if (habitat != null) {
+					// A fishing job: the species' mana world as the tag, its overworld biomes as a hint.
+					if (!habitat.everywhere()) tag = CompactJob.worldTag(new WorldScope.Scope(java.util.Set.of(habitat.world()), false));
+					if (habitat.biomes() != null && !habitat.biomes().isBlank()) target = target + " · " + habitat.biomes();
+				}
 				ObjectiveInfo obj = objectives == null ? null : objectives.apply(it.row().item().id());
 				Rarity rarity = obj == null || obj.subs() == null ? null
 						: obj.subs().stream().map(sub -> Rarity.inText(sub.text())).flatMap(java.util.Optional::stream)
 								.findFirst().orElse(null);
 				Activity act = activity == null ? Activity.NONE : activity.apply(it.row().item().id());
-				lines.add(new Line(tag, CompactJob.target(it.text(), worldNames), CompactJob.count(it.row(), now), tone(it),
+				lines.add(new Line(tag, target, CompactJob.count(it.row(), now), tone(it),
 						rarity, act == null ? Activity.NONE : act, progress(it.row())));
 			}
 		}
