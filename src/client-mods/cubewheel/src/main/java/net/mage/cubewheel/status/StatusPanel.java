@@ -27,7 +27,8 @@ import net.minecraft.world.item.component.ItemLore;
  * main- and off-hand items, then the set you wear, "Phoenix 4/4") and under it what the set bonus does (an effect
  * that only applies "in Resource World" dimmed while you are not there), or "⚠ no set bonus" when too few pieces
  * are worn. A piece wearing out gets Minecraft's thin durability bar on its
- * icon. Then, past a rule, a 2×2 grid: coordinates and facing | biome and a light-level disc / FPS and speed | game
+ * icon. Then a feather with "Fly: on" (green) or "Fly: off" (red): whether the server lets you fly. Then, past a
+ * rule, a 2×2 grid: coordinates and facing | biome and a light-level disc / FPS and speed | game
  * time and the real clock behind their item icons. Drawn by {@link net.mage.cubewheel.hud.PanelsHud} in CubeWheel's
  * style; replaces SimpleHUD Enhanced's status text and equipment display. Shown wherever you play while
  * {@code status.enabled}.
@@ -48,6 +49,11 @@ public final class StatusPanel {
 	private static final String NO_BONUS = "⚠ no set bonus";
 	/** Between the armor and the held items. The leading space evens the gap after the item icons. */
 	private static final String DOT = " ·";
+	private static final String FLY_ICON = "minecraft:feather";
+	private static final String FLY_ON = "Fly: on";
+	private static final String FLY_OFF = "Fly: off";
+	/** The wheel's red for "Fly: off". */
+	private static final int FLY_OFF_COLOR = 0xFFFF7777;
 	private static final String GAME_TIME_ICON = "minecraft:grass_block";
 	/** Minecraft's globe. */
 	private static final String CLOCK_ICON = "minecraft:globe_banner_pattern";
@@ -91,8 +97,12 @@ public final class StatusPanel {
 		Minecraft mc = Minecraft.getInstance();
 		LocalPlayer p = mc.player;
 		if (!cfg.status.enabled || p == null || mc.level == null) return Optional.empty();
-		List<Panel.Line> lines = new ArrayList<>(2);
+		List<Panel.Line> lines = new ArrayList<>(3);
 		if (cfg.status.armor) gear(p, lines);
+		// Whether the server lets you fly right now (/fly): green on, red off. Was the Fly slice's live label on the
+		// wheel; the slice moved into Heal's arc, where it is seen only while the wheel is open (Michael 2026-10-08).
+		boolean mayFly = p.getAbilities().mayfly;
+		lines.add(new Panel.Line(mayFly ? FLY_ON : FLY_OFF, mayFly ? Panel.GREEN : FLY_OFF_COLOR).withIcon(Icons.stack(FLY_ICON)));
 		BlockPos pos = p.blockPosition();
 		String biome = mc.level.getBiome(pos).unwrapKey().map(k -> StatusFormat.biome(k.identifier().toString())).orElse("");
 		LocalTime clock = LocalTime.now();
