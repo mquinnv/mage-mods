@@ -35,7 +35,7 @@ public final class TrackerScreen extends Screen {
 	private int scroll;
 
 	public TrackerScreen() {
-		super(Component.literal("Tracker"));
+		super(Component.literal(TrackerPanelModel.TITLE));
 	}
 
 	@Override

@@ -9,7 +9,8 @@ import java.util.regex.Pattern;
 import net.mage.cubewheel.tracker.local.ObjectiveInfo;
 
 /**
- * The "Tracker" HUD panel, in the left-hand column under the Jobs panel and in its compact style: the source's
+ * The "Quests" HUD panel (quests, prestige ranks, challenges: everything tracked that is not a job listing), in the
+ * left-hand column under the Jobs panel and in its compact style: the source's
  * marker (⚒ ✦ ⚑ ★ •) in the tag column, a short title ("✪4 Skill Level", "King of the Jungle") and a short count
  * on the right ("1,902/2,500", "~", "✓?"). Built from {@link TrackerStore#hudSections}, so pinning, hiding,
  * the line cap and the world filter work as before; a grey "— Pinned" / "— This world" … heading starts each group
@@ -17,7 +18,16 @@ import net.mage.cubewheel.tracker.local.ObjectiveInfo;
  * objective. Pure: no Minecraft/Fabric imports.
  */
 public final class TrackerPanelModel {
-	public static final String TITLE = "Tracker";
+	/** What the panel holds once the Jobs panel has the job listings: quests, prestige ranks, challenges (Michael 2026-10-08). */
+	public static final String TITLE = "Quests";
+
+	/**
+	 * The panel's title with the key that opens the picker screen, "Quests [X]", so the way in is always in sight;
+	 * just the title when the key is unbound ({@code key} null or blank).
+	 */
+	public static String panelTitle(String key) {
+		return key == null || key.isBlank() ? TITLE : TITLE + " [" + key.trim() + "]";
+	}
 	/** Longest title shown; longer ones are cut with "…". */
 	static final int MAX_TITLE = 40;
 	/** Longest objective row (it may run across the whole panel width). */

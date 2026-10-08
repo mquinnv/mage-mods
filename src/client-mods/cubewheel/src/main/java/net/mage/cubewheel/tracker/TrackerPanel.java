@@ -39,7 +39,14 @@ public final class TrackerPanel {
 					.withAccent(JobsPanel.accent(l.activity())).withProgress(l.progress()));
 		}
 		CubeWheelConfig.Position p = cfg.tracker.position;
-		return Optional.of(new Panel(TrackerPanelModel.TITLE, lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
+		return Optional.of(new Panel(TrackerPanelModel.panelTitle(pickerKey()), lines, HudLayout.Corner.parse(p.corner), p.x, p.y));
+	}
+
+	/** The key bound to the picker screen ("X"), as Minecraft names it; null when unbound. */
+	private static String pickerKey() {
+		net.minecraft.client.KeyMapping k = net.mage.cubewheel.Keybinds.trackerPicker;
+		if (k == null || k.isUnbound()) return null;
+		return k.getTranslatedKeyMessage().getString();
 	}
 
 	private static int color(TrackerPanelModel.Tone tone) {
