@@ -71,6 +71,24 @@ public final class ArcLayout {
 		return bestDiff <= slack ? best : -1;
 	}
 
+	/**
+	 * {@code entries} with those {@code pinned} moved to the middle of the list, in their order, the rest keeping
+	 * theirs around them: the arc is centred on its slice, so the middle entry is the one under the pointer and the
+	 * ends are furthest from it (Michael 2026-10-08: "armor being 1st means it is all the way across the screen").
+	 */
+	public static <T> java.util.List<T> centred(java.util.List<T> entries, java.util.function.Predicate<T> pinned) {
+		java.util.List<T> pins = new java.util.ArrayList<>();
+		java.util.List<T> rest = new java.util.ArrayList<>();
+		for (T e : entries) (pinned.test(e) ? pins : rest).add(e);
+		if (pins.isEmpty() || rest.isEmpty()) return entries;
+		int at = (entries.size() - pins.size()) / 2;
+		java.util.List<T> out = new java.util.ArrayList<>(entries.size());
+		out.addAll(rest.subList(0, at));
+		out.addAll(pins);
+		out.addAll(rest.subList(at, rest.size()));
+		return out;
+	}
+
 	private static double norm(double deg) {
 		return ((deg % 360) + 360) % 360;
 	}

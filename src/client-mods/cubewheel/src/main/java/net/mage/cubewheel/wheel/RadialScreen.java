@@ -660,7 +660,12 @@ public final class RadialScreen extends Screen {
 			if (c != null && c.command != null && !c.isSlice()) out.add(c);
 			if (out.size() == MAX_ARC) break;
 		}
-		return out.isEmpty() ? null : out;
+		if (out.isEmpty()) return null;
+		// Homes' pins sit in the middle of the arc, under the pointer, not at its far end.
+		if (!"homes".equals(node.dynamic) || node.children == null) return out;
+		java.util.Set<WheelNode> pins = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+		for (WheelNode c : node.children) if (c != null) pins.add(c);
+		return pins.isEmpty() ? out : ArcLayout.centred(out, pins::contains);
 	}
 
 	/** Whether direction {@code deg} lies under the open arc (between its end entries, plus half a step). */

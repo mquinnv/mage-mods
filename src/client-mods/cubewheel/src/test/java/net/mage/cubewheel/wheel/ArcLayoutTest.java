@@ -17,6 +17,17 @@ class ArcLayoutTest {
 		assertEquals(0, ArcLayout.angles(0, 90, 20).length);
 	}
 
+	/** 2026-10-08: "armor being 1st means it is all the way across the screen from where my mouse is". */
+	@Test void pinnedEntriesSitInTheMiddleOfTheArc() {
+		java.util.List<String> nine = java.util.List.of("Armor", "a", "b", "c", "d", "e", "f", "g", "h");
+		assertEquals(java.util.List.of("a", "b", "c", "d", "Armor", "e", "f", "g", "h"),
+				ArcLayout.centred(nine, "Armor"::equals)); // index 4 of 9: exactly under the pointer
+		assertEquals(java.util.List.of("a", "b", "Armor", "Base", "c", "d"),
+				ArcLayout.centred(java.util.List.of("Armor", "Base", "a", "b", "c", "d"), s -> Character.isUpperCase(s.charAt(0))));
+		assertEquals(nine, ArcLayout.centred(nine, s -> false)); // nothing pinned: untouched
+		assertEquals(java.util.List.of("Armor"), ArcLayout.centred(java.util.List.of("Armor"), "Armor"::equals));
+	}
+
 	@Test void anglesFromPerGapSpacingStayCentred() {
 		double r = 100;
 		double g1 = Math.toDegrees(40.0 / r), g2 = Math.toDegrees(80.0 / r);

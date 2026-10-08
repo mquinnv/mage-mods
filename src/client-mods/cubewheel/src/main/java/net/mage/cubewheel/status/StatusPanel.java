@@ -55,8 +55,8 @@ public final class StatusPanel {
 	/** The wheel's red for "Fly: off". */
 	private static final int FLY_OFF_COLOR = 0xFFFF7777;
 	private static final String GAME_TIME_ICON = "minecraft:grass_block";
-	/** Minecraft's globe. */
-	private static final String CLOCK_ICON = "minecraft:globe_banner_pattern";
+	/** The real clock's icon: the clock item (the globe banner pattern was an unreadable blob, Michael 2026-10-08). */
+	private static final String CLOCK_ICON = "minecraft:clock";
 
 	/**
 	 * The armor items {@link #set} was made from, by identity: the server sends a new stack when a piece changes, so
