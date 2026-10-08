@@ -277,7 +277,7 @@ class StatusTest {
 		String bonus = ArmorSet.bonus(WARDEN_HELMET);
 		int lit = 1, dim = 2;
 		List<Panel.Piece> outside = StatusFormat.bonusPieces(bonus, true, false, lit, dim);
-		assertEquals(List.of("Absorption II", "·", "Speed IV in Resource World", "·", "30% MCMMO Boost in Resource World"),
+		assertEquals(List.of("Absorption II", "·", "Speed IV", "·", "+30% MCMMO"),
 				outside.stream().map(Panel.Piece::text).toList());
 		assertEquals(List.of(lit, lit, dim, lit, dim), outside.stream().map(Panel.Piece::color).toList());
 		// In the Resource World every effect is lit.
@@ -291,5 +291,50 @@ class StatusTest {
 				StatusFormat.bonusPieces(ArmorSet.bonus(MOREND_LEGGINGS), true, false, lit, dim).stream()
 						.map(Panel.Piece::color).toList());
 		assertTrue(StatusFormat.bonusPieces("", true, true, lit, dim).isEmpty());
+	}
+
+	/** The set bonus row shortens each effect so the Hunter bonus fits on one line (Michael 2026-10-07). */
+	@Test void shortEffectShortensLoreText() {
+		String[][] table = {
+				{"Take -10% less Damage", "-10% Damage"},
+				{"Take 15% Less Damage", "-15% Damage"},
+				{"Invisible to Monsters", "Invisible to mobs"},
+				{"Speed IV in Resource World", "Speed IV"},
+				{"30% MCMMO Boost in Resource World", "+30% MCMMO"},
+				{"Regeneration II (On Low Health)", "Regen II low HP"},
+				{"+20% Extra Damage to Bosses & Minibosses", "+20% dmg to bosses"},
+				{"5% Chance to get 2x drops from Bosses", "5%: 2x boss drops"},
+				{"Receive 2x Mana from Monsters", "2x Mana from mobs"},
+				{"Mobs drop 3x more EXP", "3x mob EXP"},
+				{"Permanent Speed II Effect", "Speed II"},
+				{"Dodge 10% of Attacks", "10% dodge"},
+				{"Strength II", "Strength II"},
+				{"Absorption II", "Absorption II"},
+				{"Speed V in Worlds", "Speed V in Worlds"},
+				{"Snowy Particles", "Snowy Particles"},
+				{"+20% MCMMO Boost", "+20% MCMMO"},
+				{"+2 Extra Hearts", "+2 Hearts"},
+				{"Drops 2x more heads", "2x heads"},
+				{"3x Souls from Tangleroot Monsters", "3x Souls from Tangleroot mobs"},
+				{"Regen 2 in Tangleroot", "Regen 2 in Tangleroot"},
+				{"5% Chance to get 3x drops from Minibosses", "5%: 3x minibosses drops"},
+		};
+		for (String[] row : table) assertEquals(row[1], StatusFormat.shortEffect(row[0]), row[0]);
+		assertEquals("", StatusFormat.shortEffect(""));
+		assertEquals("", StatusFormat.shortEffect(null));
+	}
+
+	@Test void bonusPiecesShortenEffectsAndStillDimByOriginalText() {
+		int lit = 1, dim = 2;
+		List<Panel.Piece> hunter = StatusFormat.bonusPieces(
+				"Strength II · Take -10% less Damage · Invisible to Monsters", true, false, lit, dim);
+		assertEquals(List.of("Strength II", "·", "-10% Damage", "·", "Invisible to mobs"),
+				hunter.stream().map(Panel.Piece::text).toList());
+		assertEquals(List.of(lit, lit, lit, lit, lit), hunter.stream().map(Panel.Piece::color).toList());
+		// Shortening drops "in Resource World", but the dimming still reads the original text.
+		List<Panel.Piece> warden = StatusFormat.bonusPieces(ArmorSet.bonus(WARDEN_HELMET), true, false, lit, dim);
+		assertEquals(List.of("Absorption II", "·", "Speed IV", "·", "+30% MCMMO"),
+				warden.stream().map(Panel.Piece::text).toList());
+		assertEquals(List.of(lit, lit, dim, lit, dim), warden.stream().map(Panel.Piece::color).toList());
 	}
 }

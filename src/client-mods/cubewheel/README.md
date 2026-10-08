@@ -584,8 +584,9 @@ milk, a quest completed in chat), a short line appears just below the crosshair 
     (green) when it is met again. The pieces a bonus needs come from its lore: "(Requires 4/4 pieces)" gives its
     count; "(Full Set Required)" or a "FULL SET EFFECTS" heading without a count means all 4. These sets also get
     the Status panel's "⚠ no set bonus" warning, and on its set bonus line effects that only apply "in Resource
-    World" (Warden's "Speed IV in Resource World") are dimmed outside it. A heading that names its pieces
-    ("(Helmet + Boots)") gets neither.
+    World" (Warden's "Speed IV in Resource World") are dimmed outside it, and each effect is shortened so the
+    line fits ("Take -10% less Damage" reads "-10% Damage", "Invisible to Monsters" reads "Invisible to mobs").
+    A heading that names its pieces ("(Helmet + Boots)") gets neither.
   - "PV 2: 3 slots left" (yellow) when a vault drops to 3 free slots or fewer, "PV 2 full" (red) when it fills; each
     again after it has been back above. Vault fill is read when a vault is opened, so these show as it closes.
   - Changes made in a menu (armor swapped, a vault filled) show when it closes.
