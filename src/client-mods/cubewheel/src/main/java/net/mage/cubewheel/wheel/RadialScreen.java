@@ -134,6 +134,10 @@ public final class RadialScreen extends Screen {
 	private int subOpen = -1;
 	/** The depth-3 entry pointed at, or -1. */
 	private int hoveredSub = -1;
+	/** A depth-3 entry stepped to with the wheel while on its parent, or -1 (reset when the parent changes). */
+	private int subScroll = -1;
+	/** The fan answers from this far across the arc band (fraction of {@link #ARC_SPACING}) outward. */
+	private static final double SUB_FROM = 0.75;
 	private double[] subAngles = new double[0];
 	private double[] subRadii = new double[0];
 	private double subStep;
@@ -311,23 +315,37 @@ public final class RadialScreen extends Screen {
 		// Depth 3: an arc entry with places of its own (Wolfhaven → Mana Golem) fans them out beyond the arc while
 		// it, or one of them, is pointed at. Pointing at one keeps the arc on its parent, wherever the arc's own
 		// nearest entry is.
+		// The fan answers from just past the arc's own line out, so the pointer need not cross the whole arc band;
+		// Shift takes the fan entry in the pointed direction wherever the pointer is, and the wheel steps into the
+		// fan from its parent without moving at all ("get to the leaf node quickly without having to move my mouse
+		// far").
 		int onSub = -1;
-		if (arcOpen < 0) subOpen = -1;
-		else {
+		if (arcOpen < 0) {
+			subOpen = -1;
+			subScroll = -1;
+		} else {
 			List<WheelNode> arc = arcAt(arcOpen);
 			if (subOpen >= arc.size() || subOpen >= 0 && subArcOf(arc.get(subOpen)) == null) subOpen = -1;
 			if (subOpen >= 0) {
 				layoutSub(cx, cy, arcAngles[subOpen], subArcOf(arc.get(subOpen)));
-				onSub = ArcLayout.pick(mdx, mdy, renderedEdge + ARC_SPACING, subAngles, subStep * 0.75);
-				if (onSub >= 0) {
-					hovered = arcOpen;
-					hoveredArc = subOpen;
-					hoveredTier = subOpen + 1;
-				}
+				onSub = ArcLayout.pick(mdx, mdy, renderedEdge + ARC_SPACING * SUB_FROM, subAngles, subStep * 0.75);
 			}
 			if (onSub < 0) {
-				subOpen = hoveredArc >= 0 && hoveredArc < arc.size() && subArcOf(arc.get(hoveredArc)) != null ? hoveredArc : -1;
-				if (subOpen >= 0) layoutSub(cx, cy, arcAngles[subOpen], subArcOf(arc.get(subOpen)));
+				int parent = hoveredArc >= 0 && hoveredArc < arc.size() && subArcOf(arc.get(hoveredArc)) != null ? hoveredArc : -1;
+				if (parent != subOpen) {
+					subOpen = parent;
+					subScroll = -1;
+				}
+				if (subOpen >= 0) {
+					layoutSub(cx, cy, arcAngles[subOpen], subArcOf(arc.get(subOpen)));
+					if (shift) onSub = ArcLayout.pick(mdx, mdy, -1, subAngles, 360);
+					else if (subScroll >= 0) onSub = Math.min(subScroll, subAngles.length - 1);
+				}
+			}
+			if (onSub >= 0) {
+				hovered = arcOpen;
+				hoveredArc = subOpen;
+				hoveredTier = subOpen + 1;
 			}
 		}
 		hoveredSub = onSub;
@@ -813,6 +831,15 @@ public final class RadialScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+		// On an arc entry with places of its own: up steps into its fan (the middle entry first) and along it, down
+		// steps back and out, all without moving the pointer.
+		List<WheelNode> arc = arcAt(arcOpen);
+		if (arc != null && hoveredArc >= 0 && hoveredArc < arc.size() && subArcOf(arc.get(hoveredArc)) != null) {
+			int n = subArcOf(arc.get(hoveredArc)).size();
+			if (scrollY > 0) subScroll = subScroll < 0 ? n / 2 : Math.min(n - 1, subScroll + 1);
+			else if (scrollY < 0 && subScroll >= 0) subScroll = subScroll == 0 ? -1 : subScroll - 1;
+			return true;
+		}
 		if (hovered >= 0 && hovered < entries.size()) {
 			WheelNode node = entries.get(hovered);
 			tiers.scroll(scrollY, arcAt(hovered) != null ? arcAt(hovered).size() : outerCount(node));
