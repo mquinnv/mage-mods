@@ -176,7 +176,7 @@ public final class SettingsSpec {
 								mapLines(d, "cooldowns.commands", "Command cooldowns", "command -> length",
 										"Server commands with a cooldown, counted down after the server confirms them and"
 												+ " corrected from its refusals. One line per command: \"command -> placeholder"
-												+ " length\", e.g. \"/heal -> 5m\". The placeholder is used until a refusal"
+												+ " length\", e.g. \"/heal -> 10m\". The placeholder is used until a refusal"
 												+ " teaches the real length.",
 										c -> c.cooldowns.commands, (c, m) -> c.cooldowns.commands = m))),
 						new Group("Charms", List.of(

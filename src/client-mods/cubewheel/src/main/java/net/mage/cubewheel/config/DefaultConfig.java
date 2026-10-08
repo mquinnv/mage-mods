@@ -67,11 +67,11 @@ public final class DefaultConfig {
 
 	/**
 	 * Commands whose cooldown the Cooldowns panel counts down, with a placeholder length used until the server's
-	 * refusals teach the real one. /heal's length is unknown (no refusal captured as of 2026-10-07): 5m is a guess.
+	 * refusals teach the real one. /heal is 10m for Michael's rank (Michael 2026-10-07); other ranks may differ.
 	 */
 	public static Map<String, String> commandCooldowns() {
 		Map<String, String> m = new LinkedHashMap<>();
-		m.put("/heal", "5m");
+		m.put("/heal", "10m");
 		return m;
 	}
 

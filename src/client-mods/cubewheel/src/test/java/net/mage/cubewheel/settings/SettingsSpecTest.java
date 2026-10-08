@@ -64,7 +64,7 @@ class SettingsSpecTest {
 		assertEquals(List.of("cooldowns.enabled", "cooldowns.showUses", "cooldowns.mcmmo", "cooldowns.commands"),
 				ids(hud.groups().get(5)));
 		assertInstanceOf(MapLines.class, byId("cooldowns.commands"));
-		assertTrue(byId("cooldowns.commands").tooltip().contains("/heal -> 5m"));
+		assertTrue(byId("cooldowns.commands").tooltip().contains("/heal -> 10m"));
 		assertEquals(List.of("charms.enabled"), ids(hud.groups().get(6)));
 		assertEquals(List.of("toast.enabled", "toast.seconds"), ids(hud.groups().get(7)));
 		for (int i = 0; i < 8; i++) assertFalse(hud.groups().get(i).collapsed(), hud.groups().get(i).name());

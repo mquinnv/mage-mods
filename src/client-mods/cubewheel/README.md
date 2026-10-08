@@ -200,7 +200,7 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `cooldowns.enabled` | Item ability countdowns (see [Item cooldowns](#item-cooldowns)) | `true` |
 | `cooldowns.showUses` | Also show the held item's `Uses: N` | `true` |
 | `cooldowns.mcmmo` | mcMMO ability countdowns (see [mcMMO ability cooldowns](#mcmmo-ability-cooldowns)); needs `cooldowns.enabled` | `true` |
-| `cooldowns.commands` | Server command -> placeholder cooldown length (`"5m"`, `"2m 30s"`), counted down after the server confirms the command and corrected from its refusals (see [Command cooldowns](#command-cooldowns)); an entry without a command or a parseable length is dropped with a warning; needs `cooldowns.enabled` | `{"/heal": "5m"}` |
+| `cooldowns.commands` | Server command -> placeholder cooldown length (`"5m"`, `"2m 30s"`), counted down after the server confirms the command and corrected from its refusals (see [Command cooldowns](#command-cooldowns)); an entry without a command or a parseable length is dropped with a warning; needs `cooldowns.enabled` | `{"/heal": "10m"}` |
 | `cooldowns.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `wheel` | The root ring: a list of nodes | see `DefaultConfig.java` |
 
@@ -724,7 +724,7 @@ sent (typed, or from the wheel) and what the server answers within 3 s:
 
 | Reply within 3 s | Effect |
 |---|---|
-| `You have been healed.` (the only line captured so far) | starts the countdown with the known length: the learned one, else the placeholder from `cooldowns.commands` (`5m` for `/heal`, a guess). Pressing again while it runs and being healed again means the real cooldown is shorter: the countdown restarts and the shorter length is learned |
+| `You have been healed.` (the only line captured so far) | starts the countdown with the known length: the learned one, else the placeholder from `cooldowns.commands` (`10m` for `/heal`, Michael's rank; other ranks may differ). Pressing again while it runs and being healed again means the real cooldown is shorter: the countdown restarts and the shorter length is learned |
 | a refusal: a server line naming the command word and a duration, such as `… wait 2m 30s … /heal …` | sets the remaining time; if a success was seen before, learns length = time since that success + remaining |
 | nothing | nothing starts (the command may have failed for another reason) |
 

@@ -278,7 +278,7 @@ In Survival with capture on (the refusal wording is unknown: the `"kind":"chat"`
 - [ ] /heal with no reply within 3 s (e.g. in the hub, or a typo like `/heall`): nothing is shown.
 - [ ] Another player typing "You have been healed." or "wait 5m before /heal" in chat starts nothing.
 - [ ] `"cooldowns": {"enabled": false}` + reload: no panel; `"cooldowns": {"commands": {}}` + reload: no /heal row (item and mcMMO cooldowns unchanged).
-- [ ] Settings › HUD panels › Cooldowns has a "Command cooldowns" list with `/heal -> 5m`. The log has no "[cubewheel] command cooldown hook failed".
+- [ ] Settings › HUD panels › Cooldowns has a "Command cooldowns" list with `/heal -> 10m`. The log has no "[cubewheel] command cooldown hook failed".
 
 ## SVA catalog
 

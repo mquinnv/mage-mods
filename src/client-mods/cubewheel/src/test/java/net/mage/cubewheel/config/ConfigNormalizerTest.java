@@ -50,10 +50,10 @@ class ConfigNormalizerTest {
 
 	@Test void commandCooldownsDefaultToHealAndDropBadDurations() {
 		CubeWheelConfig c = DefaultConfig.create();
-		assertEquals(java.util.Map.of("/heal", "5m"), c.cooldowns.commands);
+		assertEquals(java.util.Map.of("/heal", "10m"), c.cooldowns.commands);
 		c.cooldowns.commands = null; // a file from before command cooldowns
 		ConfigNormalizer.normalize(c, new ArrayList<>());
-		assertEquals(java.util.Map.of("/heal", "5m"), c.cooldowns.commands);
+		assertEquals(java.util.Map.of("/heal", "10m"), c.cooldowns.commands);
 		c.cooldowns.commands = new java.util.LinkedHashMap<>();
 		c.cooldowns.commands.put("Heal", "2m 30s");
 		c.cooldowns.commands.put("/fly", "soon");
