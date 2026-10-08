@@ -182,7 +182,16 @@ public final class PanelsHud implements HudElement {
 	/** A row's height: text rows {@code lh}, rows of pieces with an item picture a full-size icon. */
 	private static int rowHeight(Panel.Line l, int lh) {
 		if (!l.pieces().isEmpty()) return pictured(l) ? BIG_ICON + 1 : lh;
+		if (bigIcon(l)) return BIG_ICON + 1;
 		return l.gauge() >= 0 ? lh + GAUGE_H + 1 : lh;
+	}
+
+	/**
+	 * A heading with an item picture (a Jobs industry: "Farming" with a hoe) draws it at full size: at half size the
+	 * dark tools were hard to make out on the translucent backdrop (Michael 2026-10-08).
+	 */
+	private static boolean bigIcon(Panel.Line l) {
+		return heading(l) && l.icon() instanceof ItemStack s && !s.isEmpty();
 	}
 
 	/** True when a row of pieces has an item picture in it (text-only rows, like the set bonus, stay text height). */
@@ -202,7 +211,7 @@ public final class PanelsHud implements HudElement {
 			}
 			return w;
 		}
-		return font.width(l.text()) + (l.icon() instanceof ItemStack s && !s.isEmpty() ? ICON_W : 0);
+		return font.width(l.text()) + (bigIcon(l) ? BIG_ICON_W : l.icon() instanceof ItemStack s && !s.isEmpty() ? ICON_W : 0);
 	}
 
 	/** True for a line without a tag or right part: it may run across the whole width. */
@@ -330,12 +339,19 @@ public final class PanelsHud implements HudElement {
 				g.fill(left, ly - 1, end, ly + lh - 1, METER_TRACK);
 				if (fill > left) g.fill(left, ly - 1, fill, ly + lh - 1, Panel.meterColor(l.progress()));
 			}
+			int textY = ly;
 			if (l.icon() instanceof ItemStack stack && !stack.isEmpty()) {
-				smallItem(g, stack, tx, ly);
-				tx += ICON_W;
+				if (bigIcon(l)) {
+					g.item(stack, tx, ly);
+					tx += BIG_ICON_W;
+					textY = ly + (BIG_ICON - lh) / 2 + 1;
+				} else {
+					smallItem(g, stack, tx, ly);
+					tx += ICON_W;
+				}
 			}
 			if (!l.pieces().isEmpty()) {
-				int textY = pictured(l) ? ly + (BIG_ICON - font.lineHeight) / 2 : ly;
+				int pieceY = pictured(l) ? ly + (BIG_ICON - font.lineHeight) / 2 : ly;
 				for (Panel.Piece piece : l.pieces()) {
 					if (piece.icon() instanceof ItemStack stack && !stack.isEmpty()) {
 						g.item(stack, tx, ly);
@@ -352,7 +368,7 @@ public final class PanelsHud implements HudElement {
 					// no longer fits, and nothing after it.
 					String text = l.loose() ? fit(font, piece.text(), x + w - tx) : piece.text();
 					if (text.isEmpty()) break;
-					g.text(font, text, tx, textY, piece.color());
+					g.text(font, text, tx, pieceY, piece.color());
 					if (!text.equals(piece.text())) break;
 					tx += font.width(text) + PIECE_GAP;
 				}
@@ -360,7 +376,7 @@ public final class PanelsHud implements HudElement {
 			}
 			// Names use all the room the panel has; only what really does not fit is cut.
 			int room = x + w - tx - (l.right().isEmpty() ? 0 : font.width(l.right()) + COLUMN_GAP);
-			g.text(font, fit(font, l.text(), room), tx, ly, l.color());
+			g.text(font, fit(font, l.text(), room), tx, textY, l.color());
 			if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), ly, l.rightColor());
 			if (l.gauge() >= 0) {
 				// A capacity gauge: a thin bar under the row, across the panel, on its own dark track.
