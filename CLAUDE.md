@@ -43,6 +43,7 @@ bun run deploy           # DEAD - targets retired Apex Hosting. See Deployment.
 bun run check-versions   # ask Modrinth for newer mod versions
 bun run update-versions  # bump pinned fileIds in config/mods-*.json
 bun run clean            # remove built .mrpack files
+bun run install:liz      # push the newest CubeWheel jar to Liz's PC (see scripts/install-cubewheel-liz.sh)
 ```
 
 ## Deployment
@@ -68,6 +69,15 @@ design. **Record nothing about that setup here** -- `mage-server` owns it.
 Worth noting how this got stale: every one of those deploy scripts exists and
 runs, and every path inside them resolves. What moved was the destination, which
 nothing inside this repo can reveal. In-repo verification cannot catch it.
+
+### CubeWheel on Liz's PC
+
+`bun run install:liz` (`scripts/install-cubewheel-liz.sh`) is the standard
+route: upload the jar to a private S3 bucket, presign it, and have SSM
+(`AWS-RunPowerShellScript`) download, hash-check and swap it into her mods
+folder. It refuses to touch anything while `javaw` is running. The old
+base64-chunked SSM upload and the LAN `http.server` route are retired (the
+auto-mode classifier blocks Claude from starting a local listener anyway).
 
 ## Conventions
 

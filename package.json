@@ -39,6 +39,7 @@
     "setup-server": "bun run generate-config && bun run build:server",
     "deploy": "sh scripts/with-secrets.sh bun scripts/deploy-apex-smart.js",
     "deploy:legacy": "sh scripts/with-secrets.sh bun scripts/deploy-apex.js",
+    "install:liz": "sh scripts/install-cubewheel-liz.sh",
     "turbo:deploy": "turbo run deploy",
     "test:phase1": "turbo run test:phase1",
     "test:phase2": "turbo run test:phase2",
