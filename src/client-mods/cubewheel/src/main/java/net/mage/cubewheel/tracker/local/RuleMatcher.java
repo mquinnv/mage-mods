@@ -75,23 +75,15 @@ public final class RuleMatcher {
 		if (rule.kind() == CounterRule.Kind.HARVEST && !b.crop()) return false;
 		// "Resources"/"Blocks": instabreak vegetation is not a resource (plugins count real blocks).
 		if (rule.what() instanceof Any && b.trivial() && !b.crop()) return false;
-		// In a mana world only its resource nodes are mineable: ore (the world's own variants, and ancient debris in
-		// Icehaven) and the stand-in blocks above. Any other block you hit vanishes and is put straight back by the
-		// server, so it is not a "resource mined" for "Mine 830 resources in Icehaven" (Michael 2026-10-08).
-		if (!(rule.what() instanceof Named) && b.world() != null && b.world().special() && !manaResource(b)) return false;
+		// In a mana world a block that is not one of its resources vanishes under the pickaxe and is put straight back
+		// by the server, and so is a resource node until its last hit (a "fake-break"). Both are counted here and taken
+		// back when the server restores the block (PendingBreaks): no list of resource blocks is needed, and none
+		// would be right (chorus flowers are Morend resources, amethyst is not; capture 2026-10-08).
 		// Ore in a mana world gives the world's own variant ("Icehaven Diamond"), which ManaCube's bare "Mine …
 		// Diamonds/Gold" jobs don't count (Michael 2026-10-04); it still counts when the rule names that world.
 		if (rule.world() instanceof AnyWorld && rule.what() instanceof Named n && ORE_MATERIALS.contains(n.singular())
 				&& b.world() != null && b.world().special()) return false;
 		return targetMatches(rule.what(), b.id(), b.name(), b.groups());
-	}
-
-	/** A block that is really mined in a mana world: an ore (ancient debris included) or a crop/crystal stand-in. */
-	static boolean manaResource(Signal.BlockBroken b) {
-		if (b.groups().contains("ore")) return true;
-		if (b.id() == null) return false;
-		for (java.util.Set<String> ids : STAND_IN_BLOCKS.values()) if (ids.contains(b.id())) return true;
-		return false;
 	}
 
 	/** Unknown worlds never satisfy a world-scoped rule (under-count rather than over-count). */

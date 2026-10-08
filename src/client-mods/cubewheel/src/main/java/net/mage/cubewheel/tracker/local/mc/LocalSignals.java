@@ -200,7 +200,7 @@ public final class LocalSignals {
 						+ signal.mature() + " trivial=" + signal.trivial() + " groups=" + signal.groups());
 				return;
 			}
-			pending.record(p, stateId, added, tick, signal.world().special());
+			pending.record(p, stateId, added, tick);
 			capture("break", signal.id(), signal.name(), signal.world(), added);
 		} catch (Throwable t) {
 			fail(Hook.BREAK, t);
@@ -216,13 +216,14 @@ public final class LocalSignals {
 			String id = serverState.typeHolder().getRegisteredName();
 			switch (settled.verdict()) {
 				case NONE -> {}
-				case KEPT_NODE -> capture("break", id, null, "restored by the server: resource node, kept", world(),
-						settled.contributions());
 				case REVERSE -> {
+					// A refusal (claim, anti-cheat), or a mana world's fake-break: the block is back, the count goes back.
 					TrackerStore store = CubeWheelClient.tracker();
 					LocalCounter.reverse(settled.contributions(), store);
 					saveThrottle.markDirty();
-					capture("reject", id, null, world(), settled.contributions());
+					WorldInfo at = world();
+					capture("reject", id, null, at.special() ? "restored by the server: a fake-break, taken back" : null, at,
+							settled.contributions());
 				}
 			}
 		} catch (Throwable t) {

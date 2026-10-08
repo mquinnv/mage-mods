@@ -24,27 +24,18 @@ class AttributionTest {
 		assertEquals(Optional.empty(), p.onSync(P, 42)); // consumed
 	}
 
-	@Test void aRestoredBlockInASpecialWorldIsAResourceNodeAndKept() {
+	/**
+	 * A mana world's fake-break (amethyst under a mana pickaxe, capture 2026-10-08: 98 counted, 0 credited) is a
+	 * restore like any refusal: taken back. The last hit on a resource node ends as air and stays counted.
+	 */
+	@Test void aRestoredBlockInAManaWorldIsAFakeBreakAndTakenBack() {
 		PendingBreaks p = new PendingBreaks();
-		p.record(P, 42, C, 100, true);
-		assertEquals(Optional.empty(), p.onSync(P, 42));
-		assertTrue(p.isEmpty());
-		p.record(P, 42, C, 100, true);
-		assertEquals(PendingBreaks.Verdict.KEPT_NODE, p.settle(P, 42).verdict());
-	}
-
-	@Test void aRestoredBlockOutsideSpecialWorldsIsStillARefusal() {
-		PendingBreaks p = new PendingBreaks();
-		p.record(P, 42, C, 100, false);
+		p.record(P, 42, C, 100);
 		assertEquals(PendingBreaks.Verdict.REVERSE, p.settle(P, 42).verdict());
-		p.record(P, 42, C, 100); // the short form is not special
-		assertEquals(Optional.of(C), p.onSync(P, 42));
-	}
-
-	@Test void aSpecialWorldBreakThatEndsAsAirIsKept() {
-		PendingBreaks p = new PendingBreaks();
-		p.record(P, 42, C, 100, true);
-		assertEquals(PendingBreaks.Verdict.NONE, p.settle(P, 0).verdict());
+		assertEquals(PendingBreaks.Verdict.NONE, p.settle(P, 42).verdict()); // consumed
+		assertTrue(p.isEmpty());
+		p.record(P, 42, C, 100);
+		assertEquals(PendingBreaks.Verdict.NONE, p.settle(P, 0).verdict()); // air: the node really broke
 		assertTrue(p.isEmpty());
 	}
 
