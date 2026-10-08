@@ -21,9 +21,10 @@ public final class WheelUpgrade {
 	public static final String CUSTOM = "Custom";
 	/**
 	 * Commands earlier defaults had and the current one dropped on purpose (2026-10-02: Travel is just Teleporter
-	 * and Back). They are not "yours", so the upgrade does not carry them into More > Custom.
+	 * and Back; 2026-10-08: the Tangleroot warp is singular, "/warp tangleroots" was the default's own misspelling).
+	 * They are not "yours", so the upgrade does not carry them into More > Custom.
 	 */
-	static final Set<String> RETIRED = Set.of("/spawn", "/rtp", "/warp");
+	static final Set<String> RETIRED = Set.of("/spawn", "/rtp", "/warp", "/warp tangleroots");
 
 	/** The upgraded wheel and the leaves moved into More › Custom, as "Label (/command)". */
 	public record Result(List<WheelNode> wheel, List<String> moved) {}
@@ -90,6 +91,56 @@ public final class WheelUpgrade {
 			}
 			n.outer = null;
 			n.arc = arc;
+			changed = true;
+		}
+		return changed;
+	}
+
+	/**
+	 * The version 10 upgrade (2026-10-08): an Isles slice that is a command leaf (the /isles menu, with the isle warps
+	 * as its arc) becomes {@link DefaultConfig#isles()}, a ring of the isles each with the places under it. Isle
+	 * warps you added to the old arc that the ring lacks are kept, appended to the ring. Returns true if anything
+	 * changed.
+	 */
+	public static boolean islesRing(List<WheelNode> wheel) {
+		if (wheel == null) return false;
+		boolean changed = false;
+		List<List<WheelNode>> lists = new ArrayList<>();
+		lists.add(wheel);
+		for (WheelNode n : walk(wheel)) if (n.children != null) lists.add(n.children);
+		for (List<WheelNode> list : lists) {
+			for (int i = 0; i < list.size(); i++) {
+				WheelNode n = list.get(i);
+				// A bare /isles leaf (no arc) is left alone: the arc was removed on purpose, and the ring holds one itself.
+				if (n == null || n.command == null || !key(n.command).equals("isles") || n.arc == null || n.arc.isEmpty()) continue;
+				WheelNode ring = DefaultConfig.isles();
+				Set<String> known = new HashSet<>();
+				for (WheelNode k : walk(List.of(ring))) if (k.command != null) known.add(key(k.command));
+				if (n.arc != null) {
+					tanglerootSingular(n.arc); // so the old "Tangleroots" entry is the ring's, not kept as an extra
+					for (WheelNode a : n.arc) {
+						if (a != null && a.command != null && known.add(key(a.command))) ring.children.add(a);
+					}
+				}
+				list.set(i, ring);
+				changed = true;
+			}
+		}
+		return changed;
+	}
+
+	/**
+	 * Also version 10: the Tangleroot warp is singular on the server ("Mini Boss at /warp tangleroot"); every
+	 * "/warp tangleroots" becomes "/warp tangleroot", and a "Tangleroots" label on it "Tangleroot". Returns true if
+	 * anything changed.
+	 */
+	public static boolean tanglerootSingular(List<WheelNode> wheel) {
+		if (wheel == null) return false;
+		boolean changed = false;
+		for (WheelNode n : walk(wheel)) {
+			if (n.command == null || !key(n.command).equals("warp tangleroots")) continue;
+			n.command = "/warp tangleroot";
+			if ("Tangleroots".equals(n.label)) n.label = "Tangleroot";
 			changed = true;
 		}
 		return changed;

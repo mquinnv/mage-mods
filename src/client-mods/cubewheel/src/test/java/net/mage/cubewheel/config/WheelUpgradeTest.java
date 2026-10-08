@@ -44,8 +44,8 @@ class WheelUpgradeTest {
 		assertEquals("/sell", w.get(5).command);
 		assertEquals("/shop", w.get(4).command);
 		assertEquals(List.of("/kilton", "/ah"), w.get(4).arc.stream().map(n -> n.command).toList());
-		assertEquals("/isles", w.get(8).command);
-		assertEquals(List.of("Wolfhaven", "Tangleroots", "Sandara", "Icehaven", "Morend", "Burninglands"), labels(w.get(8).arc));
+		assertNull(w.get(8).command); // Isles is a ring since version 10 (its children fan out as the arc)
+		assertEquals(List.of("Wolfhaven", "Tangleroot", "Sandara", "Icehaven", "Morend", "Burninglands", "Isles menu"), labels(w.get(8).children));
 		assertEquals("/cow", w.get(10).command);
 		assertEquals("/crates", w.get(10).arc.get(0).command);
 		assertTrue(w.get(11).isSlice());
@@ -165,5 +165,66 @@ class WheelUpgradeTest {
 		assertEquals(60, s.current().dailyReward.weeklyDays);
 		assertEquals(DefaultConfig.COW_MENU_TITLE, s.current().dailyReward.menuTitlePattern);
 		assertEquals(3, s.warnings().size(), s.warnings().toString());
+	}
+
+	/** 2026-10-08: "subwarps on the isles for known things under them. a 3rd ring?" */
+	@Test void islesIsARingOfIslesWithThePlacesUnderEachAndFansOutWhenHovered() {
+		WheelNode isles = DefaultConfig.wheel().get(8);
+		assertEquals("Isles", isles.label);
+		assertTrue(isles.isRing());
+		assertTrue(isles.asArc);
+		assertEquals(List.of("Wolfhaven", "Tangleroot", "Sandara", "Icehaven", "Morend", "Burninglands", "Isles menu"),
+				labels(isles.children));
+		assertEquals(List.of("Mana Golem"), labels(isles.children.get(0).arc));
+		assertEquals("/warp managolem", isles.children.get(0).arc.get(0).command);
+		assertEquals(List.of("Outside", "Volcano Golem"), labels(isles.children.get(1).arc));
+		assertEquals("/warp tangleroot", isles.children.get(1).command); // singular on the server
+		assertEquals("/warp tanglerootoutside", isles.children.get(1).arc.get(0).command);
+		assertEquals(List.of("Cursed Witch"), labels(isles.children.get(4).arc));
+		assertEquals("/isles", isles.children.get(6).command);
+	}
+
+	@Test void theOldIslesSliceBecomesTheRingKeepingAnIsleWarpYouAdded() {
+		List<WheelNode> w = new java.util.ArrayList<>();
+		w.add(WheelNode.leaf("Isles", "minecraft:filled_map", "/isles").withArc(
+				WheelNode.leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven"),
+				WheelNode.leaf("Tangleroots", "minecraft:vine", "/warp tangleroots"),
+				WheelNode.leaf("Secret", "minecraft:barrier", "/warp secret")));
+		w.add(WheelNode.leaf("Heal", null, "/heal"));
+		assertTrue(WheelUpgrade.islesRing(w));
+		assertEquals(List.of("Isles", "Heal"), labels(w));
+		assertTrue(w.get(0).isRing());
+		assertEquals(List.of("Wolfhaven", "Tangleroot", "Sandara", "Icehaven", "Morend", "Burninglands", "Isles menu", "Secret"),
+				labels(w.get(0).children));
+		assertTrue(!WheelUpgrade.islesRing(w)); // once
+	}
+
+	@Test void tanglerootBecomesSingularWhereverItIs() {
+		List<WheelNode> w = new java.util.ArrayList<>();
+		w.add(WheelNode.ring("Mine", null, WheelNode.leaf("Tangleroots", null, "/warp tangleroots"),
+				WheelNode.leaf("TR jungle", null, "/Warp Tangleroots ")));
+		assertTrue(WheelUpgrade.tanglerootSingular(w));
+		assertEquals("Tangleroot", w.get(0).children.get(0).label);
+		assertEquals("/warp tangleroot", w.get(0).children.get(0).command);
+		assertEquals("TR jungle", w.get(0).children.get(1).label); // your own label is yours
+		assertEquals("/warp tangleroot", w.get(0).children.get(1).command);
+		assertTrue(!WheelUpgrade.tanglerootSingular(w));
+	}
+
+	@Test void loadingAVersion9FileMakesIslesARingAndTheBossWarpSingular() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, """
+		  {"configVersion": 9,
+		   "wheel": [{"label":"Isles","icon":"minecraft:filled_map","command":"/isles",
+		              "arc":[{"label":"Tangleroots","command":"/warp tangleroots"}]}],
+		   "events": {"bossWarps": {"(?i)tangleroot": "/warp tangleroots", "(?i)morend": "/warp morend"}}}""");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(DefaultConfig.CONFIG_VERSION, s.current().configVersion);
+		WheelNode isles = s.current().wheel.get(0);
+		assertTrue(isles.isRing());
+		assertEquals("Tangleroot", isles.children.get(1).label);
+		assertEquals(Map.of("(?i)tangleroot", "/warp tangleroot", "(?i)morend", "/warp morend"), s.current().events.bossWarps);
+		assertTrue(s.warnings().stream().anyMatch(w -> w.contains("Isles opens a ring")), s.warnings().toString());
 	}
 }

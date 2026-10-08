@@ -14,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 9;
+	public static final int CONFIG_VERSION = 10;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 	/** The progress popup's visible time and the bounds ConfigNormalizer clamps it to. */
@@ -95,7 +95,8 @@ public final class DefaultConfig {
 		m.put("(?i)tangleroots? volcano", "/warp volcanogolem");
 		m.put("(?i)boss arena", "/warp boss");
 		m.put("(?i)wolfhaven", "/warp wolfhaven");
-		m.put("(?i)tangleroot", "/warp tangleroots");
+		// The world is "Tangleroots"; its warp is singular ("Mini Boss at /warp tangleroot", Michael 2026-10-08).
+		m.put("(?i)tangleroot", "/warp tangleroot");
 		m.put("(?i)sandara", "/warp sandara");
 		m.put("(?i)icehaven", "/warp icehaven");
 		m.put("(?i)morend", "/warp morend");
@@ -135,13 +136,7 @@ public final class DefaultConfig {
 		w.add(leaf("Heal", "minecraft:golden_apple", "/heal").withArc(
 			leaf("Fly", "minecraft:feather", "/fly"),
 			leaf("Feed", "minecraft:cooked_beef", "/feed")));
-		w.add(leaf("Isles", "minecraft:filled_map", "/isles").withArc(
-			leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven"),
-			leaf("Tangleroots", "minecraft:vine", "/warp tangleroots"),
-			leaf("Sandara", "minecraft:sand", "/warp sandara"),
-			leaf("Icehaven", "minecraft:packed_ice", "/warp icehaven"),
-			leaf("Morend", "minecraft:end_stone", "/warp morend"),
-			leaf("Burninglands", "minecraft:magma_block", "/warp burninglands")));
+		w.add(isles());
 		w.add(leaf("Party quests", "minecraft:writable_book", "/pquests").withArc(
 			leaf("Prestige", "minecraft:nether_star", "/prestige"),
 			leaf("Challenges", "minecraft:target", "/challenges")));
@@ -182,6 +177,27 @@ public final class DefaultConfig {
 			leaf("Ender chest", "minecraft:ender_chest", "/ec"),
 			settingsLeaf()));
 		return w;
+	}
+
+	/**
+	 * Isles: hovering it fans the isle warps out (take one straight away); opening it shows each isle with the known
+	 * places under it as that isle's arc (Mana Golem under Wolfhaven, outside and the Volcano Golem under Tangleroot,
+	 * the Cursed Witch under Morend), plus the server's /isles menu (Michael 2026-10-08: "subwarps on the isles for
+	 * known things under them"). Seven entries: under the list threshold, so it opens as a ring.
+	 */
+	public static WheelNode isles() {
+		return ring("Isles", "minecraft:filled_map",
+			leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven").withArc(
+				leaf("Mana Golem", "minecraft:iron_block", "/warp managolem")),
+			leaf("Tangleroot", "minecraft:vine", "/warp tangleroot").withArc(
+				leaf("Outside", "minecraft:jungle_sapling", "/warp tanglerootoutside"),
+				leaf("Volcano Golem", "minecraft:magma_cream", "/warp volcanogolem")),
+			leaf("Sandara", "minecraft:sand", "/warp sandara"),
+			leaf("Icehaven", "minecraft:packed_ice", "/warp icehaven"),
+			leaf("Morend", "minecraft:end_stone", "/warp morend").withArc(
+				leaf("Cursed Witch", "minecraft:cauldron", "/warp cursedwitch")),
+			leaf("Burninglands", "minecraft:magma_block", "/warp burninglands"),
+			leaf("Isles menu", "minecraft:filled_map", "/isles")).shownAsArc();
 	}
 
 	/** The wheel's "Settings" leaf (opens CubeWheel's settings screen); shared by the default wheel and the version 8 migration. */

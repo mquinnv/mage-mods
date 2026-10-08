@@ -143,9 +143,11 @@ public final class CubeWheelClient implements ClientModInitializer {
 		PanelsHud.add(PanelsHud.perTick(net.mage.cubewheel.tracker.FocusPanel::panel, c -> c.focus.position), c -> c.focus.position,
 				DefaultConfig::focusPosition); // bottom left: the entry you last made progress on
 		PanelsHud.add(BoosterWatcher::panel, c -> c.boosters.position, DefaultConfig::boostersPosition);
-		PanelsHud.add(CooldownWatcher::panel, c -> c.cooldowns.position, DefaultConfig::cooldownsPosition);
+		// Charms before Cooldowns: both at the bottom centre, the SVA strip sits right above the hotbar and the
+		// cooldowns stack above it (Michael 2026-10-08).
 		PanelsHud.add(PanelsHud.perTick(net.mage.cubewheel.charms.CharmsPanel::panel, c -> c.charms.position), c -> c.charms.position,
 				DefaultConfig::charmsPosition); // above the hotbar, in place of schrumboHUD
+		PanelsHud.add(CooldownWatcher::panel, c -> c.cooldowns.position, DefaultConfig::cooldownsPosition);
 		PanelsHud.register();
 		ProgressToastHud.register(); // after the panels and the tracker store
 		net.mage.cubewheel.hud.NoticeWatcher.register(); // inventory full, set bonus, vaults: one-off popups

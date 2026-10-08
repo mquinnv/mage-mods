@@ -286,10 +286,10 @@ class WheelEditsTest {
 	}
 
 	@Test void arcEntriesAndChildrenReorderWithinTheirOwnList() {
-		Path isles = Path.top(8);
-		Result r = WheelEdits.moveDown(wheel(), isles.arcEntry(0));
-		assertEquals(isles.arcEntry(1), r.selected());
-		assertEquals("Wolfhaven", node(r.wheel(), isles.arcEntry(1)).label);
+		Path heal = Path.top(7); // Heal's arc: Fly, Feed
+		Result r = WheelEdits.moveDown(wheel(), heal.arcEntry(0));
+		assertEquals(heal.arcEntry(1), r.selected());
+		assertEquals("Fly", node(r.wheel(), heal.arcEntry(1)).label);
 		Result c = WheelEdits.moveUp(wheel(), MORE.child(1));
 		assertEquals(MORE.child(0), c.selected());
 		assertEquals("Warps", node(c.wheel(), MORE.child(0)).label);
@@ -361,7 +361,7 @@ class WheelEditsTest {
 		w = ok(WheelEdits.moveOut(w, extras.child(0)));
 		w = ok(WheelEdits.moveDown(w, SUSHI));
 		w = ok(WheelEdits.delete(w, Path.top(12)));
-		w = ok(WheelEdits.moveOut(w, Path.top(8).arcEntry(2)));
+		w = ok(WheelEdits.moveOut(w, Path.top(8).child(2))); // Sandara out of the Isles ring
 		assertSaveStable(w);
 		for (Row row : WheelEdits.rows(w)) {
 			assertNull(WheelNodeCheck.problem(row.node(), row.kind() == Kind.ARC_ENTRY), row.path().toString());

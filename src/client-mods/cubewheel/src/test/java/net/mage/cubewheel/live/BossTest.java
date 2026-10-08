@@ -65,7 +65,7 @@ class BossTest {
 	@Test void theGoldenKnightHasItsOwnWarp() {
 		Map<String, String> w = DefaultConfig.bossWarps();
 		assertEquals("/warp tanglerootoutside", BossSlice.warpFor(new BossParser.Spawn("Golden Knight", "Tangleroots Forest", true), w));
-		assertEquals("/warp tangleroots", BossSlice.warpFor(new BossParser.Spawn("Forest Guardian", "Tangleroots Forest", false), w));
+		assertEquals("/warp tangleroot", BossSlice.warpFor(new BossParser.Spawn("Forest Guardian", "Tangleroots Forest", false), w));
 	}
 
 	@Test void defaultWarpsForEachLocation() {
@@ -74,7 +74,7 @@ class BossTest {
 		assertEquals("/warp managolem", BossSlice.warpFor("Wolfhaven Mines", w));      // the boss's own warp
 		assertEquals("/warp volcanogolem", BossSlice.warpFor("Tangleroot Volcano", w));
 		assertEquals("/warp wolfhaven", BossSlice.warpFor("Wolfhaven Village", w));
-		assertEquals("/warp tangleroots", BossSlice.warpFor("Tangleroots Forest", w));
+		assertEquals("/warp tangleroot", BossSlice.warpFor("Tangleroots Forest", w)); // the warp is singular
 		assertEquals("/warp sandara", BossSlice.warpFor("Sandara Canyon", w));
 		assertEquals("/warp icehaven", BossSlice.warpFor("Icehaven Peaks", w));
 		assertEquals("/warp morend", BossSlice.warpFor("Morend", w));

@@ -105,7 +105,9 @@ public final class ConfigStore {
 	 * Version 5: the tracker leaves the top right for a panel that takes the Jobs panel's corner and offset, so it
 	 * stacks under it. Version 6: chains of outer tiers become arcs.
 	 * Version 8: a wheel with no Settings entry gains one at the end of {@link DefaultConfig#MORE} (top level if
-	 * that ring is missing or full). Version 9: the Golden Knight's boss warp rule is added (see below).
+	 * that ring is missing or full). Version 9: the Golden Knight's boss warp rule is added (see below). Version 10:
+	 * the Isles slice becomes a ring of the isles with the places under each ({@link WheelUpgrade#islesRing}), and
+	 * the Tangleroot warp is singular everywhere ({@link WheelUpgrade#tanglerootSingular}, boss warp rules too).
 	 */
 	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
@@ -141,6 +143,15 @@ public final class ConfigStore {
 		}
 		if (c.configVersion < 9 && c.events != null && c.events.bossWarps != null) {
 			c.events.bossWarps = withRuleFirst(c.events.bossWarps, "(?i)golden knight");
+		}
+		if (c.configVersion < 10) {
+			if (c.wheel != null && WheelUpgrade.islesRing(c.wheel)) {
+				notes.add("wheel: Isles opens a ring of the isles, each with the places under it (Mana Golem, Tangleroot outside, …)");
+			}
+			if (c.wheel != null) WheelUpgrade.tanglerootSingular(c.wheel);
+			if (c.events != null && c.events.bossWarps != null) {
+				c.events.bossWarps.replaceAll((k, v) -> "/warp tangleroots".equals(v) ? "/warp tangleroot" : v);
+			}
 		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;
