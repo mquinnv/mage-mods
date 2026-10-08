@@ -66,14 +66,14 @@ public final class CommandWatcher {
 		return true;
 	}
 
-	/** Cooldowns-panel lines in the item-ability shape: "/" in the tag column, "Heal", the time on the right, an icon. */
+	/** Cooldowns-panel lines: the icon, the command as typed ("/heal"), the time on the right (Michael 2026-10-08). */
 	public static List<Panel.Line> lines(long now) {
 		List<Panel.Line> out = new ArrayList<>();
 		try {
 			if (!active()) return out;
 			for (CommandCooldowns.Row r : cooldowns.rows(now)) {
 				long left = r.endsAt() - now;
-				out.add(new Panel.Line("/", Panel.GRAY, r.label(), left < ENDING_SOON_MS ? Panel.YELLOW : Panel.WHITE,
+				out.add(new Panel.Line("", 0, r.command(), left < ENDING_SOON_MS ? Panel.YELLOW : Panel.WHITE,
 						Durations.shortCountdown(left)).withIcon(Icons.stack(r.icon())));
 			}
 		} catch (RuntimeException | LinkageError e) {
