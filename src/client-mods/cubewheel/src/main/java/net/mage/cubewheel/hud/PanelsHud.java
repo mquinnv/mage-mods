@@ -390,7 +390,10 @@ public final class PanelsHud implements HudElement {
 			}
 			// Names use all the room the panel has; only what really does not fit is cut.
 			int room = x + w - tx - (l.right().isEmpty() ? 0 : font.width(l.right()) + COLUMN_GAP);
-			g.text(font, fit(font, l.text(), room), tx, textY, l.color());
+			String text = fit(font, l.text(), room);
+			// A tall bar's text sits in the middle of the bar, not against its left edge ("ready to hand in ✓").
+			int textX = l.tall() ? tx + (room - font.width(text)) / 2 : tx;
+			g.text(font, text, textX, textY, l.color());
 			if (!l.right().isEmpty()) g.text(font, l.right(), x + w - font.width(l.right()), textY, l.rightColor());
 			if (l.gauge() >= 0) {
 				// A capacity gauge: a thin bar under the row, across the panel, on its own dark track.

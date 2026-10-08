@@ -25,6 +25,8 @@ public final class FocusPanel {
 	/** An entry stays in focus this long after its last credit. */
 	public static final long WINDOW_MS = 10 * 60_000;
 	public static final int MAX = 3;
+	/** The bar's text once the entry is complete: centred in a full green bar (Michael 2026-10-08). */
+	public static final String DONE_LABEL = "Ready to hand in ✓";
 	private static final int GREY = 0xFFAAAAAA;
 	private static final int DIM = 0xFF808080;
 
@@ -57,7 +59,7 @@ public final class FocusPanel {
 			if (focus.isEmpty()) continue;
 			FocusPanelModel.Focus f = focus.get();
 			lines.add(new Panel.Line(f.tag(), JobsPanel.worldTagColor(f.tag()), f.objective(), Panel.WHITE, f.heading(), GREY));
-			String bar = f.done() ? "hand in ✓" : f.fraction() >= 0 ? f.count() + " · " + f.percent() + "%" : f.count();
+			String bar = f.done() ? DONE_LABEL : f.fraction() >= 0 ? f.count() + " · " + f.percent() + "%" : f.count();
 			lines.add(new Panel.Line("", 0, bar, f.done() ? Panel.GREEN : Panel.WHITE, "")
 					.withProgress(f.fraction() >= 0 ? f.fraction() : 0).withTall());
 			List<String> extra = new ArrayList<>(2);
