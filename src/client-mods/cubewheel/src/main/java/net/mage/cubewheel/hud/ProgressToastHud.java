@@ -55,8 +55,8 @@ public final class ProgressToastHud implements HudElement {
 		Optional<ProgressLabel> label = ProgressLabel.of(CubeWheelClient.tracker(), key, tracker.local.worlds);
 		if (label.isEmpty()) return;
 		ProgressLabel l = label.get();
-		if (units > 0) TOAST.onIncrement(key, l.name(), units, l.count(), l.done(), System.currentTimeMillis(), cfg);
-		else TOAST.onReverse(key, -units, l.count(), l.done());
+		if (units > 0) TOAST.onIncrement(key, l.name(), units, l.count(), l.done(), l.current(), l.target(), System.currentTimeMillis(), cfg);
+		else TOAST.onReverse(key, -units, l.count(), l.done(), l.current(), l.target());
 	}
 
 	@Override
@@ -81,10 +81,33 @@ public final class ProgressToastHud implements HudElement {
 		int alpha = (int) Math.round(255 * Math.max(0, Math.min(1, s.alpha())));
 		// The last few frames of the fade are skipped: (near-)zero text alpha has been drawn opaque by some font paths.
 		if (alpha < 4) return;
-		int w = font.width(s.text());
+		boolean pie = s.fraction() >= 0;
+		int textW = font.width(s.text());
+		int w = textW + (pie ? Pie.SIZE + PIE_GAP : 0);
 		int x = (g.guiWidth() - w) / 2;
 		int plate = (int) Math.round(PLATE_ALPHA * alpha / 255.0);
 		g.fill(x - PAD, y - PAD, x + w + PAD, y + font.lineHeight + PAD - 1, plate << 24);
+		if (pie) {
+			// The disc dark, the wedge in the line's colour, pixel by pixel (a text row tall).
+			Pie.Part[][] m = Pie.mask(Pie.SIZE, s.fraction());
+			int top = y + (font.lineHeight - Pie.SIZE) / 2;
+			int filled = alpha << 24 | (s.color() & 0xFFFFFF);
+			int empty = (int) Math.round(PIE_EMPTY_ALPHA * alpha / 255.0) << 24 | PIE_EMPTY_RGB;
+			for (int py = 0; py < Pie.SIZE; py++) {
+				for (int px = 0; px < Pie.SIZE; px++) {
+					Pie.Part part = m[py][px];
+					if (part == Pie.Part.OUTSIDE) continue;
+					g.fill(x + px, top + py, x + px + 1, top + py + 1, part == Pie.Part.FILLED ? filled : empty);
+				}
+			}
+			x += Pie.SIZE + PIE_GAP;
+		}
 		g.text(font, s.text(), x, y, alpha << 24 | (s.color() & 0xFFFFFF));
 	}
+
+	/** Between the pie and the text. */
+	private static final int PIE_GAP = 3;
+	/** The unfilled part of the pie: a dim grey disc. */
+	private static final int PIE_EMPTY_ALPHA = 0xA0;
+	private static final int PIE_EMPTY_RGB = 0x404040;
 }
