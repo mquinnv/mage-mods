@@ -18,8 +18,9 @@ import java.util.Optional;
  * shown while {@code focus.enabled} in ManaCube. It shows every entry the local counter credited within
  * {@link #WINDOW_MS}, newest first, at most {@link #MAX}: one kill counting for "Slay Monsters in Wolfhaven" and
  * "Slay Magic Mooshrooms in Wolfhaven" shows both (Michael 2026-10-08). Before any credit this session it starts on
- * the entries whose estimates are newest. Each entry is three rows: the objective with its world tag and the
- * industry and tier on the right, a tall bar with the count and percentage, then pace and reward in one dim line.
+ * the entries whose estimates are newest. Each entry is three or four rows: the objective with its world tag, on a
+ * line of its own; a tall bar with the count and percentage; the industry and tier (or the quest's category) with
+ * the pace in one dim line; the rewards in another when the listing had any.
  */
 public final class FocusPanel {
 	/** An entry stays in focus this long after its last credit. */
@@ -58,14 +59,19 @@ public final class FocusPanel {
 			Optional<FocusPanelModel.Focus> focus = FocusPanelModel.of(store, key, worlds, now);
 			if (focus.isEmpty()) continue;
 			FocusPanelModel.Focus f = focus.get();
-			lines.add(new Panel.Line(f.tag(), JobsPanel.worldTagColor(f.tag()), f.objective(), Panel.WHITE, f.heading(), GREY));
+			// The objective has the whole first line: with the heading beside it, a fishing objective ("Catch 4
+			// Common Crayfish in Hot Biomes") was cut to "Catch COMMON…" (Michael 2026-10-08). The heading leads the
+			// dim line under the bar instead.
+			lines.add(new Panel.Line(f.tag(), JobsPanel.worldTagColor(f.tag()), f.objective(), Panel.WHITE, ""));
 			String bar = f.done() ? DONE_LABEL : f.fraction() >= 0 ? f.count() + " · " + f.percent() + "%" : f.count();
 			lines.add(new Panel.Line("", 0, bar, f.done() ? Panel.GREEN : Panel.WHITE, "")
 					.withProgress(f.fraction() >= 0 ? f.fraction() : 0).withTall());
+			// Heading and pace on one dim line, the rewards on their own: one line held all three and lost its end.
 			List<String> extra = new ArrayList<>(2);
+			if (!f.heading().isEmpty()) extra.add(f.heading());
 			if (!f.pace().isEmpty()) extra.add(f.pace());
-			if (!f.rewards().isEmpty()) extra.add(String.join(" · ", f.rewards()));
 			if (!extra.isEmpty()) lines.add(new Panel.Line(String.join(" · ", extra), DIM).withLoose());
+			if (!f.rewards().isEmpty()) lines.add(new Panel.Line(String.join(" · ", f.rewards()), DIM).withLoose());
 		}
 		if (lines.isEmpty()) return Optional.empty();
 		CubeWheelConfig.Position p = cfg.focus.position;

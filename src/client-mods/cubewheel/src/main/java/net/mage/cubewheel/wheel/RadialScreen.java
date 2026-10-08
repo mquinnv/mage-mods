@@ -123,6 +123,19 @@ public final class RadialScreen extends Screen {
 	private double[] arcRadii = new double[0];
 	/** The open arc's widest gap between neighbours, in degrees (sets how far the pointer may stray). */
 	private double arcStep;
+	/**
+	 * Depth 3: the open arc's entry whose own arc is fanned out beyond the arc (Wolfhaven → Mana Golem), or -1. It
+	 * opens while that entry, or one of its entries, is pointed at (Michael 2026-10-08: "a 3rd ring").
+	 */
+	private int subOpen = -1;
+	/** The depth-3 entry pointed at, or -1. */
+	private int hoveredSub = -1;
+	private double[] subAngles = new double[0];
+	private double[] subRadii = new double[0];
+	private double subStep;
+
+	/** An arc's layout: where each entry sits and the widest gap between neighbours. */
+	private record Fan(double[] angles, double[] radii, double step) {}
 	/** Each slice's arc entries this frame (null: none). */
 	private List<List<WheelNode>> arcLists = List.of();
 	/** Outer-tier spacing per slice as last drawn (shrunk where the screen edge is near). */
@@ -291,6 +304,29 @@ public final class RadialScreen extends Screen {
 					outerCount(hoveredNode), shift);
 			hoveredArc = -1;
 		}
+		// Depth 3: an arc entry with places of its own (Wolfhaven → Mana Golem) fans them out beyond the arc while
+		// it, or one of them, is pointed at. Pointing at one keeps the arc on its parent, wherever the arc's own
+		// nearest entry is.
+		int onSub = -1;
+		if (arcOpen < 0) subOpen = -1;
+		else {
+			List<WheelNode> arc = arcAt(arcOpen);
+			if (subOpen >= arc.size() || subOpen >= 0 && subArcOf(arc.get(subOpen)) == null) subOpen = -1;
+			if (subOpen >= 0) {
+				layoutSub(cx, cy, arcAngles[subOpen], subArcOf(arc.get(subOpen)));
+				onSub = ArcLayout.pick(mdx, mdy, renderedEdge + ARC_SPACING, subAngles, subStep * 0.75);
+				if (onSub >= 0) {
+					hovered = arcOpen;
+					hoveredArc = subOpen;
+					hoveredTier = subOpen + 1;
+				}
+			}
+			if (onSub < 0) {
+				subOpen = hoveredArc >= 0 && hoveredArc < arc.size() && subArcOf(arc.get(hoveredArc)) != null ? hoveredArc : -1;
+				if (subOpen >= 0) layoutSub(cx, cy, arcAngles[subOpen], subArcOf(arc.get(subOpen)));
+			}
+		}
+		hoveredSub = onSub;
 		if (!entries.isEmpty()) fillRing(g, cx, cy, ri + half, ri - half, RING);
 		// Depth 2: a lighter band just outside the ring, where arc entries sit, whenever any slice has an arc.
 		boolean anyArc = false;
@@ -339,6 +375,7 @@ public final class RadialScreen extends Screen {
 			}
 		}
 		if (arcOpen >= 0) drawArc(g, cx, cy, arcAt(arcOpen));
+		if (subOpen >= 0 && subArc() != null) drawSub(g, cx, cy, subArc());
 		WheelNode current = path.peekLast();
 		// The top level shows just a dot in its small hub; a sub-ring names itself so you know where you are.
 		String centre = path.size() <= 1 ? "·" : current.label == null ? "" : current.label;
@@ -362,7 +399,8 @@ public final class RadialScreen extends Screen {
 			}
 			if (isHoldKeyDown()) return;
 			keyStillHeld = false;
-			if (hoveredArc >= 0 && arcOpen >= 0) activate(arcAt(arcOpen).get(hoveredArc));
+			if (hoveredSub >= 0 && subArc() != null && hoveredSub < subArc().size()) activate(subArc().get(hoveredSub));
+			else if (hoveredArc >= 0 && arcOpen >= 0) activate(arcAt(arcOpen).get(hoveredArc));
 			else if (hovered >= 0 && hovered < entries.size()) activate(atTier(entries.get(hovered), hoveredTier));
 			// A tap (released without moving the mouse) just shows the wheel: it stays open in click mode
 			// (Michael 2026-10-04). Pointing back at the hub after moving still cancels.
@@ -393,6 +431,10 @@ public final class RadialScreen extends Screen {
 			double dy = pointerMoved ? event.y() - cy : 0;
 			double dead = renderedHub > 0 ? renderedHub : radius() * HUB_FRACTION;
 			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+				if (hoveredSub >= 0 && subArc() != null && hoveredSub < subArc().size()) {
+					activate(subArc().get(hoveredSub));
+					return true;
+				}
 				if (hoveredArc >= 0 && arcOpen >= 0 && arcOpen < entries.size() && arcAt(arcOpen) != null) {
 					activate(arcAt(arcOpen).get(hoveredArc));
 					return true;
@@ -631,10 +673,25 @@ public final class RadialScreen extends Screen {
 	 * few passes.
 	 */
 	private void layoutArc(int cx, int cy, double centre, List<WheelNode> arc) {
+		Fan fan = fan(cx, cy, centre, arc, renderedEdge + ARC_SPACING / 2.0);
+		arcAngles = fan.angles();
+		arcRadii = fan.radii();
+		arcStep = fan.step();
+	}
+
+	/** The depth-3 fan sits one band further out than the arc, centred on the arc entry it belongs to. */
+	private void layoutSub(int cx, int cy, double centre, List<WheelNode> sub) {
+		Fan fan = fan(cx, cy, centre, sub, renderedEdge + ARC_SPACING * 1.5);
+		subAngles = fan.angles();
+		subRadii = fan.radii();
+		subStep = fan.step();
+	}
+
+	/** Lays {@code arc} out on a circle of {@code radius} around {@code centre} (see {@link #layoutArc}). */
+	private Fan fan(int cx, int cy, double centre, List<WheelNode> arc, double radius) {
 		int count = arc.size();
-		double radius = renderedEdge + ARC_SPACING / 2.0;
 		double base = ArcLayout.step(radius, ARC_SPACING);
-		arcAngles = ArcLayout.angles(count, centre, base);
+		double[] arcAngles = ArcLayout.angles(count, centre, base);
 		int[] widths = new int[count];
 		for (int j = 0; j < count; j++) widths[j] = font.width(arc.get(j).label == null ? "" : arc.get(j).label);
 		double widest = base;
@@ -658,32 +715,72 @@ public final class RadialScreen extends Screen {
 			widest = base;
 			for (double gap : gaps) widest = Math.max(widest, ArcLayout.step(radius, gap));
 		}
-		arcStep = widest;
-		arcRadii = new double[count];
+		double[] arcRadii = new double[count];
 		for (int j = 0; j < count; j++) {
 			double room = RadialMath.reach(cx, cy, arcAngles[j], width, height, 2) - OUTER_DISC - font.lineHeight;
 			arcRadii[j] = Math.max(renderedEdge - OUTER_DISC, Math.min(radius, room));
 		}
+		return new Fan(arcAngles, arcRadii, widest);
 	}
 
 	private void drawArc(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> arc) {
 		int inner = (int) Math.round(renderedEdge);
-		// The open arc's span of the depth-2 band is darkened so its entries read as one group.
-		if (arcAngles.length > 0) {
-			double first = arcAngles[0] - arcStep / 2.0, span = arcStep * arcAngles.length;
+		drawFan(g, cx, cy, arc, arcAngles, arcRadii, arcStep, inner, hoveredArc, true);
+		// Dots past an entry that has places of its own: point further out to fan them.
+		for (int j = 0; j < arc.size() && j < arcAngles.length; j++) {
+			List<WheelNode> sub = subArcOf(arc.get(j));
+			if (sub != null && j != subOpen) dots(g, cx, cy, arcAngles[j], inner + ARC_SPACING + 3, sub.size());
+		}
+	}
+
+	/** The depth-3 band: the open arc entry's own places, one band further out. */
+	private void drawSub(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> sub) {
+		int inner = (int) Math.round(renderedEdge) + ARC_SPACING;
+		drawFan(g, cx, cy, sub, subAngles, subRadii, subStep, inner, hoveredSub, true);
+	}
+
+	/**
+	 * Draws a fan of entries on the band from {@code inner} to {@code inner + ARC_SPACING}: its span darkened so
+	 * the entries read as one group, the {@code hot} entry's wedge lit.
+	 */
+	private void drawFan(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> list, double[] angles, double[] radii,
+			double step, int inner, int hot, boolean darken) {
+		if (darken && angles.length > 0) {
+			double first = angles[0] - step / 2.0, span = step * angles.length;
 			fillSector(g, cx, cy, inner + ARC_SPACING, inner, first, first + span, RING);
 		}
-		for (int j = 0; j < arc.size() && j < arcAngles.length; j++) {
-			WheelNode a = arc.get(j);
-			double[] o = RadialMath.offset(arcAngles[j], arcRadii[j]);
+		for (int j = 0; j < list.size() && j < angles.length; j++) {
+			WheelNode a = list.get(j);
+			double[] o = RadialMath.offset(angles[j], radii[j]);
 			int x = cx + (int) Math.round(o[0]);
 			int y = cy + (int) Math.round(o[1]);
-			boolean hot = j == hoveredArc;
+			boolean lit = j == hot;
 			// The hovered entry lights up its whole wedge of the band.
-			if (hot) fillSector(g, cx, cy, inner + ARC_SPACING, inner, arcAngles[j] - arcStep / 2.0, arcAngles[j] + arcStep / 2.0, HOVER);
+			if (lit) fillSector(g, cx, cy, inner + ARC_SPACING, inner, angles[j] - step / 2.0, angles[j] + step / 2.0, HOVER);
 			ItemStack icon = Icons.stack(a.icon);
 			if (!icon.isEmpty()) g.item(icon, x - 8, y - 8);
-			radialLabel(g, a.label == null ? "" : a.label, x, y, arcAngles[j], hot ? WHITE : GREY);
+			radialLabel(g, a.label == null ? "" : a.label, x, y, angles[j], lit ? WHITE : GREY);
+		}
+	}
+
+	/** An arc entry's own arc (the depth-3 fan), or null when it has none. */
+	private static List<WheelNode> subArcOf(WheelNode entry) {
+		return entry != null && entry.arc != null && !entry.arc.isEmpty() ? entry.arc : null;
+	}
+
+	/** The open depth-3 fan's entries, or null. */
+	private List<WheelNode> subArc() {
+		List<WheelNode> arc = arcAt(arcOpen);
+		return arc != null && subOpen >= 0 && subOpen < arc.size() ? subArcOf(arc.get(subOpen)) : null;
+	}
+
+	/** Small dots from {@code from} outward along {@code direction}: there is more past here. */
+	private static void dots(GuiGraphicsExtractor g, int cx, int cy, double direction, double from, int count) {
+		for (int k = 0; k < Math.min(count, MAX_DOTS); k++) {
+			double[] o = RadialMath.offset(direction, from + k * 6);
+			int x = cx + (int) Math.round(o[0]);
+			int y = cy + (int) Math.round(o[1]);
+			g.fill(x - 1, y - 1, x + 2, y + 2, DOT);
 		}
 	}
 
