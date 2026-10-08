@@ -117,11 +117,15 @@ public final class TrackerPanelModel {
 					// plus what was counted locally since that read ("~330/2,500").
 					for (int i = 0; i < info.subs().size(); i++) {
 						ObjectiveInfo.Sub sub = info.subs().get(i);
-						Long extra = subCounted == null ? null : subCounted.apply(TrackerStore.subKey(t.id(), i));
+						String subKey = TrackerStore.subKey(t.id(), i);
+						Long extra = subCounted == null ? null : subCounted.apply(subKey);
 						long[] dt = detailAmounts(sub, extra == null ? 0 : extra);
 						String count = detailRight(dt, extra == null ? 0 : extra);
+						// The objective's own activity (a count on it stamps its key too), so its row lights up.
+						Activity subAct = activity == null ? Activity.NONE : activity.apply(subKey);
 						lines.add(new Line("", 0, DETAIL_INDENT + CompactJob.cut(detailName(sub, worldNames), MAX_DETAIL),
-								count, Tone.DETAIL, Activity.NONE, dt == null ? -1 : Math.min(1, dt[0] / (double) dt[1])));
+								count, Tone.DETAIL, subAct == null ? Activity.NONE : subAct,
+								dt == null ? -1 : Math.min(1, dt[0] / (double) dt[1])));
 					}
 				} else {
 					for (String d : label.details()) {

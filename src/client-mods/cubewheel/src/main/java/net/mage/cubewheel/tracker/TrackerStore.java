@@ -330,6 +330,7 @@ public final class TrackerStore {
 		if (t == null || t.complete() || units <= 0) return false;
 		Estimate old = estimates.get(id);
 		progressAt.put(base, now);
+		if (!id.equals(base)) progressAt.put(id, now); // an objective's own row lights up too, not only the quest's
 		estimates.put(id, old == null
 				? new Estimate(units, t.current(), now, now)
 				: new Estimate(old.count() + units, old.baseline(), old.since(), now));

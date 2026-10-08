@@ -65,6 +65,25 @@ class TrackerPanelModelTest {
 		assertEquals(Tone.NORMAL, lines.get(0).tone());
 	}
 
+	/** A local count on an objective carries the activity accent to its "↳" row, not only to the quest's row. */
+	@Test void objectiveRowsCarryTheirOwnActivity() {
+		TrackerStore s = store();
+		s.addEstimate(TrackerStore.subKey(JUNGLE, 1), 1, NOW - 1_000);
+		List<Line> lines = TrackerPanelModel.build(s.hudSections(10, true, WorldInfo.UNKNOWN, WORLDS, Mode.SORT),
+				id -> s.objective(id).orElse(null), 0.8, WORLDS, NOW, id -> s.activity(id, NOW), s::counted);
+		assertEquals("King of the Jungle", lines.get(2).text());
+		assertEquals(Activity.ACTIVE, lines.get(2).activity());
+		assertEquals(TrackerPanelModel.DETAIL_INDENT + "Monsters", lines.get(3).text());
+		assertEquals(Activity.NONE, lines.get(3).activity());
+		assertEquals(TrackerPanelModel.DETAIL_INDENT + "Golden Knights", lines.get(4).text());
+		assertEquals(Activity.ACTIVE, lines.get(4).activity());
+		assertEquals("~6/10", lines.get(4).right());
+		// No activity function: every row stays unmarked, as before.
+		List<Line> plain = build(s, 10, WorldInfo.UNKNOWN, Mode.SORT);
+		assertEquals(Activity.NONE, plain.get(2).activity());
+		assertEquals(Activity.NONE, plain.get(4).activity());
+	}
+
 	@Test void objectiveWithoutANumberCountsAsOneStep() {
 		// Mob Experience: "0% → Complete the Volcano Potion Quest", "40% → Participate in Slaying 5 Lava Beasts".
 		assertEquals(List.of("Volcano Potion Quest", "0/1"),

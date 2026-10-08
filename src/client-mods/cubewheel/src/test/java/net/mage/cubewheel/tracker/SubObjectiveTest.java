@@ -39,6 +39,18 @@ class SubObjectiveTest {
 		assertEquals(Activity.ACTIVE, s.activity(id, 2_000)); // progress on an objective marks the quest
 	}
 
+	/** A count on an objective lights its own row as well as the quest's ("↳ Monsters" never lit before). */
+	@Test void aCountOnAnObjectiveMarksTheObjectiveAndTheQuest() {
+		TrackerStore s = kingOfTheJungle();
+		String id = Trackable.idOf("pquests", "King of the Jungle");
+		assertEquals(Activity.NONE, s.activity(TrackerStore.subKey(id, 0), 2_000));
+		assertTrue(s.addEstimate(TrackerStore.subKey(id, 0), 5, 1_000));
+		assertEquals(Activity.ACTIVE, s.activity(TrackerStore.subKey(id, 0), 2_000));
+		assertEquals(Activity.ACTIVE, s.activity(id, 2_000));
+		assertEquals(Activity.NONE, s.activity(TrackerStore.subKey(id, 1), 2_000)); // the other objective did nothing
+		assertEquals(Activity.RECENT, s.activity(TrackerStore.subKey(id, 0), 1_000 + Activity.ACTIVE_MS));
+	}
+
 	@Test void rowsShowReadPlusCountedAndAFreshReadReplacesIt() {
 		TrackerStore s = kingOfTheJungle();
 		String id = Trackable.idOf("pquests", "King of the Jungle");
