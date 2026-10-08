@@ -24,7 +24,10 @@ import java.util.regex.Pattern;
 public final class ObjectiveParser {
 	private static final Pattern GRAMMAR = Pattern.compile(
 			// "Excavate 0/814 Dirt" (jobs menu, 2026-10-07) is a break, like "dig".
-			"^(?<verb>harvest or mine|harvest|mine|break|chop|dig|excavate|gather|kill|slay|slaughter|defeat|catch|fish|shear|milk)"
+			// "Participate in Slaying 5 Lava Beasts" (party quest) and "Help defeat 1 Golden Knight in Tangleroots" (job,
+			// 2026-10-08): taking part counts, the last hit is not needed (Kind.ASSIST).
+			"^(?<verb>participate in (?:slaying|killing|defeating)|assist in (?:slaying|killing|defeating)|help (?:defeat|slay|kill)"
+			+ "|harvest or mine|harvest|mine|break|chop|dig|excavate|gather|kill|slay|slaughter|defeat|catch|fish|shear|milk)"
 			// A /jobs listing embeds its counter: "Harvest 3,127/4,773 Cherry Logs"; the target is the max.
 			+ "\\s+(?:\\d[\\d,]*\\s*/\\s*)?(?<n>\\d[\\d,]*)\\s+(?<noun>.+?)(?:\\s+in\\s+(?<in>.+))?$",
 			Pattern.CASE_INSENSITIVE);
@@ -97,11 +100,16 @@ public final class ObjectiveParser {
 
 		String singular = Singular.phrase(noun);
 		String last = singular.substring(singular.lastIndexOf(' ') + 1);
-		if (last.equals("boss")) return Optional.empty();
+		String verb = m.group("verb").toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+		boolean assist = verb.startsWith("participate") || verb.startsWith("assist") || verb.startsWith("help");
+		// A boss is never counted by the last hit; taking part in slaying a named one ("Jungle Bosses") is. Bare
+		// "Bosses" stays out: nothing tells a boss from a mob.
+		if (last.equals("boss") && (!assist || singular.equals("boss"))) return Optional.empty();
 		CounterRule.Target what = GROUPS.containsKey(singular) ? GROUPS.get(singular).orElse(null) : new Named(singular);
 		if (what == null) return Optional.empty();
+		if (assist) return Optional.of(new CounterRule(Kind.ASSIST, target, what, world));
 
-		Kind kind = switch (m.group("verb").toLowerCase(Locale.ROOT)) {
+		Kind kind = switch (verb) {
 			case "harvest" -> isCropNoun(what) ? Kind.HARVEST : Kind.BREAK;
 			case "kill", "slay", "slaughter", "defeat" -> Kind.KILL;
 			// "Catch 61 Tangleroots Fireflies": a custom entity hit (or bottled) and removed, counted like a kill.

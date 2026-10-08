@@ -395,6 +395,11 @@ public final class LocalSignals {
 			removals.settle(entity.getId()); // its later removal is the corpse, never a second kill
 			KillAttribution.Verdict verdict = kills.onDeathVerdict(entity.getId(), mc.player.getId(), tick);
 			if (verdict != KillAttribution.Verdict.LOCAL) {
+				// Not ours by the last hit; ours to take part in if we hit it at any point (a shared boss fight).
+				if (removals.attacked(entity.getId())) {
+					onAssist(entity, "death, " + verdict.name().toLowerCase(java.util.Locale.ROOT) + ", hit earlier");
+					return;
+				}
 				// Not provably ours: still explain it in capture if anyone hit it or it died near us.
 				if (verdict != KillAttribution.Verdict.NO_HIT || entity.distanceTo(mc.player) <= CAPTURE_DEATH_RANGE) {
 					captureEntity("death", entity, verdict.name().toLowerCase(java.util.Locale.ROOT));
@@ -460,7 +465,8 @@ public final class LocalSignals {
 			removals.tick(System.currentTimeMillis()); // settled marks and probes older than STALE_MS no longer hold
 			for (int i = 0; i < ids.size(); i++) {
 				int id = ids.getInt(i);
-				if (!kills.tracks(id) && !stacks.watching(id)) continue;
+				// attacked(): hit at some point (a boss fight shared with others), long after kills forgot the hit.
+				if (!kills.tracks(id) && !stacks.watching(id) && !removals.attacked(id)) continue;
 				Entity entity = mc.level.getEntity(id);
 				if (entity != null && neverAKill(entity)) {
 					// A deflected breeze wind charge was "killed" through a nearby armor stand's tag (2026-10-01).
@@ -477,6 +483,11 @@ public final class LocalSignals {
 							: !survivalMode(mc.player) ? "local hit, not in survival mode" : null;
 					if (why == null && removals.claim(id, true, true, inHitboxWindow(mc.player.getId()))) {
 						onRemovalKill(entity);
+					} else if (why != null && !recent && near && hitboxShape(entity) && removals.attacked(id) && !removals.settled(id)) {
+						// A model boss we hit earlier in a fight others finished, going near us: taking part counts
+						// (Kind.ASSIST). A model hitbox leaving tracking range is not near, so it never counts here.
+						removals.settle(id);
+						onAssist(entity, "removal, " + why + ", hit earlier");
 					} else {
 						captureEntity("removed", entity, why == null ? "local hit" : why);
 					}
@@ -486,6 +497,20 @@ public final class LocalSignals {
 		} catch (Throwable t) {
 			fail(Hook.REMOVE, t);
 		}
+	}
+
+	/**
+	 * A mob we took part in killing (hit at some point, not the last hit; see {@link Signal.MobAssisted}): named by
+	 * its own name, else by the tag found at hit time. Counts only for ASSIST rules.
+	 */
+	private static void onAssist(Entity entity, String detail) {
+		WorldInfo at = world();
+		String typeId = entity.typeHolder().getRegisteredName();
+		String own = rawName(entity);
+		String name = own != null && !own.isBlank() ? own : removals.hint(entity.getId()).map(RemovalKills.Hint::name).orElse("");
+		Signal.MobAssisted signal = new Signal.MobAssisted(typeId, name, Set.of("mob", "monster"), at);
+		List<LocalCounter.Contribution> added = count(signal);
+		capture("kill", typeId, name, detail + " (assist)", at, added);
 	}
 
 	/**

@@ -44,8 +44,12 @@ public final class RuleMatcher {
 		if (rule == null || signal == null || !worldMatches(rule.world(), signal.world())) return false;
 		return switch (signal) {
 			case Signal.BlockBroken b -> blockMatches(rule, b);
-			case Signal.MobKilled m -> rule.kind() == CounterRule.Kind.KILL && !m.groups().contains("player")
+			// A kill you finished also counts as one you took part in.
+			case Signal.MobKilled m -> (rule.kind() == CounterRule.Kind.KILL || rule.kind() == CounterRule.Kind.ASSIST)
+					&& !m.groups().contains("player")
 					&& targetMatches(rule.what(), m.typeId(), m.name(), m.groups(), !(rule.world() instanceof AnyWorld));
+			case Signal.MobAssisted a -> rule.kind() == CounterRule.Kind.ASSIST && !a.groups().contains("player")
+					&& targetMatches(rule.what(), a.typeId(), a.name(), a.groups(), !(rule.world() instanceof AnyWorld));
 			case Signal.FishCaught f -> rule.kind() == CounterRule.Kind.FISH && fishMatches(rule.what(), f.species());
 			case Signal.Sheared s -> rule.kind() == CounterRule.Kind.SHEAR
 					&& targetMatches(rule.what(), s.typeId(), s.name(), java.util.Set.of("mob"));

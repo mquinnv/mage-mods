@@ -7,7 +7,7 @@ import java.util.Set;
  * names without decorations, groups are "crop", "ore", "logs" (blocks) or "mob", "monster", "player"
  * (entities). Pure: no Minecraft/Fabric imports.
  */
-public sealed interface Signal permits Signal.BlockBroken, Signal.MobKilled, Signal.FishCaught, Signal.Sheared, Signal.Milked {
+public sealed interface Signal permits Signal.BlockBroken, Signal.MobKilled, Signal.MobAssisted, Signal.FishCaught, Signal.Sheared, Signal.Milked {
 	WorldInfo world();
 
 	/**
@@ -29,6 +29,17 @@ public sealed interface Signal permits Signal.BlockBroken, Signal.MobKilled, Sig
 	/** {@code count} mobs killed by the player (1 unless a stack died). */
 	record MobKilled(String typeId, String name, Set<String> groups, int count, WorldInfo world) implements Signal {
 		public MobKilled {
+			groups = groups == null ? Set.of() : Set.copyOf(groups);
+		}
+	}
+
+	/**
+	 * A mob that died (or a model hitbox that went) after the player hit it at some point, but not as the last
+	 * hitter: a boss fight shared with others. Counts only for {@link CounterRule.Kind#ASSIST} rules ("Participate
+	 * in Slaying 5 Lava Beasts", Michael 2026-10-08); a kill the player finished counts for those as a MobKilled.
+	 */
+	record MobAssisted(String typeId, String name, Set<String> groups, WorldInfo world) implements Signal {
+		public MobAssisted {
 			groups = groups == null ? Set.of() : Set.copyOf(groups);
 		}
 	}

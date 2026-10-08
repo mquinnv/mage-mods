@@ -42,7 +42,11 @@ public final class PanelsHud implements HudElement {
 	/** Widest a panel's content may grow; longer names are cut to fit, with "…". */
 	private static final int MAX_CONTENT_W = 170;
 	/** The empty part of a row's progress bar. */
-	private static final int METER_TRACK = 0x18FFFFFF;
+	/** The unfilled part of a progress bar: light enough to read as a bar on the backdrop (Michael 2026-10-08). */
+	private static final int METER_TRACK = 0x38FFFFFF;
+	/** A tall bar's outline and the bright edge at its fill. */
+	private static final int METER_EDGE = 0xA0FFFFFF;
+	private static final int METER_FILL_EDGE = 0xFFFFFFFF;
 	/** The thin rule over a grid and the dividers between its columns. */
 	private static final int DIVIDER = 0x40FFFFFF;
 	/** The rule's row: a pixel of space, the rule, a pixel of space. */
@@ -339,6 +343,15 @@ public final class PanelsHud implements HudElement {
 				int fill = left + (int) Math.round((end - left) * Math.min(1, l.progress()));
 				g.fill(left, ly - 1, end, ly + lastH - 1, METER_TRACK);
 				if (fill > left) g.fill(left, ly - 1, fill, ly + lastH - 1, Panel.meterColor(l.progress()));
+				if (l.tall()) {
+					// A big bar is boxed, and its fill ends in a bright edge, so the length reads at a glance.
+					int top = ly - 1, bottom = ly + lastH - 1;
+					g.fill(left, top, end, top + 1, METER_EDGE);
+					g.fill(left, bottom - 1, end, bottom, METER_EDGE);
+					g.fill(left, top, left + 1, bottom, METER_EDGE);
+					g.fill(end - 1, top, end, bottom, METER_EDGE);
+					if (fill > left + 1 && fill < end - 1) g.fill(fill - 1, top, fill + 1, bottom, METER_FILL_EDGE);
+				}
 			}
 			int textY = l.tall() ? ly + (lastH - lh) / 2 : ly;
 			if (l.icon() instanceof ItemStack stack && !stack.isEmpty()) {

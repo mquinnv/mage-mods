@@ -26,15 +26,16 @@ public record Panel(String title, List<Line> lines, HudLayout.Corner corner, int
 	public static final int CYAN = 0xFF55FFFF;
 
 	/** How opaque a full progress bar behind a row gets (text stays readable on top). */
-	static final int METER_ALPHA = 0x99;
+	static final int METER_ALPHA = 0xCC;
 
 	/**
-	 * The colour of a row's progress bar at {@code fraction}: one steady deep teal while under way, so only the bar's
-	 * length tells how far along it is, and dark green once done (1). Dark enough for white text on top. (It used to
-	 * heat up to red near the goal, which read as a warning — Michael 2026-10-04.)
+	 * The colour of a row's progress bar at {@code fraction}: one steady teal while under way, so only the bar's
+	 * length tells how far along it is, and green once done (1). Still dark enough for white text on top. (It used to
+	 * heat up to red near the goal, which read as a warning — Michael 2026-10-04; and it was too faint to notice,
+	 * Michael 2026-10-08.)
 	 */
 	public static int meterColor(double fraction) {
-		return fraction >= 1 ? argb(METER_ALPHA, 0x1F, 0x7A, 0x2E) : argb(METER_ALPHA, 0x1A, 0x5E, 0x6E);
+		return fraction >= 1 ? argb(METER_ALPHA, 0x2E, 0x8B, 0x3E) : argb(METER_ALPHA, 0x23, 0x7E, 0x94);
 	}
 
 	/** Above this fraction a capacity gauge turns yellow. */
