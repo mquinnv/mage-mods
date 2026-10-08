@@ -61,13 +61,16 @@ Any key or mouse button can be used for the wheel. Each press does its action on
 
 ### Default layout
 
-Top level, in fan order (slice 0 at the top, then clockwise): Crops (Sushi) `/warp crops`, Spawners
-(Sushi) `/warp spawners`, Jobs `/jobs`, Kilton `/kilton`, Vaults (Vault 1..N, Ender chest, Party vault),
-Fly (`Fly: on`/`off`), Progress (Party quests, Prestige, Challenges), Daily reward `/cow` (live badge, see
-[Daily reward badge](#daily-reward-badge)), Boss event (live, see [Boss event slice](#boss-event-slice)) and
-More. More holds Homes, Sell (menu / hand / all), Shops (Alchemist, Enchanter, Shop, Auction house, Forge,
-Fish shop), Warps (Server warps; Isles: menu + the six Mana worlds; Bosses: Boss arena, `/bosses`), Travel
-(Spawn, Random TP menu, Teleporter, Warps menu, Back) and Party (menu, home, warps, claim, map, vault).
+Top level, in fan order (slice 0 at the top, then clockwise), each with the entries that fan out in its arc
+while it is hovered: Sushi `/warp crops` (Spawners `/warp spawners`), Homes (live, the cached homes), Teleporter
+`/teleporter` (Back), Jobs `/jobs`, Shop `/shop` (Kilton, Auction house), Sell `/sell` (hand, all), Vaults (live:
+PV 1..N, Party vault, All vaults), Heal `/heal` (Fly `/fly`, shown as `Fly: on`/`off`), Isles `/isles` (the six
+Mana worlds), Party
+quests `/pquests` (Prestige, Challenges), Daily reward `/cow` (Crates; live badge, see
+[Daily reward badge](#daily-reward-badge)), Boss event (live, see [Boss event slice](#boss-event-slice)), TPA
+(live, see [Live slices](#live-slices)) and More. More holds Shops (Alchemist, Enchanter, Shop, Auction house,
+Forge, Fish shop), Warps (Server warps: Pond, Crates, Enchanter, Kilton, Leaderboard, PvP, 1v1; Bosses: Boss
+arena, `/bosses`), Party (menu, home, warps, claim, map, vault), Ender chest and Settings.
 Every ring below the top level has at most 8 entries, so none of them turns into a list. All of it is
 editable, see below.
 

@@ -23,10 +23,13 @@ class WheelUpgradeTest {
 
 	@Test void newDefaultTopLevelOrder() {
 		List<WheelNode> w = DefaultConfig.wheel();
-		assertEquals(List.of("Sushi", "Homes", "Teleporter", "Jobs", "Shop", "Sell", "Vaults", "Fly",
+		assertEquals(List.of("Sushi", "Homes", "Teleporter", "Jobs", "Shop", "Sell", "Vaults", "Heal",
 				"Isles", "Party quests", "Daily reward", "Boss event", "TPA", "More"), labels(w));
 		for (WheelNode n : w) assertNull(n.outer, n.label + " still sticks out"); // every second entry is an arc now
 		assertEquals(List.of("Back"), labels(w.get(2).arc));
+		assertEquals("/heal", w.get(7).command);
+		assertEquals("minecraft:golden_apple", w.get(7).icon);
+		assertEquals(List.of("/fly"), w.get(7).arc.stream().map(n -> n.command).toList());
 		assertEquals(List.of("Prestige", "Challenges"), labels(w.get(9).arc));
 		assertEquals("vaults", w.get(6).dynamic);
 		assertTrue(w.get(6).asArc);
