@@ -44,9 +44,7 @@ public final class TrackerPanel {
 
 	/** The key bound to the picker screen ("X"), as Minecraft names it; null when unbound. */
 	private static String pickerKey() {
-		net.minecraft.client.KeyMapping k = net.mage.cubewheel.Keybinds.trackerPicker;
-		if (k == null || k.isUnbound()) return null;
-		return k.getTranslatedKeyMessage().getString();
+		return net.mage.cubewheel.hud.KeyHint.name(net.mage.cubewheel.Keybinds.trackerPicker);
 	}
 
 	private static int color(TrackerPanelModel.Tone tone) {

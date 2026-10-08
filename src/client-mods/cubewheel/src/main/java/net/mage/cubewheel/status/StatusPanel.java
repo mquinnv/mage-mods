@@ -114,7 +114,9 @@ public final class StatusPanel {
 						new Panel.Cell(Icons.stack(GAME_TIME_ICON), StatusFormat.gameTime(mc.level.getOverworldClockTime()), GREY,
 								Icons.stack(CLOCK_ICON), StatusFormat.clock(clock.getHour(), clock.getMinute()), GREY, -1))));
 		CubeWheelConfig.Position at = cfg.status.position;
-		return Optional.of(new Panel("Status", lines, HudLayout.Corner.parse(at.corner), at.x, at.y, grid));
+		// The title carries the key that moves every panel: "Status · move [,]" (Michael 2026-10-08).
+		String title = net.mage.cubewheel.hud.KeyHint.titled("Status", "move", net.mage.cubewheel.Keybinds.arrange);
+		return Optional.of(new Panel(title, lines, HudLayout.Corner.parse(at.corner), at.x, at.y, grid));
 	}
 
 	/**
