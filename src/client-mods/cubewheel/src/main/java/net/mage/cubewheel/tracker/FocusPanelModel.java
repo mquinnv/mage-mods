@@ -58,7 +58,7 @@ public final class FocusPanelModel {
 		Matcher m = LISTING.matcher(title);
 		if (m.matches()) {
 			heading = (m.group(1) == null ? "" : m.group(1).trim() + " · ") + titleCase(m.group(2));
-			objective = m.group(3).trim();
+			objective = withoutIndustry(m.group(3).trim(), m.group(1));
 		} else {
 			int dot = title.indexOf(" · ");
 			heading = dot > 0 ? title.substring(0, dot) : title;
@@ -71,6 +71,16 @@ public final class FocusPanelModel {
 		if (l.done()) fraction = 1;
 		String pace = l.done() ? "" : pace(perMin.applyAsDouble(key), l.current(), l.target());
 		return Optional.of(new Focus(heading, tag, objective, l.count(), fraction, l.done(), pace, store.rewards(id)));
+	}
+
+	/**
+	 * "Catch Uncommon Lobster while fishing in Jungles Biomes" under a Fishing heading → "Catch Uncommon Lobster
+	 * in Jungles Biomes": the "while fishing" repeats the heading and cost the objective a second row (Michael
+	 * 2026-10-08). Only the heading's own industry is dropped; the rest of the sentence stays.
+	 */
+	static String withoutIndustry(String objective, String industry) {
+		if (industry == null || industry.isBlank()) return objective;
+		return objective.replaceFirst("(?i)\\s+while\\s+" + Pattern.quote(industry.trim()) + "\\b", "");
 	}
 
 	/**

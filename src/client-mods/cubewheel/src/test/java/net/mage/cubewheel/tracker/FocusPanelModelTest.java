@@ -39,6 +39,20 @@ class FocusPanelModelTest {
 		assertEquals(List.of("40 Job XP (Hunting)", "$70,000"), f.rewards());
 	}
 
+	/** 2026-10-08: "catch X while fishing is pretty redundant and dropping an extra line. it is already under fishing". */
+	@Test void theObjectiveDropsTheIndustryTheHeadingNames() {
+		TrackerStore s = store();
+		String name = "Fishing Experienced · Catch Uncommon Lobster while fishing in Jungles Biomes";
+		s.update("jobs", name, new ProgressExtractor.Progress(2, 12), 0);
+		s.setObjective("jobs:" + name, TrackerStoreWorldFilterTest.obj("Catch 2/12  Uncommon Lobster while fishing in Jungles Biomes"));
+		Focus f = FocusPanelModel.of(s, "jobs:" + name, WORLDS, 0).orElseThrow();
+		assertEquals("Fishing · Experienced", f.heading());
+		assertEquals("Catch Uncommon Lobster in Jungles Biomes", f.objective());
+		assertEquals("Catch Octopus", FocusPanelModel.withoutIndustry("Catch Octopus while fishing", "Fishing"));
+		assertEquals("Catch Octopus while fishing", FocusPanelModel.withoutIndustry("Catch Octopus while fishing", "Hunting"));
+		assertEquals("Catch Octopus while fishing", FocusPanelModel.withoutIndustry("Catch Octopus while fishing", null));
+	}
+
 	@Test void aQuestUsesItsNameAsTheHeading() {
 		Focus f = FocusPanelModel.of(store(), "pquests:Fisherman", WORLDS, 0).orElseThrow();
 		assertEquals("Fisherman", f.heading());
