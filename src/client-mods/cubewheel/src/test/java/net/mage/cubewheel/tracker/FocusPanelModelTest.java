@@ -53,6 +53,25 @@ class FocusPanelModelTest {
 		assertEquals("Catch Octopus while fishing", FocusPanelModel.withoutIndustry("Catch Octopus while fishing", null));
 	}
 
+	/**
+	 * 2026-10-08: "i just completed this mission to get 2500 fish, and it says ready to turn in, but it is blocked by
+	 * earlier prestige missions … there's no action item for me until it gets unblocked now".
+	 */
+	@Test void aPrestigeRankBlockedBehindALowerOneIsNotInFocus() {
+		TrackerStore s = store();
+		String skill = "prestige:Rank [✪4] · Reach 3,750 Skill Level";
+		String fish = "prestige:Rank [✪8] · Catch 2,500 Fish";
+		String crops = "prestige:Rank [✪1] · Harvest 42,500 Crops";
+		s.update("prestige", "Rank [✪4] · Reach 3,750 Skill Level", new ProgressExtractor.Progress(2852, 3750), 0);
+		s.update("prestige", "Rank [✪8] · Catch 2,500 Fish", new ProgressExtractor.Progress(2500, 2500), 0);
+		s.update("prestige", "Rank [✪1] · Harvest 42,500 Crops", new ProgressExtractor.Progress(42500, 42500), 0);
+		assertTrue(FocusPanelModel.of(s, fish, WORLDS, 0).isEmpty()); // met, but after ✪4
+		assertTrue(FocusPanelModel.of(s, crops, WORLDS, 0).orElseThrow().done()); // below ✪4: claimable
+		assertFalse(FocusPanelModel.of(s, skill, WORLDS, 0).orElseThrow().done());
+		s.update("prestige", "Rank [✪4] · Reach 3,750 Skill Level", new ProgressExtractor.Progress(3750, 3750), 0);
+		assertTrue(FocusPanelModel.of(s, fish, WORLDS, 0).orElseThrow().done()); // ✪4 met: unblocked
+	}
+
 	@Test void aQuestUsesItsNameAsTheHeading() {
 		Focus f = FocusPanelModel.of(store(), "pquests:Fisherman", WORLDS, 0).orElseThrow();
 		assertEquals("Fisherman", f.heading());

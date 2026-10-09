@@ -66,7 +66,8 @@ class SubObjectiveTest {
 		assertEquals(0, s.counted(TrackerStore.subKey(id, 0)));
 	}
 
-	@Test void metPrestigeRanksBehindAnUnmetOneAreBlocked() {
+	/** 2026-10-08: a blocked rank "is no action item for me until it gets unblocked": it leaves the panel. */
+	@Test void metPrestigeRanksBehindAnUnmetOneAreLeftOut() {
 		TrackerStore s = new TrackerStore(dir.resolve("p.json"));
 		s.update("prestige", "Rank [✪4] · Reach 2,500 Skill Level", p(2065, 2500), 0);
 		s.update("prestige", "Rank [✪8] · Catch 1,000 Fish", p(1000, 1000), 0);
@@ -74,9 +75,8 @@ class SubObjectiveTest {
 		List<TrackerPanelModel.Line> lines = TrackerPanelModel.build(
 				List.of(new TrackerStore.HudSection(TrackerStore.HudSection.Kind.ANYWHERE, s.rows(false))),
 				k -> null, 0.9, WORLDS, 0);
-		TrackerPanelModel.Line fish = lines.stream().filter(l -> l.text().contains("Fish")).findFirst().orElseThrow();
-		assertEquals(TrackerPanelModel.Tone.BLOCKED, fish.tone());
-		assertTrue(fish.right().endsWith("after ✪4"), fish.right());
+		assertTrue(lines.stream().noneMatch(l -> l.text().contains("Fish")), lines.toString());
+		assertTrue(lines.stream().anyMatch(l -> l.text().contains("Skill Level"))); // the one to work on
 		TrackerPanelModel.Line res = lines.stream().filter(l -> l.text().contains("Resources")).findFirst().orElseThrow();
 		assertEquals(TrackerPanelModel.Tone.DONE, res.tone()); // below the next rank: not blocked
 	}

@@ -40,7 +40,8 @@ public final class FocusPanelModel {
 	}
 
 	/**
-	 * The focus for counter {@code key} (an entry id or sub key) at {@code now}; empty if the entry is unknown.
+	 * The focus for counter {@code key} (an entry id or sub key) at {@code now}; empty if the entry is unknown or a
+	 * prestige rank blocked behind a lower one ({@link PrestigeOrder}).
 	 * {@code perMin} gives the key's recent rate ({@link Pace}; 0 = not known yet).
 	 */
 	public static Optional<Focus> of(TrackerStore store, String key, Collection<String> worldNames, long now,
@@ -50,6 +51,8 @@ public final class FocusPanelModel {
 		Optional<TrackerRow> row = store.row(id);
 		Optional<ProgressLabel> label = ProgressLabel.of(store, key, worldNames);
 		if (row.isEmpty() || label.isEmpty()) return Optional.empty();
+		// A met prestige rank behind an unmet lower one cannot be handed in yet: no "Ready to hand in" for it.
+		if (PrestigeOrder.blocked(row.get(), PrestigeOrder.nextRank(store.rows(true)))) return Optional.empty();
 		Trackable t = row.get().item();
 		ObjectiveInfo info = store.objective(id).orElse(null);
 		String title = EntryLabel.of(t.name(), info).title();

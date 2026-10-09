@@ -53,7 +53,7 @@ public final class TrackerPanel {
 			case DONE -> Panel.GREEN;
 			case NEAR -> Panel.YELLOW;
 			case NORMAL -> Panel.CYAN;
-			case OTHER_WORLD, BLOCKED -> OTHER_WORLD_COLOR;
+			case OTHER_WORLD -> OTHER_WORLD_COLOR;
 		};
 	}
 }

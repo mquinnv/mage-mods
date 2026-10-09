@@ -54,13 +54,8 @@ public final class TrackerPanelModel {
 		/** Anything else. */
 		NORMAL,
 		/** An entry in the "Other worlds" group. */
-		OTHER_WORLD,
-		/** Done, but it cannot be claimed yet: a prestige rank waiting on an earlier one ("after ✪4"). */
-		BLOCKED
+		OTHER_WORLD
 	}
-
-	/** "Rank [✪8] · Catch 1,000 Fish" -> 8. */
-	private static final Pattern PRESTIGE_RANK = Pattern.compile("\\[\u272A(\\d+)]");
 
 	/**
 	 * One panel row: {@code tag} (the source's marker, "" for headings and objective rows) in {@code tagColor},
@@ -115,12 +110,9 @@ public final class TrackerPanelModel {
 				Activity act = activity == null ? Activity.NONE : activity.apply(t.id());
 				String right = CompactJob.count(r, now);
 				Tone tone = tone(r, near, s.kind());
-				int rank = prestigeRank(t);
-				if (rank > 0 && nextRank > 0 && rank > nextRank && (r.complete() || r.atCap())) {
-					// Met, but the ranks go in order: it is claimed in /prestige after the next one.
-					right = right + " after \u272A" + nextRank;
-					tone = Tone.BLOCKED;
-				}
+				// A met rank behind an unmet lower one is claimed later and is no action item now: left out
+				// ("there's no action item for me until it gets unblocked", Michael 2026-10-08).
+				if (PrestigeOrder.blocked(r, nextRank)) continue;
 				String text = title(t.source(), label.title(), worldNames);
 				if (s.kind() == TrackerStore.HudSection.Kind.OTHER_WORLDS) {
 					// Which other world: the Jobs panel's two-letter tag ("the other worlds list ought to actually
@@ -214,23 +206,11 @@ public final class TrackerPanelModel {
 		return (extra > 0 ? "~" : "") + CompactJob.number(amounts[0]) + "/" + CompactJob.number(amounts[1]);
 	}
 
-	/** The prestige rank an entry is ("Rank [✪8] · …" -> 8), else 0. */
-	static int prestigeRank(Trackable t) {
-		if (t == null || !"prestige".equals(t.source()) || t.name() == null) return 0;
-		Matcher m = PRESTIGE_RANK.matcher(t.name());
-		return m.find() ? Integer.parseInt(m.group(1)) : 0;
-	}
-
 	/** The lowest prestige rank not yet met among the shown entries (the one to work on), else 0. */
 	static int nextPrestigeRank(List<TrackerStore.HudSection> sections) {
-		int next = 0;
-		for (TrackerStore.HudSection s : sections) {
-			for (TrackerRow r : s.rows()) {
-				int rank = prestigeRank(r.item());
-				if (rank > 0 && !(r.complete() || r.atCap()) && (next == 0 || rank < next)) next = rank;
-			}
-		}
-		return next;
+		List<TrackerRow> rows = new ArrayList<>();
+		for (TrackerStore.HudSection s : sections) rows.addAll(s.rows());
+		return PrestigeOrder.nextRank(rows);
 	}
 
 	static String detailCount(ObjectiveInfo.Sub sub) {
