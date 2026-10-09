@@ -99,8 +99,8 @@ public final class StatusPanel {
 		if (!cfg.status.enabled || p == null || mc.level == null) return Optional.empty();
 		List<Panel.Line> lines = new ArrayList<>(3);
 		if (cfg.status.armor) gear(p, lines);
-		// Whether the server lets you fly right now (/fly): green on, red off. Was the Fly slice's live label on the
-		// wheel; the slice moved into Heal's arc, where it is seen only while the wheel is open (Michael 2026-10-08).
+		// Whether the server lets you fly right now (/fly): green on, red off. The Fly entry in Heal's arc shows the
+		// same while the wheel is open; this line is for the rest of the time (Michael 2026-10-08/09).
 		boolean mayFly = p.getAbilities().mayfly;
 		lines.add(new Panel.Line(mayFly ? FLY_ON : FLY_OFF, mayFly ? Panel.GREEN : FLY_OFF_COLOR).withIcon(Icons.stack(FLY_ICON)));
 		BlockPos pos = p.blockPosition();

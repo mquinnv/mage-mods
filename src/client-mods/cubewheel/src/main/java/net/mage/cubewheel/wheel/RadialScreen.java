@@ -780,8 +780,12 @@ public final class RadialScreen extends Screen {
 			double first = angles[0] - step / 2.0, span = step * angles.length;
 			fillSector(g, cx, cy, inner + ARC_SPACING, inner, first, first + span, band);
 		}
+		long now = System.currentTimeMillis();
 		for (int j = 0; j < list.size() && j < angles.length; j++) {
 			WheelNode a = list.get(j);
+			// The live view, as on the ring: "Fly: on" green in Heal's arc ("fly indicator should also live on the
+			// slice", Michael 2026-10-09). A dimmed entry keeps the dim colour so the open fan still stands out.
+			SliceViews.View view = SliceViews.view(a, now);
 			double[] o = RadialMath.offset(angles[j], radii[j]);
 			int x = cx + (int) Math.round(o[0]);
 			int y = cy + (int) Math.round(o[1]);
@@ -792,7 +796,8 @@ public final class RadialScreen extends Screen {
 			ItemStack icon = Icons.stack(a.icon);
 			if (!icon.isEmpty() && !dim) g.item(icon, x - 8, y - 8);
 			if (dim) fillRing(g, x, y, 4, 0, DOT); // a dot where its icon was: still there, not in hand
-			radialLabel(g, a.label == null ? "" : a.label, x, y, angles[j], lit || j == only ? WHITE : dim ? DIM_LABEL : GREY);
+			int colour = dim ? DIM_LABEL : view != null && view.colour() != null ? view.colour() : lit || j == only ? WHITE : GREY;
+			radialLabel(g, SliceViews.label(a, view), x, y, angles[j], colour);
 		}
 	}
 
