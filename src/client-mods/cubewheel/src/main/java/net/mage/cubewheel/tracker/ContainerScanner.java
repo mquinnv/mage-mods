@@ -31,6 +31,15 @@ public final class ContainerScanner {
 	 */
 	private static final Set<String> PROGRESS_LINE_SOURCES = Set.of("pquests", "menu");
 
+	/**
+	 * The weekly challenge in the quests menu's bottom row: its first lore line names the kind ("Monster Slaying
+	 * Challenge", "Weekly Farm Challenge"). It is no party quest: it rotates every week, so it is filed under
+	 * "challenges" and the week before it is forgotten on the read that shows the new one (Michael 2026-10-10: a
+	 * "Sandara Slayer" from Oct 3 lingered as a party quest, crediting kills, a week after its slot held "Carrot Grind").
+	 */
+	static final String CHALLENGES = "challenges";
+	private static final Pattern CHALLENGE_KIND = Pattern.compile("(?i)\\bchallenge$");
+
 	/** One non-empty container slot: registry id, hover name and lore lines as plain strings. */
 	public record ItemView(int slot, String id, String name, List<String> lore) {}
 
@@ -54,6 +63,7 @@ public final class ContainerScanner {
 		boolean listingsPage = false;
 		Set<String> listed = new HashSet<>();
 		Set<String> tiersSeen = new HashSet<>();
+		Set<String> challenges = null; // the weekly challenges this quests page shows, once it shows one
 		int updated = 0;
 		for (ItemView item : items) {
 			if (item == null || item.lore() == null) continue;
@@ -61,6 +71,12 @@ public final class ContainerScanner {
 			if (name.isEmpty()) continue;
 			List<String> lore = new ArrayList<>(item.lore().size());
 			for (String line : item.lore()) lore.add(strip(line));
+			String itemSource = source;
+			if ("pquests".equals(source) && isWeeklyChallenge(lore)) {
+				itemSource = CHALLENGES;
+				if (challenges == null) challenges = new HashSet<>();
+				challenges.add(name);
+			}
 			Matcher tier = MenuClassifier.JOB_LISTING.matcher(name);
 			Optional<ProgressExtractor.Progress> p;
 			String display;
@@ -92,14 +108,24 @@ public final class ContainerScanner {
 			// "COMPLETED" wins over a lagging number (a quest can read 99% and be done).
 			if (isMarkedComplete(lore)) progress = new ProgressExtractor.Progress(progress.max(), progress.max());
 			if (display == null) display = displayName(name, lore);
-			boolean changed = store.update(source, display, progress, now);
+			if (itemSource != source) {
+				// Read as a party quest before this build: the same name under "pquests" is that stale copy.
+				final String stale = display;
+				updated += store.forgetUnpinned(t -> source.equals(t.source()) && stale.equals(t.name()));
+			}
+			boolean changed = store.update(itemSource, display, progress, now);
 			// The objective text feeds local counting (tracker.local); a read is authoritative, so any
 			// estimate for this entry was just dropped by update().
-			changed |= store.setObjective(Trackable.idOf(source, display), ObjectiveExtractor.extract(name, lore, listingObjective));
+			changed |= store.setObjective(Trackable.idOf(itemSource, display), ObjectiveExtractor.extract(name, lore, listingObjective));
 			// A listing's reward lines ("- 20 Job XP (Hunting)", "- $70,000") feed the Focus panel.
-			if (listingObjective != null) changed |= store.setRewards(Trackable.idOf(source, display), rewards(lore));
-			if (seen != null) seen.accept(Trackable.idOf(source, display));
+			if (listingObjective != null) changed |= store.setRewards(Trackable.idOf(itemSource, display), rewards(lore));
+			if (seen != null) seen.accept(Trackable.idOf(itemSource, display));
 			if (changed) updated++;
+		}
+		if (challenges != null) {
+			// The slot shows this week's challenge; a stored one it no longer shows is last week's, over for good.
+			final Set<String> current = challenges;
+			updated += store.forgetUnpinned(t -> CHALLENGES.equals(t.source()) && !current.contains(t.name()));
 		}
 		if (listingsPage && industry != null) {
 			// A stored listing of this industry whose tier now shows a different job was rerolled or handed in.
@@ -116,6 +142,12 @@ public final class ContainerScanner {
 			});
 		}
 		return updated;
+	}
+
+	/** True when the first lore line names a challenge kind ("Monster Slaying Challenge", "Weekly Farm Challenge"). */
+	static boolean isWeeklyChallenge(List<String> lore) {
+		String first = firstNonBlank(lore);
+		return first != null && CHALLENGE_KIND.matcher(first.trim()).find();
 	}
 
 	/**

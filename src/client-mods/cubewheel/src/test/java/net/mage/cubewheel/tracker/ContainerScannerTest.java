@@ -97,7 +97,7 @@ class ContainerScannerTest {
 						"● 3,000 Mana", "● $50,000", "", "QUEST COMPLETED")));
 		assertEquals(1, ContainerScanner.scan("pquests", items, store, 0));
 		Trackable t = store.all().get(0);
-		assertEquals("pquests:Carrot Grind", t.id());
+		assertEquals("challenges:Carrot Grind", t.id()); // the weekly challenge slot, not a party quest (2026-10-10)
 		assertEquals(100, t.current());
 		assertEquals(100, t.max());
 		assertTrue(t.complete());
@@ -113,6 +113,42 @@ class ContainerScannerTest {
 	}
 
 	/** Prestige ranks carry their counter inside the objective, never a Progress line: they are not gated. */
+	/**
+	 * 2026-10-10: the quests menu's bottom row holds the weekly challenge ("Monster Slaying Challenge" on Oct 3,
+	 * "Weekly Farm Challenge" on Oct 7). It is no party quest and the old week is gone once the slot shows a new one.
+	 */
+	@Test void theWeeklyChallengeInTheQuestsMenuIsAChallengeAndTheOldWeekIsForgotten() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		ItemView quest = new ItemView(13, "minecraft:paper", "Jungle Pursuit",
+				List.of("Experienced Quest", "→ Mine 15,000 Tangleroots Resources", "Progress: 24%", "Rewards:", "● 5,000 Mana"));
+		ItemView slayer = new ItemView(31, "minecraft:paper", "Sandara Slayer",
+				List.of("Monster Slaying Challenge", "→ Slay 1,000 Sandara Monsters", "Progress: 36%", "Rewards:", "● 3,000 Mana", "● $50,000"));
+		ItemView carrots = new ItemView(31, "minecraft:carrot", "Carrot Grind",
+				List.of("Weekly Farm Challenge", "→ Harvest 10,000 Carrots", "Progress: 100%", "Rewards:", "● 3,000 Mana", "● $50,000"));
+		// Read as a party quest by an older build: the same name is the stale copy and goes.
+		store.update("pquests", "Sandara Slayer", new ProgressExtractor.Progress(30, 100), 0);
+		assertTrue(ContainerScanner.scan("pquests", List.of(quest, slayer), store, 1) > 0);
+		assertEquals(List.of("challenges:Sandara Slayer", "pquests:Jungle Pursuit"),
+				store.all().stream().map(Trackable::id).sorted().toList());
+		assertEquals(36, store.row("challenges:Sandara Slayer").orElseThrow().item().current());
+		assertEquals("Slay 1,000 Sandara Monsters", store.objective("challenges:Sandara Slayer").orElseThrow().subs().get(0).text());
+		// A week later the slot shows the farm challenge: the slayer is over, whatever its count.
+		store.addEstimate("challenges:Sandara Slayer", 645, 2);
+		assertTrue(ContainerScanner.scan("pquests", List.of(quest, carrots), store, 3) > 0);
+		assertEquals(List.of("challenges:Carrot Grind", "pquests:Jungle Pursuit"),
+				store.all().stream().map(Trackable::id).sorted().toList());
+		assertTrue(store.estimate("challenges:Sandara Slayer").isEmpty());
+		// A quests page without the slot (page 2) says nothing about the week: the challenge stays.
+		assertEquals(0, ContainerScanner.scan("pquests", List.of(quest), store, 4));
+		assertTrue(store.row("challenges:Carrot Grind").isPresent());
+		// A pinned challenge is the player's to keep.
+		store.togglePin("challenges:Carrot Grind");
+		ContainerScanner.scan("pquests", List.of(quest, slayer), store, 5);
+		assertTrue(store.row("challenges:Carrot Grind").isPresent());
+		assertTrue(ContainerScanner.isWeeklyChallenge(List.of("", "Weekly Farm Challenge", "→ x")));
+		assertTrue(!ContainerScanner.isWeeklyChallenge(List.of("Experienced Quest", "Challenge yourself")));
+	}
+
 	@Test void prestigeRankWithoutProgressLineStillTracks() {
 		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
 		List<ItemView> items = List.of(new ItemView(14, "minecraft:paper", "Rank [✪4]",
