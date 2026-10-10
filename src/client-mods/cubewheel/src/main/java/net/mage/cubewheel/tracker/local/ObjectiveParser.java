@@ -27,6 +27,9 @@ public final class ObjectiveParser {
 			// "Participate in Slaying 5 Lava Beasts" (party quest) and "Help defeat 1 Golden Knight in Tangleroots" (job,
 			// 2026-10-08): taking part counts, the last hit is not needed (Kind.ASSIST).
 			"^(?<verb>participate in (?:slaying|killing|defeating)|assist in (?:slaying|killing|defeating)|help (?:defeat|slay|kill)"
+			// "Find 30 Sandara Artifacts" (master party quest, 2026-10-10): brushed out of suspicious sand (Kind.FIND).
+			// "dig up" sits before "dig" so the alternation does not stop at the break verb.
+			+ "|find|dig up|unearth"
 			+ "|harvest or mine|harvest|mine|break|chop|dig|excavate|gather|kill|slay|slaughter|defeat|catch|fish|shear|milk)"
 			// A /jobs listing embeds its counter: "Harvest 3,127/4,773 Cherry Logs"; the target is the max.
 			+ "\\s+(?:\\d[\\d,]*\\s*/\\s*)?(?<n>\\d[\\d,]*)\\s+(?<noun>.+?)(?:\\s+in\\s+(?<in>.+))?$",
@@ -119,6 +122,8 @@ public final class ObjectiveParser {
 			case "shear" -> Kind.SHEAR;
 			// "Milk 15/25 Cows": an empty bucket used on the mob, matched by type id or name.
 			case "milk" -> Kind.MILK;
+			// "Find 30 Sandara Artifacts": each "[Artifacts] you dug up a …" chat line in that world.
+			case "find", "dig up", "unearth" -> Kind.FIND;
 			default -> Kind.BREAK;
 		};
 		// A specific fish ("Catch 9 YellowSeaShroom while fishing") is matched by species from the catch chat line.

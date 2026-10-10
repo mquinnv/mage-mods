@@ -6,7 +6,8 @@ package net.mage.cubewheel.tracker.local;
  */
 public record CounterRule(Kind kind, long target, Target what, World world) {
 	/** ASSIST: a kill you took part in ("Participate in Slaying 5 Lava Beasts"), credited on any hit, not the last. */
-	public enum Kind { BREAK, HARVEST, KILL, FISH, SHEAR, MILK, ASSIST }
+	/** {@code FIND}: an artifact brushed out of suspicious sand ("Find 30 Sandara Artifacts", 2026-10-10). */
+	public enum Kind { BREAK, HARVEST, KILL, FISH, SHEAR, MILK, ASSIST, FIND }
 
 	public sealed interface Target permits Any, Group, Named {}
 

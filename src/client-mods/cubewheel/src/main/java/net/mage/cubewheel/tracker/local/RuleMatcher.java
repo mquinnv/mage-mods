@@ -55,7 +55,21 @@ public final class RuleMatcher {
 					&& targetMatches(rule.what(), s.typeId(), s.name(), java.util.Set.of("mob"));
 			case Signal.Milked m -> rule.kind() == CounterRule.Kind.MILK
 					&& targetMatches(rule.what(), m.typeId(), m.name(), java.util.Set.of("mob"));
+			case Signal.ArtifactDug a -> rule.kind() == CounterRule.Kind.FIND && artifactMatches(rule.what(), a.name());
 		};
+	}
+
+	/**
+	 * "Find 30 Sandara Artifacts" counts every artifact dug up (the world is the rule's); a rule naming one
+	 * ("Find 3 Scarab Brooches") only that one, by display name. Groups never name artifacts.
+	 */
+	static boolean artifactMatches(CounterRule.Target what, String name) {
+		if (what instanceof Any) return true;
+		if (!(what instanceof Named n)) return false;
+		String want = n.singular();
+		if (want.equals("artifact")) return true;
+		String got = displayName(name);
+		return !got.isEmpty() && (got.equals(want) || got.endsWith(" " + want));
 	}
 
 	/**

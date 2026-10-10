@@ -7,7 +7,7 @@ import java.util.Set;
  * names without decorations, groups are "crop", "ore", "logs" (blocks) or "mob", "monster", "player"
  * (entities). Pure: no Minecraft/Fabric imports.
  */
-public sealed interface Signal permits Signal.BlockBroken, Signal.MobKilled, Signal.MobAssisted, Signal.FishCaught, Signal.Sheared, Signal.Milked {
+public sealed interface Signal permits Signal.BlockBroken, Signal.MobKilled, Signal.MobAssisted, Signal.FishCaught, Signal.Sheared, Signal.Milked, Signal.ArtifactDug {
 	WorldInfo world();
 
 	/**
@@ -61,4 +61,10 @@ public sealed interface Signal permits Signal.BlockBroken, Signal.MobKilled, Sig
 
 	/** A mob the player milked with an empty bucket (the server kept the swap). */
 	record Milked(String typeId, String name, WorldInfo world) implements Signal {}
+
+	/**
+	 * An artifact the player brushed out of suspicious sand, by its name from ManaCube's chat line ("[Artifacts]
+	 * miniminou dug up a Scarab Brooch", {@link ArtifactParser}). Counts toward {@link CounterRule.Kind#FIND}.
+	 */
+	record ArtifactDug(String name, WorldInfo world) implements Signal {}
 }

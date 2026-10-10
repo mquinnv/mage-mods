@@ -12,6 +12,7 @@ import net.mage.cubewheel.cooldown.McmmoParser;
 import net.mage.cubewheel.cooldown.McmmoWatcher;
 import net.mage.cubewheel.tracker.local.AreaBreaks;
 import net.mage.cubewheel.tracker.local.ActionBarFeed;
+import net.mage.cubewheel.tracker.local.ArtifactParser;
 import net.mage.cubewheel.tracker.local.FishCatchParser;
 import net.mage.cubewheel.tracker.local.FishDedup;
 import net.mage.cubewheel.tracker.local.FishDetector;
@@ -86,7 +87,7 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public final class LocalSignals {
 	/** Hook kinds that can fail independently. */
-	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, LOOT_POLL, FISH, SHEAR, MILK, TICK, LEVEL, AREA, QUEST }
+	public enum Hook { BREAK, SYNC, PLACE, ATTACK, DAMAGE, DEATH, STACK, REMOVE, LOOT, LOOT_POLL, FISH, SHEAR, MILK, TICK, LEVEL, AREA, QUEST, ARTIFACT }
 
 	private static final int MAX_FAILURES = 10;
 	private static final long SAVE_INTERVAL_MS = 30_000;
@@ -709,7 +710,29 @@ public final class LocalSignals {
 		} catch (Throwable t) {
 			fail(Hook.QUEST, t);
 		}
+		try {
+			// "[Artifacts] You dug up a Pharaoh Staff": everyone's finds are announced, others by name; only yours counts
+			// ("Find 30 Sandara Artifacts" never moved, Michael 2026-10-10).
+			Player self = Minecraft.getInstance().player;
+			if (enabled(Hook.ARTIFACT) && survivalMode(self)) {
+				String name = self.getName().getString();
+				for (String line : message.getString().split("\n")) {
+					Optional<String> artifact = ArtifactParser.parse(line, name);
+					if (artifact.isEmpty()) continue;
+					onArtifactDug(artifact.get());
+					break;
+				}
+			}
+		} catch (Throwable t) {
+			fail(Hook.ARTIFACT, t);
+		}
 		return true;
+	}
+
+	/** You dug up {@code artifact}: one unit toward every "Find … Artifacts" rule for this world. */
+	private static void onArtifactDug(String artifact) {
+		Signal.ArtifactDug signal = new Signal.ArtifactDug(artifact, world());
+		capture("artifact", null, artifact, "chat: you dug it up", signal.world(), count(signal));
 	}
 
 	/** You finished {@code quest}: its "Complete the …" objectives are estimated done until the next menu read. */
