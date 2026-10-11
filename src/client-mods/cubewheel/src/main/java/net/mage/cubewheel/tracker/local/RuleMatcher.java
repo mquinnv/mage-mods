@@ -95,8 +95,9 @@ public final class RuleMatcher {
 		if (rule.what() instanceof Any && b.trivial() && !b.crop()) return false;
 		// In a mana world a block that is not one of its resources vanishes under the pickaxe and is put straight back
 		// by the server, and so is a resource node until its last hit (a "fake-break"). Both are counted here and taken
-		// back when the server restores the block (PendingBreaks): no list of resource blocks is needed, and none
-		// would be right (chorus flowers are Morend resources, amethyst is not; capture 2026-10-08).
+		// back when the server restores the block (PendingBreaks), unless a job names the block: Morend's amethyst
+		// clusters are put back at once and credited (capture 2026-10-11), its blocks of amethyst put back and not
+		// (capture 2026-10-08). No list of resource blocks is needed, and none would be right.
 		// Ore in a mana world gives the world's own variant ("Icehaven Diamond"), which ManaCube's bare "Mine …
 		// Diamonds/Gold" jobs don't count (Michael 2026-10-04); it still counts when the rule names that world.
 		if (rule.world() instanceof AnyWorld && rule.what() instanceof Named n && ORE_MATERIALS.contains(n.singular())

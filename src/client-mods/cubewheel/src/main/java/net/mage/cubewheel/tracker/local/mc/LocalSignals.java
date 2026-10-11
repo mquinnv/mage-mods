@@ -201,7 +201,12 @@ public final class LocalSignals {
 						+ signal.mature() + " trivial=" + signal.trivial() + " groups=" + signal.groups());
 				return;
 			}
-			pending.record(p, stateId, added, tick);
+			// In a mana world the server puts most blocks straight back (a fake-break, taken back on sync), but a
+			// resource node a job names is credited all the same (Morend amethyst clusters, capture 2026-10-11).
+			TrackerStore store = CubeWheelClient.tracker();
+			boolean node = signal.world().special() && store != null
+					&& PendingBreaks.namedResource(added, store.activeRules(local().worlds));
+			pending.record(p, stateId, added, tick, node);
 			capture("break", signal.id(), signal.name(), signal.world(), added);
 		} catch (Throwable t) {
 			fail(Hook.BREAK, t);
@@ -217,6 +222,8 @@ public final class LocalSignals {
 			String id = serverState.typeHolder().getRegisteredName();
 			switch (settled.verdict()) {
 				case NONE -> {}
+				case KEPT_NODE -> capture("keep", id, null, "restored by the server: a job names it, a resource node, kept",
+						world(), settled.contributions());
 				case REVERSE -> {
 					// A refusal (claim, anti-cheat), or a mana world's fake-break: the block is back, the count goes back.
 					TrackerStore store = CubeWheelClient.tracker();

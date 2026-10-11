@@ -25,8 +25,8 @@ class AttributionTest {
 	}
 
 	/**
-	 * A mana world's fake-break (amethyst under a mana pickaxe, capture 2026-10-08: 98 counted, 0 credited) is a
-	 * restore like any refusal: taken back. The last hit on a resource node ends as air and stays counted.
+	 * A mana world's fake-break (blocks of amethyst under a mana pickaxe, capture 2026-10-08: 98 counted, 0 credited)
+	 * is a restore like any refusal: taken back. The last hit on a resource node ends as air and stays counted.
 	 */
 	@Test void aRestoredBlockInAManaWorldIsAFakeBreakAndTakenBack() {
 		PendingBreaks p = new PendingBreaks();
@@ -37,6 +37,33 @@ class AttributionTest {
 		p.record(P, 42, C, 100);
 		assertEquals(PendingBreaks.Verdict.NONE, p.settle(P, 0).verdict()); // air: the node really broke
 		assertTrue(p.isEmpty());
+	}
+
+	/**
+	 * Morend amethyst clusters (capture 2026-10-11): the server puts every cluster straight back and credits "Mine
+	 * 245 Morend Amethyst Cluster" all the same (29 hit between two reads, 21 credited), so with the fake-break rule
+	 * the mod counted none ("amethyst cluster dynamic tracking still not working"). A restored block a credited
+	 * rule names is a resource node, kept with all its contributions; one only "resources" rules matched is not.
+	 */
+	@Test void aRestoredBlockAJobNamesIsAResourceNodeAndKept() {
+		CounterRule cluster = new CounterRule(CounterRule.Kind.BREAK, 245,
+				new CounterRule.Named("morend amethyst cluster"), new CounterRule.NamedWorld("morend"));
+		CounterRule resources = new CounterRule(CounterRule.Kind.BREAK, 5848, new CounterRule.Any(), new CounterRule.NamedWorld("morend"));
+		java.util.Map<String, CounterRule> rules = java.util.Map.of("a", cluster, "b", resources);
+		assertTrue(PendingBreaks.namedResource(C, rules)); // "a" names the cluster
+		assertFalse(PendingBreaks.namedResource(List.of(new LocalCounter.Contribution("b", 1)), rules)); // a block of amethyst
+		assertFalse(PendingBreaks.namedResource(List.of(new LocalCounter.Contribution("zzz", 1)), rules));
+		assertFalse(PendingBreaks.namedResource(C, null));
+		PendingBreaks p = new PendingBreaks();
+		p.record(P, 42, C, 100, true);
+		PendingBreaks.Settled s = p.settle(P, 42);
+		assertEquals(PendingBreaks.Verdict.KEPT_NODE, s.verdict());
+		assertEquals(C, s.contributions()); // the Heavy "resources in Morend" credit stays with it
+		assertEquals(Optional.empty(), p.onSync(P, 42)); // consumed, nothing to reverse
+		p.record(P, 42, C, 100, true);
+		assertEquals(Optional.empty(), p.onSync(P, 42)); // onSync never reverses a kept node
+		p.record(P, 42, C, 100, false);
+		assertEquals(Optional.of(C), p.onSync(P, 42)); // the plain record is the fake-break
 	}
 
 	@Test void replantOrAirIsNotARejection() {
