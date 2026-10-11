@@ -30,6 +30,8 @@ public final class FocusPanel {
 	public static final String DONE_LABEL = "Ready to hand in ✓";
 	private static final int GREY = 0xFFAAAAAA;
 	private static final int DIM = 0xFF808080;
+	/** The dim line when a deadline will be missed. */
+	private static final int LATE = 0xFFFF5555;
 
 	/** Counter keys credited, with when (client thread; the listener runs there too). */
 	private static final Map<String, Long> credited = new LinkedHashMap<>();
@@ -77,8 +79,9 @@ public final class FocusPanel {
 			// the part worth keeping ("the time estimate is getting cut off"). The rewards get their own line.
 			List<String> extra = new ArrayList<>(2);
 			if (!f.pace().isEmpty()) extra.add(f.pace());
+			if (!f.due().isEmpty()) extra.add(f.due()); // a calendar day: "due in 21 h", red when the pace will miss it
 			if (!f.heading().isEmpty()) extra.add(f.heading());
-			if (!extra.isEmpty()) lines.add(new Panel.Line(String.join(" · ", extra), DIM).withLoose());
+			if (!extra.isEmpty()) lines.add(new Panel.Line(String.join(" · ", extra), f.late() ? LATE : DIM).withLoose());
 			if (!f.rewards().isEmpty()) lines.add(new Panel.Line(String.join(" · ", f.rewards()), DIM).withLoose());
 		}
 		if (lines.isEmpty()) return Optional.empty();

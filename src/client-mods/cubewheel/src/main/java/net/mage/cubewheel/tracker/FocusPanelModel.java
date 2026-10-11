@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.regex.Matcher;
 import java.util.function.ToDoubleFunction;
 import java.util.regex.Pattern;
@@ -23,10 +24,12 @@ public final class FocusPanelModel {
 	/**
 	 * What the panel shows. {@code heading}: the industry and tier, or the quest's name; {@code tag}: the world
 	 * ("MO", "" if none); {@code objective}: the objective text; {@code count}: "12/73"; {@code fraction} 0..1;
-	 * {@code pace}: "" until known; {@code rewards}: the listing's reward lines.
+	 * {@code pace}: "" until known; {@code rewards}: the listing's reward lines; {@code due}: "due in 21 h" or
+	 * "overdue" for an entry with a deadline (a calendar day), "" otherwise; {@code late}: the deadline has passed,
+	 * or the pace says it will be missed.
 	 */
 	public record Focus(String heading, String tag, String objective, String count, double fraction, boolean done,
-			String pace, List<String> rewards) {
+			String pace, List<String> rewards, String due, boolean late) {
 		public int percent() {
 			return (int) Math.floor(Math.max(0, Math.min(1, fraction)) * 100);
 		}
@@ -72,8 +75,19 @@ public final class FocusPanelModel {
 		String tag = CompactJob.worldTag(store.scope(t, worldNames));
 		double fraction = l.target() > 0 ? Math.max(0, Math.min(1, l.current() / (double) l.target())) : -1;
 		if (l.done()) fraction = 1;
-		String pace = l.done() ? "" : pace(perMin.applyAsDouble(key), l.current(), l.target());
-		return Optional.of(new Focus(heading, tag, objective, l.count(), fraction, l.done(), pace, store.rewards(id)));
+		double rate = perMin.applyAsDouble(key);
+		long paceLeft = l.done() ? -1 : leftMs(rate, l.current(), l.target());
+		String pace = paceLeft < 0 ? "" : String.format(Locale.ROOT, "%s/min · ~%s left", rate(rate), duration(paceLeft));
+		// A calendar day's deadline: how long is left, and whether the pace (or the clock) says it will be missed.
+		OptionalLong at = store.due(id);
+		String due = "";
+		boolean late = false;
+		if (at.isPresent() && !l.done()) {
+			long left = at.getAsLong() - now;
+			due = left <= 0 ? "overdue" : "due in " + duration(left);
+			late = left <= 0 || paceLeft > left;
+		}
+		return Optional.of(new Focus(heading, tag, objective, l.count(), fraction, l.done(), pace, store.rewards(id), due, late));
 	}
 
 	/**
@@ -92,9 +106,14 @@ public final class FocusPanelModel {
 	 * not known yet or the entry is done. The time left assumes the pace holds.
 	 */
 	static String pace(double perMin, long current, long target) {
-		if (perMin <= 0 || target <= 0 || current < 0 || current >= target) return "";
-		long leftMs = Math.round((target - current) / perMin * 60_000);
-		return String.format(Locale.ROOT, "%s/min · ~%s left", rate(perMin), duration(leftMs));
+		long left = leftMs(perMin, current, target);
+		return left < 0 ? "" : String.format(Locale.ROOT, "%s/min · ~%s left", rate(perMin), duration(left));
+	}
+
+	/** Milliseconds to the target at {@code perMin}; -1 when the rate is not known or the entry is done. */
+	static long leftMs(double perMin, long current, long target) {
+		if (perMin <= 0 || target <= 0 || current < 0 || current >= target) return -1;
+		return Math.round((target - current) / perMin * 60_000);
 	}
 
 	/** "3.2" below 10, "12" from there. */

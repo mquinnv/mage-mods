@@ -40,6 +40,19 @@ public final class ContainerScanner {
 	static final String CHALLENGES = "challenges";
 	private static final Pattern CHALLENGE_KIND = Pattern.compile("(?i)\\bchallenge$");
 
+	/**
+	 * The event calendar (/calendar; Halloween 2026, capture 2026-10-11): one paper per day. Today's reads "Task:
+	 * Catch 100 Fish (8/100)", "Time Left: 23h", "Reward: Large Money Pouch"; later days "Task: ???" until revealed.
+	 */
+	static final String CALENDAR = "calendar";
+	private static final Pattern TASK = Pattern.compile("(?i)^task:\\s*(.+)$");
+	private static final Pattern TIME_LEFT = Pattern.compile("(?i)^time left:\\s*(.+)$");
+	private static final Pattern REWARD_LINE = Pattern.compile("(?i)^rewards?:\\s*(.+)$");
+	/** A task's counter in brackets: "Catch 100 Fish (8/100)". */
+	private static final Pattern BRACKET_COUNTER = Pattern.compile("\\s*\\(\\s*\\d[\\d,]*\\s*/\\s*\\d[\\d,]*\\s*\\)\\s*$");
+	/** "23h", "2h 15m", "1d 2h", "45 mins". */
+	private static final Pattern DURATION_PART = Pattern.compile("(?i)(\\d{1,9})\\s*(d|h|m|s)[a-z]*");
+
 	/** One non-empty container slot: registry id, hover name and lore lines as plain strings. */
 	public record ItemView(int slot, String id, String name, List<String> lore) {}
 
@@ -59,6 +72,7 @@ public final class ContainerScanner {
 	 */
 	public static int scan(String source, List<ItemView> items, TrackerStore store, long now, Consumer<String> seen) {
 		if (source == null || items == null || store == null) return 0;
+		if (CALENDAR.equals(source)) return scanCalendar(items, store, now, seen);
 		String industry = industry(items);
 		boolean listingsPage = false;
 		Set<String> listed = new HashSet<>();
@@ -142,6 +156,80 @@ public final class ContainerScanner {
 			});
 		}
 		return updated;
+	}
+
+	/**
+	 * The event calendar: a day whose task is revealed and still running (it shows a "Time Left") becomes
+	 * "calendar:October 11th · Catch 100 Fish" with the task's counter, its objective (so the local counter credits
+	 * it), its reward and its deadline ({@link TrackerStore#setDue}). Unrevealed days ("Task: ???"), the last day's
+	 * "Claim all Previous Days" and the summary item are no entries. A calendar entry the menu no longer shows that
+	 * way is over, and forgotten as a weekly challenge is.
+	 */
+	static int scanCalendar(List<ItemView> items, TrackerStore store, long now, Consumer<String> seen) {
+		Set<String> shown = new HashSet<>();
+		int updated = 0;
+		for (ItemView item : items) {
+			if (item == null || item.lore() == null) continue;
+			String name = strip(item.name()).trim();
+			if (name.isEmpty()) continue;
+			String task = null;
+			long left = 0;
+			List<String> rewards = new ArrayList<>(1);
+			List<String> lore = new ArrayList<>(item.lore().size());
+			for (String raw : item.lore()) {
+				String line = strip(raw).trim();
+				lore.add(line);
+				Matcher m = TASK.matcher(line);
+				if (m.matches()) {
+					task = m.group(1).trim();
+					continue;
+				}
+				m = TIME_LEFT.matcher(line);
+				if (m.matches()) {
+					left = timeLeftMs(m.group(1));
+					continue;
+				}
+				m = REWARD_LINE.matcher(line);
+				if (m.matches()) rewards.add(m.group(1).trim());
+			}
+			if (task == null || task.contains("???") || left <= 0) continue;
+			// The objective keeps an in-line counter (the parser reads "Mine 50/200 Stone"); the bracketed one goes.
+			String objective = BRACKET_COUNTER.matcher(task).replaceFirst("").trim();
+			String what = COUNTER.matcher(objective).replaceFirst(" ").replaceAll("\\s+", " ").trim();
+			if (what.isEmpty()) continue;
+			Optional<ProgressExtractor.Progress> p = ProgressExtractor.extract(List.of(task));
+			if (p.isEmpty()) p = targetOnly(task);
+			ProgressExtractor.Progress progress = p.orElse(new ProgressExtractor.Progress(0, 1)); // a one-step task
+			if (isMarkedComplete(lore)) progress = new ProgressExtractor.Progress(progress.max(), progress.max());
+			String display = name + " · " + what;
+			String id = Trackable.idOf(CALENDAR, display);
+			shown.add(display);
+			boolean changed = store.update(CALENDAR, display, progress, now);
+			changed |= store.setObjective(id, ObjectiveExtractor.extract(name, List.of(), objective));
+			changed |= store.setRewards(id, rewards);
+			changed |= store.setDue(id, now + left);
+			if (seen != null) seen.accept(id);
+			if (changed) updated++;
+		}
+		updated += store.forgetUnpinned(t -> CALENDAR.equals(t.source()) && !shown.contains(t.name()));
+		return updated;
+	}
+
+	/** "23h", "2h 15m", "1d 2h", "45 mins" as milliseconds; 0 when nothing in it reads as a duration. */
+	static long timeLeftMs(String s) {
+		if (s == null) return 0;
+		long ms = 0;
+		Matcher m = DURATION_PART.matcher(s);
+		while (m.find()) {
+			long n = Long.parseLong(m.group(1));
+			ms += n * switch (Character.toLowerCase(m.group(2).charAt(0))) {
+				case 'd' -> 86_400_000L;
+				case 'h' -> 3_600_000L;
+				case 'm' -> 60_000L;
+				default -> 1_000L;
+			};
+		}
+		return ms;
 	}
 
 	/** True when the first lore line names a challenge kind ("Monster Slaying Challenge", "Weekly Farm Challenge"). */

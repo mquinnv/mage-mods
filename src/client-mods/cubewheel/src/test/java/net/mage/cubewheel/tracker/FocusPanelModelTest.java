@@ -27,6 +27,36 @@ class FocusPanelModelTest {
 		return s;
 	}
 
+	/** The event calendar (capture 2026-10-11): today's task is due in 23 h; late when the pace will miss it, or it has passed. */
+	@Test void aCalendarTaskShowsItsDeadlineAndGoesLateWhenThePaceWillMissIt() {
+		TrackerStore s = new TrackerStore(dir.resolve("c.json"));
+		String id = "calendar:October 11th · Catch 100 Fish";
+		long now = 5_000_000L;
+		s.update("calendar", "October 11th · Catch 100 Fish", new ProgressExtractor.Progress(8, 100), now);
+		s.setObjective(id, TrackerStoreWorldFilterTest.obj("Catch 100 Fish"));
+		s.setDue(id, now + 23 * 3_600_000L);
+		Focus f = FocusPanelModel.of(s, id, WORLDS, now).orElseThrow();
+		assertEquals("October 11th", f.heading());
+		assertEquals("Catch 100 Fish", f.objective());
+		assertEquals("8/100", f.count());
+		assertEquals("due in 23 h", f.due());
+		assertFalse(f.late()); // no pace known yet
+		// 92 fish at 0.05/min is ~30 h: later than 23 h.
+		assertTrue(FocusPanelModel.of(s, id, WORLDS, now, k -> 0.05).orElseThrow().late());
+		// At 10/min it is 9 min: fine.
+		Focus quick = FocusPanelModel.of(s, id, WORLDS, now, k -> 10).orElseThrow();
+		assertFalse(quick.late());
+		assertEquals("10/min · ~9 min left", quick.pace());
+		// Past the deadline.
+		Focus past = FocusPanelModel.of(s, id, WORLDS, now + 24 * 3_600_000L).orElseThrow();
+		assertEquals("overdue", past.due());
+		assertTrue(past.late());
+		// A job listing has no deadline.
+		Focus job = FocusPanelModel.of(store(), SCUTTLER, WORLDS, 0).orElseThrow();
+		assertEquals("", job.due());
+		assertFalse(job.late());
+	}
+
 	@Test void aJobListingInFull() {
 		TrackerStore s = store();
 		Focus f = FocusPanelModel.of(s, SCUTTLER, WORLDS, 0).orElseThrow();

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -49,6 +50,8 @@ public final class TrackerStore {
 		Map<String, Estimate> estimates = new LinkedHashMap<>();
 		/** A job listing's reward lines ("20 Job XP (Hunting)", "$70,000"), by entry id (Focus panel). */
 		Map<String, List<String>> rewards = new LinkedHashMap<>();
+		/** When an entry is due (epoch ms): a calendar day's "Time Left" (Focus panel). */
+		Map<String, Long> due = new LinkedHashMap<>();
 	}
 
 	/** Minimum last-seen advance that counts as a change on its own (TrackerFormat.age shows "now" below this). */
@@ -72,6 +75,8 @@ public final class TrackerStore {
 	private Map<String, Estimate> estimates = new LinkedHashMap<>();
 	/** A job listing's reward lines by entry id (see {@link #setRewards}). */
 	private Map<String, List<String>> rewards = new LinkedHashMap<>();
+	/** When an entry is due, epoch ms by entry id (see {@link #setDue}). */
+	private Map<String, Long> due = new LinkedHashMap<>();
 	private final Map<String, Accuracy> accuracy = new HashMap<>();
 	/** Not persisted: when each entry last made progress this session (local count or a higher server value). */
 	private final Map<String, Long> progressAt = new HashMap<>();
@@ -222,6 +227,25 @@ public final class TrackerStore {
 
 	public Optional<ObjectiveInfo> objective(String id) {
 		return Optional.ofNullable(objectives.get(id));
+	}
+
+	/**
+	 * Stores when entry {@code id} is due (epoch ms; null or non-positive clears it); true when it moved by more
+	 * than a minute, so a re-read a few seconds later is no change to save.
+	 */
+	public boolean setDue(String id, Long at) {
+		if (id == null) return false;
+		if (at == null || at <= 0) return due.remove(id) != null;
+		Long old = due.get(id);
+		if (old != null && Math.abs(old - at) < 60_000) return false;
+		due.put(id, at);
+		return true;
+	}
+
+	/** When entry {@code id} is due (epoch ms), if it has a deadline. */
+	public OptionalLong due(String id) {
+		Long at = id == null ? null : due.get(id);
+		return at == null ? OptionalLong.empty() : OptionalLong.of(at);
 	}
 
 	/**
@@ -523,6 +547,7 @@ public final class TrackerStore {
 		hidden.retainAll(items.keySet());
 		scopes.keySet().retainAll(items.keySet());
 		rewards.keySet().retainAll(items.keySet());
+		due.keySet().retainAll(items.keySet());
 		rulesDirty = true;
 		return before - items.size();
 	}
@@ -536,6 +561,7 @@ public final class TrackerStore {
 		hidden.retainAll(items.keySet());
 		scopes.keySet().retainAll(items.keySet());
 		rewards.keySet().retainAll(items.keySet());
+		due.keySet().retainAll(items.keySet());
 		rulesDirty = true;
 		return before - items.size();
 	}
@@ -554,6 +580,7 @@ public final class TrackerStore {
 		Map<String, ObjectiveInfo> newObjectives = new LinkedHashMap<>();
 		Map<String, Estimate> newEstimates = new LinkedHashMap<>();
 		Map<String, List<String>> newRewards = new LinkedHashMap<>();
+		Map<String, Long> newDue = new LinkedHashMap<>();
 		if (snap != null) {
 			if (snap.items != null) {
 				for (Trackable t : snap.items) {
@@ -587,6 +614,11 @@ public final class TrackerStore {
 					if (id != null && lines != null && !lines.isEmpty() && newItems.containsKey(id)) newRewards.put(id, List.copyOf(lines));
 				});
 			}
+			if (snap.due != null) {
+				snap.due.forEach((id, at) -> {
+					if (id != null && at != null && at > 0 && newItems.containsKey(id)) newDue.put(id, at);
+				});
+			}
 		}
 		items = newItems;
 		pins = newPins;
@@ -594,6 +626,7 @@ public final class TrackerStore {
 		objectives = newObjectives;
 		estimates = newEstimates;
 		rewards = newRewards;
+		due = newDue;
 		accuracy.clear();
 		scopes.clear();
 		rulesDirty = true;
@@ -634,6 +667,7 @@ public final class TrackerStore {
 		snap.objectives = new LinkedHashMap<>(objectives);
 		snap.estimates = new LinkedHashMap<>(estimates);
 		snap.rewards = new LinkedHashMap<>(rewards);
+		snap.due = new LinkedHashMap<>(due);
 		return snap;
 	}
 }

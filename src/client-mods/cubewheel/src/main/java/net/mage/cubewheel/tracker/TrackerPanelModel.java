@@ -175,7 +175,7 @@ public final class TrackerPanelModel {
 		if (rank.matches()) {
 			String r = rank.group(1).trim();
 			out = objective.isEmpty() ? r : r + " " + CompactJob.objective(objective, worldNames);
-		} else if (JobsPanelModel.SOURCE.equals(source) && !objective.isEmpty()) {
+		} else if ((JobsPanelModel.SOURCE.equals(source) || ContainerScanner.CALENDAR.equals(source)) && !objective.isEmpty()) {
 			out = CompactJob.objective(objective, worldNames);
 		} else {
 			out = name.isEmpty() ? CompactJob.objective(objective, worldNames) : name;
@@ -183,9 +183,9 @@ public final class TrackerPanelModel {
 		return CompactJob.cut(out, MAX_TITLE);
 	}
 
-	/** True when {@link #title} shows the entry's objective itself: prestige ranks and job listings carry it in the name. */
+	/** True when {@link #title} shows the entry's objective itself: prestige ranks, job listings and calendar days carry it in the name. */
 	static boolean objectiveInTitle(String source, String name) {
-		if (JobsPanelModel.SOURCE.equals(source)) return true;
+		if (JobsPanelModel.SOURCE.equals(source) || ContainerScanner.CALENDAR.equals(source)) return true;
 		if (name == null) return false;
 		int dot = name.indexOf(" · ");
 		return RANK.matcher((dot < 0 ? name : name.substring(0, dot)).trim()).matches();

@@ -19,6 +19,8 @@ public final class MenuClassifier {
 	private static final Pattern PRESTIGE_LEVEL = Pattern.compile("^Prestige \\d+ - ");
 	/** A job listing on an industry's listings page: "Beginner Objective", "Experienced Objective", "Heavy Objective". */
 	static final Pattern JOB_LISTING = Pattern.compile("(?i)^(Beginner|Experienced|Heavy) Objective$");
+	/** The event calendar's summary item: "2026 Halloween Calendar" (capture 2026-10-11). */
+	private static final Pattern CALENDAR_NAME = Pattern.compile("(?i)^\\d{4} .* Calendar$");
 	/** A menu nobody told us about is still tracked when this many of its items show explicit progress. */
 	private static final int GENERIC_MIN_ITEMS = 2;
 
@@ -35,6 +37,10 @@ public final class MenuClassifier {
 			if (PRESTIGE_RANK.matcher(name).find() || PRESTIGE_LEVEL.matcher(name).find()) return Optional.of("prestige");
 			if (name.equals("JOBS PROFILE") || anyLine(lore, "browse job listings")) return Optional.of("jobs");
 			if (JOB_LISTING.matcher(name).matches() || anyLine(lore, "click to complete job")) return Optional.of("jobs");
+			// The event calendar (/calendar): a day not yet revealed says "Task will be revealed October 12th".
+			if (CALENDAR_NAME.matcher(name).matches() || anyLineStarts(lore, "task will be revealed")) {
+				return Optional.of(ContainerScanner.CALENDAR);
+			}
 			if (name.endsWith(" Quests") || (anyLine(lore, "quest") && anyLineStarts(lore, "progress:"))) {
 				return Optional.of("pquests");
 			}
