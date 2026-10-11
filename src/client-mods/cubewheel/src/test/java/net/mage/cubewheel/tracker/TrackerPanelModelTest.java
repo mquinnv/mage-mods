@@ -1,6 +1,7 @@
 package net.mage.cubewheel.tracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
@@ -57,7 +58,8 @@ class TrackerPanelModelTest {
 				"⚑ King of the Jungle | 5/100",
 				"↳ Monsters | 50/2,500",
 				"↳ Golden Knights | 5/10",
-				"⚑ Jungle Pursuit | 0/15k"), texts(lines));
+				"⚑ Jungle Pursuit | 0/15k",
+				"↳ Resources |"), texts(lines));
 		assertEquals(Tone.DETAIL, lines.get(3).tone());
 		assertEquals(TrackerPanelModel.DETAIL_INDENT + "Golden Knights", lines.get(4).text());
 		assertEquals("5/10", lines.get(4).right());
@@ -95,13 +97,52 @@ class TrackerPanelModelTest {
 		assertEquals("", TrackerPanelModel.detailCount(new ObjectiveInfo.Sub("Slay 10 Golden Knights", null)));
 	}
 
+	/**
+	 * Master party quests (capture 2026-10-10): "Golemy Situation" with "→ Slay 25 Desert Golems" and "Progress: 4%",
+	 * "Catacombs Hunter" / "Complete 10 Catacombs" / 0%, "Master Party" / "Reach Party level 150" / 66%. Michael
+	 * (2026-10-11): "i have no idea what to do for them from the tracker".
+	 */
+	@Test void aQuestsOneObjectiveGetsItsOwnRowInUnits() {
+		TrackerStore s = new TrackerStore(dir.resolve("t.json"));
+		s.update("pquests", "Golemy Situation", new ProgressExtractor.Progress(4, 100), 0);
+		s.setObjective("pquests:Golemy Situation", TrackerStoreWorldFilterTest.obj("Slay 25 Desert Golems"));
+		s.update("pquests", "Catacombs Hunter", new ProgressExtractor.Progress(0, 100), 0);
+		s.setObjective("pquests:Catacombs Hunter", TrackerStoreWorldFilterTest.obj("Complete 10 Catacombs"));
+		s.update("pquests", "Master Party", new ProgressExtractor.Progress(66, 100), 0);
+		s.setObjective("pquests:Master Party", TrackerStoreWorldFilterTest.obj("Reach Party level 150"));
+		// "Slay 25 Desert Golems" parses as a kill rule, so its entry row is in units already (1/25); the other two
+		// objectives have no rule and their rows stay the menu's percentage, converted on the objective row.
+		assertEquals(List.of(
+				"⚑ Master Party | 66/100", "↳ Party level 150 | 99/150",
+				"⚑ Golemy Situation | 1/25", "↳ Desert Golems |",
+				"⚑ Catacombs Hunter | 0/100", "↳ Catacombs | 0/10"), texts(build(s, 10, WorldInfo.UNKNOWN, Mode.SORT)));
+		List<Line> lines = build(s, 10, WorldInfo.UNKNOWN, Mode.SORT);
+		assertEquals(Tone.DETAIL, lines.get(3).tone());
+		assertEquals(99 / 150.0, lines.get(1).progress(), 1e-9);
+		assertEquals(-1, lines.get(3).progress(), 1e-9);
+		// A kill counted locally puts the entry's own row in units ("~2/25"): the objective row then carries no second count.
+		s.addEstimate("pquests:Golemy Situation", 1, NOW - 1_000);
+		List<Line> est = TrackerPanelModel.build(s.hudSections(10, true, WorldInfo.UNKNOWN, WORLDS, Mode.SORT),
+				id -> s.objective(id).orElse(null), 0.8, WORLDS, NOW, id -> s.activity(id, NOW), s::counted);
+		List<String> t = texts(est);
+		assertEquals("⚑ Golemy Situation | ~2/25", t.get(2));
+		assertEquals("↳ Desert Golems |", t.get(3));
+		assertEquals(Activity.ACTIVE, est.get(3).activity()); // the objective row lights with its quest
+		// Prestige ranks and job listings already say it in their title: no extra row.
+		assertTrue(TrackerPanelModel.objectiveInTitle("prestige", "Rank [✪4] · Reach 2,500 Skill Level"));
+		assertTrue(TrackerPanelModel.objectiveInTitle("jobs", "Farming Heavy · Harvest Cherry Logs"));
+		assertFalse(TrackerPanelModel.objectiveInTitle("pquests", "Golemy Situation"));
+		assertFalse(TrackerPanelModel.objectiveInTitle("challenges", "Carrot Grind"));
+	}
+
 	@Test void headingsOnlyWithMoreThanOneGroup() {
 		TrackerStore s = store();
 		s.togglePin(PURSUIT);
 		List<String> t = texts(build(s, 10, WorldInfo.UNKNOWN, Mode.SORT));
 		assertEquals("— Pinned |", t.get(0));
 		assertEquals("⚑ Jungle Pursuit | 0/15k", t.get(1));
-		assertEquals("— Anywhere |", t.get(2));
+		assertEquals("↳ Resources |", t.get(2));
+		assertEquals("— Anywhere |", t.get(3));
 		assertEquals(Tone.HEADING, build(s, 10, WorldInfo.UNKNOWN, Mode.SORT).get(0).tone());
 	}
 

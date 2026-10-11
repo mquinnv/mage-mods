@@ -137,6 +137,19 @@ public final class TrackerPanelModel {
 								count, Tone.DETAIL, subAct == null ? Activity.NONE : subAct,
 								dt == null ? -1 : Math.min(1, dt[0] / (double) dt[1])));
 					}
+				} else if (info != null && info.subs() != null && info.subs().size() == 1
+						&& !label.title().equals(t.name()) && !objectiveInTitle(t.source(), t.name())) {
+					// A quest's name says nothing about what to do ("Golemy Situation", "Catacombs Hunter": Michael
+					// 2026-10-11), and the title keeps only the name: its one objective gets a row of its own, in units
+					// when the menu gave only a percentage (4% of "Slay 25 Desert Golems" is 1/25). A row already in
+					// units (a counter read, a parsed rule, or a local estimate) keeps its count on the entry's row.
+					// The label's objective is the sub's text without its own counter ("Mine 0/15,000 Tangleroots Resources").
+					ObjectiveInfo.Sub sub = new ObjectiveInfo.Sub(label.title().substring(t.name().length() + 3).trim(), null);
+					boolean percent = !r.estimated() && r.shownMax() == 100;
+					long[] dt = percent ? detailAmounts(new ObjectiveInfo.Sub(sub.text(), r.fraction() * 100), 0) : null;
+					lines.add(new Line("", 0, DETAIL_INDENT + CompactJob.cut(detailName(sub, worldNames), MAX_DETAIL),
+							detailRight(dt, 0), Tone.DETAIL, act == null ? Activity.NONE : act,
+							dt == null ? -1 : Math.min(1, dt[0] / (double) dt[1])));
 				} else {
 					for (String d : label.details()) {
 						lines.add(new Line("", 0, detail(d, worldNames), "", Tone.DETAIL));
@@ -149,8 +162,8 @@ public final class TrackerPanelModel {
 
 	/**
 	 * A short title: "Rank [✪4] · Reach 2,500 Skill Level" → "✪4 Skill Level"; a job listing "Farming Heavy ·
-	 * Harvest Cherry Logs" → "Cherry Logs"; any other "Name · objective" keeps its name ("Jungle Pursuit"), the
-	 * count says how far along it is. Cut at {@link #MAX_TITLE} characters.
+	 * Harvest Cherry Logs" → "Cherry Logs"; any other "Name · objective" keeps its name ("Jungle Pursuit") and the
+	 * objective goes on a "↳" row of its own ({@link #build}). Cut at {@link #MAX_TITLE} characters.
 	 */
 	static String title(String source, String title, Collection<String> worldNames) {
 		String t = CompactJob.clean(title);
@@ -168,6 +181,14 @@ public final class TrackerPanelModel {
 			out = name.isEmpty() ? CompactJob.objective(objective, worldNames) : name;
 		}
 		return CompactJob.cut(out, MAX_TITLE);
+	}
+
+	/** True when {@link #title} shows the entry's objective itself: prestige ranks and job listings carry it in the name. */
+	static boolean objectiveInTitle(String source, String name) {
+		if (JobsPanelModel.SOURCE.equals(source)) return true;
+		if (name == null) return false;
+		int dot = name.indexOf(" · ");
+		return RANK.matcher((dot < 0 ? name : name.substring(0, dot)).trim()).matches();
 	}
 
 	private static final Pattern AMOUNT = Pattern.compile("(?<![\\d.,])(\\d[\\d,]*)(?![\\d.,]*%)");
