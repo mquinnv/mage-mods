@@ -446,9 +446,17 @@ public final class TrackerStore {
 		return hidden.contains(id);
 	}
 
-	/** Hides {@code id} from the HUD, or shows it again. */
+	/**
+	 * Hides {@code id} from the HUD, or shows it again. Hiding also unpins: a pin keeps an entry through every
+	 * forget, and a hidden pin kept a quest the server had dropped alive for nine days, its kills still crediting
+	 * it (Michael 2026-10-12).
+	 */
 	public void toggleHidden(String id) {
-		if (id != null && !hidden.remove(id)) hidden.add(id);
+		if (id == null) return;
+		if (!hidden.remove(id)) {
+			hidden.add(id);
+			pins.remove(id);
+		}
 	}
 
 	/**
@@ -598,6 +606,7 @@ public final class TrackerStore {
 					if (id != null && newItems.containsKey(id)) newHidden.add(id);
 				}
 			}
+			newPins.removeAll(newHidden); // a file from before hiding unpinned
 			if (snap.objectives != null) {
 				snap.objectives.forEach((id, info) -> {
 					if (id != null && info != null && newItems.containsKey(id)) newObjectives.put(id, info);

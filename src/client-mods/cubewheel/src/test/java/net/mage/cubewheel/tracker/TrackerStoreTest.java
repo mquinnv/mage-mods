@@ -77,13 +77,15 @@ class TrackerStoreTest {
 	@Test void hiddenEntriesNeverShowOnTheHudButStayListed() {
 		TrackerStore s = hudStore();
 		s.toggleHidden("jobs:Near");
-		s.toggleHidden("pquests:Pinned"); // hidden wins over pinned
+		s.toggleHidden("pquests:Pinned"); // hidden wins over pinned: it also drops the pin (2026-10-12)
 		assertTrue(s.isHidden("jobs:Near"));
+		assertFalse(s.isPinned("pquests:Pinned"));
 		assertEquals(List.of("Mid", "Low"), names(s.hudEntries(8)));
 		assertEquals(6, s.all().size()); // still in the picker
 		s.toggleHidden("jobs:Near");
 		assertFalse(s.isHidden("jobs:Near"));
 		assertEquals(List.of("Near", "Mid", "Low"), names(s.hudEntries(8)));
+		assertEquals(1, s.forgetUnpinned(t -> "pquests:Pinned".equals(t.id()))); // no longer kept through a forget
 	}
 
 	@Test void hiddenIsPersistedAndLoadedTolerantly() throws Exception {

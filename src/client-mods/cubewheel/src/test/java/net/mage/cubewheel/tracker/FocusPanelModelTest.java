@@ -111,6 +111,20 @@ class FocusPanelModelTest {
 		assertEquals(List.of(), f.rewards());
 	}
 
+	/**
+	 * 2026-10-12: "Slay 1,000 Sandara Monsters", hidden from the tracker and no longer a quest on the server, still
+	 * read "Ready to hand in" in Focus because its kills kept crediting it. Hidden wins here too.
+	 */
+	@Test void aHiddenEntryIsNeverInFocus() {
+		TrackerStore s = store();
+		s.togglePin("pquests:Fisherman");
+		s.toggleHidden("pquests:Fisherman");
+		assertTrue(FocusPanelModel.of(s, "pquests:Fisherman", WORLDS, 0).isEmpty());
+		assertTrue(FocusPanelModel.of(s, "pquests:Fisherman#0", WORLDS, 0).isEmpty());
+		s.toggleHidden("pquests:Fisherman");
+		assertEquals("Fisherman", FocusPanelModel.of(s, "pquests:Fisherman", WORLDS, 0).orElseThrow().heading());
+	}
+
 	/** 2026-10-08: the rate is the recent one ({@link Pace}), not the stored estimate's average over hours. */
 	@Test void paceComesFromTheRecentRateOnceKnown() {
 		TrackerStore s = store();

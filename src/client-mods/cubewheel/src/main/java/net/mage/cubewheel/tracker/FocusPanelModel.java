@@ -51,6 +51,9 @@ public final class FocusPanelModel {
 			ToDoubleFunction<String> perMin) {
 		if (store == null || key == null) return Optional.empty();
 		String id = TrackerStore.baseId(key);
+		// Hidden wins everywhere: a quest hidden from the tracker still read "Ready to hand in" here while its
+		// kills kept crediting it, long after the server had dropped it (Michael 2026-10-12).
+		if (store.isHidden(id)) return Optional.empty();
 		Optional<TrackerRow> row = store.row(id);
 		Optional<ProgressLabel> label = ProgressLabel.of(store, key, worldNames);
 		if (row.isEmpty() || label.isEmpty()) return Optional.empty();
