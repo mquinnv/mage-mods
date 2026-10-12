@@ -753,9 +753,12 @@ public final class RadialScreen extends Screen {
 	private void drawArc(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> arc) {
 		int inner = (int) Math.round(renderedEdge);
 		// While a depth-3 fan is open, the arc's other entries step back (dim, no lit wedge) so the fan reads as the
-		// thing in hand and its parent as the one entry it belongs to.
-		drawFan(g, cx, cy, arc, arcAngles, arcRadii, arcStep, inner, subOpen >= 0 ? subOpen : hoveredArc, RING,
-				subOpen >= 0 ? subOpen : -1);
+		// thing in hand and its parent as the one entry it belongs to. The parent itself is lit while the pointer is
+		// on it rather than in its fan: it opened the fan the moment it was pointed at, and with nothing lit the
+		// warp under the pointer looked unselected though a click took it (Michael 2026-10-12: "it doesn't
+		// highlight the main warp. you can still pick it").
+		int hot = subOpen >= 0 ? (hoveredSub < 0 ? subOpen : -1) : hoveredArc;
+		drawFan(g, cx, cy, arc, arcAngles, arcRadii, arcStep, inner, hot, RING, subOpen >= 0 ? subOpen : -1);
 		// Dots past an entry that has places of its own: point further out to fan them.
 		for (int j = 0; j < arc.size() && j < arcAngles.length; j++) {
 			List<WheelNode> sub = subArcOf(arc.get(j));
@@ -771,8 +774,9 @@ public final class RadialScreen extends Screen {
 
 	/**
 	 * Draws a fan of entries on the band from {@code inner} to {@code inner + ARC_SPACING}: its span filled with
-	 * {@code band} so the entries read as one group, the {@code hot} entry's wedge lit. With {@code only} set, every
-	 * other entry is dimmed and none is lit (the arc behind an open depth-3 fan).
+	 * {@code band} so the entries read as one group, the {@code hot} entry's wedge lit (-1 for none). With
+	 * {@code only} set, every other entry is dimmed (the arc behind an open depth-3 fan; {@code only} is lit when it
+	 * is {@code hot}, i.e. while the pointer is on it and not in its fan).
 	 */
 	private void drawFan(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> list, double[] angles, double[] radii,
 			double step, int inner, int hot, int band, int only) {
@@ -789,7 +793,7 @@ public final class RadialScreen extends Screen {
 			double[] o = RadialMath.offset(angles[j], radii[j]);
 			int x = cx + (int) Math.round(o[0]);
 			int y = cy + (int) Math.round(o[1]);
-			boolean lit = j == hot && only < 0;
+			boolean lit = j == hot && (only < 0 || j == only);
 			boolean dim = only >= 0 && j != only;
 			// The hovered entry lights up its whole wedge of the band.
 			if (lit) fillSector(g, cx, cy, inner + ARC_SPACING, inner, angles[j] - step / 2.0, angles[j] + step / 2.0, HOVER);
