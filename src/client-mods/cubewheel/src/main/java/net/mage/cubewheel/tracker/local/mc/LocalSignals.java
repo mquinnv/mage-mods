@@ -694,9 +694,12 @@ public final class LocalSignals {
 	public static boolean onGameMessage(Component message, boolean overlay) {
 		if (message == null || overlay || !active) return true;
 		try {
-			if (enabled(Hook.FISH) && local().fish && survivalMode(Minecraft.getInstance().player)) {
+			Player angler = Minecraft.getInstance().player;
+			if (enabled(Hook.FISH) && local().fish && survivalMode(angler)) {
+				// A Legendary catch is announced to everyone by name, with no "You caught" line (capture 2026-10-12).
+				String own = angler.getName().getString();
 				for (String line : message.getString().split("\n")) {
-					Optional<FishCatchParser.Catch> c = FishCatchParser.parse(line);
+					Optional<FishCatchParser.Catch> c = FishCatchParser.parse(line, own);
 					if (c.isEmpty()) continue;
 					onChatCatch(c.get());
 					break;

@@ -55,6 +55,27 @@ class FishCatchTest {
 				FishCatchParser.parse("You caught a 299.1cm Rare DiamondAngler"));
 	}
 
+	/**
+	 * Capture 2026-10-12: Michael's Legendary Manaray printed only the server-wide line, by name, and the
+	 * "Catch 1/7 ManaRay while fishing" job never moved locally.
+	 */
+	@Test void aLegendaryCatchAnnouncedToEveryoneByNameIsYoursWhenItNamesYou() {
+		String line = "§lQualan §rhas fished a §c142.3cm §c§lLegendary §cManaray!";
+		assertEquals(Optional.of(new FishCatchParser.Catch("Manaray", "Legendary", 142.3)),
+				FishCatchParser.parse(line, "Qualan"));
+		assertEquals(Optional.of(new FishCatchParser.Catch("Manaray", "Legendary", 142.3)),
+				FishCatchParser.parse(line, "qualan"));
+		assertTrue(FishCatchParser.parse(line, "Zzenns").isEmpty(), "another player's catch");
+		assertTrue(FishCatchParser.parse(line, null).isEmpty(), "no name known");
+		assertTrue(FishCatchParser.parse(line).isEmpty());
+		assertTrue(FishCatchParser.parse("Zzenns has fished a 142.3cm Legendary Manaray!", "Qualan").isEmpty());
+		assertTrue(FishCatchParser.parse("§r[VIP] Steve: Qualan has fished a 142.3cm Legendary Manaray!", "Qualan").isEmpty());
+		// The species of the job's "Catch 1/7  ManaRay while fishing" is the one announced.
+		assertEquals(FishCatchParser.speciesKey("ManaRay"), FishCatchParser.speciesKey("Manaray"));
+		// "You caught" lines still parse with a name given.
+		assertEquals("Flounder", FishCatchParser.parse("You caught a 52.2cm Common Flounder", "Qualan").orElseThrow().species());
+	}
+
 	@Test void formattingCodesAndExtraSpacesAreTolerated() {
 		assertEquals(Optional.of(new FishCatchParser.Catch("Octopus", "Rare", 12.0)),
 				FishCatchParser.parse("§aYou caught a §e12cm  §9Rare §fOctopus "));
