@@ -21,6 +21,9 @@ public record ProgressLabel(String name, String count, boolean done, long curren
 	public static Optional<ProgressLabel> of(TrackerStore store, String key, Collection<String> worldNames) {
 		if (store == null || key == null) return Optional.empty();
 		String id = TrackerStore.baseId(key);
+		// Hidden wins here too: the popup names every counted key through this, and a quest hidden in the tracker
+		// kept raising its toast on each kill after Focus had learnt to skip it (Michael 2026-10-12).
+		if (store.isHidden(id)) return Optional.empty();
 		int sub = TrackerStore.subIndex(key);
 		if (sub >= 0) return objective(store, id, sub, store.counted(key), worldNames);
 		return store.row(id).map(r -> {
