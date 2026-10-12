@@ -126,6 +126,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		LocalSignals.register(); // after tracker and capture exist
 		ClientReceiveMessageEvents.ALLOW_GAME.register(LocalSignals::onGameMessage);
 		CooldownWatcher.register();
+		net.mage.cubewheel.capture.ShotWatcher.register(); // capture only: staff shots and their projectiles
 		TrackerHud.register();
 		// Panels in one corner stack in this order. The ones that come and go (boosters, cooldowns) go last so
 		// they don't push the always-present Jobs/Tracker panels up and down.

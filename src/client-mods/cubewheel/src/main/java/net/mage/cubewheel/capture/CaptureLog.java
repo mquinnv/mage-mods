@@ -294,6 +294,19 @@ public final class CaptureLog {
 		append(o, now);
 	}
 
+	/**
+	 * A line of any other kind: {@code fields} are copied in after {@code t} and {@code kind} (a shot with an
+	 * ability weapon and the projectile that follows it, see {@link ShotWatcher}).
+	 */
+	public void event(String kind, JsonObject fields, long now) {
+		if (!enabled) return;
+		JsonObject o = new JsonObject();
+		o.addProperty("t", now);
+		o.addProperty("kind", kind);
+		if (fields != null) fields.entrySet().forEach(e -> o.add(e.getKey(), e.getValue()));
+		append(o, now);
+	}
+
 	public void container(String title, List<ItemView> items, long now) {
 		if (!enabled) return;
 		JsonObject o = new JsonObject();
