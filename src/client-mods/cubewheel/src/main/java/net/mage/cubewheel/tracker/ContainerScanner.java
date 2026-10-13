@@ -26,10 +26,13 @@ public final class ContainerScanner {
 	 * are recognised by one item's lore mentioning a quest with a Progress line, so an unrelated menu can be
 	 * tagged as one: the auction house was (Michael, 2026-10-07), and every listing with a percentage or ratio
 	 * in its lore ("Item sales are taxed 3%", "+10% Woodcutting MCMMO XP") became a tracker entry. Real quest
-	 * items always carry an explicit Progress line. Job listings, prestige ranks and challenges keep their
+	 * items always carry an explicit Progress line, and so does a weekly challenge: the auction house searched for
+	 * "challenge" (Michael, 2026-10-13) matched the "challenges" title source, and its filler pane and a
+	 * "CHALLENGE LEGGINGS" listing became challenges at 3% and 5%. Job listings and prestige ranks keep their
 	 * counters inside the objective text and are not gated.
 	 */
-	private static final Set<String> PROGRESS_LINE_SOURCES = Set.of("pquests", "menu");
+	static final String CHALLENGES = "challenges";
+	private static final Set<String> PROGRESS_LINE_SOURCES = Set.of("pquests", "menu", CHALLENGES);
 
 	/**
 	 * The weekly challenge in the quests menu's bottom row: its first lore line names the kind ("Monster Slaying
@@ -37,7 +40,6 @@ public final class ContainerScanner {
 	 * "challenges" and the week before it is forgotten on the read that shows the new one (Michael 2026-10-10: a
 	 * "Sandara Slayer" from Oct 3 lingered as a party quest, crediting kills, a week after its slot held "Carrot Grind").
 	 */
-	static final String CHALLENGES = "challenges";
 	private static final Pattern CHALLENGE_KIND = Pattern.compile("(?i)\\bchallenge$");
 
 	/**

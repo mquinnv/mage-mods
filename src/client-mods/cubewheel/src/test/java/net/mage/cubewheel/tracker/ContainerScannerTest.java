@@ -104,6 +104,32 @@ class ContainerScannerTest {
 		assertTrue(t.complete());
 	}
 
+	/**
+	 * The auction house searched for "challenge" (2026-10-13): its title matched the "challenges" title source, and
+	 * the filler pane ("Item sales are taxed 3%") and a listing with "+5%" in its lore became challenges at 3% and 5%.
+	 * A challenge item always carries a Progress line, as a quest does.
+	 */
+	@Test void challengeMenuSkipsItemsWithoutProgressLine() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		List<ItemView> items = List.of(
+				new ItemView(1, "minecraft:gray_stained_glass_pane", "AUCTION HOUSE",
+						List.of("Item sales are taxed 3%", "", "To sell an item, hold it and type:", "/ah sell [price] [amount]")),
+				new ItemView(10, "minecraft:leather_leggings", "CHALLENGE LEGGINGS",
+						List.of("ITEM EFFECTS: (When Worn)", "➟ +5% Mob Damage", "", "Seller: Someone", "Price: $1,000,000")));
+		assertEquals(0, ContainerScanner.scan("challenges", items, store, 0));
+		assertEquals(0, store.all().size());
+	}
+
+	/** A challenge item read under the "challenges" title source itself still tracks, as it does from the quests menu. */
+	@Test void challengeMenuTracksItemWithProgressLine() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		List<ItemView> items = List.of(new ItemView(0, "minecraft:fishing_rod", "Fisherman",
+				List.of("Weekly Fishing Challenge", "", "→ Catch 1,000 Fish", "", "Progress: 52%")));
+		assertEquals(1, ContainerScanner.scan("challenges", items, store, 0));
+		assertEquals("challenges:Fisherman", store.all().get(0).id());
+		assertEquals(52, store.all().get(0).current());
+	}
+
 	@Test void questMenuTracksQuestWithProgressLine() {
 		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
 		List<ItemView> items = List.of(new ItemView(0, "minecraft:paper", "Skill Level Hunter", List.of("Some quest", "Progress: 37%")));
