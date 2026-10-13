@@ -396,8 +396,7 @@ public final class RadialScreen extends Screen {
 				if (roomy || outerHot || outer.outer == null) outerLabel(g, outer.label == null ? "" : outer.label, ox, oy, dirs[i], outerHot ? WHITE : GREY);
 			}
 		}
-		if (arcOpen >= 0) drawArc(g, cx, cy, arcAt(arcOpen));
-		if (subOpen >= 0 && subArc() != null) drawSub(g, cx, cy, subArc());
+		if (arcOpen >= 0) drawArcAndSub(g, cx, cy, arcAt(arcOpen), subOpen >= 0 ? subArc() : null);
 		WheelNode current = path.peekLast();
 		// The top level shows just a dot in its small hub; a sub-ring names itself so you know where you are.
 		String centre = path.size() <= 1 ? "·" : current.label == null ? "" : current.label;
@@ -750,7 +749,13 @@ public final class RadialScreen extends Screen {
 		return new Fan(arcAngles, arcRadii, widest);
 	}
 
-	private void drawArc(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> arc) {
+	/**
+	 * The open arc and, when one of its entries is fanned out, that depth-3 fan. Both bands are painted before any
+	 * entry: an arc entry's label hangs just past its disc, into the depth-3 band's inner edge, and the near-solid
+	 * band painted after it covered the label's top rows (Michael 2026-10-13: "i can't read the tangleroot label
+	 * when the sub warps are up ... the text is trapped behind the sub warp items").
+	 */
+	private void drawArcAndSub(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> arc, List<WheelNode> sub) {
 		int inner = (int) Math.round(renderedEdge);
 		// While a depth-3 fan is open, the arc's other entries step back (dim, no lit wedge) so the fan reads as the
 		// thing in hand and its parent as the one entry it belongs to. The parent itself is lit while the pointer is
@@ -758,32 +763,39 @@ public final class RadialScreen extends Screen {
 		// warp under the pointer looked unselected though a click took it (Michael 2026-10-12: "it doesn't
 		// highlight the main warp. you can still pick it").
 		int hot = subOpen >= 0 ? (hoveredSub < 0 ? subOpen : -1) : hoveredArc;
-		drawFan(g, cx, cy, arc, arcAngles, arcRadii, arcStep, inner, hot, RING, subOpen >= 0 ? subOpen : -1);
+		int only = subOpen >= 0 ? subOpen : -1;
+		int subInner = inner + ARC_SPACING;
+		fanBand(g, cx, cy, arcAngles, arcStep, inner, hot, RING, only);
+		// The depth-3 band: the open arc entry's own places, one band further out, on a solid band of its own.
+		if (sub != null) fanBand(g, cx, cy, subAngles, subStep, subInner, hoveredSub, SUB_BAND, -1);
+		fanEntries(g, cx, cy, arc, arcAngles, arcRadii, hot, only);
 		// Dots past an entry that has places of its own: point further out to fan them.
 		for (int j = 0; j < arc.size() && j < arcAngles.length; j++) {
-			List<WheelNode> sub = subArcOf(arc.get(j));
-			if (sub != null && j != subOpen) dots(g, cx, cy, arcAngles[j], inner + ARC_SPACING + 3, sub.size());
+			if (subArcOf(arc.get(j)) != null && j != subOpen) dots(g, cx, cy, arcAngles[j], subInner + 3, subArcOf(arc.get(j)).size());
 		}
-	}
-
-	/** The depth-3 band: the open arc entry's own places, one band further out, on a solid band of its own. */
-	private void drawSub(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> sub) {
-		int inner = (int) Math.round(renderedEdge) + ARC_SPACING;
-		drawFan(g, cx, cy, sub, subAngles, subRadii, subStep, inner, hoveredSub, SUB_BAND, -1);
+		if (sub != null) fanEntries(g, cx, cy, sub, subAngles, subRadii, hoveredSub, -1);
 	}
 
 	/**
-	 * Draws a fan of entries on the band from {@code inner} to {@code inner + ARC_SPACING}: its span filled with
-	 * {@code band} so the entries read as one group, the {@code hot} entry's wedge lit (-1 for none). With
-	 * {@code only} set, every other entry is dimmed (the arc behind an open depth-3 fan; {@code only} is lit when it
-	 * is {@code hot}, i.e. while the pointer is on it and not in its fan).
+	 * The band a fan sits on, from {@code inner} to {@code inner + ARC_SPACING}: its span filled with {@code band} so
+	 * the entries read as one group, the {@code hot} entry's wedge lit (-1 for none; with {@code only} set, lit only
+	 * when it is {@code only}). Painted before any fan's entries, so no band covers a label.
 	 */
-	private void drawFan(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> list, double[] angles, double[] radii,
-			double step, int inner, int hot, int band, int only) {
-		if (angles.length > 0) {
-			double first = angles[0] - step / 2.0, span = step * angles.length;
-			fillSector(g, cx, cy, inner + ARC_SPACING, inner, first, first + span, band);
+	private void fanBand(GuiGraphicsExtractor g, int cx, int cy, double[] angles, double step, int inner, int hot, int band, int only) {
+		if (angles.length == 0) return;
+		double first = angles[0] - step / 2.0, span = step * angles.length;
+		fillSector(g, cx, cy, inner + ARC_SPACING, inner, first, first + span, band);
+		// The hovered entry lights up its whole wedge of the band.
+		if (hot >= 0 && hot < angles.length && (only < 0 || hot == only)) {
+			fillSector(g, cx, cy, inner + ARC_SPACING, inner, angles[hot] - step / 2.0, angles[hot] + step / 2.0, HOVER);
 		}
+	}
+
+	/**
+	 * A fan's entries (icon and label) over their band. With {@code only} set, every other entry is dimmed (the arc
+	 * behind an open depth-3 fan; {@code only} reads white, and lit while it is {@code hot}).
+	 */
+	private void fanEntries(GuiGraphicsExtractor g, int cx, int cy, List<WheelNode> list, double[] angles, double[] radii, int hot, int only) {
 		long now = System.currentTimeMillis();
 		for (int j = 0; j < list.size() && j < angles.length; j++) {
 			WheelNode a = list.get(j);
@@ -795,8 +807,6 @@ public final class RadialScreen extends Screen {
 			int y = cy + (int) Math.round(o[1]);
 			boolean lit = j == hot && (only < 0 || j == only);
 			boolean dim = only >= 0 && j != only;
-			// The hovered entry lights up its whole wedge of the band.
-			if (lit) fillSector(g, cx, cy, inner + ARC_SPACING, inner, angles[j] - step / 2.0, angles[j] + step / 2.0, HOVER);
 			ItemStack icon = Icons.stack(a.icon);
 			if (!icon.isEmpty() && !dim) g.item(icon, x - 8, y - 8);
 			if (dim) fillRing(g, x, y, 4, 0, DOT); // a dot where its icon was: still there, not in hand
