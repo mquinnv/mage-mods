@@ -65,6 +65,17 @@ class KillRuleTest {
 				new Signal.BlockBroken("minecraft:nether_quartz_ore", "Nether Quartz Ore", java.util.Set.of(), false, false, any)));
 	}
 
+	/** "Mine 16/146 Nether Gold" (a /jobs Mining listing, capture 2026-10-14) is the nether gold ore block itself. */
+	@Test void netherGoldNamesNetherGoldOre() {
+		CounterRule netherGold = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 16/146 Nether Gold", null)),
+				false, false), WORLDS).orElseThrow();
+		WorldInfo nether = WorldResolver.resolve("minecraft:the_nether", List.of("ManaCube", "World: resource_world_nether"), WORLDS);
+		assertTrue(RuleMatcher.matches(netherGold,
+				new Signal.BlockBroken("minecraft:nether_gold_ore", "Nether Gold Ore", Set.of("ore"), false, false, nether)));
+		assertFalse(RuleMatcher.matches(netherGold,
+				new Signal.BlockBroken("minecraft:gold_ore", "Gold Ore", Set.of("ore"), false, false, nether)));
+	}
+
 	@Test void manaWorldOreIsNotTheBareMaterialButCountsForItsOwnWorld() {
 		CounterRule diamonds = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 0/101 Diamonds", null)),
 				false, false), WORLDS).orElseThrow();

@@ -139,6 +139,8 @@ public final class RuleMatcher {
 				String fromName = displayName(name);
 				String compactWant = want.replace(" ", "");
 				yield fromId.equals(want) || fromId.equals(ID_ALIASES.get(want))
+						// "Mine 146 Nether Gold" (job, capture 2026-10-14): the ore block named without "ore".
+						|| fromId.equals(want + " ore")
 						|| ORE_MATERIALS.contains(want) && fromId.matches("((deepslate|nether) )?" + want + " ore")
 								&& !NOT_THE_MATERIAL.contains(fromId)
 						|| fromName.equals(want) || fromName.endsWith(" " + want)
