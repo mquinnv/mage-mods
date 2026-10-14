@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 #
-# install-cubewheel-liz.sh - push a freshly built CubeWheel jar to Liz's PC.
+# install-cubewheel-liz.sh - push a freshly built CubeWheel jar to one of Liz's PCs.
 #
 # Usage: scripts/install-cubewheel-liz.sh [path/to/cubewheel-x.y.z.jar]
-#        bun run install:liz
+#        bun run install:liz          # her laptop, sugar-tits
+#        bun run install:siegfried    # her desktop, siegfried
+#        CUBEWHEEL_TARGET=siegfried scripts/install-cubewheel-liz.sh [jar]
 # With no argument the newest src/client-mods/cubewheel/build/libs/cubewheel-*.jar
 # (by mtime) is installed.
 #
@@ -57,16 +59,33 @@ S3_BUCKET="mage-mods-deploy-013141018003"
 S3_PREFIX="cubewheel"
 PRESIGN_SECONDS=900
 
-# Liz's PC (AmeriGlide account).
+# Liz's PCs (AmeriGlide account). CUBEWHEEL_TARGET picks one: "liz" (default)
+# is her laptop sugar-tits, "siegfried" her desktop (added 2026-10-14). Paths are
+# kept here, not in the mod, so the published mod carries nothing about her
+# machines. Her Prism keeps this pack's mods under .minecraft on siegfried and
+# minecraft on sugar-tits (different Prism versions imported the pack).
 SSM_PROFILE="ag-aws"
 SSM_REGION="us-east-1"
-SSM_INSTANCE="mi-0b2dece1d30b6e5db"
 POLL_SECONDS=3
 POLL_MAX_SECONDS=300
-
-# Paths on her PC (Windows). Kept here, not in the mod, so the published mod
-# carries nothing about her machine.
-REMOTE_MODS='C:\Users\lizwi\AppData\Roaming\PrismLauncher\instances\Realistic for Public Servers with Stupid Rules\minecraft\mods'
+TARGET="${CUBEWHEEL_TARGET:-liz}"
+case "${TARGET}" in
+  liz)
+    TARGET_DESC="Liz's laptop (sugar-tits)"
+    SSM_INSTANCE="mi-0b2dece1d30b6e5db"
+    REMOTE_MODS='C:\Users\lizwi\AppData\Roaming\PrismLauncher\instances\Realistic for Public Servers with Stupid Rules\minecraft\mods'
+    ;;
+  siegfried)
+    TARGET_DESC="Liz's desktop (siegfried)"
+    SSM_INSTANCE="mi-0c1045d529b9007f6"
+    # The instance named "Public Server-Friendly" in her Prism.
+    REMOTE_MODS='C:\Users\lizwi\AppData\Roaming\PrismLauncher\instances\mage-realism-client-2.0.0(1)\.minecraft\mods'
+    ;;
+  *)
+    printf 'ERROR: unknown CUBEWHEEL_TARGET %s (liz or siegfried)\n' "${TARGET}" >&2
+    exit 1
+    ;;
+esac
 REMOTE_STAGE='C:\ProgramData\cubewheel-stage'
 
 log() { printf '%s %s\n' "$(date +%H:%M:%S)" "$*"; }
@@ -100,7 +119,7 @@ PING_INFO="$(aws --profile "${SSM_PROFILE}" --region "${SSM_REGION}" ssm describ
 PING_STATUS="${PING_INFO%%	*}"
 PING_LAST="${PING_INFO#*	}"
 if [ "${PING_STATUS}" != "Online" ]; then
-  echo "SUMMARY: her PC is offline (SSM PingStatus ${PING_STATUS:-unknown}, last ping ${PING_LAST:-unknown}); nothing changed; rerun when it is on."
+  echo "SUMMARY: ${TARGET_DESC} is offline (SSM PingStatus ${PING_STATUS:-unknown}, last ping ${PING_LAST:-unknown}); nothing changed; rerun when it is on."
   exit 0
 fi
 log "ssm     agent Online (last ping ${PING_LAST})"
@@ -162,12 +181,12 @@ print(json.dumps({"commands": lines}))
 PY
 
 # --- 5. send + poll --------------------------------------------------------
-log "ssm     send-command to ${SSM_INSTANCE}"
+log "ssm     send-command to ${SSM_INSTANCE} (${TARGET_DESC})"
 COMMAND_ID="$(aws --profile "${SSM_PROFILE}" --region "${SSM_REGION}" ssm send-command \
   --document-name AWS-RunPowerShellScript \
   --instance-ids "${SSM_INSTANCE}" \
   --parameters "file://${PARAMS_FILE}" \
-  --comment "install ${JAR_NAME}" \
+  --comment "install ${JAR_NAME} on ${TARGET_DESC}" \
   --query 'Command.CommandId' --output text)"
 [ -n "${COMMAND_ID}" ] || die "send-command returned no CommandId"
 log "ssm     command ${COMMAND_ID}"
@@ -213,7 +232,7 @@ if printf '%s' "${REMOTE_OUT}" | grep -q 'javaw=True'; then
 fi
 if [ "${STATUS}" = "Success" ] \
    && printf '%s' "${REMOTE_OUT}" | grep -q "installed=${JAR_NAME} sha=${SHA_LOCAL}"; then
-  echo "SUMMARY: installed ${JAR_NAME} (sha256 ${SHA_LOCAL}) on Liz's PC in ${ELAPSED}s."
+  echo "SUMMARY: installed ${JAR_NAME} (sha256 ${SHA_LOCAL}) on ${TARGET_DESC} in ${ELAPSED}s."
   exit 0
 fi
 if [ "${DETAILS}" = "Undeliverable" ]; then
