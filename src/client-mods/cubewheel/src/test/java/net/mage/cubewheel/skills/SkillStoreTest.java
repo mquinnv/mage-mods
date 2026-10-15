@@ -180,6 +180,14 @@ class SkillStoreTest {
 		assertEquals(5, s.account("q").power());
 	}
 
+	@Test void rollOverFromAStateWithNoNeededNeverGoesNegative() throws Exception {
+		Files.writeString(dir.resolve("cubewheel-skills.json"),
+				"{\"q\":{\"skills\":{\"mining\":{\"level\":243,\"xp\":5000}}}}");
+		SkillStore s = store();
+		assertTrue(s.load());
+		assertEquals(0, s.bar("q", mining(244, 100, 62500), 2000));
+	}
+
 	@Test void missingFileLoadsAsNoOp() {
 		SkillStore s = store();
 		assertTrue(s.load());

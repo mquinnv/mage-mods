@@ -74,7 +74,7 @@ public final class SkillStore {
 			if (r.level() == prev.level() && r.xp() > prev.xp()) {
 				gain = r.xp() - prev.xp();
 			} else if (r.level() == prev.level() + 1) {
-				gain = r.xp() + (prev.needed() - prev.xp());
+				gain = Math.max(0, r.xp() + (prev.needed() - prev.xp()));
 			}
 		}
 		boolean rose = prev == null || r.level() > prev.level();
