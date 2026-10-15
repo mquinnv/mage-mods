@@ -777,7 +777,7 @@ or by typing the command. The panel is positioned like the others (the arrange s
 Levels, XP, the power level and the XP-gain history are kept per account in `config/cubewheel-skills.json`
 (saved at most every 10 s and when you leave the server). `skills.enabled: false` turns the whole feature off.
 
-**Evidence:** boss-bar format from captures of 2026-10-01 to 2026-10-14 (14,461 bars, levels 56 to 617); the XP
+**Evidence:** boss-bar format from captures of 2026-09-30 to 2026-10-14 (14,461 bars, levels 56 to 617); the XP
 needed for a level is `1500 + 250 * level` in every one of them, which is what the mod uses after a level-up.
 The `/mcmmo` menu was captured on 2026-10-01 (17 skills, `Level: 137/2500` lore).
 
