@@ -284,7 +284,7 @@ In Survival with capture on (the refusal wording is unknown: the `"kind":"chat"`
 
 In Survival, `skills.show` at its default (`recent`), capture on in case a bar is not recognised.
 
-- [ ] Mine for a few seconds: a `Mining N` row with an icon appears (title `mcMMO · <power level>`), its meter and `xp / needed` update as the boss bar changes, and the row has the green accent while you keep gaining XP.
+- [ ] Mine for a few seconds: a `Mining N` row with an icon appears (title `mcMMO · <power level>`), its meter and `xp / needed` update as the boss bar changes, and the row has the cyan accent while you keep gaining XP.
 - [ ] Stop for over 2 minutes: the accent goes; after `recentMinutes` (10) the row leaves the panel (in recent mode a listed row is always fresh, never grey), and with no recent skills the panel hides.
 - [ ] Train a second and a third skill: newest on top, at most `skills.max` (6) rows.
 - [ ] Level up: the row's level flips and the right text shows `?` with an empty bar until the next boss bar fills it again.
