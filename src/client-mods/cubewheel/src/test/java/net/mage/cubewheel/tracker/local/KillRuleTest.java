@@ -76,6 +76,16 @@ class KillRuleTest {
 				new Signal.BlockBroken("minecraft:gold_ore", "Gold Ore", Set.of("ore"), false, false, nether)));
 	}
 
+	/** "Slay 15/43 Dwarven Wizards in Wolfhaven" vs the interaction-entity wizard "Dwarven Wizard 80\u2e9b" (capture 2026-10-14). */
+	@Test void dwarvenWizardKilledByStaffInWolfhavenCounts() {
+		CounterRule wizards = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Slay 15/43 Dwarven Wizards in Wolfhaven", null)),
+				false, false), WORLDS).orElseThrow();
+		WorldInfo wolfhaven = WorldResolver.resolve("minecraft:wolfhaven", SIDEBAR, WORLDS);
+		assertTrue(RuleMatcher.matches(wizards, kill("minecraft:interaction", "Dwarven Wizard 80\u2e9b", wolfhaven)));
+		assertTrue(RuleMatcher.matches(wizards, kill("minecraft:slime", "Dwarven Wizard 8\u2e9b", wolfhaven)));
+		assertTrue(RuleMatcher.matches(wizards, new Signal.MobKilled("", "Dwarven Wizard 80\u2e9b", Set.of("mob", "monster"), 1, wolfhaven)));
+	}
+
 	@Test void manaWorldOreIsNotTheBareMaterialButCountsForItsOwnWorld() {
 		CounterRule diamonds = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 0/101 Diamonds", null)),
 				false, false), WORLDS).orElseThrow();

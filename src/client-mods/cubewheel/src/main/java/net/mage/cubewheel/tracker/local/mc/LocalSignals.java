@@ -31,6 +31,8 @@ import net.mage.cubewheel.tracker.local.ShearTool;
 import net.mage.cubewheel.tracker.local.PlacedBlocks;
 import net.mage.cubewheel.tracker.local.Pos;
 import net.mage.cubewheel.tracker.local.RemovalKills;
+import net.mage.cubewheel.tracker.local.StackName;
+import net.mage.cubewheel.tracker.local.StaffItems;
 import net.mage.cubewheel.tracker.local.Signal;
 import net.mage.cubewheel.tracker.local.StackWatch;
 import net.mage.cubewheel.tracker.local.WorldInfo;
@@ -48,6 +50,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.event.client.player.ClientPlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.Minecraft;
@@ -56,6 +59,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
@@ -161,6 +167,7 @@ public final class LocalSignals {
 			} catch (Throwable t) {
 				fail(Hook.MILK, t);
 			}
+			onStaffUse(player, level.isClientSide(), player.getItemInHand(hand));
 			return InteractionResult.PASS;
 		});
 		UseItemCallback.EVENT.register((player, level, hand) -> {
@@ -169,6 +176,11 @@ public final class LocalSignals {
 			} catch (Throwable t) {
 				fail(Hook.FISH, t);
 			}
+			onStaffUse(player, level.isClientSide(), player.getItemInHand(hand));
+			return InteractionResult.PASS;
+		});
+		UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
+			onStaffUse(player, level.isClientSide(), player.getItemInHand(hand)); // a shot with a block under the crosshair
 			return InteractionResult.PASS;
 		});
 		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((mc, level) -> onLevelChange());
@@ -470,11 +482,13 @@ public final class LocalSignals {
 			if (!enabled(Hook.REMOVE) || !local().kills) return;
 			Minecraft mc = Minecraft.getInstance();
 			if (mc.level == null || mc.player == null) return;
-			removals.tick(System.currentTimeMillis()); // settled marks and probes older than STALE_MS no longer hold
+			long nowMs = System.currentTimeMillis();
+			removals.tick(nowMs); // settled marks and probes older than STALE_MS no longer hold
 			for (int i = 0; i < ids.size(); i++) {
 				int id = ids.getInt(i);
 				// attacked(): hit at some point (a boss fight shared with others), long after kills forgot the hit.
-				if (!kills.tracks(id) && !stacks.watching(id) && !removals.attacked(id)) continue;
+				// aimed(): swept by a staff shot (an ability weapon: the client never attacks what it kills).
+				if (!kills.tracks(id) && !stacks.watching(id) && !removals.attacked(id) && !removals.aimed(id)) continue;
 				Entity entity = mc.level.getEntity(id);
 				if (entity != null && neverAKill(entity)) {
 					// A deflected breeze wind charge was "killed" through a nearby armor stand's tag (2026-10-01).
@@ -491,6 +505,9 @@ public final class LocalSignals {
 							: !survivalMode(mc.player) ? "local hit, not in survival mode" : null;
 					if (why == null && removals.claim(id, true, true, inHitboxWindow(mc.player.getId()))) {
 						onRemovalKill(entity);
+					} else if (why != null && !recent && near && removals.aimedOnly(id) && removals.aimedWithin(id, nowMs)
+							&& !removals.settled(id) && survivalMode(mc.player)) {
+						onStaffKill(entity, nowMs);
 					} else if (why != null && !recent && near && hitboxShape(entity) && removals.attacked(id) && !removals.settled(id)) {
 						// A model boss we hit earlier in a fight others finished, going near us: taking part counts
 						// (Kind.ASSIST). A model hitbox leaving tracking range is not near, so it never counts here.
@@ -568,6 +585,20 @@ public final class LocalSignals {
 	}
 
 	private static void creditLoot(RemovalKills.Removed r, List<String> loot, String from) {
+		if (removals.aimedOnly(r.entityId())) {
+			// A staff kill the loot line just confirmed: its name tag, found at aim time, names it (method b).
+			Optional<RemovalKills.Hint> hint = removals.hint(r.entityId());
+			if (hint.isPresent() && removals.nameCounts(r.entityId(), hint.get())) {
+				RemovalKills.Hint h = hint.get();
+				String name = StackName.parse(h.name()).map(StackName.Parsed::name).orElse("");
+				Signal.MobKilled signal = new Signal.MobKilled("", name, Set.of("mob", "monster"), 1, r.world());
+				List<LocalCounter.Contribution> added = count(signal);
+				killCounted();
+				capture("kill", r.typeId(), h.name(), "removal, method " + h.method().code + " (" + h.source() + "), staff aim, "
+						+ from + " " + loot + " confirms", r.world(), added);
+				return;
+			}
+		}
 		TrackerStore store = CubeWheelClient.tracker();
 		Optional<LootMatch.Credit> credit = store == null ? Optional.empty()
 				: LootMatch.match(loot, store.activeRules(local().worlds), r.world());
@@ -661,6 +692,65 @@ public final class LocalSignals {
 			capture.nearby(target.getId(), target.typeHolder().getRegisteredName(), rawName(target), r.near(),
 					new ArrayList<>(world().tokens()), System.currentTimeMillis());
 		}
+	}
+
+	private static long lastStaffUseAt;
+
+	/**
+	 * UseItem/UseBlock/UseEntityCallback (client side): a right-click with a staff. An ability weapon's damage comes
+	 * from the server's code (see {@link StaffItems}), so the client sees no attack on what it kills: every mob or
+	 * model hitbox in the shot's cone is marked aimed, its name tag probed now, while it is still there, and its
+	 * removal within {@link RemovalKills#AIM_WINDOW_MS} counts once the loot line confirms a kill ({@link #onStaffKill}).
+	 */
+	private static void onStaffUse(Player player, boolean clientSide, ItemStack held) {
+		try {
+			if (!clientSide || !enabled(Hook.ATTACK) || !local().kills) return;
+			Minecraft mc = Minecraft.getInstance();
+			if (player != mc.player || mc.level == null || !survivalMode(player) || held == null || held.isEmpty()) return;
+			String name = held.getHoverName().getString().replaceAll("§.", "").trim();
+			if (!StaffItems.isStaff(name)) return;
+			long now = System.currentTimeMillis();
+			if (now - lastStaffUseAt < 200) return; // the block and item hooks both fire for one click
+			lastStaffUseAt = now;
+			Vec3 eye = player.getEyePosition();
+			Vec3 look = player.getLookAngle();
+			for (Entity e : mc.level.getEntities(player, new AABB(eye, eye).inflate(StaffItems.RANGE))) {
+				if (e instanceof Player || neverAKill(e) || !(e instanceof Mob || hitboxShape(e))) continue;
+				Vec3 c = e.getBoundingBox().getCenter();
+				if (!StaffItems.inCone(c.x - eye.x, c.y - eye.y, c.z - eye.z, look.x, look.y, look.z)) continue;
+				removals.aimed(e.getId(), now);
+				captureEntity("aim", e, describe(e) + "; staff " + name + (removals.seen(e.getId()) ? "; probed before" : ""));
+				probe(e);
+			}
+		} catch (Throwable t) {
+			fail(Hook.ATTACK, t);
+		}
+	}
+
+	/**
+	 * A mob swept by a staff shot went within the window, near us, with no local hit: a kill if a loot line follows
+	 * ({@link RemovalKills#awaitLoot}, resolved in {@link #creditLoot}), named by the hint found at aim time (probed
+	 * again now if there was none). Someone else's kill in our cone shows us no loot line and is dropped on expiry.
+	 */
+	private static void onStaffKill(Entity entity, long now) {
+		WorldInfo at = world();
+		int id = entity.getId();
+		String typeId = entity.typeHolder().getRegisteredName();
+		Optional<RemovalKills.Hint> hint = removals.hint(id);
+		if (hint.isEmpty()) {
+			NearbyProbe.Result again = NearbyProbe.of(entity, false);
+			if (removals.acceptReprobe(id, again.hint(), again.tagTies())) {
+				removals.remember(id, again.hint());
+				hint = Optional.of(again.hint());
+			}
+		}
+		removals.settle(id);
+		removals.settleModel(id, sibling -> removals.aimedWithin(sibling, now));
+		boolean model = ModelHitbox.isModelHitbox(NearbyProbe.hitbox(entity));
+		RemovalKills.Removed r = new RemovalKills.Removed(id, typeId, hint.map(RemovalKills.Hint::name).orElse(rawName(entity)), at, model);
+		captureEntity("removed", entity, "staff aim, no local hit; waiting for loot line"
+				+ hint.map(h -> "; named " + h.name() + " (" + h.source() + ")").orElse("; no name"));
+		removals.awaitLoot(r, now).ifPresent(loot -> creditLoot(r, loot));
 	}
 
 	/** UseItemCallback (client side): reeling in while the bobber is biting is a catch. */
@@ -920,6 +1010,12 @@ public final class LocalSignals {
 			if (active) pollActionBar(mc); // before expiry: a line that just arrived still names a waiting removal
 			if (removals.awaitingLoot()) {
 				for (RemovalKills.Removed r : removals.expire(System.currentTimeMillis())) {
+					if (removals.aimedOnly(r.entityId())) {
+						// Swept by our staff shot and gone, but no loot line for us: someone else's kill in our cone.
+						capture("removed", r.typeId(), r.name(), "staff aim, no loot line within " + RemovalKills.LOOT_WAIT_MS
+								+ " ms: not our kill", r.world(), List.of());
+						continue;
+					}
 					Optional<String> bottle = removals.fallback(r.entityId());
 					if (bottle.isPresent()) {
 						creditLoot(r, List.of(bottle.get()), "held item");

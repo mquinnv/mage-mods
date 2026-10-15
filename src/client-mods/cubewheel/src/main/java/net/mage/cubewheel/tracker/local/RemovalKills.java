@@ -50,6 +50,12 @@ public final class RemovalKills {
 	 * After this, the id is a fresh entity again: probed anew on the next hit, claimable on removal.
 	 */
 	public static final long STALE_MS = 30_000;
+	/**
+	 * A staff shot (Phoenix Staff: no projectile, the server hits mobs in a wide cone ahead, see {@link #aimed(int, long)})
+	 * kills a mob this long after the click at most (capture 2026-10-14: a slime hitbox went 1.6 s after the shot, its
+	 * loot line 30 ms after that).
+	 */
+	public static final long AIM_WINDOW_MS = 3000;
 
 	/** How a removal kill was named: a own custom name, b linked/nearby entity, c loot line, d none. */
 	public enum Method {
@@ -112,6 +118,8 @@ public final class RemovalKills {
 	private final Map<Integer, String> fallbacks = new LinkedHashMap<>();
 	private final Map<Integer, Set<Integer>> models = new LinkedHashMap<>();
 	private final Set<Integer> attacked = new LinkedHashSet<>();
+	/** Entities swept by a staff shot's cone and when (ms). */
+	private final Map<Integer, Long> aimed = new LinkedHashMap<>();
 
 	/** Remembers what was found for hit entity {@code id} ({@code hint} may be null: looked, found nothing). */
 	public void remember(int id, Hint hint) {
@@ -189,11 +197,11 @@ public final class RemovalKills {
 
 	/**
 	 * Does name {@code hint} count removed entity {@code id} as a kill? Its own name always does; a name from another
-	 * entity (a tag) only if the player attacked it, or used a Firefly Bottle on it: right-clicking a ModelEngine
-	 * NPC, mount or crate by its name tag, then seeing it go, is no kill.
+	 * entity (a tag) only if the player attacked it, swept it with a staff shot, or used a Firefly Bottle on it:
+	 * right-clicking a ModelEngine NPC, mount or crate by its name tag, then seeing it go, is no kill.
 	 */
 	public boolean nameCounts(int id, Hint hint) {
-		return hint != null && (hint.method() == Method.OWN || attacked(id) || fallback(id).isPresent());
+		return hint != null && (hint.method() == Method.OWN || attacked(id) || aimed(id) || fallback(id).isPresent());
 	}
 
 	/**
@@ -238,12 +246,42 @@ public final class RemovalKills {
 	}
 
 	/**
+	 * Entity {@code id} was in the cone of the local player's staff shot at {@code at} ms. An ability weapon deals its
+	 * damage from the server's code: the client sees no attack, only the hitbox going and the loot line, so its removal
+	 * within {@link #AIM_WINDOW_MS} counts once a loot line confirms the kill (the caller waits for it). Opens the loot
+	 * window like a hit.
+	 */
+	public void aimed(int id, long at) {
+		tick(at);
+		used(id, at);
+		aimed.remove(id);
+		aimed.put(id, at);
+		trim(aimed.keySet(), MAX_HINTS);
+	}
+
+	/** Was entity {@code id} ever swept by a staff shot (within memory)? */
+	public boolean aimed(int id) {
+		return aimed.containsKey(id);
+	}
+
+	/** Was entity {@code id} swept by a staff shot within {@link #AIM_WINDOW_MS} before {@code now}? */
+	public boolean aimedWithin(int id, long now) {
+		Long at = aimed.get(id);
+		return at != null && now >= at && now - at <= AIM_WINDOW_MS;
+	}
+
+	/** A staff shot swept {@code id} and the player never attacked it: its kill needs the loot line's confirmation. */
+	public boolean aimedOnly(int id) {
+		return aimed(id) && !attacked(id);
+	}
+
+	/**
 	 * Does an unnamed removal of {@code id} count as a monster kill? Only a model hitbox ({@link ModelHitbox}) the
 	 * player attacked: right-clicking a ModelEngine NPC, mount or crate and seeing it go is no kill, nor is a Firefly
 	 * Bottle used on it (a catch).
 	 */
 	public boolean generic(int id, boolean modelHitbox) {
-		return modelHitbox && attacked(id) && fallback(id).isEmpty();
+		return modelHitbox && (attacked(id) || aimed(id)) && fallback(id).isEmpty();
 	}
 
 	/** Loot to assume for {@code id} when no loot line names it (a Firefly Bottle used on it: "Firefly"). */
@@ -376,6 +414,7 @@ public final class RemovalKills {
 		hints.clear();
 		models.clear();
 		attacked.clear();
+		aimed.clear();
 		settled.clear();
 		pending.clear();
 		lootLines.clear();
