@@ -31,11 +31,27 @@ public final class SkillTextParser {
 	/** Leading decoration ("✚ |") is non-word; a letter before the phrase (chat "Name: ...") fails the match. */
 	private static final Pattern LEVEL_UP = Pattern.compile("^\\W*\\|?\\s*([A-Za-z]+) is now level ([\\d,]+)\\s*$");
 
+	/** The two own-name patterns for one name; rebuilt only when the name changes. */
+	private record OwnPatterns(String name, Pattern power, Pattern milestone) {}
+
+	private static volatile OwnPatterns own;
+
 	private SkillTextParser() {}
+
+	private static OwnPatterns patternsFor(String ownName) {
+		OwnPatterns c = own;
+		if (c != null && c.name().equals(ownName)) return c;
+		String q = Pattern.quote(ownName);
+		c = new OwnPatterns(ownName,
+				Pattern.compile("^" + q + " has reached a total Power Level of ([\\d,]+)$", Pattern.CASE_INSENSITIVE),
+				Pattern.compile("^" + q + " has reached level ([\\d,]+) in ([A-Za-z]+)$", Pattern.CASE_INSENSITIVE));
+		own = c;
+		return c;
+	}
 
 	/**
 	 * Parses one chat or action bar line. {@code ownName} (null disables the two broadcast forms only) is the local
-	 * player's name; other players' broadcasts return empty.
+	 * player's name (matched case-insensitively); other players' broadcasts return empty.
 	 */
 	public static Optional<Message> parse(String text, String ownName) {
 		if (text == null || text.isEmpty() || text.length() > 256) return Optional.empty();
@@ -50,8 +66,8 @@ public final class SkillTextParser {
 		}
 		if (ownName == null || ownName.isEmpty()) return Optional.empty();
 
-		String name = Pattern.quote(ownName);
-		m = Pattern.compile("^" + name + " has reached a total Power Level of ([\\d,]+)$").matcher(line);
+		OwnPatterns pats = patternsFor(ownName);
+		m = pats.power().matcher(line);
 		if (m.matches()) {
 			try {
 				return Optional.of(new PowerLevel(Long.parseLong(m.group(1).replace(",", ""))));
@@ -59,7 +75,7 @@ public final class SkillTextParser {
 				return Optional.empty();
 			}
 		}
-		m = Pattern.compile("^" + name + " has reached level ([\\d,]+) in ([A-Za-z]+)$").matcher(line);
+		m = pats.milestone().matcher(line);
 		if (m.matches()) {
 			Optional<Skill> skill = Skill.byName(m.group(2));
 			Optional<Integer> level = number(m.group(1));

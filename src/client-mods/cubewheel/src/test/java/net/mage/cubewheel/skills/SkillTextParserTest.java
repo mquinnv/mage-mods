@@ -77,6 +77,24 @@ class SkillTextParserTest {
 	}
 
 	@Test
+	void ownNameIsMatchedCaseInsensitively() {
+		assertEquals(Optional.of(new SkillTextParser.PowerLevel(1900)),
+				SkillTextParser.parse("Qualan has reached a total Power Level of 1,900", "qualan"));
+		assertEquals(Optional.of(new SkillTextParser.SkillMilestone(Skill.WOODCUTTING, 200)),
+				SkillTextParser.parse("Qualan has reached level 200 in WOODCUTTING", "qualan"));
+		assertTrue(SkillTextParser.parse("*Buttle has reached level 1,000 in Mining", "qualan").isEmpty());
+	}
+
+	@Test
+	void repeatedAndChangedOwnNamesBothMatch() {
+		String line = "Qualan has reached a total Power Level of 1,900";
+		assertTrue(SkillTextParser.parse(line, "qualan").isPresent());
+		assertTrue(SkillTextParser.parse(line, "qualan").isPresent());
+		assertTrue(SkillTextParser.parse(line, "Buttle").isEmpty());
+		assertTrue(SkillTextParser.parse(line, "Qualan").isPresent());
+	}
+
+	@Test
 	void nullAndBlankAreEmpty() {
 		assertTrue(parse(null).isEmpty());
 		assertTrue(parse("").isEmpty());

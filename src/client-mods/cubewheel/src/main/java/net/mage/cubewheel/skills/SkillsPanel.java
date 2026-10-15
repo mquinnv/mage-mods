@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Optional;
 import net.mage.cubewheel.CubeWheelClient;
 import net.mage.cubewheel.Keybinds;
-import net.mage.cubewheel.ServerGate;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.hud.HudLayout;
 import net.mage.cubewheel.hud.KeyHint;
@@ -20,19 +19,22 @@ import net.mage.cubewheel.wheel.Icons;
  * one row-as-bar per skill. Shown in ManaCube Survival while {@code skills.enabled} and there is something to list.
  */
 public final class SkillsPanel {
+	/** The accent marks XP gained in the last two minutes, whatever {@code skills.recentMinutes} says. */
+	private static final long ACCENT_WINDOW_MS = 120_000L;
+
 	private SkillsPanel() {}
 
 	public static Optional<Panel> panel(long now) {
 		try {
 			CubeWheelConfig cfg = CubeWheelClient.config().current();
-			if (!cfg.skills.enabled || !ServerGate.survival(cfg)) return Optional.empty();
+			if (!SkillsWatcher.active()) return Optional.empty();
 			SkillStore store = SkillsWatcher.store();
 			String name = SkillsWatcher.account();
 			if (store == null || name == null) return Optional.empty();
 			CubeWheelConfig.Skills s = cfg.skills;
 			long recentMs = s.recentMinutes * 60_000L;
 			SkillsPanelModel.Mode mode = "all".equals(s.show) ? SkillsPanelModel.Mode.ALL : SkillsPanelModel.Mode.RECENT;
-			Map<Skill, Long> gains = store.recentGains(name, now, recentMs);
+			Map<Skill, Long> gains = store.recentGains(name, now, ACCENT_WINDOW_MS);
 			SkillsPanelModel.View view = SkillsPanelModel.build(store.account(name), gains,
 					new SkillsPanelModel.Options(mode, recentMs, s.max, s.showChild), now);
 			if (view.rows().isEmpty()) return Optional.empty();

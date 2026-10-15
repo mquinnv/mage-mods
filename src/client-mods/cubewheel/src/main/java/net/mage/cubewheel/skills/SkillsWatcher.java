@@ -1,7 +1,9 @@
 package net.mage.cubewheel.skills;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -35,8 +37,21 @@ public final class SkillsWatcher {
 	private SkillsWatcher() {}
 
 	public static void init(Path configDir) {
-		store = new SkillStore(configDir.resolve("cubewheel-skills.json"));
-		store.load();
+		Path file = configDir.resolve("cubewheel-skills.json");
+		store = new SkillStore(file);
+		if (!store.load()) setAsideCorrupt(file);
+	}
+
+	/** A malformed state file would be overwritten by the next save: keep it as {@code <file>.corrupt} and start empty. */
+	private static void setAsideCorrupt(Path file) {
+		try {
+			if (!Files.exists(file)) return;
+			Path aside = file.resolveSibling(file.getFileName() + ".corrupt");
+			CubeWheelClient.LOG.warn("[cubewheel] mcMMO skills file {} is unreadable; moving it to {} and starting empty", file, aside);
+			Files.move(file, aside, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException | RuntimeException e) {
+			CubeWheelClient.LOG.warn("[cubewheel] could not set aside the unreadable mcMMO skills file: {}", e.toString());
+		}
 	}
 
 	/** The store, or null before {@link #init}. */
@@ -81,7 +96,8 @@ public final class SkillsWatcher {
 	private static void handle(String text, long now) {
 		String name = account();
 		if (name == null) return;
-		Optional<SkillTextParser.Message> m = SkillTextParser.parse(text, name);
+		// The store key is lower-case; the broadcast carries the name as typed, so the parser gets the raw one.
+		Optional<SkillTextParser.Message> m = SkillTextParser.parse(text, Minecraft.getInstance().getUser().getName());
 		if (m.isEmpty()) return;
 		SkillTextParser.Message msg = m.get();
 		if (msg instanceof SkillTextParser.LevelUp l) store.levelUp(name, l.skill(), l.level(), now);
