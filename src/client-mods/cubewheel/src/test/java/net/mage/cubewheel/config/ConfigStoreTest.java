@@ -362,6 +362,35 @@ class ConfigStoreTest {
 		assertEquals("top_left", s.current().cooldowns.position.corner);
 	}
 
+	@Test void skillsPanelDefaultsClampsAndFillsANullSection() throws Exception {
+		CubeWheelConfig d = DefaultConfig.create();
+		assertTrue(d.skills.enabled);
+		assertEquals("recent", d.skills.show);
+		assertEquals(10, d.skills.recentMinutes);
+		assertEquals(6, d.skills.max);
+		assertFalse(d.skills.showChild);
+		assertEquals("top_left", d.skills.position.corner);
+		assertEquals(4, d.skills.position.x);
+		assertEquals(4, d.skills.position.y);
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{\"skills\": {\"show\": \"ALL\", \"recentMinutes\": 500, \"max\": 0}}");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals("recent", s.current().skills.show);
+		assertEquals(120, s.current().skills.recentMinutes);
+		assertEquals(1, s.current().skills.max);
+		Files.writeString(f, "{\"skills\": {\"show\": \"all\", \"recentMinutes\": -3, \"max\": 99}}");
+		assertNull(s.reload());
+		assertEquals("all", s.current().skills.show);
+		assertEquals(1, s.current().skills.recentMinutes);
+		assertEquals(17, s.current().skills.max);
+		Files.writeString(f, "{\"skills\": null}");
+		assertNull(s.reload());
+		assertTrue(s.current().skills.enabled);
+		assertEquals("recent", s.current().skills.show);
+		assertEquals("top_left", s.current().skills.position.corner);
+	}
+
 	@Test void worldFilterDefaultsToSortAndIsNormalised() throws Exception {
 		Path f = dir.resolve("cubewheel.json");
 		ConfigStore s = new ConfigStore(f);

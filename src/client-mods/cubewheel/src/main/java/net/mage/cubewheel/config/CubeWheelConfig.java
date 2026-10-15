@@ -29,6 +29,8 @@ public final class CubeWheelConfig {
 
 	public Charms charms = new Charms();
 	public Focus focus = new Focus();
+	/** The mcMMO skills panel: levels and recent progress per skill. */
+	public Skills skills = new Skills();
 	/** The popup under the crosshair when local counting adds progress to a tracked entry. */
 	public Toast toast = new Toast();
 
@@ -49,6 +51,20 @@ public final class CubeWheelConfig {
 	public static final class Focus {
 		public boolean enabled = true;
 		public Position position = DefaultConfig.focusPosition();
+	}
+
+	/** The mcMMO skills panel: "recent" lists skills trained in the last {@link #recentMinutes}, "all" every known skill. */
+	public static final class Skills {
+		public boolean enabled = true;
+		/** "recent" or "all". */
+		public String show = "recent";
+		/** In "recent" mode, how long a skill stays listed after its last gain, 1-120. */
+		public int recentMinutes = 10;
+		/** The most rows shown in "recent" mode, 1-17. */
+		public int max = 6;
+		/** Also list Smelting, a child skill that does not count to the power level. */
+		public boolean showChild = false;
+		public Position position = DefaultConfig.skillsPosition();
 	}
 
 	/**

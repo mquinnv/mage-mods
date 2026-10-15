@@ -302,6 +302,11 @@ public final class DefaultConfig {
 		return new CubeWheelConfig.Position("top_left", 4, 4);
 	}
 
+	/** Top left like the other panels; it registers after them, so in the same corner it stacks below. */
+	public static CubeWheelConfig.Position skillsPosition() {
+		return new CubeWheelConfig.Position("top_left", 4, 4);
+	}
+
 	public static CubeWheelConfig.Position statusPosition() {
 		return new CubeWheelConfig.Position("top_left", 4, 4);
 	}

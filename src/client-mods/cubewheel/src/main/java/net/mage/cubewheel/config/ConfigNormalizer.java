@@ -50,6 +50,11 @@ public final class ConfigNormalizer {
 		c.charms.position = normalizePosition(c.charms.position, DefaultConfig.charmsPosition());
 		if (c.focus == null) c.focus = new CubeWheelConfig.Focus();
 		c.focus.position = normalizePosition(c.focus.position, DefaultConfig.focusPosition());
+		if (c.skills == null) c.skills = new CubeWheelConfig.Skills();
+		c.skills.show = "all".equals(c.skills.show) ? "all" : "recent";
+		c.skills.recentMinutes = Math.max(1, Math.min(120, c.skills.recentMinutes));
+		c.skills.max = Math.max(1, Math.min(17, c.skills.max));
+		c.skills.position = normalizePosition(c.skills.position, DefaultConfig.skillsPosition());
 		if (c.quick == null) c.quick = new CubeWheelConfig.Quick();
 		// Exactly one command per quick key, trimmed; blank = unset.
 		List<String> quick = new java.util.ArrayList<>();

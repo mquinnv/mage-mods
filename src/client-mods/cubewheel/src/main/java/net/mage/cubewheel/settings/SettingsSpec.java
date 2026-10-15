@@ -195,6 +195,26 @@ public final class SettingsSpec {
 										"Show the Focus panel: the job or quest you last made progress on, with its"
 												+ " objective, a big progress bar, your pace and the reward.",
 										c -> c.focus.enabled, (c, v) -> c.focus.enabled = v))),
+						new Group("mcMMO", List.of(
+								toggle(d, "skills.enabled", "mcMMO panel",
+										"Show the mcMMO skills panel: skill levels and the XP you are gaining, read from"
+												+ " the skill boss bars, level-up messages and the /mcmmo menu.",
+										c -> c.skills.enabled, (c, v) -> c.skills.enabled = v),
+								choice(d, "skills.show", "Skills shown",
+										"\"Recently trained\" lists only skills you gained XP in lately; \"All known"
+												+ " skills\" lists every skill the mod has seen a level for.",
+										List.of(new Choice.Entry("recent", "Recently trained"),
+												new Choice.Entry("all", "All known skills")),
+										c -> c.skills.show, (c, v) -> c.skills.show = v),
+								intRange(d, "skills.recentMinutes", "Recent window (minutes)",
+										"How long a skill stays listed after its last XP gain in \"Recently trained\" mode.",
+										1, 120, c -> c.skills.recentMinutes, (c, v) -> c.skills.recentMinutes = v),
+								intRange(d, "skills.max", "Rows in recent mode",
+										"The most skills listed in \"Recently trained\" mode.",
+										1, 17, c -> c.skills.max, (c, v) -> c.skills.max = v),
+								toggle(d, "skills.showChild", "Show Smelting (child skill)",
+										"Also list Smelting. It is a child skill and does not count to your power level.",
+										c -> c.skills.showChild, (c, v) -> c.skills.showChild = v))),
 						new Group("Progress popup", List.of(
 								toggle(d, "toast.enabled", "Enabled",
 										"A short line under the crosshair when local counting adds progress to a tracked"
@@ -339,6 +359,7 @@ public final class SettingsSpec {
 		position(out, d, "cooldowns", "Cooldowns", c -> c.cooldowns.position);
 		position(out, d, "charms", "Charms", c -> c.charms.position);
 		position(out, d, "focus", "Focus", c -> c.focus.position);
+		position(out, d, "skills", "mcMMO", c -> c.skills.position);
 		return out;
 	}
 

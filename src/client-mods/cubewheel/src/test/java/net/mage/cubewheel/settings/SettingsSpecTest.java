@@ -52,8 +52,8 @@ class SettingsSpecTest {
 	@Test
 	void hudPanelsCategoryHasOneGroupPerPanelThenCollapsedExactPositions() {
 		Category hud = SettingsSpec.categories().get(1);
-		assertEquals(List.of("Status", "Events", "Jobs", "Quests", "Boosters", "Cooldowns", "Charms", "Focus", "Progress popup",
-				"Exact positions"),
+		assertEquals(List.of("Status", "Events", "Jobs", "Quests", "Boosters", "Cooldowns", "Charms", "Focus", "mcMMO",
+				"Progress popup", "Exact positions"),
 				hud.groups().stream().map(Group::name).toList());
 		assertEquals(List.of("status.enabled", "status.armor"), ids(hud.groups().get(0)));
 		assertEquals(List.of("events.hudVisible"), ids(hud.groups().get(1)));
@@ -67,12 +67,14 @@ class SettingsSpecTest {
 		assertTrue(byId("cooldowns.commands").tooltip().contains("/heal -> 10m"));
 		assertEquals(List.of("charms.enabled"), ids(hud.groups().get(6)));
 		assertEquals(List.of("focus.enabled"), ids(hud.groups().get(7)));
-		assertEquals(List.of("toast.enabled", "toast.seconds"), ids(hud.groups().get(8)));
-		for (int i = 0; i < 9; i++) assertFalse(hud.groups().get(i).collapsed(), hud.groups().get(i).name());
-		Group exact = hud.groups().get(9);
+		assertEquals(List.of("skills.enabled", "skills.show", "skills.recentMinutes", "skills.max", "skills.showChild"),
+				ids(hud.groups().get(8)));
+		assertEquals(List.of("toast.enabled", "toast.seconds"), ids(hud.groups().get(9)));
+		for (int i = 0; i < 10; i++) assertFalse(hud.groups().get(i).collapsed(), hud.groups().get(i).name());
+		Group exact = hud.groups().get(10);
 		assertTrue(exact.collapsed());
 		List<String> expected = new ArrayList<>();
-		for (String p : List.of("status", "events", "tracker.jobsPanel", "tracker", "boosters", "cooldowns", "charms", "focus")) {
+		for (String p : List.of("status", "events", "tracker.jobsPanel", "tracker", "boosters", "cooldowns", "charms", "focus", "skills")) {
 			expected.addAll(List.of(p + ".position.corner", p + ".position.x", p + ".position.y"));
 		}
 		assertEquals(expected, ids(exact));
@@ -85,7 +87,7 @@ class SettingsSpecTest {
 	@Test
 	void choicesDefaultToAnAllowedValueAndRoundTripEveryValue() {
 		List<Choice> choices = all().stream().filter(s -> s instanceof Choice).map(s -> (Choice) s).toList();
-		assertEquals(9, choices.size()); // worldFilter + eight corners (Focus included)
+		assertEquals(11, choices.size()); // worldFilter + skills.show + nine corners (one per panel, mcMMO included)
 		for (Choice ch : choices) {
 			List<String> values = ch.options().stream().map(Choice.Entry::value).toList();
 			assertTrue(values.contains(ch.defaultValue()), ch.id());
