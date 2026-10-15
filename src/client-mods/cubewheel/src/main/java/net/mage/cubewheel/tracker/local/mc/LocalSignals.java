@@ -585,6 +585,12 @@ public final class LocalSignals {
 	}
 
 	private static void creditLoot(RemovalKills.Removed r, List<String> loot, String from) {
+		if (removals.aimedOnly(r.entityId()) && removals.tagUsedByOther(r.entityId())) {
+			// While this aimed hitbox waited for its loot line, a kill claimed its tag: one model, counted once.
+			capture("removed", r.typeId(), r.name(), "staff aim, no local hit; tag already named a counted kill while waiting"
+					+ " for the loot line (" + from + " " + loot + "): the model counts once", r.world(), List.of());
+			return;
+		}
 		if (removals.aimedOnly(r.entityId())) {
 			// A staff kill the loot line just confirmed: its name tag, found at aim time, names it (method b).
 			Optional<RemovalKills.Hint> hint = removals.hint(r.entityId());
@@ -745,6 +751,13 @@ public final class LocalSignals {
 				removals.remember(id, again.hint());
 				hint = Optional.of(again.hint());
 			}
+		}
+		if (removals.tagUsedByOther(id)) {
+			// The same model's other hitbox, swept by the shot too: its sword kill already counted with this tag.
+			removals.settle(id);
+			captureEntity("removed", entity, "staff aim, no local hit; tag #" + hint.get().sourceId()
+					+ " already named a counted kill: the model counts once");
+			return;
 		}
 		removals.settle(id);
 		removals.settleModel(id, sibling -> removals.aimedWithin(sibling, now));

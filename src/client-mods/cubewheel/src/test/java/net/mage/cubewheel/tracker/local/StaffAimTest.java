@@ -95,4 +95,49 @@ class StaffAimTest {
 		String name = StackName.parse(TAG.name()).map(StackName.Parsed::name).orElse("");
 		assertTrue(RuleMatcher.matches(wizards, new Signal.MobKilled("", name, Set.of("mob", "monster"), 1, WOLFHAVEN)));
 	}
+	/**
+	 * One tag names one kill (2026-10-15: a blast that did not kill, then a sword kill, credited two). The shot swept
+	 * both hitboxes of the model and probed the same tag for each; the sword kill claims the slime, so the interaction,
+	 * never hit and not linked as a sibling, must not count again off that tag through the aim path.
+	 */
+	@Test void aTagNamesOneKillOnly() {
+		RemovalKills r = new RemovalKills();
+		long shot = 10_000;
+		r.aimed(7, shot); // the slime hitbox
+		r.aimed(8, shot); // the same model's interaction hitbox
+		r.remember(7, TAG);
+		r.remember(8, TAG);
+		r.hit(7, shot + 1500);
+		assertTrue(r.claim(7, true, true, sibling -> true));
+		assertFalse(r.tagUsedByOther(7));
+		assertTrue(r.nameCounts(7, TAG));
+		assertTrue(r.tagUsedByOther(8));
+		assertFalse(r.nameCounts(8, TAG));
+		// its own name is nobody else's
+		assertTrue(r.nameCounts(8, new RemovalKills.Hint("Dwarven Wizard 80⺛", RemovalKills.Method.OWN, "own name")));
+		// a second claim with the used tag does not take it over
+		r.hit(8, shot + 1600);
+		assertTrue(r.claim(8, true, true, null));
+		assertTrue(r.tagUsedByOther(8));
+		assertFalse(r.tagUsedByOther(7));
+		// the tag is free again once its settled mark expired
+		r.tick(shot + 1600 + RemovalKills.STALE_MS + 1);
+		assertFalse(r.tagUsedByOther(8));
+		r.clear();
+		assertFalse(r.tagUsedByOther(8));
+	}
+
+	/** The aimed hitbox can go first and wait for its loot line; the sword kill's claim in between still settles it. */
+	@Test void theOtherHitboxGoingFirstStillCountsOnce() {
+		RemovalKills r = new RemovalKills();
+		r.aimed(7, 10_000);
+		r.aimed(8, 10_000);
+		r.remember(7, TAG);
+		r.remember(8, TAG);
+		r.hit(7, 11_000);
+		assertFalse(r.tagUsedByOther(8)); // nothing counted yet
+		r.awaitLoot(new RemovalKills.Removed(8, "minecraft:interaction", TAG.name(), WOLFHAVEN, true), 12_000);
+		assertTrue(r.claim(7, true, true, null));
+		assertTrue(r.tagUsedByOther(8)); // decided when its line arrives: not a second kill
+	}
 }

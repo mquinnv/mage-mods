@@ -120,6 +120,8 @@ public final class RemovalKills {
 	private final Set<Integer> attacked = new LinkedHashSet<>();
 	/** Entities swept by a staff shot's cone and when (ms). */
 	private final Map<Integer, Long> aimed = new LinkedHashMap<>();
+	/** Name tags that named a counted kill, by tag id: the entity that counted with it (see {@link #tagUsedByOther}). */
+	private final Map<Integer, Integer> tagUsers = new LinkedHashMap<>();
 
 	/** Remembers what was found for hit entity {@code id} ({@code hint} may be null: looked, found nothing). */
 	public void remember(int id, Hint hint) {
@@ -198,10 +200,30 @@ public final class RemovalKills {
 	/**
 	 * Does name {@code hint} count removed entity {@code id} as a kill? Its own name always does; a name from another
 	 * entity (a tag) only if the player attacked it, swept it with a staff shot, or used a Firefly Bottle on it:
-	 * right-clicking a ModelEngine NPC, mount or crate by its name tag, then seeing it go, is no kill.
+	 * right-clicking a ModelEngine NPC, mount or crate by its name tag, then seeing it go, is no kill. A tag that
+	 * already named another entity's counted kill names nothing ({@link #tagUsedByOther}).
 	 */
 	public boolean nameCounts(int id, Hint hint) {
-		return hint != null && (hint.method() == Method.OWN || attacked(id) || aimed(id) || fallback(id).isPresent());
+		return hint != null && !tagUsedByOther(id, hint)
+				&& (hint.method() == Method.OWN || attacked(id) || aimed(id) || fallback(id).isPresent());
+	}
+
+	/**
+	 * Did the tag naming {@code id} already name another entity's counted kill (settled within {@link #STALE_MS})? One
+	 * tag names one kill. A staff shot sweeps every hitbox of a model and probes the same tag for each; when a sword
+	 * kill then claimed one hitbox, the other (never hit, not linked as a sibling) went on to count again off the same
+	 * tag through the aim path once the kill's loot line arrived (reported 2026-10-15: a blast that did not kill, then
+	 * a melee kill, credited two).
+	 */
+	public boolean tagUsedByOther(int id) {
+		return hint(id).map(h -> tagUsedByOther(id, h)).orElse(false);
+	}
+
+	/** {@link #tagUsedByOther(int)} for a hint found just now (not yet remembered). */
+	public boolean tagUsedByOther(int id, Hint hint) {
+		if (hint == null || hint.sourceId() < 0 || !settled(hint.sourceId())) return false;
+		Integer user = tagUsers.get(hint.sourceId());
+		return user != null && user != id;
 	}
 
 	/**
@@ -342,7 +364,15 @@ public final class RemovalKills {
 	 */
 	public void settleModel(int id, IntPredicate inWindow) {
 		for (int sibling : siblings(id)) if (inWindow == null || inWindow.test(sibling)) settle(sibling);
-		hint(id).filter(h -> h.sourceId() >= 0).ifPresent(h -> settle(h.sourceId()));
+		hint(id).filter(h -> h.sourceId() >= 0).ifPresent(h -> {
+			boolean other = tagUsedByOther(id, h); // another entity counted with this tag first: it keeps it
+			settle(h.sourceId());
+			if (!other) {
+				tagUsers.remove(h.sourceId());
+				tagUsers.put(h.sourceId(), id);
+				trim(tagUsers.keySet(), MAX_SETTLED);
+			}
+		});
 	}
 
 	/**
@@ -415,6 +445,7 @@ public final class RemovalKills {
 		models.clear();
 		attacked.clear();
 		aimed.clear();
+		tagUsers.clear();
 		settled.clear();
 		pending.clear();
 		lootLines.clear();
