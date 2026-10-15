@@ -86,6 +86,25 @@ class KillRuleTest {
 		assertTrue(RuleMatcher.matches(wizards, new Signal.MobKilled("", "Dwarven Wizard 80\u2e9b", Set.of("mob", "monster"), 1, wolfhaven)));
 	}
 
+	/** "Mine 0/144 Tangleroots Jade Emeralds" (job, capture 2026-10-14): the world's flavour name for its emerald ore. */
+	@Test void worldFlavouredOreNameMatchesTheMaterialsOreInThatWorld() {
+		CounterRule jade = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 0/144 Tangleroots Jade Emeralds", null)),
+				false, false), WORLDS).orElseThrow();
+		assertEquals(new CounterRule(Kind.BREAK, 144, new Named("jade emerald"), new NamedWorld("tangleroot")), jade);
+		WorldInfo tangleroot = tangleroots();
+		for (String id : List.of("minecraft:emerald_ore", "minecraft:deepslate_emerald_ore")) {
+			assertTrue(RuleMatcher.matches(jade, new Signal.BlockBroken(id, "Emerald Ore", Set.of("ore"), false, false, tangleroot)), id);
+		}
+		// not the same ore elsewhere, and not another material there
+		WorldInfo overworld = WorldResolver.resolve("minecraft:overworld", SIDEBAR, WORLDS);
+		assertFalse(RuleMatcher.matches(jade, new Signal.BlockBroken("minecraft:emerald_ore", "Emerald Ore", Set.of("ore"), false, false, overworld)));
+		assertFalse(RuleMatcher.matches(jade, new Signal.BlockBroken("minecraft:diamond_ore", "Diamond Ore", Set.of("ore"), false, false, tangleroot)));
+		// a bare "Mine Emeralds" job still skips the mana world's variant
+		CounterRule emeralds = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 0/50 Emeralds", null)),
+				false, false), WORLDS).orElseThrow();
+		assertFalse(RuleMatcher.matches(emeralds, new Signal.BlockBroken("minecraft:emerald_ore", "Emerald Ore", Set.of("ore"), false, false, tangleroot)));
+	}
+
 	@Test void manaWorldOreIsNotTheBareMaterialButCountsForItsOwnWorld() {
 		CounterRule diamonds = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 0/101 Diamonds", null)),
 				false, false), WORLDS).orElseThrow();

@@ -102,7 +102,7 @@ public final class RuleMatcher {
 		// Diamonds/Gold" jobs don't count (Michael 2026-10-04); it still counts when the rule names that world.
 		if (rule.world() instanceof AnyWorld && rule.what() instanceof Named n && ORE_MATERIALS.contains(n.singular())
 				&& b.world() != null && b.world().special()) return false;
-		return targetMatches(rule.what(), b.id(), b.name(), b.groups());
+		return targetMatches(rule.what(), b.id(), b.name(), b.groups(), !(rule.world() instanceof AnyWorld));
 	}
 
 	/** Unknown worlds never satisfy a world-scoped rule (under-count rather than over-count). */
@@ -149,9 +149,17 @@ public final class RuleMatcher {
 								|| fromId.replace(" ", "").equals(compactWant)))
 						// "Magic Mooshrooms in Wolfhaven" vs the mooshroom named "Mooshroom": the world's prefix
 						|| (worldScoped && want.indexOf(' ') > 0
-								&& (!fromName.isEmpty() && want.endsWith(" " + fromName) || !fromId.isEmpty() && want.endsWith(" " + fromId)));
+								&& (!fromName.isEmpty() && want.endsWith(" " + fromName) || !fromId.isEmpty() && want.endsWith(" " + fromId)))
+						// "Mine 144 Tangleroots Jade Emeralds" (capture 2026-10-14): a mana world's flavour name for its own
+						// ore, the material last; only in that world (the rule names it), so "Emeralds" alone stays bare.
+						|| (worldScoped && want.indexOf(' ') > 0 && ORE_MATERIALS.contains(lastWord(want))
+								&& fromId.matches("((deepslate|nether) )?" + lastWord(want) + " ore") && !NOT_THE_MATERIAL.contains(fromId));
 			}
 		};
+	}
+
+	private static String lastWord(String s) {
+		return s.substring(s.lastIndexOf(' ') + 1);
 	}
 
 	private static final String SMALL_CAPS = "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ";
