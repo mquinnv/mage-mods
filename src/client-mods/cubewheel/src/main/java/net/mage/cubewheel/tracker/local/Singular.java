@@ -6,16 +6,19 @@ import java.util.regex.Pattern;
 
 /** English singulars for objective nouns, block ids and mob names. Pure: no Minecraft/Fabric imports. */
 public final class Singular {
-	private static final Map<String, String> IRREGULAR = Map.of(
-			"endermen", "enderman",
-			"wolves", "wolf",
-			"fish", "fish",
-			"sheep", "sheep",
-			"potatoes", "potato",
-			"tomatoes", "tomato",
-			"men", "man",
-			"leaves", "leaf",
-			"zombies", "zombie");
+	private static final Map<String, String> IRREGULAR = Map.ofEntries(
+			Map.entry("endermen", "enderman"),
+			Map.entry("wolves", "wolf"),
+			Map.entry("fish", "fish"),
+			Map.entry("sheep", "sheep"),
+			Map.entry("potatoes", "potato"),
+			Map.entry("tomatoes", "tomato"),
+			Map.entry("men", "man"),
+			Map.entry("leaves", "leaf"),
+			// Not plurals: "Mine 113 Lapis" read as "lapi" matched no lapis ore (capture 2026-10-15).
+			Map.entry("lapis", "lapis"),
+			Map.entry("debris", "debris"),
+			Map.entry("zombies", "zombie"));
 	/** "blazes", "horses": a single s/z before "es". */
 	private static final Pattern SINGLE_SZ_ES = Pattern.compile(".*[^sz][sz]es");
 	private static final Pattern SIBILANT_ES = Pattern.compile(".*(s|x|z|ch|sh)es");

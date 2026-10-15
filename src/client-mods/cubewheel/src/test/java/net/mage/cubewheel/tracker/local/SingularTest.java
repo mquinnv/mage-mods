@@ -28,4 +28,10 @@ class SingularTest {
 		assertEquals("sweet berry bush", Singular.phrase("sweet_berry_bush"));
 		assertEquals("", Singular.phrase(null));
 	}
+	/** Latin and French loan words ending in -s are singular already. */
+	@Test void lapisAndDebrisAreNotPlurals() {
+		assertEquals("lapis", Singular.word("Lapis"));
+		assertEquals("deepslate lapis ore", Singular.phrase("deepslate_lapis_ore"));
+		assertEquals("ancient debris", Singular.phrase("Ancient Debris"));
+	}
 }

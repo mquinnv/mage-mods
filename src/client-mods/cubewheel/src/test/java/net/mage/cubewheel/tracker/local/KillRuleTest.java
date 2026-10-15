@@ -105,6 +105,17 @@ class KillRuleTest {
 		assertFalse(RuleMatcher.matches(emeralds, new Signal.BlockBroken("minecraft:emerald_ore", "Emerald Ore", Set.of("ore"), false, false, tangleroot)));
 	}
 
+	/** "Mine 0/113 Lapis" (job, capture 2026-10-15) vs deepslate lapis ore in the Resource World. */
+	@Test void lapisIsLapisOre() {
+		CounterRule lapis = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 0/113 Lapis", null)),
+				false, false), WORLDS).orElseThrow();
+		assertEquals(new Named("lapis"), lapis.what());
+		WorldInfo resource = WorldResolver.resolve("minecraft:resource_world", List.of("ManaCube", "World: resource_world"), WORLDS);
+		for (String id : List.of("minecraft:lapis_ore", "minecraft:deepslate_lapis_ore")) {
+			assertTrue(RuleMatcher.matches(lapis, new Signal.BlockBroken(id, "Deepslate Lapis Lazuli Ore", Set.of("ore"), false, false, resource)), id);
+		}
+	}
+
 	@Test void manaWorldOreIsNotTheBareMaterialButCountsForItsOwnWorld() {
 		CounterRule diamonds = ObjectiveParser.parse(new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Mine 0/101 Diamonds", null)),
 				false, false), WORLDS).orElseThrow();
