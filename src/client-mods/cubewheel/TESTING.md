@@ -280,6 +280,24 @@ In Survival with capture on (the refusal wording is unknown: the `"kind":"chat"`
 - [ ] `"cooldowns": {"enabled": false}` + reload: no panel; `"cooldowns": {"commands": {}}` + reload: no /heal row (item and mcMMO cooldowns unchanged).
 - [ ] Settings › HUD panels › Cooldowns has a "Command cooldowns" list with `/heal -> 10m`. The log has no "[cubewheel] command cooldown hook failed".
 
+## mcMMO skills panel
+
+In Survival, `skills.show` at its default (`recent`), capture on in case a bar is not recognised.
+
+- [ ] Mine for a few seconds: a `Mining N` row with an icon appears (title `mcMMO · <power level>`), its meter and `xp / needed` update as the boss bar changes, and the row has the green accent while you keep gaining XP.
+- [ ] Stop for over 2 minutes: the accent goes; after `recentMinutes` (10) the row turns grey and then leaves the panel, and with no recent skills the panel hides.
+- [ ] Train a second and a third skill: newest on top, at most `skills.max` (6) rows.
+- [ ] Level up: the row's level flips and the right text shows `?` with an empty bar until the next boss bar fills it again.
+- [ ] Fresh `config/cubewheel-skills.json` (deleted): open `/mcmmo`; with `"show": "all"` + reload every skill shows its level with `?`, Smelting not (unless `"showChild": true`); capped skills (Taming 500/500) show `MAX` and a full bar.
+- [ ] With `"show": "all"`, rows older than the window are grey, trained ones bright; highest level first.
+- [ ] The title's power level matches the sidebar's `Skills: Lvl N`.
+- [ ] Bind "Open mcMMO skills (/mcmmo)": one press sends `/mcmmo` once (holding it does not repeat) and the title shows the key; no other command is ever sent by the panel.
+- [ ] Settings > HUD panels > mcMMO changes show, window, max and child skills live; Exact positions has an "mcMMO" entry.
+- [ ] Arrange screen: the panel can be dragged and snaps to the other panels' corners like the rest; the saved `skills.position` follows.
+- [ ] Quit to the title and rejoin: `config/cubewheel-skills.json` has your account (lower-case) with levels, XP and the power level; the panel comes back with the same rows greyed.
+- [ ] Boss bars of mobs, anomalies and bosses (`MANA GOLEM [SWORDS] ...`) and other players' level-up broadcasts never add or change a row.
+- [ ] `"skills": {"enabled": false}` + reload: no panel. On the hub or another gamemode: nothing is shown. The log has no "[cubewheel] mcMMO skills hook failed".
+
 ## SVA catalog
 
 Bind "Open SVA catalog" first. Start with `config/cubewheel-cache/` deleted.

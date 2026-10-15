@@ -42,6 +42,7 @@ Options > Controls > Key Binds > **CubeWheel**.
 | Toggle event HUD | unbound |
 | Open SVA catalog | unbound |
 | Toggle jobs panel | unbound |
+| Open mcMMO skills (`/mcmmo`) | unbound |
 
 Any key or mouse button can be used for the wheel. Each press does its action once: holding a key
 (so the system repeats it) does not toggle capture or the HUD back and forth.
@@ -201,6 +202,12 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `cooldowns.showUses` | Also show the held item's `Uses: N` | `true` |
 | `cooldowns.mcmmo` | mcMMO ability countdowns (see [mcMMO ability cooldowns](#mcmmo-ability-cooldowns)); needs `cooldowns.enabled` | `true` |
 | `cooldowns.commands` | Server command -> placeholder cooldown length (`"5m"`, `"2m 30s"`), counted down after the server confirms the command and corrected from its refusals (see [Command cooldowns](#command-cooldowns)); an entry without a command or a parseable length is dropped with a warning; needs `cooldowns.enabled` | `{"/heal": "10m"}` |
+| `skills.enabled` | mcMMO skills panel (see [mcMMO skills panel](#mcmmo-skills-panel)) | `true` |
+| `skills.show` | `"recent"` lists skills trained in the last `recentMinutes`; `"all"` lists every skill the mod knows | `"recent"` |
+| `skills.recentMinutes` | How long a skill stays listed (and bright) after its last XP bar, 1-120 | `10` |
+| `skills.max` | Most rows in `"recent"` mode, 1-17 | `6` |
+| `skills.showChild` | List Smelting, a child skill, in `"all"` mode | `false` |
+| `skills.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `cooldowns.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `wheel` | The root ring: a list of nodes | see `DefaultConfig.java` |
 
@@ -735,6 +742,54 @@ command in `config/cubewheel-cooldowns.json` (`{"/heal": 450}`), separate from t
 kept in memory only. Purely passive: nothing is sent or hidden. Other commands can be added to `cooldowns.commands`
 (paper icon, label from the command word), but without a known success line only a refusal can start them.
 
+### mcMMO skills panel
+
+A panel titled `mcMMO · 3,148` (the number is your power level) with one row per skill: an icon, `Mining 617`
+on the left, `65,682 / 155,750` on the right, and the row itself is the XP meter. Survival only; it is
+passive: nothing is sent, hidden or cancelled. A skill you gained XP in during the last two minutes gets a
+green accent.
+
+It is fed by what the server already pushes, nothing else:
+
+| Source | Used for |
+|---|---|
+| ManaCube's XP boss bars (`MINING » ʟᴠʟ. 617 [65,682 / 155,750 xp]`, shown while you gain XP) | level, XP and XP needed; the XP gained between two bars of a skill is what marks it as recently trained. Bars of mobs, anomalies and bosses do not match and are ignored |
+| The level-up line (`✚ \| Mining is now level 245`, chat or action bar) | sets the level and marks the XP unknown (`?`) until the next bar |
+| The sidebar's `Skills: Lvl 3148` | the power level in the title |
+| The `/mcmmo` menu (`Skills Panel \| Browsing...`), when you open it | the level and the level cap of all 17 skills, including ones you have not trained since installing the mod |
+
+Two modes (`skills.show`, also under Settings > HUD panels > mcMMO):
+
+- **recent** (default): skills that had an XP bar in the last `skills.recentMinutes` (10), newest first, at most
+  `skills.max` (6) rows. Rows are bright inside the window. When nothing was trained recently the panel hides.
+- **all**: every skill the mod knows, highest level first. Rows older than the window are grey. Smelting, a
+  child skill that does not count to the power level, is left out unless `skills.showChild` is on.
+
+A skill whose XP is not known shows its level, an empty bar and `?`: this is the case for skills only seen in
+the `/mcmmo` menu (the menu shows levels, never XP) and for a skill that just levelled up, until its next bar.
+A skill at its cap shows a full bar and a green `MAX`; the cap comes from the menu (`Level: 137/2500`), with the
+mod's built-in caps as defaults until you open it.
+
+The **Open mcMMO skills (`/mcmmo`)** key (unbound by default) sends `/mcmmo` once per press, and the panel title
+shows the key as a hint. Nothing else is ever sent: the menu is only read when you open it yourself, by this key
+or by typing the command. The panel is positioned like the others (the arrange screen, or `skills.position`).
+
+Levels, XP, the power level and the XP-gain history are kept per account in `config/cubewheel-skills.json`
+(saved at most every 10 s and when you leave the server). `skills.enabled: false` turns the whole feature off.
+
+**Evidence:** boss-bar format from captures of 2026-10-01 to 2026-10-14 (14,461 bars, levels 56 to 617); the XP
+needed for a level is `1500 + 250 * level` in every one of them, which is what the mod uses after a level-up.
+The `/mcmmo` menu was captured on 2026-10-01 (17 skills, `Level: 137/2500` lore).
+
+**Unverified:**
+
+- The boss-bar names of the eight skills never seen as a bar (Alchemy, Archery, Crossbows, Maces, Repair,
+  Smelting, Taming, Trident): the mod assumes the menu name in upper case (`TRIDENT`, singular). If one of them
+  never shows XP, turn capture mode on, train it and send the boss-bar line.
+- What a capped skill's bar looks like (or whether it shows one at all). The `MAX` row comes from the level
+  reaching the cap, not from a captured capped bar.
+- The XP numbers right after a level-up: the mod shows `?` until the next bar rather than guessing 0.
+
 ## SVA catalog
 
 Press **Open SVA catalog** (unbound by default) for a grid of every Survival SVA (season vault
@@ -854,6 +909,8 @@ Captures contain chat text, including other players' messages; review the file b
 - The /cow menu's wording and ManaCube's reward reset rule (see [Daily reward badge](#daily-reward-badge)).
 - Boss locations beyond Wolfhaven Mines, Morend, Boss Arena and Sandara Canyon (the warp regexes are
   guesses from the world names).
+- The mcMMO skills panel's bar names for the eight untrained skills, capped skills, and XP after a level-up
+  (see [mcMMO skills panel](#mcmmo-skills-panel)).
 - The command that opens the prestige rank-objectives menu ("Rank [✪n]" items); see
   [Refresh key](#refresh-key).
 
