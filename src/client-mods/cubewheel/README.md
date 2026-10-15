@@ -202,13 +202,13 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `cooldowns.showUses` | Also show the held item's `Uses: N` | `true` |
 | `cooldowns.mcmmo` | mcMMO ability countdowns (see [mcMMO ability cooldowns](#mcmmo-ability-cooldowns)); needs `cooldowns.enabled` | `true` |
 | `cooldowns.commands` | Server command -> placeholder cooldown length (`"5m"`, `"2m 30s"`), counted down after the server confirms the command and corrected from its refusals (see [Command cooldowns](#command-cooldowns)); an entry without a command or a parseable length is dropped with a warning; needs `cooldowns.enabled` | `{"/heal": "10m"}` |
+| `cooldowns.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `skills.enabled` | mcMMO skills panel (see [mcMMO skills panel](#mcmmo-skills-panel)) | `true` |
 | `skills.show` | `"recent"` lists skills trained in the last `recentMinutes`; `"all"` lists every skill the mod knows | `"recent"` |
 | `skills.recentMinutes` | How long a skill stays listed (and bright) after its last XP bar, 1-120 | `10` |
 | `skills.max` | Most rows in `"recent"` mode, 1-17 | `6` |
 | `skills.showChild` | List Smelting, a child skill, in `"all"` mode | `false` |
 | `skills.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
-| `cooldowns.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `wheel` | The root ring: a list of nodes | see `DefaultConfig.java` |
 
 `tracker.sources` defaults: `jobs` = `(?i)jobs`, `pquests` = `(?i)quest`, `prestige` = `(?i)prestige`,
@@ -747,7 +747,7 @@ kept in memory only. Purely passive: nothing is sent or hidden. Other commands c
 A panel titled `mcMMO · 3,148` (the number is your power level) with one row per skill: an icon, `Mining 617`
 on the left, `65,682 / 155,750` on the right, and the row itself is the XP meter. Survival only; it is
 passive: nothing is sent, hidden or cancelled. A skill you gained XP in during the last two minutes gets a
-green accent.
+cyan accent.
 
 It is fed by what the server already pushes, nothing else:
 
@@ -774,8 +774,9 @@ The **Open mcMMO skills (`/mcmmo`)** key (unbound by default) sends `/mcmmo` onc
 shows the key as a hint. Nothing else is ever sent: the menu is only read when you open it yourself, by this key
 or by typing the command. The panel is positioned like the others (the arrange screen, or `skills.position`).
 
-Levels, XP, the power level and the XP-gain history are kept per account in `config/cubewheel-skills.json`
-(saved at most every 10 s and when you leave the server). `skills.enabled: false` turns the whole feature off.
+Levels, XP, level caps and the power level are kept per account in `config/cubewheel-skills.json`
+(saved at most every 10 s and when you leave the server); recent XP gains live only for the session. An unreadable
+file is moved to `cubewheel-skills.json.corrupt` and the panel starts empty. `skills.enabled: false` turns the whole feature off.
 
 **Evidence:** boss-bar format from captures of 2026-09-30 to 2026-10-14 (14,461 bars, levels 56 to 617); the XP
 needed for a level is `1500 + 250 * level` in every one of them, which is what the mod uses after a level-up.
