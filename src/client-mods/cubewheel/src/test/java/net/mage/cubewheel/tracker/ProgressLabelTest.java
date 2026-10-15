@@ -116,6 +116,23 @@ class ProgressLabelTest {
 		assertTrue(ProgressLabel.of(s, id, WORLDS).orElseThrow().done());
 	}
 
+	@Test void aHiddenEntryHasNoLabelSoThePopupStaysQuiet() {
+		// The 1,000-kill Sandara quest was hidden in the tracker and off Focus, yet every kill still raised its toast
+		// (Michael 2026-10-12): the popup names a key through here, and hidden has to win here too.
+		TrackerStore s = store();
+		String id = "pquests:Sandara Slayer";
+		s.update("pquests", "Sandara Slayer", p(370, 1000), 0);
+		s.setObjective(id, new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Slay 1,000 Sandara Monsters", 37.0),
+				new ObjectiveInfo.Sub("Slay 10 Golden Knights", 50.0)), false, false));
+		s.toggleHidden(id);
+		s.addEstimate(id, 1, 1_000);
+		s.addEstimate(TrackerStore.subKey(id, 1), 1, 1_000);
+		assertTrue(ProgressLabel.of(s, id, WORLDS).isEmpty());
+		assertTrue(ProgressLabel.of(s, TrackerStore.subKey(id, 1), WORLDS).isEmpty());
+		s.toggleHidden(id);
+		assertEquals("Sandara Slayer", ProgressLabel.of(s, id, WORLDS).orElseThrow().name());
+	}
+
 	@Test void unknownKeysHaveNoLabel() {
 		TrackerStore s = store();
 		assertTrue(ProgressLabel.of(s, "pquests:Nope", WORLDS).isEmpty());
