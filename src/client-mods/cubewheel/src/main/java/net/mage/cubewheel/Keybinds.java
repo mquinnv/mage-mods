@@ -20,6 +20,8 @@ public final class Keybinds {
 	public static KeyMapping jobsPanel;
 	public static KeyMapping arrange;
 	public static KeyMapping settings;
+	/** Sends /mcmmo (one press, one command) to open the skills menu the panel reads. */
+	public static KeyMapping mcmmoSkills;
 	/** "Quick command N": each sends the command set for it in the config (CubeWheelConfig.Quick). */
 	public static KeyMapping[] quick = new KeyMapping[0];
 
@@ -37,6 +39,7 @@ public final class Keybinds {
 		jobsPanel = key("key.cubewheel.jobs_panel", InputConstants.UNKNOWN.getValue(), category);
 		arrange = key("key.cubewheel.arrange", InputConstants.UNKNOWN.getValue(), category);
 		settings = key("key.cubewheel.settings", InputConstants.UNKNOWN.getValue(), category);
+		mcmmoSkills = key("key.cubewheel.mcmmo_skills", InputConstants.UNKNOWN.getValue(), category);
 		quick = new KeyMapping[net.mage.cubewheel.config.CubeWheelConfig.Quick.KEYS];
 		for (int i = 0; i < quick.length; i++) {
 			quick[i] = key("key.cubewheel.quick_" + (i + 1), InputConstants.UNKNOWN.getValue(), category);

@@ -625,12 +625,14 @@ public final class LocalSignals {
 	public static void onOverlayMessage(Component message) {
 		if (message != null) net.mage.cubewheel.cooldown.CooldownWatcher.onActionBar(message.getString());
 		McmmoWatcher.onActionBarEvent(ActionBarFeed.Source.HUD, message);
+		net.mage.cubewheel.skills.SkillsWatcher.onActionBarEvent(ActionBarFeed.Source.HUD, message);
 		onActionBarEvent(ActionBarFeed.Source.HUD, message);
 	}
 
 	/** Mixin, ClientPacketListener.setActionBarText (client thread): an action-bar packet's text. */
 	public static void onActionBarPacket(Component message) {
 		McmmoWatcher.onActionBarEvent(ActionBarFeed.Source.PACKET, message);
+		net.mage.cubewheel.skills.SkillsWatcher.onActionBarEvent(ActionBarFeed.Source.PACKET, message);
 		onActionBarEvent(ActionBarFeed.Source.PACKET, message);
 	}
 

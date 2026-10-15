@@ -119,6 +119,7 @@ public final class ContainerHook {
 				}
 				// Other ManaCube gamemodes (SkyBlock, Parkour, hub) have look-alike menus: Survival only.
 				if (!ServerGate.survival(cfg)) return;
+				net.mage.cubewheel.skills.SkillsWatcher.onMenu(title, items, now); // the /mcmmo menu's skill levels
 				LiveWatcher.onMenu(title, items, now); // the /cow menu's reward cooldowns; catches its own failures
 				// The Fishing Log (/fish) says where every species is caught; the Jobs panel uses it for fishing jobs.
 				FishLog fishLog = CubeWheelClient.fishLog();

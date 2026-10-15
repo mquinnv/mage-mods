@@ -92,7 +92,7 @@ public final class JobsPanel {
 	}
 
 	/** The bar marking an entry you made progress on: bright for the last couple of minutes, dim for a while after. */
-	static int accent(Activity a) {
+	public static int accent(Activity a) {
 		return switch (a) {
 			case ACTIVE -> 0xFF55FFFF;
 			case RECENT -> 0x9055FFFF;

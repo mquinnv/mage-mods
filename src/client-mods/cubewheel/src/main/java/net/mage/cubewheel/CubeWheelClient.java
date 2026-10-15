@@ -118,6 +118,8 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ClientSendMessageEvents.COMMAND.register(LiveWatcher::onCommand);
 		McmmoWatcher.init(configDir);
 		ClientReceiveMessageEvents.ALLOW_GAME.register(McmmoWatcher::onGameMessage);
+		net.mage.cubewheel.skills.SkillsWatcher.init(configDir);
+		ClientReceiveMessageEvents.ALLOW_GAME.register(net.mage.cubewheel.skills.SkillsWatcher::onGameMessage);
 		CommandWatcher.init(configDir); // listens to SentCommands
 		ClientReceiveMessageEvents.ALLOW_GAME.register(CommandWatcher::onGameMessage);
 		ClientSendMessageEvents.COMMAND.register(homesFetcher::onCommand);
@@ -149,6 +151,8 @@ public final class CubeWheelClient implements ClientModInitializer {
 		PanelsHud.add(PanelsHud.perTick(net.mage.cubewheel.charms.CharmsPanel::panel, c -> c.charms.position), c -> c.charms.position,
 				DefaultConfig::charmsPosition); // above the hotbar, in place of schrumboHUD
 		PanelsHud.add(CooldownWatcher::panel, c -> c.cooldowns.position, DefaultConfig::cooldownsPosition);
+		PanelsHud.add(PanelsHud.perTick(net.mage.cubewheel.skills.SkillsPanel::panel, c -> c.skills.position), c -> c.skills.position,
+				DefaultConfig::skillsPosition);
 		PanelsHud.register();
 		ProgressToastHud.register(); // after the panels and the tracker store
 		net.mage.cubewheel.hud.NoticeWatcher.register(); // inventory full, set bonus, vaults: one-off popups
@@ -179,6 +183,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		// background save still waiting (an older one than a save just made is skipped).
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, mc) -> {
 			sidebar.flush();
+			net.mage.cubewheel.skills.SkillsWatcher.flush();
 			flushTrackerSaves();
 			capture.flush(); // capture lines still buffered on the IO thread
 		});
@@ -186,6 +191,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> capture.flush(2_000), "CubeWheel capture flush"));
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> {
 			sidebar.flush();
+			net.mage.cubewheel.skills.SkillsWatcher.flush();
 			flushTrackerSaves();
 			capture.flush(); // capture lines still buffered on the IO thread
 		});
@@ -247,6 +253,13 @@ public final class CubeWheelClient implements ClientModInitializer {
 		} catch (RuntimeException e) {
 			LOG.error("[cubewheel] quick key handler failed", e);
 		}
+		try {
+			// One press, one command: the only thing the mcMMO skills feature ever sends.
+			if (pressed(Keybinds.mcmmoSkills) && mc.gui.screen() == null) CommandSender.send("/mcmmo");
+		} catch (RuntimeException e) {
+			LOG.error("[cubewheel] mcMMO skills key handler failed", e);
+		}
+		net.mage.cubewheel.skills.SkillsWatcher.tick(mc); // catches and logs its own failures
 		EventHud.tick(mc); // catches and logs its own failures
 		try {
 			handleTrackerPickerKey(mc);
