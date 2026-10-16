@@ -50,16 +50,20 @@ public final class LootMatch {
 			CounterRule r = e.getValue();
 			if (r.kind() != CounterRule.Kind.KILL || !(r.what() instanceof CounterRule.Named n)) continue;
 			if (!RuleMatcher.worldMatches(r.world(), at)) continue;
-			String[] want = words(n.singular());
-			if (want.length == 0 || lastWord && want.length < 2) continue;
-			// "Rattle Snake" also matches loot that writes it as one word ("Rattlesnake Meat").
-			String[] joined = want.length > 1 ? new String[] { String.join("", want) } : null;
-			String[] last = new String[] { want[want.length - 1] };
-			for (String[] l : loot) {
-				boolean fits = lastWord ? contains(l, last) : contains(l, want) || joined != null && contains(l, joined);
-				if (fits) {
-					byTarget.computeIfAbsent(String.join(" ", want), k -> new ArrayList<>()).add(e.getKey());
-					break;
+			// A family ("Serpents") is matched by each member, keyed by the member, so "Rattlesnake Meat" names one
+			// target for both "Slay Serpents" and "Slay Rattle Snakes".
+			for (String member : RuleMatcher.members(n.singular())) {
+				String[] want = words(member);
+				if (want.length == 0 || lastWord && want.length < 2) continue;
+				// "Rattle Snake" also matches loot that writes it as one word ("Rattlesnake Meat").
+				String[] joined = want.length > 1 ? new String[] { String.join("", want) } : null;
+				String[] last = new String[] { want[want.length - 1] };
+				for (String[] l : loot) {
+					boolean fits = lastWord ? contains(l, last) : contains(l, want) || joined != null && contains(l, joined);
+					if (fits) {
+						byTarget.computeIfAbsent(String.join(" ", want), k -> new ArrayList<>()).add(e.getKey());
+						break;
+					}
 				}
 			}
 		}

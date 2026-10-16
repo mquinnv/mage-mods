@@ -38,7 +38,19 @@ public final class RuleMatcher {
 			// ice stay out until seen.
 			"ice crystal", java.util.Set.of("minecraft:ice"));
 
+	/**
+	 * Objective nouns naming a family of mobs, none of which carries the family's name: "Slay 78 Serpents in Sandara"
+	 * (job, 2026-10-15) counts Sandara's rattlesnakes and vipers. Each member is matched as if the rule named it.
+	 */
+	private static final java.util.Map<String, java.util.List<String>> FAMILIES = java.util.Map.of(
+			"serpent", java.util.List.of("serpent", "rattle snake", "viper"));
+
 	private RuleMatcher() {}
+
+	/** The names a rule's noun counts: its family's members, or the noun alone. */
+	static java.util.List<String> members(String want) {
+		return FAMILIES.getOrDefault(want, java.util.List.of(want));
+	}
 
 	public static boolean matches(CounterRule rule, Signal signal) {
 		if (rule == null || signal == null || !worldMatches(rule.world(), signal.world())) return false;
@@ -133,29 +145,35 @@ public final class RuleMatcher {
 			case Any a -> true;
 			case Group g -> groups.contains(g.group());
 			case Named n -> {
-				String want = n.singular();
-				String path = id == null ? "" : id.substring(id.indexOf(':') + 1);
-				String fromId = Singular.phrase(path);
-				String fromName = displayName(name);
-				String compactWant = want.replace(" ", "");
-				yield fromId.equals(want) || fromId.equals(ID_ALIASES.get(want))
-						// "Mine 146 Nether Gold" (job, capture 2026-10-14): the ore block named without "ore".
-						|| fromId.equals(want + " ore")
-						|| ORE_MATERIALS.contains(want) && fromId.matches("((deepslate|nether) )?" + want + " ore")
-								&& !NOT_THE_MATERIAL.contains(fromId)
-						|| fromName.equals(want) || fromName.endsWith(" " + want)
-						// "Rattle Snakes" vs a "Rattlesnake" mob or a "rattlesnake" id
-						|| (want.indexOf(' ') > 0 && (fromName.replace(" ", "").equals(compactWant)
-								|| fromId.replace(" ", "").equals(compactWant)))
-						// "Magic Mooshrooms in Wolfhaven" vs the mooshroom named "Mooshroom": the world's prefix
-						|| (worldScoped && want.indexOf(' ') > 0
-								&& (!fromName.isEmpty() && want.endsWith(" " + fromName) || !fromId.isEmpty() && want.endsWith(" " + fromId)))
-						// "Mine 144 Tangleroots Jade Emeralds" (capture 2026-10-14): a mana world's flavour name for its own
-						// ore, the material last; only in that world (the rule names it), so "Emeralds" alone stays bare.
-						|| (worldScoped && want.indexOf(' ') > 0 && ORE_MATERIALS.contains(lastWord(want))
-								&& fromId.matches("((deepslate|nether) )?" + lastWord(want) + " ore") && !NOT_THE_MATERIAL.contains(fromId));
+				for (String want : members(n.singular())) {
+					if (namedMatches(want, id, name, worldScoped)) yield true;
+				}
+				yield false;
 			}
 		};
+	}
+
+	private static boolean namedMatches(String want, String id, String name, boolean worldScoped) {
+		String path = id == null ? "" : id.substring(id.indexOf(':') + 1);
+		String fromId = Singular.phrase(path);
+		String fromName = displayName(name);
+		String compactWant = want.replace(" ", "");
+		return fromId.equals(want) || fromId.equals(ID_ALIASES.get(want))
+				// "Mine 146 Nether Gold" (job, capture 2026-10-14): the ore block named without "ore".
+				|| fromId.equals(want + " ore")
+				|| ORE_MATERIALS.contains(want) && fromId.matches("((deepslate|nether) )?" + want + " ore")
+						&& !NOT_THE_MATERIAL.contains(fromId)
+				|| fromName.equals(want) || fromName.endsWith(" " + want)
+				// "Rattle Snakes" vs a "Rattlesnake" mob or a "rattlesnake" id
+				|| (want.indexOf(' ') > 0 && (fromName.replace(" ", "").equals(compactWant)
+						|| fromId.replace(" ", "").equals(compactWant)))
+				// "Magic Mooshrooms in Wolfhaven" vs the mooshroom named "Mooshroom": the world's prefix
+				|| (worldScoped && want.indexOf(' ') > 0
+						&& (!fromName.isEmpty() && want.endsWith(" " + fromName) || !fromId.isEmpty() && want.endsWith(" " + fromId)))
+				// "Mine 144 Tangleroots Jade Emeralds" (capture 2026-10-14): a mana world's flavour name for its own
+				// ore, the material last; only in that world (the rule names it), so "Emeralds" alone stays bare.
+				|| (worldScoped && want.indexOf(' ') > 0 && ORE_MATERIALS.contains(lastWord(want))
+						&& fromId.matches("((deepslate|nether) )?" + lastWord(want) + " ore") && !NOT_THE_MATERIAL.contains(fromId));
 	}
 
 	private static String lastWord(String s) {
