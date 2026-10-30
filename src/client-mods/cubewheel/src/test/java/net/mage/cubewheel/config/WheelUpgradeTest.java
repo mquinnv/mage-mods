@@ -21,16 +21,29 @@ class WheelUpgradeTest {
 		return nodes.stream().filter(n -> label.equals(n.label)).findFirst().orElseThrow(() -> new AssertionError(label));
 	}
 
+	@Test void thePartyQuestsSliceBecomesPartyWithQuestsInItsArc() {
+		WheelNode quests = WheelNode.leaf("Party quests", "minecraft:writable_book", "/pquests")
+				.withArc(WheelNode.leaf("Prestige", "minecraft:nether_star", "/prestige"));
+		List<WheelNode> w = new java.util.ArrayList<>(List.of(WheelNode.leaf("Jobs", "minecraft:iron_pickaxe", "/jobs"), quests));
+		assertTrue(WheelUpgrade.partySlice(w));
+		assertEquals("Party", quests.label);
+		assertEquals("/party", quests.command);
+		assertEquals(List.of("/pquests", "/prestige"), quests.arc.stream().map(n -> n.command).toList());
+		assertFalse(WheelUpgrade.partySlice(w)); // already done
+		assertEquals(List.of("Party", "Prestige"), List.of(w.get(1).label, w.get(1).arc.get(1).label));
+	}
+
 	@Test void newDefaultTopLevelOrder() {
 		List<WheelNode> w = DefaultConfig.wheel();
 		assertEquals(List.of("Sushi", "Homes", "Teleporter", "Jobs", "Shop", "Sell", "Vaults", "Heal",
-				"Isles", "Party quests", "Daily reward", "Boss event", "TPA", "More"), labels(w));
+				"Isles", "Party", "Daily reward", "Boss event", "TPA", "More"), labels(w));
 		for (WheelNode n : w) assertNull(n.outer, n.label + " still sticks out"); // every second entry is an arc now
 		assertEquals(List.of("Back"), labels(w.get(2).arc));
 		assertEquals("/heal", w.get(7).command);
 		assertEquals("minecraft:golden_apple", w.get(7).icon);
 		assertEquals(List.of("/fly", "/feed"), w.get(7).arc.stream().map(n -> n.command).toList());
-		assertEquals(List.of("Prestige", "Challenges"), labels(w.get(9).arc));
+		assertEquals("/party", w.get(9).command);
+		assertEquals(List.of("Party quests", "Prestige", "Challenges"), labels(w.get(9).arc));
 		assertEquals("vaults", w.get(6).dynamic);
 		assertTrue(w.get(6).asArc);
 		assertEquals(List.of("Party vault", "All vaults"), labels(w.get(6).children));

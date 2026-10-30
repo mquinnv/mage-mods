@@ -110,6 +110,7 @@ public final class ConfigStore {
 	 * the Tangleroot warp is singular everywhere ({@link WheelUpgrade#tanglerootSingular}, boss warp rules too).
 	 * Version 11: each isle in the Isles ring gains the default places under it that it lacks
 	 * ({@link WheelUpgrade#isleArcs}). Version 12: the Great Wolf's boss warp rule, and its place under Wolfhaven.
+	 * Version 13: the top-level Party quests slice becomes Party ({@link WheelUpgrade#partySlice}).
 	 */
 	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
@@ -163,6 +164,9 @@ public final class ConfigStore {
 			// Wolfhaven in the Isles ring.
 			if (c.events != null && c.events.bossWarps != null) c.events.bossWarps = withRuleFirst(c.events.bossWarps, "(?i)great ?wolf");
 			if (c.wheel != null && WheelUpgrade.isleArcs(c.wheel)) notes.add("wheel: Great Wolf under Wolfhaven in the Isles ring");
+		}
+		if (c.configVersion < 13 && c.wheel != null && WheelUpgrade.partySlice(c.wheel)) {
+			notes.add("wheel: the Party quests slice is now Party (/party), with Party quests in its arc");
 		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;

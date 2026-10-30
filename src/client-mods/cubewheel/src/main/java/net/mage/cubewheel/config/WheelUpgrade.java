@@ -175,6 +175,27 @@ public final class WheelUpgrade {
 		return changed;
 	}
 
+	/**
+	 * The version 13 upgrade (2026-10-30): the top-level Party quests slice becomes Party (/party), with Party quests
+	 * first in its arc, ahead of what the arc already had. Returns true if anything changed.
+	 */
+	public static boolean partySlice(List<WheelNode> wheel) {
+		if (wheel == null) return false;
+		for (WheelNode n : wheel) {
+			if (n == null || n.command == null || !key(n.command).equals("pquests")) continue;
+			List<WheelNode> arc = new ArrayList<>();
+			arc.add(WheelNode.leaf(n.label == null || n.label.isBlank() ? "Party quests" : n.label,
+					n.icon == null ? "minecraft:writable_book" : n.icon, n.command));
+			if (n.arc != null) for (WheelNode a : n.arc) if (a != null && !(a.command != null && key(a.command).equals("pquests"))) arc.add(a);
+			n.label = "Party";
+			n.icon = "minecraft:white_banner";
+			n.command = "/party";
+			n.arc = arc;
+			return true;
+		}
+		return false;
+	}
+
 	/** Every node of the tree: rings' and dynamic nodes' children and slices' outer tiers included. */
 	static List<WheelNode> walk(List<WheelNode> roots) {
 		List<WheelNode> out = new ArrayList<>();

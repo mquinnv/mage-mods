@@ -14,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 12;
+	public static final int CONFIG_VERSION = 13;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 	/** The progress popup's visible time and the bounds ConfigNormalizer clamps it to. */
@@ -139,7 +139,9 @@ public final class DefaultConfig {
 			leaf("Fly", "minecraft:feather", "/fly"),
 			leaf("Feed", "minecraft:cooked_beef", "/feed")));
 		w.add(isles());
-		w.add(leaf("Party quests", "minecraft:writable_book", "/pquests").withArc(
+		// Party: the party menu on a click, its quests first in the arc (Michael 2026-10-30).
+		w.add(leaf("Party", "minecraft:white_banner", "/party").withArc(
+			leaf("Party quests", "minecraft:writable_book", "/pquests"),
 			leaf("Prestige", "minecraft:nether_star", "/prestige"),
 			leaf("Challenges", "minecraft:target", "/challenges")));
 		// Rewards: the daily reward (/cow) on a click, crates (virtual keys) beside it.
