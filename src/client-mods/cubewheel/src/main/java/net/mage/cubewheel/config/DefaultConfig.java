@@ -290,12 +290,16 @@ public final class DefaultConfig {
 
 	/** The Status panel: top left, first, so Jobs and Tracker stack under it. */
 	/**
-	 * Centred above the hotbar, where schrumboHUD's grid sat: 62 clears the hotbar (22), the XP bar, two rows of hearts and
-	 * the armour row. Bottom right is where minimaps go (Michael's is there, 2026-10-03).
+	 * Centred above the hotbar, where schrumboHUD's grid sat: 76 clears the hotbar (22), the XP bar, two rows of hearts,
+	 * the armour row and the action bar the server writes to (72 px up at most); 62 sat on the action bar (Michael
+	 * 2026-10-29). Bottom right is where minimaps go (Michael's is there, 2026-10-03).
 	 */
 	public static CubeWheelConfig.Position charmsPosition() {
-		return new CubeWheelConfig.Position("bottom_center", 0, 62);
+		return new CubeWheelConfig.Position("bottom_center", 0, 76);
 	}
+
+	/** The pre-2026-10-29 Charms offset; a bottom-centre panel still at it is upgraded to {@link #charmsPosition}. */
+	public static final int OLD_CHARMS_Y = 62;
 
 	/** Top left, under Jobs (it registers after it): "bottom left" meant below the other panels, not the chat corner (Michael 2026-10-08). */
 	public static CubeWheelConfig.Position focusPosition() {

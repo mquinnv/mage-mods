@@ -34,6 +34,16 @@ class ConfigNormalizerTest {
 		assertEquals("", c.quick.command(2));
 	}
 
+	@Test void theCharmsPanelLeavesTheOldDefaultThatSatOnTheActionBar() {
+		CubeWheelConfig c = DefaultConfig.create();
+		c.charms.position = new CubeWheelConfig.Position("bottom_center", 0, DefaultConfig.OLD_CHARMS_Y);
+		ConfigNormalizer.normalize(c, new ArrayList<>());
+		assertEquals(76, c.charms.position.y);
+		c.charms.position = new CubeWheelConfig.Position("bottom_center", 0, 90); // moved by hand: kept
+		ConfigNormalizer.normalize(c, new ArrayList<>());
+		assertEquals(90, c.charms.position.y);
+	}
+
 	@Test void toastSecondsAreClampedAndAMissingSectionIsFilled() {
 		CubeWheelConfig c = DefaultConfig.create();
 		assertTrue(c.toast.enabled);

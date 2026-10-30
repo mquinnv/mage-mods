@@ -48,6 +48,10 @@ public final class ConfigNormalizer {
 		if (c.svas == null) c.svas = new CubeWheelConfig.Svas();
 		if (c.charms == null) c.charms = new CubeWheelConfig.Charms();
 		c.charms.position = normalizePosition(c.charms.position, DefaultConfig.charmsPosition());
+		CubeWheelConfig.Position cp = c.charms.position;
+		if ("bottom_center".equals(cp.corner) && cp.x == 0 && cp.y == DefaultConfig.OLD_CHARMS_Y) {
+			c.charms.position = DefaultConfig.charmsPosition();
+		}
 		if (c.focus == null) c.focus = new CubeWheelConfig.Focus();
 		c.focus.position = normalizePosition(c.focus.position, DefaultConfig.focusPosition());
 		if (c.skills == null) c.skills = new CubeWheelConfig.Skills();
