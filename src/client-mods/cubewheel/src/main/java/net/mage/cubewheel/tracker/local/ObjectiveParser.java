@@ -49,8 +49,13 @@ public final class ObjectiveParser {
 			"wart", "cocoa", "cocoa bean", "sweet berry", "berry", "melon", "pumpkin");
 
 	private static final Set<String> FISH_WORDS = Set.of("cod", "salmon", "pufferfish");
-	/** A trailing "while fishing" (job listings) makes any "catch" a fishing objective. */
-	private static final Pattern WHILE_FISHING = Pattern.compile("(?i)\\s+while\\s+fishing\\s*$");
+	/**
+	 * A closing "while fishing" (job listings) makes any "catch" a fishing objective. Where the fish lives may follow
+	 * ("… while fishing (Found in Wolfhaven)", "… while fishing in Jungles Biomes"); the species alone decides.
+	 */
+	private static final Pattern WHILE_FISHING = Pattern.compile("(?i)\\s+while\\s+fishing\\b.*$");
+	/** The rarity some jobs name before the species ("Catch 1/5 Uncommon Lobster …"); a catch's species has none. */
+	private static final Pattern FISH_RARITY = Pattern.compile("(?i)(?<=\\d )(?:common|uncommon|rare|legendary)\\s+");
 	/** Private-use glyphs (ManaCube's item icons, e.g. U+F895 before "Goldfish") are not words. */
 	private static final Pattern PRIVATE_USE = Pattern.compile("[\\p{Co}]");
 
@@ -64,7 +69,7 @@ public final class ObjectiveParser {
 		// Fishing job listings: "Catch 1/3  Goldfish while fishing" (the icon glyph already removed).
 		Matcher wf = WHILE_FISHING.matcher(text);
 		boolean whileFishing = wf.find();
-		if (whileFishing) text = text.substring(0, wf.start());
+		if (whileFishing) text = FISH_RARITY.matcher(text.substring(0, wf.start())).replaceFirst("");
 		Matcher m = GRAMMAR.matcher(text);
 		if (!m.matches()) return Optional.empty();
 		long target;

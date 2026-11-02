@@ -116,6 +116,21 @@ class FishCatchTest {
 				parse("Catch 5 Crabs while fishing"));
 	}
 
+	/** Jobs now name where the fish lives; the species alone decides, as the fish only lives there. */
+	@Test void whereAFishIsFoundFollowsWhileFishing() {
+		for (String[] job : new String[][] {
+				{ "Catch 3/4  Chub while fishing (Found in Wolfhaven)", "Chub" },
+				{ "Catch 3/25  ElectricEel while fishing (Found in Tangleroot)", "ElectricEel" },
+				{ "Catch 0/9  RedSeaShroom while fishing (Found in Burninglands)", "RedSeaShroom" },
+				{ "Catch 1/5 Uncommon Lobster while fishing in Jungles Biomes", "Lobster" } }) {
+			CounterRule rule = parse(job[0]).orElseThrow();
+			assertEquals(Kind.FISH, rule.kind(), job[0]);
+			assertEquals(new AnyWorld(), rule.world(), job[0]);
+			assertTrue(RuleMatcher.matches(rule, caught(job[1])), job[0]);
+			assertFalse(RuleMatcher.matches(rule, caught("Flounder")), job[0]);
+		}
+	}
+
 	@Test void catchNFishStaysAnyFish() {
 		assertEquals(Optional.of(new CounterRule(Kind.FISH, 1000, new Any(), new AnyWorld())), parse("Catch 1,000 Fish"));
 		assertEquals(Optional.of(new CounterRule(Kind.FISH, 25, new Any(), new AnyWorld())), parse("Catch 25 Fish"));
