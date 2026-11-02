@@ -65,6 +65,18 @@ class NetherBlocksTest {
 		assertCounts("Harvest 10 Shroomlights", "minecraft:shroomlight", "Shroomlight", Set.of(), false, false);
 	}
 
+	/** "Mine 72/183 Morend Crimson Trees" (capture 2026-11-01): the trees are hyphae, in Morend only. */
+	@Test void morendCrimsonTreesAreHyphae() {
+		WorldInfo morend = WorldResolver.resolve("minecraft:morend", List.of(), WORLDS);
+		CounterRule r = ObjectiveParser.parse(obj("Mine 72/183 Morend Crimson Trees"), WORLDS).orElseThrow();
+		for (String id : List.of("minecraft:crimson_hyphae", "minecraft:stripped_crimson_hyphae")) {
+			assertEquals(true, RuleMatcher.matches(r, new Signal.BlockBroken(id, "", Set.of("logs"), false, false, false, morend)));
+			assertEquals(false, RuleMatcher.matches(r, new Signal.BlockBroken(id, "", Set.of("logs"), false, false, false, NETHER)));
+		}
+		assertEquals(false, RuleMatcher.matches(r, new Signal.BlockBroken("minecraft:oak_log", "", Set.of("logs"), false, false,
+				false, morend)));
+	}
+
 	private static void assertCounts(String line, String id, String name, Set<String> groups, boolean crop,
 			boolean mature) {
 		CounterRule r = ObjectiveParser.parse(obj(line), WORLDS).orElseThrow(() -> new AssertionError(line));

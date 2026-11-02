@@ -36,7 +36,9 @@ public final class RuleMatcher {
 			"wheat", java.util.Set.of("minecraft:hay_block"),
 			// Icehaven "Mine … Ice Crystals": the crystal is a plain ice block (capture 2026-10-04); packed/blue
 			// ice stay out until seen.
-			"ice crystal", java.util.Set.of("minecraft:ice"));
+			"ice crystal", java.util.Set.of("minecraft:ice"),
+			// Morend "Mine … Crimson Trees": the trees are hyphae, not stems (capture 2026-11-01); stems stay out until seen.
+			"crimson tree", java.util.Set.of("minecraft:crimson_hyphae", "minecraft:stripped_crimson_hyphae"));
 
 	/**
 	 * Objective nouns naming a family of mobs, none of which carries the family's name: "Slay 78 Serpents in Sandara"
