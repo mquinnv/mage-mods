@@ -353,7 +353,8 @@ public final class RadialScreen extends Screen {
 		// Depth 2: a lighter band just outside the ring, where arc entries sit, whenever any slice has an arc.
 		boolean anyArc = false;
 		for (int i = 0; i < entries.size(); i++) anyArc |= arcAt(i) != null;
-		if (anyArc) fillRing(g, cx, cy, ri + half + ARC_SPACING, ri + half, BAND2);
+		boolean quiet = CubeWheelClient.config().current().quietWheel;
+		if (anyArc && (!quiet || arcOpen >= 0)) fillRing(g, cx, cy, ri + half + ARC_SPACING, ri + half, BAND2);
 		// The hovered slice lights up its whole wedge of the ring.
 		if (hovered >= 0 && hoveredTier == 0 && hoveredArc < 0) {
 			double w = sliceHalfWidth(dirs, hovered);
@@ -379,7 +380,7 @@ public final class RadialScreen extends Screen {
 			// Short chains stay visible; long ones show their first tier until hovered. An open arc hides the tiers
 			// of the slices it covers (dots mark that they are there).
 			boolean coveredByArc = i != arcOpen && underArc(dirs[i]);
-			int shown = i == hovered ? count : coveredByArc ? 0 : count <= 2 ? count : 1;
+			int shown = RadialMath.shownTiers(count, i == hovered, coveredByArc, quiet);
 			if (shown == 0 && count > 0 || i != arcOpen && arcAt(i) != null) moreDots(g, cx, cy, dirs[i], arcAt(i) != null ? arcAt(i).size() : count);
 			boolean roomy = tierSteps[i] >= labelSteps[i] - 0.5;
 			WheelNode outer = node.outer;

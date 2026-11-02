@@ -13,6 +13,8 @@ public final class CubeWheelConfig {
 	public List<String> serverHosts;
 	public int vaultCount = 3;
 	public int listThreshold = 8;
+	/** Quiet wheel: a slice's outer entries stay hidden until the slice is pointed at. */
+	public boolean quietWheel;
 	public Tracker tracker = new Tracker();
 	/** Booster countdowns parsed from chat. */
 	public Boosters boosters = new Boosters();

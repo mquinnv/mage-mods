@@ -109,6 +109,10 @@ public final class SettingsSpec {
 								toggle(d, "enabled", "Enabled",
 										"Master switch for the command wheel: when off, the wheel key does nothing.",
 										c -> c.enabled, (c, v) -> c.enabled = v),
+								toggle(d, "quietWheel", "Quiet wheel",
+										"The wheel shows only its ring. Point at a slice and what it has further out appears"
+												+ " beyond it; keep moving out to pick one, or move away and it hides again.",
+										c -> c.quietWheel, (c, v) -> c.quietWheel = v),
 								textList(d, "serverHosts", "Server hosts",
 										"CubeWheel only acts on these servers. A host also matches its subdomains"
 												+ " (manacube.com matches play.manacube.com).",

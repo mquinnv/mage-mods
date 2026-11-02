@@ -73,6 +73,16 @@ public final class RadialMath {
 	}
 
 	/**
+	 * How many of a slice's {@code count} outer tiers are drawn: all while it is hovered; otherwise none under an open
+	 * arc or on a {@code quiet} wheel, all of a short chain, the first of a long one.
+	 */
+	public static int shownTiers(int count, boolean hovered, boolean coveredByArc, boolean quiet) {
+		if (hovered) return count;
+		if (coveredByArc || quiet) return 0;
+		return count <= 2 ? count : Math.min(count, 1);
+	}
+
+	/**
 	 * How far from (cx, cy) the screen edge is in direction {@code degrees}, keeping {@code margin} clear of it.
 	 */
 	public static double reach(double cx, double cy, double degrees, double width, double height, double margin) {

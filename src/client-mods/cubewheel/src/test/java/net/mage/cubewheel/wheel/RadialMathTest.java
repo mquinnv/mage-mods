@@ -17,6 +17,19 @@ class RadialMathTest {
 		assertEquals(34, RadialMath.labelStep(90, 2, 16, 2, 0.35, 34), 1e-9);
 	}
 
+	@Test void aQuietWheelShowsOuterTiersOnlyOnTheHoveredSlice() {
+		assertEquals(3, RadialMath.shownTiers(3, true, false, true));
+		assertEquals(0, RadialMath.shownTiers(3, false, false, true));
+		assertEquals(0, RadialMath.shownTiers(1, false, false, true));
+	}
+
+	@Test void aNormalWheelShowsShortChainsAndTheStartOfLongOnes() {
+		assertEquals(2, RadialMath.shownTiers(2, false, false, false));
+		assertEquals(1, RadialMath.shownTiers(3, false, false, false));
+		assertEquals(0, RadialMath.shownTiers(3, false, true, false));
+		assertEquals(0, RadialMath.shownTiers(0, false, false, false));
+	}
+
 	@Test void deadZoneReturnsMinusOne() { assertEquals(-1, RadialMath.sliceAt(2, 3, 8, 10)); }
 	@Test void emptyWheel() { assertEquals(-1, RadialMath.sliceAt(0, -50, 0, 10)); }
 	@Test void upIsZero() { assertEquals(0, RadialMath.sliceAt(0, -50, 8, 10)); }
