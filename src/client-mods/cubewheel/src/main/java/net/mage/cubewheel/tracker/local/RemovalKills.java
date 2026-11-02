@@ -122,6 +122,10 @@ public final class RemovalKills {
 	private final Map<Integer, Long> aimed = new LinkedHashMap<>();
 	/** Name tags that named a counted kill, by tag id: the entity that counted with it (see {@link #tagUsedByOther}). */
 	private final Map<Integer, Integer> tagUsers = new LinkedHashMap<>();
+	/** Recycled-hitbox ids removed and not hit since (see {@link #left}). */
+	private final Set<Integer> left = new LinkedHashSet<>();
+	/** Hitbox ids the server has moved on to another mob at least once (see {@link #recycled}). */
+	private final Set<Integer> recycled = new LinkedHashSet<>();
 
 	/** Remembers what was found for hit entity {@code id} ({@code hint} may be null: looked, found nothing). */
 	public void remember(int id, Hint hint) {
@@ -246,6 +250,7 @@ public final class RemovalKills {
 	 */
 	public void hit(int id, long at) {
 		tick(at);
+		returned(id);
 		used(id, at);
 		attacked.remove(id);
 		attacked.add(id);
@@ -258,6 +263,7 @@ public final class RemovalKills {
 	 */
 	public void used(int id, long at) {
 		tick(at);
+		returned(id);
 		if (firstHit.putIfAbsent(id, at) != null) return;
 		trim(firstHit.keySet(), MAX_HINTS);
 	}
@@ -275,10 +281,54 @@ public final class RemovalKills {
 	 */
 	public void aimed(int id, long at) {
 		tick(at);
+		returned(id);
 		used(id, at);
 		aimed.remove(id);
 		aimed.put(id, at);
 		trim(aimed.keySet(), MAX_HINTS);
+	}
+
+	/**
+	 * Invisible Mob hitbox {@code id} was removed. ManaCube keeps one slime id per session and moves it from mob to mob
+	 * (id 23511 through four worlds on 2026-10-14, 18627 for every Dwarven Miner on 2026-10-31), so a removal ends one
+	 * mob's use of the id, not the id. What is known about it stays until it is next touched: a removal still waiting
+	 * for its loot line needs it.
+	 */
+	public void left(int id) {
+		left.add(id);
+		trim(left, MAX_HINTS);
+	}
+
+	/** Was {@code id} removed with no hit since? Removing it again is the hitbox moving on, never a kill. */
+	public boolean hasLeft(int id) {
+		return left.contains(id);
+	}
+
+	/**
+	 * Has hitbox {@code id} served another mob before this one? Its removal is then a kill only if a loot line confirms
+	 * it: the slime also goes when it moves to a neighbour, with no loot and no soul (capture 2026-10-31).
+	 */
+	public boolean recycled(int id) {
+		return recycled.contains(id);
+	}
+
+	/** Does the removal of {@code id} need a loot line to be a kill (a staff sweep, a recycled hitbox)? */
+	public boolean lootConfirms(int id) {
+		return aimedOnly(id) || recycled(id);
+	}
+
+	/** The id came back after {@link #left}: it is another mob now, and nothing known about the last one holds. */
+	private void returned(int id) {
+		if (!left.remove(id)) return;
+		recycled.add(id);
+		trim(recycled, MAX_HINTS);
+		hints.remove(id);
+		models.remove(id);
+		settled.remove(id);
+		attacked.remove(id);
+		aimed.remove(id);
+		firstHit.remove(id);
+		fallbacks.remove(id);
 	}
 
 	/** Was entity {@code id} ever swept by a staff shot (within memory)? */
@@ -446,6 +496,8 @@ public final class RemovalKills {
 		attacked.clear();
 		aimed.clear();
 		tagUsers.clear();
+		left.clear();
+		recycled.clear();
 		settled.clear();
 		pending.clear();
 		lootLines.clear();

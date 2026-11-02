@@ -486,6 +486,7 @@ public final class LocalSignals {
 			removals.tick(nowMs); // settled marks and probes older than STALE_MS no longer hold
 			for (int i = 0; i < ids.size(); i++) {
 				int id = ids.getInt(i);
+				if (removals.hasLeft(id)) continue; // a recycled hitbox moving on, untouched since it last went
 				// attacked(): hit at some point (a boss fight shared with others), long after kills forgot the hit.
 				// aimed(): swept by a staff shot (an ability weapon: the client never attacks what it kills).
 				if (!kills.tracks(id) && !stacks.watching(id) && !removals.attacked(id) && !removals.aimed(id)) continue;
@@ -503,7 +504,9 @@ public final class LocalSignals {
 							: removals.awaitingLoot(id) ? "local hit, pending: waiting for loot line"
 							: removals.settled(id) ? "local hit, already counted or refused (settled " + removals.settledAgeMs(id) + " ms ago)"
 							: !survivalMode(mc.player) ? "local hit, not in survival mode" : null;
-					if (why == null && removals.claim(id, true, true, inHitboxWindow(mc.player.getId()))) {
+					if (why == null && removals.recycled(id)) {
+						onStaffKill(entity, nowMs);
+					} else if (why == null && removals.claim(id, true, true, inHitboxWindow(mc.player.getId()))) {
 						onRemovalKill(entity);
 					} else if (why != null && !recent && near && removals.aimedOnly(id) && removals.aimedWithin(id, nowMs)
 							&& !removals.settled(id) && survivalMode(mc.player)) {
@@ -516,6 +519,7 @@ public final class LocalSignals {
 					} else {
 						captureEntity("removed", entity, why == null ? "local hit" : why);
 					}
+					if (entity instanceof Mob && entity.isInvisible()) removals.left(id);
 				}
 				stacks.forget(id);
 			}
@@ -585,13 +589,13 @@ public final class LocalSignals {
 	}
 
 	private static void creditLoot(RemovalKills.Removed r, List<String> loot, String from) {
-		if (removals.aimedOnly(r.entityId()) && removals.tagUsedByOther(r.entityId())) {
+		if (removals.lootConfirms(r.entityId()) && removals.tagUsedByOther(r.entityId())) {
 			// While this aimed hitbox waited for its loot line, a kill claimed its tag: one model, counted once.
-			capture("removed", r.typeId(), r.name(), "staff aim, no local hit; tag already named a counted kill while waiting"
+			capture("removed", r.typeId(), r.name(), how(r.entityId()) + "; tag already named a counted kill while waiting"
 					+ " for the loot line (" + from + " " + loot + "): the model counts once", r.world(), List.of());
 			return;
 		}
-		if (removals.aimedOnly(r.entityId())) {
+		if (removals.lootConfirms(r.entityId())) {
 			// A staff kill the loot line just confirmed: its name tag, found at aim time, names it (method b).
 			Optional<RemovalKills.Hint> hint = removals.hint(r.entityId());
 			if (hint.isPresent() && removals.nameCounts(r.entityId(), hint.get())) {
@@ -600,7 +604,7 @@ public final class LocalSignals {
 				Signal.MobKilled signal = new Signal.MobKilled("", name, Set.of("mob", "monster"), 1, r.world());
 				List<LocalCounter.Contribution> added = count(signal);
 				killCounted();
-				capture("kill", r.typeId(), h.name(), "removal, method " + h.method().code + " (" + h.source() + "), staff aim, "
+				capture("kill", r.typeId(), h.name(), "removal, method " + h.method().code + " (" + h.source() + "), " + how(r.entityId()) + ", "
 						+ from + " " + loot + " confirms", r.world(), added);
 				return;
 			}
@@ -739,6 +743,7 @@ public final class LocalSignals {
 	 * A mob swept by a staff shot went within the window, near us, with no local hit: a kill if a loot line follows
 	 * ({@link RemovalKills#awaitLoot}, resolved in {@link #creditLoot}), named by the hint found at aim time (probed
 	 * again now if there was none). Someone else's kill in our cone shows us no loot line and is dropped on expiry.
+	 * A recycled hitbox ({@link RemovalKills#recycled}) goes the same way, hit or not: no line, it only moved on.
 	 */
 	private static void onStaffKill(Entity entity, long now) {
 		WorldInfo at = world();
@@ -755,17 +760,23 @@ public final class LocalSignals {
 		if (removals.tagUsedByOther(id)) {
 			// The same model's other hitbox, swept by the shot too: its sword kill already counted with this tag.
 			removals.settle(id);
-			captureEntity("removed", entity, "staff aim, no local hit; tag #" + hint.get().sourceId()
+			captureEntity("removed", entity, how(id) + "; tag #" + hint.get().sourceId()
 					+ " already named a counted kill: the model counts once");
 			return;
 		}
 		removals.settle(id);
-		removals.settleModel(id, sibling -> removals.aimedWithin(sibling, now));
+		java.util.function.IntPredicate hitNow = inHitboxWindow(Minecraft.getInstance().player.getId());
+		removals.settleModel(id, sibling -> removals.aimedWithin(sibling, now) || hitNow.test(sibling));
 		boolean model = ModelHitbox.isModelHitbox(NearbyProbe.hitbox(entity));
 		RemovalKills.Removed r = new RemovalKills.Removed(id, typeId, hint.map(RemovalKills.Hint::name).orElse(rawName(entity)), at, model);
-		captureEntity("removed", entity, "staff aim, no local hit; waiting for loot line"
+		captureEntity("removed", entity, how(id) + "; waiting for loot line"
 				+ hint.map(h -> "; named " + h.name() + " (" + h.source() + ")").orElse("; no name"));
 		removals.awaitLoot(r, now).ifPresent(loot -> creditLoot(r, loot));
+	}
+
+	/** Why the removal of {@code id} waits for a loot line, for capture. */
+	private static String how(int id) {
+		return removals.aimedOnly(id) ? "staff aim, no local hit" : "recycled hitbox";
 	}
 
 	/** UseItemCallback (client side): reeling in while the bobber is biting is a catch. */
@@ -1025,9 +1036,10 @@ public final class LocalSignals {
 			if (active) pollActionBar(mc); // before expiry: a line that just arrived still names a waiting removal
 			if (removals.awaitingLoot()) {
 				for (RemovalKills.Removed r : removals.expire(System.currentTimeMillis())) {
-					if (removals.aimedOnly(r.entityId())) {
+					if (removals.lootConfirms(r.entityId())) {
 						// Swept by our staff shot and gone, but no loot line for us: someone else's kill in our cone.
-						capture("removed", r.typeId(), r.name(), "staff aim, no loot line within " + RemovalKills.LOOT_WAIT_MS
+						// A recycled hitbox: it moved to another mob.
+						capture("removed", r.typeId(), r.name(), how(r.entityId()) + ", no loot line within " + RemovalKills.LOOT_WAIT_MS
 								+ " ms: not our kill", r.world(), List.of());
 						continue;
 					}
