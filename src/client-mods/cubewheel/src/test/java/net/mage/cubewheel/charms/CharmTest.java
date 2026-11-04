@@ -58,6 +58,20 @@ class CharmTest {
 		assertEquals("$1.2M", mobs.text());
 	}
 
+	/**
+	 * The Witches Talisman (auction house, capture 2026-10-15) boosts fishing and sells nothing, yet "fish" in its lore
+	 * made it a second cod under "Auto$" (Michael 2026-11-03: "why are two of my sell indicators fish?"). It is an
+	 * effect charm that works from any slot: a rod and its first bonus.
+	 */
+	@Test void aBoostingTalismanIsAnEffectNotASeller() {
+		Charm witches = parse("WITCHES TALISMAN", "Unbreakable", "Witches Talisman", "", "ITEM EFFECTS: (Any Slot)",
+				"➟ Earn +20% Fishing McMMO XP (2m)", "Catch 8/100 Fish to Activate", "", "➟ Earn 2x Rare Fish (5m)",
+				"Catch 8/500 Fish to Activate", "", "Season Vault Access ✔");
+		assertEquals(Charm.Kind.EFFECT, witches.kind());
+		assertEquals("minecraft:fishing_rod", witches.icon());
+		assertEquals("+20%", witches.text());
+	}
+
 	@Test void otherItemsAreNotCharms() {
 		assertEquals(Optional.empty(), Charm.parse("Diamond Hoe", List.of()));
 		assertEquals(Optional.empty(), Charm.parse("Sell Booster", List.of("Drink this potion to receive a")));

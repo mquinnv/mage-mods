@@ -59,6 +59,9 @@ public final class CharmsPanel {
 				Panel.Piece piece = new Panel.Piece(Icons.stack(charm.icon()), charm.text(), worn ? Panel.WHITE : DIM);
 				if (worn) amulets.add(0, piece);
 				else amulets.add(piece);
+			} else if (charm.kind() == Charm.Kind.EFFECT) {
+				// Active from any slot, so bright wherever it sits; not a seller, so not under "Auto$".
+				amulets.add(new Panel.Piece(Icons.stack(charm.icon()), charm.text(), Panel.WHITE));
 			} else {
 				// Just what it sells, as an icon after one "Auto$" label (lifetime earnings read as noise).
 				talismans.add(new Panel.Piece(Icons.stack(charm.icon()), "", Panel.YELLOW));

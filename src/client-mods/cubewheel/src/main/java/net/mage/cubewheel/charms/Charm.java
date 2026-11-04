@@ -16,8 +16,13 @@ public record Charm(Kind kind, String icon, String text) {
 	public enum Kind {
 		/** Worn in the bottom-right inventory slot ("Equip a Pendant by placing in the bottom right slot"). */
 		AMULET,
-		/** Works from anywhere in the inventory. */
-		TALISMAN
+		/** Sells for you from anywhere in the inventory ("Automatically sells harvested crops"). */
+		TALISMAN,
+		/**
+		 * A talisman that boosts rather than sells ("ITEM EFFECTS: (Any Slot)", the Witches Talisman's fishing bonuses,
+		 * capture 2026-10-15): read like an amulet, but active from any slot.
+		 */
+		EFFECT
 	}
 
 	private static final Pattern FORMATTING = Pattern.compile("§.");
@@ -37,10 +42,14 @@ public record Charm(Kind kind, String icon, String text) {
 			if (effect == null && e.find()) effect = e.group(1).trim();
 		}
 		String text = all.toString().toLowerCase(Locale.ROOT);
-		// The name says what it sells as often as the lore does ("Slayer Talisman").
-		if (n.contains("talisman")) return Optional.of(talisman(n + " " + text, all.toString()));
+		if (n.contains("talisman")) {
+			// The name says what it sells as often as the lore does ("Slayer Talisman"); a talisman that sells nothing
+			// (the Witches Talisman: "Catch 8/100 Fish to Activate") is not a fish seller but an effect charm.
+			if (text.contains("sell")) return Optional.of(talisman(n + " " + text, all.toString()));
+			return Optional.of(amulet(Kind.EFFECT, text, effect));
+		}
 		if (n.contains("amulet") || n.contains("pendant") || text.contains("equip a pendant")) {
-			return Optional.of(amulet(text, effect));
+			return Optional.of(amulet(Kind.AMULET, text, effect));
 		}
 		return Optional.empty();
 	}
@@ -59,17 +68,18 @@ public record Charm(Kind kind, String icon, String text) {
 		return new Charm(Kind.TALISMAN, icon, "$" + earned);
 	}
 
-	private static Charm amulet(String lower, String effect) {
+	private static Charm amulet(Kind kind, String lower, String effect) {
 		Matcher p = PERCENT.matcher(lower);
 		if (p.find()) {
 			String icon = lower.contains("undead") ? "minecraft:zombie_head"
+					: lower.contains("fish") ? "minecraft:fishing_rod"
 					: lower.contains("take") ? "minecraft:shield"
 					: "minecraft:iron_sword";
-			return new Charm(Kind.AMULET, icon, p.group(1));
+			return new Charm(kind, icon, p.group(1));
 		}
-		if (lower.contains("invisible")) return new Charm(Kind.AMULET, "minecraft:ender_eye", "invis");
+		if (lower.contains("invisible")) return new Charm(kind, "minecraft:ender_eye", "invis");
 		String t = effect == null ? "?" : effect.length() > 8 ? effect.substring(0, 8) + "…" : effect;
-		return new Charm(Kind.AMULET, "minecraft:amethyst_shard", t);
+		return new Charm(kind, "minecraft:amethyst_shard", t);
 	}
 
 	/** 950 -> "950", 217633.69 -> "217k", 1234567 -> "1.2M". */
