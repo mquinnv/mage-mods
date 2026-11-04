@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "hotbarcycle",
+  "version": "${version}",
+
+  "name": "Hotbar Cycle",
+  "description": "Navigate your inventory with a Stardew Valley inspired hotbar cycling method.",
+  "authors": [
+    "nyuppo"
+  ],
+  "contributors": [
+    "Estecka",
+    "darmiel",
+    "hugeblank",
+    "tobber07"
+  ],
+  "contact": {
+    "homepage": "https://modrinth.com/mod/hotbarcycle",
+    "sources": "https://github.com/Estecka/mc-hotbarcycle",
+    "issues":  "https://github.com/Estecka/mc-hotbarcycle/issues"
+  },
+
+  "license": "MIT",
+  "icon": "assets/hotbarcycle/icon.png",
+
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.github.nyuppo.HotbarCycleClient"
+    ],
+    "modmenu": [
+      "com.github.nyuppo.config.ModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "hotbarcycle.mixins.json"
+  ],
+
+  "depends": {
+    "minecraft": "^26.1 <26.3",
+    "fabricloader": ">=0.19.3",
+    "fabric-api": "*",
+    "java": ">=25"
+  }
+}
