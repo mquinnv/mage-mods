@@ -168,6 +168,9 @@ public final class ConfigStore {
 		if (c.configVersion < 13 && c.wheel != null && WheelUpgrade.partySlice(c.wheel)) {
 			notes.add("wheel: the Party quests slice is now Party (/party), with Party quests in its arc");
 		}
+		if (c.configVersion < 14 && c.wheel != null && WheelUpgrade.sandaraPond(c.wheel)) {
+			notes.add("wheel: the pond under Sandara now goes to /warp sandarapond (the main pond stays under More › Warps › Server warps)");
+		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;
 	}

@@ -193,8 +193,8 @@ class WheelUpgradeTest {
 		assertEquals(List.of("Outside", "Volcano Golem"), labels(isles.children.get(1).arc));
 		assertEquals("/warp tangleroot", isles.children.get(1).command); // singular on the server
 		assertEquals("/warp tanglerootoutside", isles.children.get(1).arc.get(0).command);
-		assertEquals(List.of("Mana Pond"), labels(isles.children.get(2).arc)); // "we need at least the pond on sandara"
-		assertEquals("/warp pond", isles.children.get(2).arc.get(0).command);
+		assertEquals(List.of("Sandara Pond"), labels(isles.children.get(2).arc)); // "we need at least the pond on sandara"
+		assertEquals("/warp sandarapond", isles.children.get(2).arc.get(0).command); // not the main /warp pond
 		assertEquals(List.of("Cursed Witch"), labels(isles.children.get(4).arc));
 		assertEquals("/isles", isles.children.get(6).command);
 	}
@@ -208,9 +208,37 @@ class WheelUpgradeTest {
 		w.add(ring);
 		assertTrue(WheelUpgrade.isleArcs(w));
 		assertEquals(List.of("Mana Golem", "Great Wolf"), labels(ring.children.get(0).arc)); // the one it had is not doubled
-		assertEquals(List.of("Mine", "Mana Pond"), labels(ring.children.get(1).arc)); // yours first, the default appended
+		assertEquals(List.of("Mine", "Sandara Pond"), labels(ring.children.get(1).arc)); // yours first, the default appended
 		assertNull(ring.children.get(2).arc); // nothing under Icehaven by default
 		assertTrue(!WheelUpgrade.isleArcs(w)); // once
+	}
+
+	// "the pond under sandara is taking me to the main /manapond ... the one under sandara should go to sandarapond"
+	@Test void aVersion13SandaraPondGoesToTheSandaraPondNotTheMainOne() {
+		List<WheelNode> w = new java.util.ArrayList<>();
+		WheelNode ring = WheelNode.ring("Isles", "minecraft:filled_map",
+				WheelNode.leaf("Sandara", null, "/warp sandara").withArc(
+						WheelNode.leaf("Mine", null, "/warp mysandara"),
+						WheelNode.leaf("Mana Pond", "minecraft:water_bucket", "/warp pond")));
+		w.add(ring);
+		WheelNode serverPond = WheelNode.leaf("Pond", null, "/warp pond");
+		w.add(WheelNode.ring("Server warps", null, serverPond));
+		assertTrue(WheelUpgrade.sandaraPond(w));
+		assertEquals(List.of("Mine", "Sandara Pond"), labels(ring.children.get(0).arc)); // in place, order kept
+		assertEquals("/warp sandarapond", ring.children.get(0).arc.get(1).command);
+		assertEquals("/warp pond", serverPond.command); // the main pond, outside the Isles ring, is untouched
+		assertTrue(!WheelUpgrade.sandaraPond(w)); // once
+	}
+
+	@Test void aSandaraArcThatAlreadyHasTheSandaraPondDropsTheMainPond() {
+		List<WheelNode> w = new java.util.ArrayList<>();
+		WheelNode ring = WheelNode.ring("Isles", null,
+				WheelNode.leaf("Sandara", null, "/warp sandara").withArc(
+						WheelNode.leaf("Mana Pond", null, "/warp pond"),
+						WheelNode.leaf("Sandara Pond", null, "/warp sandarapond")));
+		w.add(ring);
+		assertTrue(WheelUpgrade.sandaraPond(w));
+		assertEquals(List.of("Sandara Pond"), labels(ring.children.get(0).arc));
 	}
 
 	@Test void theOldIslesSliceBecomesTheRingKeepingAnIsleWarpYouAdded() {

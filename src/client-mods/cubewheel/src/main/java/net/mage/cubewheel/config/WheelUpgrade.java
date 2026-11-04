@@ -159,6 +159,39 @@ public final class WheelUpgrade {
 	}
 
 	/**
+	 * Version 14 (2026-11-04, "the one under sandara should go to sandarapond"): under the Sandara isle of an Isles
+	 * ring, "/warp pond" (the main Mana Pond, which keeps its own entry under More › Warps › Server warps) becomes
+	 * "/warp sandarapond", and the old default label "Mana Pond" becomes "Sandara Pond". When that arc already has
+	 * "/warp sandarapond" (an earlier upgrade appended it) the old entry is dropped instead. Returns true if anything
+	 * changed.
+	 */
+	public static boolean sandaraPond(List<WheelNode> wheel) {
+		if (wheel == null) return false;
+		boolean changed = false;
+		for (WheelNode ring : walk(wheel)) {
+			if (ring.children == null || ring.dynamic != null || !"Isles".equalsIgnoreCase(ring.label == null ? "" : ring.label)) continue;
+			for (WheelNode isle : ring.children) {
+				if (isle == null || isle.command == null || isle.arc == null || !key(isle.command).equals("warp sandara")) continue;
+				boolean has = false;
+				for (WheelNode a : isle.arc) if (a != null && a.command != null && key(a.command).equals("warp sandarapond")) has = true;
+				for (java.util.Iterator<WheelNode> it = isle.arc.iterator(); it.hasNext(); ) {
+					WheelNode a = it.next();
+					if (a == null || a.command == null || !key(a.command).equals("warp pond")) continue;
+					if (has) {
+						it.remove();
+					} else {
+						a.command = "/warp sandarapond";
+						if ("Mana Pond".equals(a.label)) a.label = "Sandara Pond";
+						has = true;
+					}
+					changed = true;
+				}
+			}
+		}
+		return changed;
+	}
+
+	/**
 	 * Also version 10: the Tangleroot warp is singular on the server ("Mini Boss at /warp tangleroot"); every
 	 * "/warp tangleroots" becomes "/warp tangleroot", and a "Tangleroots" label on it "Tangleroot". Returns true if
 	 * anything changed.
