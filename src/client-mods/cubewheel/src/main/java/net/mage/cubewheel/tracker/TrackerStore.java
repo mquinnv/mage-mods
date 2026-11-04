@@ -325,6 +325,35 @@ public final class TrackerStore {
 
 	private static final String SUB = "#sub";
 
+	/** A name ending in an unclosed "[..": a counter whose "]" was cut off and so survived the scanner's stripping. */
+	private static final Pattern CUT_OFF_COUNTER = Pattern.compile("\\s*\\[[^\\]]*$");
+
+	/**
+	 * {@code t} re-keyed without the cut-off counter its name carried ("Rank [✪4] · Reach 5,000 Skill Level [Lvl
+	 * 3814/5,000", stores written before beta.93), or {@code t} itself when its name is clean.
+	 */
+	static Trackable withoutCutOffCounter(Trackable t) {
+		java.util.regex.Matcher m = CUT_OFF_COUNTER.matcher(t.name());
+		if (!m.find() || m.start() == 0) return t;
+		String name = t.name().substring(0, m.start()).trim();
+		return new Trackable(Trackable.idOf(t.source(), name), t.source(), name, t.current(), t.max(), t.seenAt());
+	}
+
+	/** Two readings of one entry folded into one: the furthest progress, the latest sighting. */
+	private static Trackable merged(Trackable a, Trackable b) {
+		Trackable latest = b.seenAt() >= a.seenAt() ? b : a;
+		return new Trackable(latest.id(), latest.source(), latest.name(), Math.max(a.current(), b.current()), latest.max(),
+				latest.seenAt());
+	}
+
+	/** Moves each entry of {@code map} keyed by a renamed id to its new id (an entry already there wins). */
+	private static <V> void rekey(Map<String, V> map, Map<String, String> renamed) {
+		renamed.forEach((from, to) -> {
+			V v = map.remove(from);
+			if (v != null) map.putIfAbsent(to, v);
+		});
+	}
+
 	/** Objective units counted locally for {@code key} (an entry id or a {@link #subKey}) since its last read; 0 if none. */
 	public long counted(String key) {
 		Estimate e = estimates.get(key);
@@ -590,16 +619,30 @@ public final class TrackerStore {
 		Map<String, List<String>> newRewards = new LinkedHashMap<>();
 		Map<String, Long> newDue = new LinkedHashMap<>();
 		if (snap != null) {
+			Map<String, String> renamed = new HashMap<>();
 			if (snap.items != null) {
 				for (Trackable t : snap.items) {
 					if (t == null || t.id() == null || t.name() == null) continue;
-					newItems.put(t.id(), t);
+					Trackable clean = withoutCutOffCounter(t);
+					if (clean != t) renamed.put(t.id(), clean.id());
+					Trackable other = newItems.get(clean.id());
+					newItems.put(clean.id(), other == null ? clean : merged(other, clean));
 				}
 			}
 			if (snap.pins != null) {
 				for (String pin : snap.pins) {
-					if (pin != null) newPins.add(pin);
+					if (pin != null) newPins.add(renamed.getOrDefault(pin, pin));
 				}
+			}
+			if (!renamed.isEmpty()) {
+				// A repaired entry's objective text and estimate carried the cut-off counter too; the next menu read
+				// restores the objective, and an estimate against a merged baseline would mislead.
+				LOG.info("[cubewheel] tracker: folded {} entries named with a cut-off counter", renamed.size());
+				if (snap.hidden != null) snap.hidden.replaceAll(id -> renamed.getOrDefault(id, id));
+				if (snap.objectives != null) renamed.keySet().forEach(snap.objectives::remove);
+				if (snap.estimates != null) renamed.keySet().forEach(snap.estimates::remove);
+				if (snap.rewards != null) rekey(snap.rewards, renamed);
+				if (snap.due != null) rekey(snap.due, renamed);
 			}
 			if (snap.hidden != null) {
 				for (String id : snap.hidden) {

@@ -239,4 +239,21 @@ class ContainerScannerTest {
 		assertEquals(1851, t.current());
 		assertEquals(2500, t.max());
 	}
+
+	/**
+	 * Rank [✪4]'s objective line arrives as "Reach 5,000 Skill Level [Lvl 3814/5,000" (tracker store 2026-11-03), the
+	 * counter's "]" cut off. The counter still leaves the name, or every level-up mints a new entry: Michael saw the
+	 * 5,000 quest twice, at "Lvl 3814" and "Lvl 3819".
+	 */
+	@Test void prestigeRankWithACutOffCounterIsNamedWithoutIt() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		List<ItemView> items = List.of(new ItemView(14, "minecraft:paper", "Rank [✪4]",
+				List.of("", "OBJECTIVE", "Reach 5,000 Skill Level [Lvl 3814/5,000", "", "➟ Click to rankup")));
+		assertEquals(1, ContainerScanner.scan("prestige", items, store, 0));
+		Trackable t = store.all().get(0);
+		assertEquals("prestige:Rank [✪4] · Reach 5,000 Skill Level", t.id());
+		assertEquals(3814, t.current());
+		assertEquals(5000, t.max());
+		assertEquals("Reach 5,000 Skill Level", store.objective(t.id()).orElseThrow().subs().get(0).text());
+	}
 }

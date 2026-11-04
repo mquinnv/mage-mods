@@ -49,11 +49,22 @@ public final class ObjectiveExtractor {
 		return new ObjectiveInfo(subs, special, handIn);
 	}
 
+	/**
+	 * A trailing "[..]" counter, closed or not: Rank [✪4]'s line reached the store as "Reach 5,000 Skill Level [Lvl
+	 * 3814/5,000" (2026-11-03), its "]" cut off, and the level then leaked into the entry's name.
+	 */
+	private static final Pattern TRAILING_COUNTER = Pattern.compile("\\s*\\[[^\\]]*]?\\s*$");
+
+	/** {@code text} without its trailing "[..]" counter ("Reach 2,500 Skill Level [Lvl 1851/2,500]"), trimmed. */
+	public static String withoutCounter(String text) {
+		return text == null ? "" : TRAILING_COUNTER.matcher(text).replaceAll("").trim();
+	}
+
 	/** The line after an "OBJECTIVE" heading, without its trailing "[..]" counter. */
 	private static List<ObjectiveInfo.Sub> prestige(List<String> lines) {
 		for (int i = 0; i < lines.size() - 1; i++) {
 			if (!lines.get(i).equalsIgnoreCase("OBJECTIVE")) continue;
-			String text = lines.get(i + 1).replaceAll("\\s*\\[[^\\]]*]\\s*$", "").trim();
+			String text = withoutCounter(lines.get(i + 1));
 			if (!text.isEmpty()) return List.of(new ObjectiveInfo.Sub(text, null));
 		}
 		return List.of();

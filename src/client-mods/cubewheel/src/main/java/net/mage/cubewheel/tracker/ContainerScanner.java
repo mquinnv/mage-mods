@@ -325,7 +325,7 @@ public final class ContainerScanner {
 	static String displayName(String name, List<String> lore) {
 		for (int i = 0; i < lore.size() - 1; i++) {
 			if (!lore.get(i).trim().equalsIgnoreCase("OBJECTIVE")) continue;
-			String objective = lore.get(i + 1).replaceAll("\\s*\\[[^\\]]*]\\s*$", "").trim();
+			String objective = ObjectiveExtractor.withoutCounter(lore.get(i + 1));
 			if (!objective.isEmpty()) return name + " · " + objective;
 		}
 		return name;
