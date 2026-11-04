@@ -3,7 +3,7 @@
   "id": "hotbarcycle",
   "version": "${version}",
 
-  "name": "Hotbar Cycle",
+  "name": "Hotbar Cycle (mage fork)",
   "description": "Navigate your inventory with a Stardew Valley inspired hotbar cycling method.",
   "authors": [
     "nyuppo"

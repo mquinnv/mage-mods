@@ -33,6 +33,16 @@ public class DefaultHotbarCycleConfig extends HotbarCycleConfig {
 
 
     @Override
+    public boolean getCycleByGroup() {
+        return true;
+    }
+
+    @Override
+    public java.util.List<String> getItemGroups() {
+        return DEFAULT_ITEM_GROUPS;
+    }
+
+    @Override
     public boolean getEnableRow1() {
         return true;
     }

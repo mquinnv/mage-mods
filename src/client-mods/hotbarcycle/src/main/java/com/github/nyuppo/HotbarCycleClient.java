@@ -73,7 +73,11 @@ public class HotbarCycleClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (singleCycleKeyBinding.consumeClick()) {
                 if (client.player != null && client.player.getInventory() != null && !CONFIG.getHoldAndScroll()) {
-                    shiftSingle(client, client.player.getInventory().getSelectedSlot(), CONFIG.getCycleDirection());
+                    if (CONFIG.getCycleByGroup()) {
+                        GroupCycle.cycle(client, clicker, CONFIG.getCycleDirection());
+                    } else {
+                        shiftSingle(client, client.player.getInventory().getSelectedSlot(), CONFIG.getCycleDirection());
+                    }
                 }
             }
         });

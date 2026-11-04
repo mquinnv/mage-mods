@@ -65,7 +65,15 @@ dependencies {
 
 	implementation "com.terraformersmc:modmenu:${project.mod_menu}"
 
+	testImplementation platform("org.junit:junit-bom:5.11.4")
+	testImplementation "org.junit.jupiter:junit-jupiter"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+
 	compileOnly("maven.modrinth:inventory-profiles-next:fabric-${project.inventory_profiles_next}") {transitive = false}
+}
+
+test {
+	useJUnitPlatform()
 }
 
 processResources {

@@ -21,6 +21,16 @@
   "text.autoconfig.hotbarcycle.option.pickCyclesWholeHotbar": "Picking cycles whole hotbar",
   "text.autoconfig.hotbarcycle.option.pickCyclesWholeHotbar.@Tooltip": "Whether picking a block should cycle the whole hotbar, or only the approriate slot.",
 
+  "text.autoconfig.hotbarcycle.option.cycleByGroup": "Cycle Slot by item group",
+  "text.autoconfig.hotbarcycle.option.cycleByGroup.@Tooltip[0]": "Cycle Slot swaps the held item for the next item of its group from your inventory.",
+  "text.autoconfig.hotbarcycle.option.cycleByGroup.@Tooltip[1]": "Items in no group are not cycled. Off: the original column rotation.",
+  "text.autoconfig.hotbarcycle.option.itemGroups": "Item groups",
+  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[0]": "One group per line; matchers separated by |.",
+  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[1]": "@tool / @weapon: vanilla tools and weapons.",
+  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[2]": "name:<regex>: the item's display name, e.g. name:(?i)^candy apple$",
+  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[3]": "Anything else is an item id, e.g. minecraft:bow.",
+  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[4]": "Items in the same group swap with each other.",
+
   "text.autoconfig.hotbarcycle.option.enableRow1": "Enable Row 1",
   "text.autoconfig.hotbarcycle.option.enableRow1.@Tooltip": "(Directly Above the Hotbar)",
   "text.autoconfig.hotbarcycle.option.enableRow2": "Enable Row 2",

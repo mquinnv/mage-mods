@@ -16,6 +16,10 @@ public class ClothConfigHotbarCycleConfig extends HotbarCycleConfig implements C
     public boolean cycleWhenPickingBlock = true;
     @ConfigEntry.Gui.Tooltip()
     public boolean pickCyclesWholeHotbar = false;
+    @ConfigEntry.Gui.Tooltip(count = 2)
+    public boolean cycleByGroup = true;
+    @ConfigEntry.Gui.Tooltip(count = 5)
+    public java.util.List<String> itemGroups = new java.util.ArrayList<>(DEFAULT_ITEM_GROUPS);
 
     @ConfigEntry.Category("rows")
     @ConfigEntry.Gui.Tooltip()
@@ -75,6 +79,16 @@ public class ClothConfigHotbarCycleConfig extends HotbarCycleConfig implements C
     @Override
     public boolean getPickCyclesWholeHotbar(){
         return pickCyclesWholeHotbar;
+    }
+
+    @Override
+    public boolean getCycleByGroup() {
+        return cycleByGroup;
+    }
+
+    @Override
+    public java.util.List<String> getItemGroups() {
+        return itemGroups == null ? java.util.List.of() : itemGroups;
     }
 
     @Override

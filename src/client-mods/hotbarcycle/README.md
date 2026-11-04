@@ -18,3 +18,18 @@ There are also config options for reversing the cycle order, enabling sounds, an
 
 # Video Showcase
 [![HotbarCycle Showcase](https://img.youtube.com/vi/zJixvvbsNpM/mqdefault.jpg)](https://www.youtube.com/watch?v=zJixvvbsNpM)
+
+## Mage fork (mage-mods)
+
+Vendored from Estecka/mc-hotbarcycle, branch `26.1` (1.2.1, MIT). One change: **Cycle Slot by item group**
+(on by default, Mod Menu › Hotbar Cycle). The Cycle Slot key then swaps the held item for the next item of the
+same group from the three inventory rows (repeated presses walk the whole group); an item in no group is not
+cycled, and the other hotbar slots never move. Pick-block, scroll and repeat-click cycling are upstream's.
+
+Groups are config lines (`itemGroups` in `config/hotbarcycle.json`), matchers separated by `|`:
+`@tool`, `@weapon` (the vanilla components), `name:<regex>` (display name), or an item id. Defaults:
+
+    @tool | @weapon | minecraft:bow | minecraft:crossbow | minecraft:trident | minecraft:mace | minecraft:fishing_rod | name:(?i)^zombie hand$
+    name:(?i)^candy apple$ | name:(?i)^bottle of nectar$ | name:(?i)^champion potion$
+
+Logic is in `group/ItemGroups.java` (pure, unit-tested) and `GroupCycle.java`. Build: `./gradlew build`.
