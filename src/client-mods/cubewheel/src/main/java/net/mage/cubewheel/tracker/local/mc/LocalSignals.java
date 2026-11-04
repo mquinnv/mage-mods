@@ -560,6 +560,13 @@ public final class LocalSignals {
 				hint = Optional.of(again.hint());
 			}
 		}
+		if (hint.isPresent() && removals.tagUsedByOther(entity.getId(), hint.get())) {
+			// The same model's other hitbox (a Morendman's interaction after its slime): the model counts once. Refusing
+			// only the name and counting it as a nameless monster was a second kill (capture 2026-11-01).
+			captureEntity("removed", entity, "local hit; tag #" + hint.get().sourceId()
+					+ " already named a counted kill: the model counts once");
+			return;
+		}
 		// A tag names a kill only after an attack (or a Firefly Bottle): a right-clicked NPC/mount/crate is no kill.
 		if (hint.isPresent() && removals.nameCounts(entity.getId(), hint.get())) {
 			RemovalKills.Hint h = hint.get();
@@ -576,7 +583,7 @@ public final class LocalSignals {
 		}
 		// Only an attacked model hitbox: not a right-clicked NPC/mount/crate, nor a Firefly Bottle catch.
 		boolean generic = removals.generic(entity.getId(), ModelHitbox.isModelHitbox(NearbyProbe.hitbox(entity)));
-		RemovalKills.Removed r = new RemovalKills.Removed(entity.getId(), typeId, rawName(entity), at, generic);
+		RemovalKills.Removed r = new RemovalKills.Removed(entity.getId(), typeId, rawName(entity), at, generic, hint.orElse(null));
 		removals.awaitLoot(r, System.currentTimeMillis()).ifPresent(loot -> creditLoot(r, loot));
 	}
 
@@ -589,7 +596,10 @@ public final class LocalSignals {
 	}
 
 	private static void creditLoot(RemovalKills.Removed r, List<String> loot, String from) {
-		if (removals.lootConfirms(r.entityId()) && removals.tagUsedByOther(r.entityId())) {
+		// Named as it was when it went: by now the recycled id may have been probed again on its next mob (a pending
+		// "Morendman 150⺛" was credited as the "1.63x" hologram the id found on its way back, capture 2026-11-01).
+		Optional<RemovalKills.Hint> hint = r.hint() != null ? Optional.of(r.hint()) : removals.hint(r.entityId());
+		if (removals.lootConfirms(r.entityId()) && hint.map(h -> removals.tagUsedByOther(r.entityId(), h)).orElse(false)) {
 			// While this aimed hitbox waited for its loot line, a kill claimed its tag: one model, counted once.
 			capture("removed", r.typeId(), r.name(), how(r.entityId()) + "; tag already named a counted kill while waiting"
 					+ " for the loot line (" + from + " " + loot + "): the model counts once", r.world(), List.of());
@@ -597,7 +607,6 @@ public final class LocalSignals {
 		}
 		if (removals.lootConfirms(r.entityId())) {
 			// A staff kill the loot line just confirmed: its name tag, found at aim time, names it (method b).
-			Optional<RemovalKills.Hint> hint = removals.hint(r.entityId());
 			if (hint.isPresent() && removals.nameCounts(r.entityId(), hint.get())) {
 				RemovalKills.Hint h = hint.get();
 				String name = StackName.parse(h.name()).map(StackName.Parsed::name).orElse("");
@@ -698,7 +707,9 @@ public final class LocalSignals {
 		CaptureLog capture = CubeWheelClient.capture();
 		boolean forCapture = capture != null && capture.enabled();
 		NearbyProbe.Result r = NearbyProbe.of(target, forCapture);
-		removals.remember(target.getId(), r.hint());
+		removals.remember(target.getId(), r.hint()).ifPresent(back -> capture("removed", back.typeId(), back.name(),
+				"hit again under the same tag (" + r.hint().source() + ") while waiting for its loot line: the hitbox came back"
+						+ " on the mob it left, not a kill", back.world(), List.of()));
 		removals.model(target.getId(), r.modelKeys());
 		if (forCapture) {
 			capture.nearby(target.getId(), target.typeHolder().getRegisteredName(), rawName(target), r.near(),
@@ -768,7 +779,8 @@ public final class LocalSignals {
 		java.util.function.IntPredicate hitNow = inHitboxWindow(Minecraft.getInstance().player.getId());
 		removals.settleModel(id, sibling -> removals.aimedWithin(sibling, now) || hitNow.test(sibling));
 		boolean model = ModelHitbox.isModelHitbox(NearbyProbe.hitbox(entity));
-		RemovalKills.Removed r = new RemovalKills.Removed(id, typeId, hint.map(RemovalKills.Hint::name).orElse(rawName(entity)), at, model);
+		RemovalKills.Removed r = new RemovalKills.Removed(id, typeId, hint.map(RemovalKills.Hint::name).orElse(rawName(entity)), at, model,
+				hint.orElse(null));
 		captureEntity("removed", entity, how(id) + "; waiting for loot line"
 				+ hint.map(h -> "; named " + h.name() + " (" + h.source() + ")").orElse("; no name"));
 		removals.awaitLoot(r, now).ifPresent(loot -> creditLoot(r, loot));

@@ -80,11 +80,16 @@ public final class RemovalKills {
 
 	/**
 	 * A removal kill still to be named; {@code modelHitbox}: a custom-model mob's hitbox (see {@link ModelHitbox}), so
-	 * it counts as a monster kill even if nothing names it.
+	 * it counts as a monster kill even if nothing names it; {@code hint}: what named it when it went (null: nothing),
+	 * kept with it because the id may be another mob's by the time the loot line comes (see {@link #remember}).
 	 */
-	public record Removed(int entityId, String typeId, String name, WorldInfo world, boolean modelHitbox) {
+	public record Removed(int entityId, String typeId, String name, WorldInfo world, boolean modelHitbox, Hint hint) {
+		public Removed(int entityId, String typeId, String name, WorldInfo world, boolean modelHitbox) {
+			this(entityId, typeId, name, world, modelHitbox, null);
+		}
+
 		public Removed(int entityId, String typeId, String name, WorldInfo world) {
-			this(entityId, typeId, name, world, false);
+			this(entityId, typeId, name, world, false, null);
 		}
 	}
 
@@ -126,12 +131,36 @@ public final class RemovalKills {
 	private final Set<Integer> left = new LinkedHashSet<>();
 	/** Hitbox ids the server has moved on to another mob at least once (see {@link #recycled}). */
 	private final Set<Integer> recycled = new LinkedHashSet<>();
+	/** The loot entries of the latest new line and when it was first seen (see {@link #onActionBar}). */
+	private List<LootLine.Entry> lastEntries = List.of();
+	private String lastText = "";
+	private long lastEntriesAt;
 
-	/** Remembers what was found for hit entity {@code id} ({@code hint} may be null: looked, found nothing). */
-	public void remember(int id, Hint hint) {
+	/**
+	 * Remembers what was found for hit entity {@code id} ({@code hint} may be null: looked, found nothing). When a
+	 * removal of {@code id} is still waiting for its loot line and the probe found the same tag again, the hitbox is
+	 * back on the mob it left (Cursed Watcher tag #194706626: the slime removed at 144 HP, hit again, removed at 72 HP,
+	 * capture 2026-11-01): that removal was no kill, so it is dropped (and returned) and the tag is free to name the
+	 * real one. A different tag is the recycled id on its next mob, and the removal keeps waiting.
+	 */
+	public Optional<Removed> remember(int id, Hint hint) {
 		hints.remove(id);
 		hints.put(id, new Remembered(Optional.ofNullable(hint), clock));
 		trim(hints.keySet(), MAX_HINTS);
+		if (hint == null || hint.sourceId() < 0) return Optional.empty();
+		for (Iterator<Pending> it = pending.iterator(); it.hasNext(); ) {
+			Pending p = it.next();
+			Hint was = p.removed().hint();
+			if (p.removed().entityId() != id || was == null || was.sourceId() != hint.sourceId()) continue;
+			it.remove();
+			Integer user = tagUsers.get(hint.sourceId());
+			if (user != null && user == id) {
+				tagUsers.remove(hint.sourceId());
+				settled.remove(hint.sourceId());
+			}
+			return Optional.of(p.removed());
+		}
+		return Optional.empty();
 	}
 
 	/** Moves the clock to {@code now} (never back): what {@link #settle} and {@link #remember} are stamped with. */
@@ -446,11 +475,24 @@ public final class RemovalKills {
 		return Optional.empty();
 	}
 
-	/** An action-bar message: if it holds loot, it names every pending removal (returned, no longer pending). */
+	/**
+	 * An action-bar message: if it holds loot, it names every pending removal (returned, no longer pending). ManaCube
+	 * re-sends the bar whenever any other part changes (a weapon's cooldown digits), so the same loot entries in a
+	 * changed bar within {@link LootKills#LINGER_MS} are the same line shown again, not another kill (three removals
+	 * of one Morendman's hitboxes confirmed in 91 ms, capture 2026-11-01). The very same bar set again is a new event
+	 * (two fireflies caught 700 ms apart each say "+1  Sad Firefly"), and so is more of the same drop.
+	 */
 	public List<Resolved> onActionBar(String text, long now) {
 		tick(now);
-		List<String> loot = LootLine.items(text);
-		if (loot.isEmpty()) return List.of();
+		List<LootLine.Entry> entries = LootLine.entries(text);
+		if (entries.isEmpty()) return List.of();
+		boolean resent = entries.equals(lastEntries) && !text.equals(lastText) && now - lastEntriesAt >= 0
+				&& now - lastEntriesAt <= LootKills.LINGER_MS;
+		if (resent) return List.of();
+		lastEntries = List.copyOf(entries);
+		lastText = text;
+		lastEntriesAt = now;
+		List<String> loot = entries.stream().map(LootLine.Entry::item).toList();
 		Seen seen = new Seen(List.copyOf(loot), now);
 		lootLines.addLast(seen);
 		while (lootLines.size() > MAX_LOOT_LINES) lootLines.removeFirst();
@@ -503,6 +545,9 @@ public final class RemovalKills {
 		lootLines.clear();
 		firstHit.clear();
 		fallbacks.clear();
+		lastEntries = List.of();
+		lastText = "";
+		lastEntriesAt = 0;
 	}
 
 	private static void trim(Set<Integer> keys, int max) {

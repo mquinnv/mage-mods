@@ -3,6 +3,7 @@ package net.mage.cubewheel.tracker.local;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * A name for an unnamed hitbox mob (ModelEngine-style models: an invisible slime or interaction entity
@@ -26,12 +27,24 @@ public final class NameResolver {
 		}
 	}
 
+	/**
+	 * A damage-multiplier hologram ("1.3x", "1.63x": an armor stand ManaCube floats over a hit mob), never a mob's name.
+	 * It can be the nearest named thing to a hitbox (0.28 blocks against the mob's own tag at 0.85, capture 2026-11-01),
+	 * and a kill named by it dodges the one-tag-one-kill guard and credits no named job.
+	 */
+	private static final Pattern MULTIPLIER = Pattern.compile("(?i)\\d+(\\.\\d+)?x");
+
 	private NameResolver() {}
+
+	/** Is {@code name} a damage multiplier like "1.3x" rather than a mob's name? */
+	public static boolean isMultiplier(String name) {
+		return name != null && MULTIPLIER.matcher(name.trim()).matches();
+	}
 
 	public static Optional<Candidate> pick(List<Candidate> candidates) {
 		if (candidates == null) return Optional.empty();
 		return candidates.stream()
-				.filter(c -> c != null && c.name() != null && !c.name().isBlank())
+				.filter(c -> c != null && c.name() != null && !c.name().isBlank() && !isMultiplier(c.name()))
 				.filter(c -> c.relation() == Relation.RIDER || c.relation() == Relation.VEHICLE || c.distanceSq() <= RANGE * RANGE)
 				.min(Comparator.comparing(Candidate::relation).thenComparingDouble(Candidate::distanceSq));
 	}
