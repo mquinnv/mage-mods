@@ -34,4 +34,17 @@ class SingularTest {
 		assertEquals("deepslate lapis ore", Singular.phrase("deepslate_lapis_ore"));
 		assertEquals("ancient debris", Singular.phrase("Ancient Debris"));
 	}
+
+	/**
+	 * "Slay 96 Morendmen in Morend" (job, capture 2026-11-03) hunts mobs named "Morendman 150⺛": any "-men" noun is
+	 * the plural of a "-man" one. Words that merely end in "men" ("specimen", a Bad Omen) are left alone.
+	 */
+	@Test void menIsThePluralOfMan() {
+		assertEquals("morendman", Singular.word("Morendmen"));
+		assertEquals("snowman", Singular.word("snowmen"));
+		assertEquals("man", Singular.word("men"));
+		assertEquals("specimen", Singular.word("specimen"));
+		assertEquals("omen", Singular.word("Omen"));
+		assertEquals("abdomen", Singular.word("abdomen"));
+	}
 }

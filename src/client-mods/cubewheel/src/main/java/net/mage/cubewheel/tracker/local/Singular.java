@@ -7,18 +7,22 @@ import java.util.regex.Pattern;
 /** English singulars for objective nouns, block ids and mob names. Pure: no Minecraft/Fabric imports. */
 public final class Singular {
 	private static final Map<String, String> IRREGULAR = Map.ofEntries(
-			Map.entry("endermen", "enderman"),
 			Map.entry("wolves", "wolf"),
 			Map.entry("fish", "fish"),
 			Map.entry("sheep", "sheep"),
 			Map.entry("potatoes", "potato"),
 			Map.entry("tomatoes", "tomato"),
-			Map.entry("men", "man"),
 			Map.entry("leaves", "leaf"),
 			// Not plurals: "Mine 113 Lapis" read as "lapi" matched no lapis ore (capture 2026-10-15).
 			Map.entry("lapis", "lapis"),
 			Map.entry("debris", "debris"),
 			Map.entry("zombies", "zombie"));
+	/**
+	 * Singular already although ending in "men": "specimen", a Bad "Omen". Every other "-men" word is the plural of a
+	 * "-man" one: "Slay 96 Morendmen in Morend" (job, capture 2026-11-03) hunts mobs named "Morendman 150⺛".
+	 */
+	private static final java.util.Set<String> MEN_SINGULARS = java.util.Set.of(
+			"specimen", "omen", "abdomen", "regimen", "stamen", "lumen", "acumen", "semen", "hymen", "bitumen", "albumen");
 	/** "blazes", "horses": a single s/z before "es". */
 	private static final Pattern SINGLE_SZ_ES = Pattern.compile(".*[^sz][sz]es");
 	private static final Pattern SIBILANT_ES = Pattern.compile(".*(s|x|z|ch|sh)es");
@@ -32,6 +36,7 @@ public final class Singular {
 		String s = w.trim().toLowerCase(Locale.ROOT);
 		String irregular = IRREGULAR.get(s);
 		if (irregular != null) return irregular;
+		if (s.endsWith("men") && !MEN_SINGULARS.contains(s)) return s.substring(0, s.length() - 2) + "an";
 		if (s.length() > 3 && s.endsWith("ies")) return s.substring(0, s.length() - 3) + "y";
 		if (s.length() > 3 && s.endsWith("ves")) return s.substring(0, s.length() - 3) + "f";
 		// "blazes", "horses": a single s/z keeps its e; "glasses", "buzzes" drop "es" below.
