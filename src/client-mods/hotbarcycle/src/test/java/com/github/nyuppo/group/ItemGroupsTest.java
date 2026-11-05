@@ -26,6 +26,12 @@ class ItemGroupsTest {
 		assertEquals(0, DEFAULTS.groupOf(item("minecraft:crossbow", "SOUL CROSSBOW")));
 		assertEquals(0, DEFAULTS.groupOf(item("minecraft:fishing_rod", "BLOOM FISHINGROD")));
 		assertEquals(0, DEFAULTS.groupOf(item("minecraft:paper", "ZOMBIE HAND"))); // "Unarmed Weapon", but paper
+		// "need the wizard book and magic book to work the same way" (2026-11-04): a book and a blaze rod.
+		assertEquals(0, DEFAULTS.groupOf(item("minecraft:book", "▲ WIZARDS BOOK ▼")));
+		assertEquals(0, DEFAULTS.groupOf(item("minecraft:blaze_rod", "MAGICAL BOOK")));
+		assertEquals(0, DEFAULTS.groupOf(item("minecraft:blaze_rod", "ENHANCED MAGICAL BOOK")));
+		assertEquals(-1, DEFAULTS.groupOf(item("minecraft:book", "Book")));
+		assertEquals(-1, DEFAULTS.groupOf(item("minecraft:blaze_rod", "Blaze Rod")));
 	}
 
 	@Test void theConsumablesShareTheirOwnGroup() {

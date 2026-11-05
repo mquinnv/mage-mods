@@ -29,7 +29,7 @@ cycled, and the other hotbar slots never move. Pick-block, scroll and repeat-cli
 Groups are config lines (`itemGroups` in `config/hotbarcycle.json`), matchers separated by `|`:
 `@tool`, `@weapon` (the vanilla components), `name:<regex>` (display name), or an item id. Defaults:
 
-    @tool | @weapon | minecraft:bow | minecraft:crossbow | minecraft:trident | minecraft:mace | minecraft:fishing_rod | name:(?i)^zombie hand$
+    @tool | @weapon | minecraft:bow | minecraft:crossbow | minecraft:trident | minecraft:mace | minecraft:fishing_rod | name:(?i)^zombie hand$ | name:(?i)wizards? book | name:(?i)magical book
     name:(?i)^candy apple$ | name:(?i)^bottle of nectar$ | name:(?i)^champion potion$
 
 Logic is in `group/ItemGroups.java` (pure, unit-tested) and `GroupCycle.java`. Build: `./gradlew build`.

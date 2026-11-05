@@ -7,7 +7,7 @@ public abstract class HotbarCycleConfig {
      * each other. ManaCube's staves are netherite hoes, its rods fishing rods; the Zombie Hand is paper.
      */
     public static final java.util.List<String> DEFAULT_ITEM_GROUPS = java.util.List.of(
-            "@tool | @weapon | minecraft:bow | minecraft:crossbow | minecraft:trident | minecraft:mace | minecraft:fishing_rod | name:(?i)^zombie hand$",
+            "@tool | @weapon | minecraft:bow | minecraft:crossbow | minecraft:trident | minecraft:mace | minecraft:fishing_rod | name:(?i)^zombie hand$ | name:(?i)wizards? book | name:(?i)magical book",
             "name:(?i)^candy apple$ | name:(?i)^bottle of nectar$ | name:(?i)^champion potion$");
 
     public abstract boolean getPlaySound();
