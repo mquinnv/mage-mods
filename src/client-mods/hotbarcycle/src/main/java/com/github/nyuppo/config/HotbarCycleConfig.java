@@ -2,12 +2,17 @@ package com.github.nyuppo.config;
 
 public abstract class HotbarCycleConfig {
     /**
-     * The mage fork's default item groups (see com.github.nyuppo.group.ItemGroups): tools and weapons swap with
-     * each other, and the consumables (Michael 2026-11-04: "the candy apple and the nectar ... rotate together") with
-     * each other. ManaCube's staves are netherite hoes, its rods fishing rods; the Zombie Hand is paper.
+     * The mage fork's default item groups (see com.github.nyuppo.group.ItemGroups), checked in order: melee weapons,
+     * ranged/magic weapons, tools, consumables (Michael 2026-11-04: tools and weapons apart, "weapon axes from farming
+     * axes ... scythes too", "melee and ranged weapons separate"). ManaCube builds weapons on tool items (staves and
+     * the Cursed Book are netherite hoes, the Troll Glaive an axe, the Magical Book a blaze rod), so the lore decides:
+     * melee lore talks about hits, ranged lore about shooting and PVE/area damage, and farming/mining gear (the
+     * Iridium Scythe: Herbalism) about neither, so it falls through to tools.
      */
     public static final java.util.List<String> DEFAULT_ITEM_GROUPS = java.util.List.of(
-            "@tool | @weapon | minecraft:bow | minecraft:crossbow | minecraft:trident | minecraft:mace | minecraft:fishing_rod | name:(?i)^zombie hand$ | name:(?i)wizards? book | name:(?i)magical book",
+            "id:_sword$ | id:_spear$ | minecraft:mace | minecraft:trident | lore:(?i)unarmed weapon|extra damage|chance to deal|next hit|every \\d+\\w* hit",
+            "minecraft:bow | minecraft:crossbow | lore:(?i)pv[pe] damage|damage: \\d|damages all mobs|shoot | name:(?i)^hermes caduceus$ | name:(?i)^photon barrier$ | name:(?i)wizards? book | name:(?i)magical book",
+            "@tool | @weapon | minecraft:fishing_rod",
             "name:(?i)^candy apple$ | name:(?i)^bottle of nectar$ | name:(?i)^champion potion$");
 
     public abstract boolean getPlaySound();

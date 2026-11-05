@@ -11,18 +11,25 @@ import java.util.regex.PatternSyntaxException;
  * tools and weapons should be interchangeable ... my two potion things, the candy apple and the nectar ... rotate
  * together"). Pure: no Minecraft imports, so it is unit-tested.
  *
- * <p>A group is one config line of matchers separated by {@code |}. An item is in the group when any matcher matches:
+ * <p>A group is one config line of matchers separated by {@code " | "} (a bar with whitespace on both sides, so a regex
+ * may use a bare {@code |} for alternation). An item is in the first group with a matching matcher:
  * <ul>
  *   <li>{@code @tool}: the stack has the {@code minecraft:tool} component (pickaxes, axes, shovels, hoes, swords, shears)</li>
  *   <li>{@code @weapon}: the stack has the {@code minecraft:weapon} component (swords, axes, maces, spears, tridents)</li>
  *   <li>{@code name:<regex>}: the stack's display name (formatting stripped) contains a match, e.g. {@code name:(?i)candy apple}</li>
+ *   <li>{@code lore:<regex>}: a lore line (formatting stripped) contains a match, e.g. {@code lore:(?i)pve damage}</li>
+ *   <li>{@code id:<regex>}: the item id contains a match, e.g. {@code id:_sword$}</li>
  *   <li>anything else is an item id, e.g. {@code minecraft:bow} ({@code minecraft:} may be left out)</li>
  * </ul>
  * An item in no group is not cycled at all.
  */
 public final class ItemGroups {
 	/** What a matcher needs to know about a stack. */
-	public record Item(String id, String name, boolean tool, boolean weapon) {}
+	public record Item(String id, String name, List<String> lore, boolean tool, boolean weapon) {
+		public Item(String id, String name, boolean tool, boolean weapon) {
+			this(id, name, List.of(), tool, weapon);
+		}
+	}
 
 	private interface Matcher { boolean test(Item item); }
 
@@ -42,7 +49,7 @@ public final class ItemGroups {
 			for (String line : lines) {
 				if (line == null || line.isBlank()) continue;
 				List<Matcher> group = new ArrayList<>();
-				for (String raw : line.split("\\|")) {
+				for (String raw : line.trim().split("\\s+\\|\\s+")) {
 					String m = raw.trim();
 					if (m.isEmpty()) continue;
 					Matcher parsed = matcher(m, problems);
@@ -58,14 +65,23 @@ public final class ItemGroups {
 		String lower = m.toLowerCase(Locale.ROOT);
 		if (lower.equals("@tool")) return Item::tool;
 		if (lower.equals("@weapon")) return Item::weapon;
-		if (lower.startsWith("name:")) {
+		if (lower.startsWith("name:") || lower.startsWith("lore:") || lower.startsWith("id:")) {
+			String kind = lower.substring(0, lower.indexOf(':'));
+			Pattern p;
 			try {
-				Pattern p = Pattern.compile(m.substring(5).trim());
-				return item -> item.name() != null && p.matcher(item.name()).find();
+				p = Pattern.compile(m.substring(kind.length() + 1).trim());
 			} catch (PatternSyntaxException e) {
-				problems.add("bad name pattern \"" + m + "\": " + e.getDescription());
+				problems.add("bad " + kind + " pattern \"" + m + "\": " + e.getDescription());
 				return null;
 			}
+			return switch (kind) {
+				case "name" -> item -> item.name() != null && p.matcher(item.name()).find();
+				case "id" -> item -> item.id() != null && p.matcher(item.id()).find();
+				default -> item -> {
+					if (item.lore() != null) for (String l : item.lore()) if (l != null && p.matcher(l).find()) return true;
+					return false;
+				};
+			};
 		}
 		String id = lower.contains(":") ? lower : "minecraft:" + lower;
 		return item -> id.equals(item.id());

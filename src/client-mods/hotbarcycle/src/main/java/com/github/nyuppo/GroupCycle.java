@@ -68,6 +68,9 @@ public final class GroupCycle {
 		if (stack == null || stack.isEmpty()) return null;
 		String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
 		String name = ChatFormatting.stripFormatting(stack.getHoverName().getString());
-		return new ItemGroups.Item(id, name, stack.has(DataComponents.TOOL), stack.has(DataComponents.WEAPON));
+		List<String> lore = new java.util.ArrayList<>();
+		net.minecraft.world.item.component.ItemLore l = stack.get(DataComponents.LORE);
+		if (l != null) for (net.minecraft.network.chat.Component c : l.lines()) lore.add(ChatFormatting.stripFormatting(c.getString()));
+		return new ItemGroups.Item(id, name, lore, stack.has(DataComponents.TOOL), stack.has(DataComponents.WEAPON));
 	}
 }

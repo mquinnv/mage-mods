@@ -26,10 +26,15 @@ Vendored from Estecka/mc-hotbarcycle, branch `26.1` (1.2.1, MIT). One change: **
 same group from the three inventory rows (repeated presses walk the whole group); an item in no group is not
 cycled, and the other hotbar slots never move. Pick-block, scroll and repeat-click cycling are upstream's.
 
-Groups are config lines (`itemGroups` in `config/hotbarcycle.json`), matchers separated by `|`:
-`@tool`, `@weapon` (the vanilla components), `name:<regex>` (display name), or an item id. Defaults:
+Groups are config lines (`itemGroups` in `config/hotbarcycle.json`), checked in order, matchers separated by ` | `
+(a bar with spaces around it; a bare `|` inside a regex is alternation): `@tool`, `@weapon` (the vanilla components),
+`name:<regex>` (display name), `lore:<regex>` (any lore line), `id:<regex>`, or an item id. Defaults: melee weapons,
+ranged/magic weapons, tools, consumables. ManaCube builds weapons on tool items (staves are netherite hoes), so lore
+decides: melee lore talks about hits, ranged lore about shooting and PVE/area damage, farming gear about neither.
 
-    @tool | @weapon | minecraft:bow | minecraft:crossbow | minecraft:trident | minecraft:mace | minecraft:fishing_rod | name:(?i)^zombie hand$ | name:(?i)wizards? book | name:(?i)magical book
+    id:_sword$ | id:_spear$ | minecraft:mace | minecraft:trident | lore:(?i)unarmed weapon|extra damage|chance to deal|next hit|every \d+\w* hit
+    minecraft:bow | minecraft:crossbow | lore:(?i)pv[pe] damage|damage: \d|damages all mobs|shoot | name:(?i)^hermes caduceus$ | name:(?i)^photon barrier$ | name:(?i)wizards? book | name:(?i)magical book
+    @tool | @weapon | minecraft:fishing_rod
     name:(?i)^candy apple$ | name:(?i)^bottle of nectar$ | name:(?i)^champion potion$
 
 Logic is in `group/ItemGroups.java` (pure, unit-tested) and `GroupCycle.java`. Build: `./gradlew build`.
