@@ -3,16 +3,20 @@ package com.github.nyuppo.group;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
  * Item groups for the grouped slot cycle (mage fork, 2026-11-04: "only rotate through items of the same type ...
- * tools and weapons should be interchangeable ... my two potion things, the candy apple and the nectar ... rotate
- * together"). Pure: no Minecraft imports, so it is unit-tested.
+ * my two potion things, the candy apple and the nectar ... rotate together", then tools, melee and ranged weapons
+ * apart). Pure: no Minecraft imports, so it is unit-tested.
  *
- * <p>A group is one config line of matchers separated by {@code " | "} (a bar with whitespace on both sides, so a regex
- * may use a bare {@code |} for alternation). An item is in the first group with a matching matcher:
+ * <p>The config is a list of rules, checked in order; the first rule that matches puts the item in its group. A rule is
+ * {@code group: alternative | alternative | ...}: the group label, then alternatives separated by {@code " | "} (a bar
+ * with whitespace on both sides, so a regex may use a bare {@code |}). An alternative is matchers joined by
+ * {@code " & "}, all of which must match. Rules with the same label are one group; a rule with no label is a group of
+ * its own; the label {@code none} means "never cycled" (armor, shields, pendants). Matchers:
  * <ul>
  *   <li>{@code @tool}: the stack has the {@code minecraft:tool} component (pickaxes, axes, shovels, hoes, swords, shears)</li>
  *   <li>{@code @weapon}: the stack has the {@code minecraft:weapon} component (swords, axes, maces, spears, tridents)</li>
@@ -21,9 +25,14 @@ import java.util.regex.PatternSyntaxException;
  *   <li>{@code id:<regex>}: the item id contains a match, e.g. {@code id:_sword$}</li>
  *   <li>anything else is an item id, e.g. {@code minecraft:bow} ({@code minecraft:} may be left out)</li>
  * </ul>
- * An item in no group is not cycled at all.
+ * An item no rule matches is not cycled at all.
  */
 public final class ItemGroups {
+	/** The label of the rules whose items are never cycled. */
+	public static final String NONE = "none";
+	private static final Pattern LABEL = Pattern.compile("^([A-Za-z][\\w-]*):\\s+(.*)$");
+	private static final Set<String> MATCHER_KINDS = Set.of("name", "lore", "id");
+
 	/** What a matcher needs to know about a stack. */
 	public record Item(String id, String name, List<String> lore, boolean tool, boolean weapon) {
 		public Item(String id, String name, boolean tool, boolean weapon) {
@@ -33,32 +42,61 @@ public final class ItemGroups {
 
 	private interface Matcher { boolean test(Item item); }
 
-	private final List<List<Matcher>> groups;
+	/** One rule: its group's index (-1 for {@code none}) and its alternatives, each a list of matchers to AND. */
+	private record Rule(int group, List<List<Matcher>> alternatives) {}
+
+	private final List<Rule> rules;
+	private final List<String> labels;
 	private final List<String> problems;
 
-	private ItemGroups(List<List<Matcher>> groups, List<String> problems) {
-		this.groups = groups;
+	private ItemGroups(List<Rule> rules, List<String> labels, List<String> problems) {
+		this.rules = rules;
+		this.labels = labels;
 		this.problems = problems;
 	}
 
-	/** Parses the config lines; a bad matcher (an invalid regex) is skipped and reported in {@link #problems()}. */
+	/** Parses the config lines; a bad matcher (an invalid regex) drops its alternative and is reported in {@link #problems()}. */
 	public static ItemGroups parse(List<String> lines) {
-		List<List<Matcher>> groups = new ArrayList<>();
+		List<Rule> rules = new ArrayList<>();
+		List<String> labels = new ArrayList<>();
 		List<String> problems = new ArrayList<>();
 		if (lines != null) {
 			for (String line : lines) {
 				if (line == null || line.isBlank()) continue;
-				List<Matcher> group = new ArrayList<>();
-				for (String raw : line.trim().split("\\s+\\|\\s+")) {
-					String m = raw.trim();
-					if (m.isEmpty()) continue;
-					Matcher parsed = matcher(m, problems);
-					if (parsed != null) group.add(parsed);
+				String body = line.trim();
+				String label = null;
+				java.util.regex.Matcher lm = LABEL.matcher(body);
+				if (lm.matches() && !MATCHER_KINDS.contains(lm.group(1).toLowerCase(Locale.ROOT))) {
+					label = lm.group(1).toLowerCase(Locale.ROOT);
+					body = lm.group(2);
 				}
-				if (!group.isEmpty()) groups.add(group);
+				List<List<Matcher>> alternatives = new ArrayList<>();
+				for (String alt : body.split("\\s+\\|\\s+")) {
+					List<Matcher> all = new ArrayList<>();
+					boolean ok = true;
+					for (String raw : alt.trim().split("\\s+&\\s+")) {
+						String m = raw.trim();
+						if (m.isEmpty()) continue;
+						Matcher parsed = matcher(m, problems);
+						if (parsed == null) ok = false;
+						else all.add(parsed);
+					}
+					if (ok && !all.isEmpty()) alternatives.add(all);
+				}
+				if (alternatives.isEmpty()) continue;
+				int group;
+				if (NONE.equals(label)) {
+					group = -1;
+				} else if (label != null && labels.contains(label)) {
+					group = labels.indexOf(label);
+				} else {
+					group = labels.size();
+					labels.add(label == null ? "group " + (labels.size() + 1) : label);
+				}
+				rules.add(new Rule(group, alternatives));
 			}
 		}
-		return new ItemGroups(groups, problems);
+		return new ItemGroups(rules, labels, problems);
 	}
 
 	private static Matcher matcher(String m, List<String> problems) {
@@ -87,17 +125,32 @@ public final class ItemGroups {
 		return item -> id.equals(item.id());
 	}
 
-	/** The index of the first group {@code item} is in, or -1 when it is in none (then it is not cycled). */
+	/** The index of {@code item}'s group (see {@link #label}), or -1 when it is in none (then it is not cycled). */
 	public int groupOf(Item item) {
 		if (item == null) return -1;
-		for (int g = 0; g < groups.size(); g++) {
-			for (Matcher m : groups.get(g)) if (m.test(item)) return g;
+		for (Rule r : rules) {
+			for (List<Matcher> all : r.alternatives()) {
+				boolean hit = true;
+				for (Matcher m : all) {
+					if (!m.test(item)) {
+						hit = false;
+						break;
+					}
+				}
+				if (hit) return r.group();
+			}
 		}
 		return -1;
 	}
 
+	/** The label of group {@code g} ("group N" for an unlabelled rule, {@code none} for -1). */
+	public String label(int g) {
+		return g < 0 ? NONE : labels.get(g);
+	}
+
+	/** The number of groups (not rules). */
 	public int size() {
-		return groups.size();
+		return labels.size();
 	}
 
 	public List<String> problems() {

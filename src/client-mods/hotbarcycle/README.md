@@ -26,15 +26,17 @@ Vendored from Estecka/mc-hotbarcycle, branch `26.1` (1.2.1, MIT). One change: **
 same group from the three inventory rows (repeated presses walk the whole group); an item in no group is not
 cycled, and the other hotbar slots never move. Pick-block, scroll and repeat-click cycling are upstream's.
 
-Groups are config lines (`itemGroups` in `config/hotbarcycle.json`), checked in order, matchers separated by ` | `
-(a bar with spaces around it; a bare `|` inside a regex is alternation): `@tool`, `@weapon` (the vanilla components),
-`name:<regex>` (display name), `lore:<regex>` (any lore line), `id:<regex>`, or an item id. Defaults: melee weapons,
-ranged/magic weapons, tools, consumables. ManaCube builds weapons on tool items (staves are netherite hoes), so lore
-decides: melee lore talks about hits, ranged lore about shooting and PVE/area damage, farming gear about neither.
+Groups come from rules (`itemGroups` in `config/hotbarcycle.json`, or Mod Menu), checked in order; the first match
+wins. A rule is `group: alt | alt | ...`; alternatives are separated by ` | ` (a bar with spaces, so a regex can use a
+bare `|`), and an alternative is matchers joined by ` & ` (all must match). Rules with the same label form one group;
+`none:` means never cycled. Matchers: `@tool`, `@weapon` (the vanilla components), `name:<regex>`, `lore:<regex>` (any
+lore line), `id:<regex>`, or an item id.
 
-    id:_sword$ | id:_spear$ | minecraft:mace | minecraft:trident | lore:(?i)unarmed weapon|extra damage|chance to deal|next hit|every \d+\w* hit
-    minecraft:bow | minecraft:crossbow | lore:(?i)pv[pe] damage|damage: \d|damages all mobs|shoot | name:(?i)^hermes caduceus$ | name:(?i)^photon barrier$ | name:(?i)wizards? book | name:(?i)magical book
-    @tool | @weapon | minecraft:fishing_rod
-    name:(?i)^candy apple$ | name:(?i)^bottle of nectar$ | name:(?i)^champion potion$
+The defaults (in `config/HotbarCycleConfig.java`) sort into melee, ranged, tools, utility and consumables, and were
+tuned against ManaCube's whole custom-item catalog (the SVAS list CubeWheel caches, ~1,250 items), not just one
+player's items. ManaCube builds weapons on tool items, so lore decides: staves and wands that shoot or deal damage are
+ranged, axes are melee unless their lore names tool work (woodcutting, herbalism, vein mining, harvesting), hoes and
+wands that teleport, glide, shield or pull are utility, and armor, shields, pendants, off-hand and one-time items are
+never cycled. `ItemGroupsTest` pins real catalog items to their groups.
 
 Logic is in `group/ItemGroups.java` (pure, unit-tested) and `GroupCycle.java`. Build: `./gradlew build`.

@@ -2,13 +2,10 @@
   "key.category.hotbarcycle.keybinds": "HotbarCycle",
   "key.hotbarcycle.cycle": "Cycle Hotbars",
   "key.hotbarcycle.single_cycle": "Cycle Slot",
-
   "text.autoconfig.hotbarcycle.title": "HotbarCycle Config",
-
   "text.autoconfig.hotbarcycle.category.default": "Usability",
   "text.autoconfig.hotbarcycle.category.rows": "Enable Rows",
   "text.autoconfig.hotbarcycle.category.columns": "Enable Columns",
-
   "text.autoconfig.hotbarcycle.option.playSound": "Play Cycle Sound",
   "text.autoconfig.hotbarcycle.option.reverseCycleDirection": "Reverse Cycle Direction",
   "text.autoconfig.hotbarcycle.option.holdAndScroll": "Enable Hold and Scroll",
@@ -20,23 +17,15 @@
   "text.autoconfig.hotbarcycle.option.cycleWhenPickingBlock.@Tooltip": "Targeted block will be cycled into your hotbar before selecting it.\nWarning: this moves the picking logic from the serverside to the clientside, and thus may result in picked items being different.",
   "text.autoconfig.hotbarcycle.option.pickCyclesWholeHotbar": "Picking cycles whole hotbar",
   "text.autoconfig.hotbarcycle.option.pickCyclesWholeHotbar.@Tooltip": "Whether picking a block should cycle the whole hotbar, or only the approriate slot.",
-
   "text.autoconfig.hotbarcycle.option.cycleByGroup": "Cycle Slot by item group",
   "text.autoconfig.hotbarcycle.option.cycleByGroup.@Tooltip[0]": "Cycle Slot swaps the held item for the next item of its group from your inventory.",
   "text.autoconfig.hotbarcycle.option.cycleByGroup.@Tooltip[1]": "Items in no group are not cycled. Off: the original column rotation.",
-  "text.autoconfig.hotbarcycle.option.itemGroups": "Item groups",
-  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[0]": "One group per line; matchers separated by |.",
-  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[1]": "@tool / @weapon: vanilla tools and weapons.",
-  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[2]": "name:<regex>: the item's display name, e.g. name:(?i)^candy apple$",
-  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[3]": "Anything else is an item id, e.g. minecraft:bow.",
-  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[4]": "Items in the same group swap with each other.",
-
+  "text.autoconfig.hotbarcycle.option.itemGroups": "Item group rules",
   "text.autoconfig.hotbarcycle.option.enableRow1": "Enable Row 1",
   "text.autoconfig.hotbarcycle.option.enableRow1.@Tooltip": "(Directly Above the Hotbar)",
   "text.autoconfig.hotbarcycle.option.enableRow2": "Enable Row 2",
   "text.autoconfig.hotbarcycle.option.enableRow3": "Enable Row 3",
   "text.autoconfig.hotbarcycle.option.enableRow3.@Tooltip": "(Top-most Inventory Row)",
-
   "text.autoconfig.hotbarcycle.option.enableColumn0": "Enable Column 1",
   "text.autoconfig.hotbarcycle.option.enableColumn0.@Tooltip": "(Left-most)",
   "text.autoconfig.hotbarcycle.option.enableColumn1": "Enable Column 2",
@@ -47,5 +36,10 @@
   "text.autoconfig.hotbarcycle.option.enableColumn6": "Enable Column 7",
   "text.autoconfig.hotbarcycle.option.enableColumn7": "Enable Column 8",
   "text.autoconfig.hotbarcycle.option.enableColumn8": "Enable Column 9",
-  "text.autoconfig.hotbarcycle.option.enableColumn8.@Tooltip": "(Right-most)"
+  "text.autoconfig.hotbarcycle.option.enableColumn8.@Tooltip": "(Right-most)",
+  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[0]": "One rule per line, first match wins: group: a | b | c",
+  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[1]": "Same group name = same group; \"none:\" = never cycled.",
+  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[2]": "Matchers: @tool, @weapon, name:<regex>, lore:<regex>, id:<regex>, or an item id.",
+  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[3]": "Join matchers with \" & \" when all must match.",
+  "text.autoconfig.hotbarcycle.option.itemGroups.@Tooltip[4]": "Items in the same group swap with each other."
 }

@@ -2,18 +2,36 @@ package com.github.nyuppo.config;
 
 public abstract class HotbarCycleConfig {
     /**
-     * The mage fork's default item groups (see com.github.nyuppo.group.ItemGroups), checked in order: melee weapons,
-     * ranged/magic weapons, tools, consumables (Michael 2026-11-04: tools and weapons apart, "weapon axes from farming
-     * axes ... scythes too", "melee and ranged weapons separate"). ManaCube builds weapons on tool items (staves and
-     * the Cursed Book are netherite hoes, the Troll Glaive an axe, the Magical Book a blaze rod), so the lore decides:
-     * melee lore talks about hits, ranged lore about shooting and PVE/area damage, and farming/mining gear (the
-     * Iridium Scythe: Herbalism) about neither, so it falls through to tools.
+     * The mage fork's default rules (see com.github.nyuppo.group.ItemGroups), first match wins: groups melee, ranged,
+     * tools, utility and consumables, plus "none" for what is never cycled (Michael 2026-11-04: tools and weapons
+     * apart, "weapon axes from farming axes ... scythes too", "melee and ranged weapons separate", tridents melee,
+     * Hermes Caduceus and Photon Barrier "kinda weirdos"). Tuned against ManaCube's whole custom-item catalog
+     * (SVAS, ~1,250 items, 2026-11-04), not just Michael's items:
+     * <ul>
+     *   <li>armor, shields, pendants, off-hand and one-time items: never cycled;</li>
+     *   <li>swords, spears, maces, tridents, unarmed weapons: melee; bows, crossbows: ranged;</li>
+     *   <li>pickaxes, shovels, rods, shears, and axes/hoes/wands whose lore names tool work (woodcutting, herbalism,
+     *       harvesting, vein mining, selling, growing crops): tools;</li>
+     *   <li>hoes and wands that teleport, glide, shield or pull, and mounts: utility;</li>
+     *   <li>hoes, blaze rods, sticks and books that shoot or deal damage, and axes that shoot: ranged;</li>
+     *   <li>any other axe with lore (on ManaCube nearly all are combat items): melee;</li>
+     *   <li>reusable food and drinks (Infinite Uses, (Consume)): consumables.</li>
+     * </ul>
      */
     public static final java.util.List<String> DEFAULT_ITEM_GROUPS = java.util.List.of(
-            "id:_sword$ | id:_spear$ | minecraft:mace | minecraft:trident | lore:(?i)unarmed weapon|extra damage|chance to deal|next hit|every \\d+\\w* hit",
-            "minecraft:bow | minecraft:crossbow | lore:(?i)pv[pe] damage|damage: \\d|damages all mobs|shoot | name:(?i)^hermes caduceus$ | name:(?i)^photon barrier$ | name:(?i)wizards? book | name:(?i)magical book",
-            "@tool | @weapon | minecraft:fishing_rod",
-            "name:(?i)^candy apple$ | name:(?i)^bottle of nectar$ | name:(?i)^champion potion$");
+            "none: id:_(helmet|chestplate|leggings|boots)$ | minecraft:carved_pumpkin | minecraft:player_head | minecraft:shield | minecraft:elytra | minecraft:totem_of_undying | lore:(?i)pendant slot|\\(off hand\\)|one time use",
+            "melee: id:_sword$ | id:_spear$ | minecraft:mace | minecraft:trident | lore:(?i)unarmed weapon",
+            "ranged: minecraft:bow | minecraft:crossbow",
+            "tools: id:_(pickaxe|shovel)$ | minecraft:fishing_rod | minecraft:shears",
+            "tools: id:_(axe|hoe)$ & lore:(?i)woodcutting|herbalism|excavation|mining|\\bcrops?\\b|harvests|replant|\\btill|vein mine|trench|tunnel|break block|\\blogs?\\b|haste|sell mode|growth|builder|places? .*block",
+            "tools: id:blaze_rod$|:stick$ & lore:(?i)\\bsells?\\b|sell wand|\\bcrops?\\b|\\bgrow",
+            "utility: id:_hoe$|blaze_rod$|:stick$ & lore:(?i)teleport|glide|slow ?fall|shield|barrier|pull all | minecraft:carrot_on_a_stick",
+            "ranged: id:_hoe$|blaze_rod$|:stick$|:book$|:snowball$ & lore:(?i)damage|shoot|\\bfires?\\b|magic|blast|launch|throw|bounce|drown|levitation|portal|randomi",
+            "ranged: id:_axe$ & lore:(?i)\\bshoots?\\b|to shoot",
+            "melee: id:_axe$ & lore:\\S",
+            "utility: id:_hoe$|blaze_rod$|:stick$ & lore:\\S",
+            "tools: @tool | @weapon",
+            "consumables: name:(?i)^candy apple$ | name:(?i)^bottle of nectar$ | name:(?i)^champion potion$ | id:golden_apple$|honey_bottle$|:potion$|:cookie$ & lore:(?i)infinite uses|^unbreakable$|\\(consume\\)|when consumed|when eaten");
 
     public abstract boolean getPlaySound();
     public abstract boolean getReverseCycleDirection();
