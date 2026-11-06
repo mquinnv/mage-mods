@@ -35,8 +35,8 @@ lore line), `id:<regex>`, or an item id.
 The defaults (in `config/HotbarCycleConfig.java`) sort into melee, ranged, tools, utility and consumables, and were
 tuned against ManaCube's whole custom-item catalog (the SVAS list CubeWheel caches, ~1,250 items), not just one
 player's items. ManaCube builds weapons on tool items, so lore decides: staves and wands that shoot or deal damage are
-ranged, axes are melee unless their lore names tool work (woodcutting, herbalism, vein mining, harvesting), hoes and
-wands that teleport, glide, shield or pull are utility, and armor, shields, pendants, off-hand and one-time items are
+ranged, axes are melee unless their lore names tool work (woodcutting, herbalism, vein mining, harvesting),
+multitools ("best tool for the job") are tools whatever item they have turned into, hoes and wands that teleport, glide, shield or pull are utility, and armor, shields, pendants, off-hand and one-time items are
 never cycled. `ItemGroupsTest` pins real catalog items to their groups.
 
 Logic is in `group/ItemGroups.java` (pure, unit-tested) and `GroupCycle.java`. Build: `./gradlew build`.

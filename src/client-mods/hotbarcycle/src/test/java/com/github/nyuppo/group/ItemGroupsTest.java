@@ -118,6 +118,18 @@ class ItemGroupsTest {
 		assertEquals("consumables", group(gear("minecraft:honey_bottle", "GRIMACE SHAKE", "Unbreakable", "ITEM EFFECTS: (Consume)")));
 	}
 
+	// "the multitool seems to be grouping with weapons": ManaCube turns a multitool into a sword or axe mid-use.
+	@Test void multitoolsAreToolsWhateverTheyHaveTurnedInto() {
+		for (String id : List.of(PICK, SWORD, AXE, "minecraft:netherite_shovel")) {
+			assertEquals("tools", group(gear(id, "✶ ELITE MULTITOOL ✶", "o <5 Available>", "Unbreakable", "",
+					"Automatically changes into the", "best tool for the job", "[Works on EVERY block]", "Elite Crate Reward")), id);
+		}
+		assertEquals("tools", group(gear(SWORD, "CAPTAIN MULTITOOL", "Unbreakable", "Captain Multitool", "➟ Automatically changes to", "the best tool for the job!")));
+		assertEquals("tools", group(gear(AXE, "STARDUST DRILL", "Unbreakable", "Stardust Drill", "ITEM EFFECTS: (When Held)",
+				"➟ Automatically transforms into", "the best tool for the job", "➟ Haste II")));
+		assertEquals("melee", group(gear("minecraft:diamond_sword", "✦ Sparkle Sword ✦", "Bonus Effects:", "▶ Combine the 4 tools into a multi-tool")));
+	}
+
 	@Test void ruleSyntax() {
 		ItemGroups g = ItemGroups.parse(List.of(
 				"none: minecraft:dirt",

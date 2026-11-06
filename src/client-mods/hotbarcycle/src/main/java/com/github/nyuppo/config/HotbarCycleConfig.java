@@ -9,6 +9,8 @@ public abstract class HotbarCycleConfig {
      * (SVAS, ~1,250 items, 2026-11-04), not just Michael's items:
      * <ul>
      *   <li>armor, shields, pendants, off-hand and one-time items: never cycled;</li>
+     *   <li>multitools ("Automatically changes into the best tool for the job"): tools, checked before the melee
+     *       rules because ManaCube swaps their base item to a sword or axe mid-use (Michael 2026-11-05);</li>
      *   <li>swords, spears, maces, tridents, unarmed weapons: melee; bows, crossbows: ranged;</li>
      *   <li>pickaxes, shovels, rods, shears, and axes/hoes/wands whose lore names tool work (woodcutting, herbalism,
      *       harvesting, vein mining, selling, growing crops): tools;</li>
@@ -20,6 +22,7 @@ public abstract class HotbarCycleConfig {
      */
     public static final java.util.List<String> DEFAULT_ITEM_GROUPS = java.util.List.of(
             "none: id:_(helmet|chestplate|leggings|boots)$ | minecraft:carved_pumpkin | minecraft:player_head | minecraft:shield | minecraft:elytra | minecraft:totem_of_undying | lore:(?i)pendant slot|\\(off hand\\)|one time use",
+            "tools: lore:(?i)best tool for the job|works on every block | name:(?i)multi-?tool",
             "melee: id:_sword$ | id:_spear$ | minecraft:mace | minecraft:trident | lore:(?i)unarmed weapon",
             "ranged: minecraft:bow | minecraft:crossbow",
             "tools: id:_(pickaxe|shovel)$ | minecraft:fishing_rod | minecraft:shears",
