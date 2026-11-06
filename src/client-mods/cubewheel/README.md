@@ -296,11 +296,19 @@ key shows the action-bar hint "CubeWheel is only active on ManaCube", no command
 HUD is not drawn, menus are not recorded and capture records nothing. The toggle-HUD key and the
 tracker picker still work there, on locally stored data.
 
-ManaCube runs SkyBlock, Parkour, the hub and more on the same address, and their menus and blocks must
-not feed Survival's trackers. So menu reading, refresh runs and live estimates also need the sidebar
-title to match `tracker.survivalSidebarPattern` (default `(?i)survival`: Survival's sidebar is titled
-"SURVIVAL"). No sidebar means inactive. The wheel, capture and sidebar-linked values only need the
-host gate. Refreshing elsewhere says "Tracker refresh only works in ManaCube Survival".
+ManaCube runs Survival, Skyblock, Parkour, the hub and more on the same address. The mod reads the
+sidebar title to tell the gamemode:
+
+- **Survival**: the title matches `tracker.survivalSidebarPattern` (default `(?i)survival`).
+- **Skyblock**: the title matches `tracker.skyblockSidebarPattern` (default `(?i)skyblock`). A blank
+  pattern means Skyblock is never detected.
+- **Other** (hub, Parkour, no sidebar): only capture runs. Nothing is scanned, refreshed or counted.
+
+Menu reading, refresh runs and live estimates need Survival or Skyblock, and each gamemode feeds its
+own tracker file, so Skyblock menus never write into Survival's. The wheel, capture and sidebar-linked
+values only need the host gate. Refreshing elsewhere says "Tracker refresh only works in ManaCube
+Survival or Skyblock". Survival-only features (events, /cow, boss slice, fishing log, mcMMO skills,
+boosters, command cooldowns, homes) stay Survival-only. See [Skyblock](#skyblock).
 
 ## Progress tracker
 
@@ -323,7 +331,8 @@ is not tracked. Consequences:
 - **Picker** (bind "Open tracker picker"): all known entries grouped by source, sorted by
   percentage. Left-click to pin/unpin, right-click to hide/unhide an entry on the HUD (hidden entries
   stay listed, dimmed and marked "(hidden)"). A button forgets unpinned entries not seen for 7 days.
-- Stored in `config/cubewheel-tracker.json`.
+- Stored in `config/cubewheel-tracker.json` on Survival (also shown in other gamemodes) and in
+  `config/cubewheel-tracker-skyblock.json` on Skyblock.
 
 ### World filter
 
@@ -791,10 +800,30 @@ The `/mcmmo` menu was captured on 2026-10-01 (17 skills, `Level: 137/2500` lore)
   reaching the cap, not from a captured capped bar.
 - The XP numbers right after a level-up: the mod shows `?` until the next bar rather than guessing 0.
 
+## Skyblock
+
+On Skyblock the mod keeps a separate tracker, wheel and SVA catalog. Survival's files are untouched.
+
+- **Tracker file**: `config/cubewheel-tracker-skyblock.json`. The HUD, tracker picker and local
+  counting follow the current gamemode's store. Skyblock tasks appear in the Tracker HUD, not the
+  Jobs panel.
+- **Sources**: menus are classified as `tasks` (`/jobs`, the wiki's `/tasks`), `prestige`,
+  `isquests` (`/is quests`) and `sbchallenges` (`/challenges`), plus the generic `menu` for any other
+  menu with two or more `Progress:` items. Title patterns (`tracker.sources`) are not used on
+  Skyblock. The rules use the wiki's wording and need a capture to tune; island-quest and task rules
+  need a counter.
+- **Refresh key**: `tracker.skyblockRefreshCommands`, default `/jobs`, `/prestige`, `/is quests`,
+  `/challenges`. A run stops if the gamemode changes.
+- **Wheel**: `wheelSkyblock` is a separate wheel used on Skyblock. The wheel editor and "reset wheel"
+  act on the current gamemode's wheel.
+- **SVA catalog**: `https://api.manacube.com/api/svas/skyblock`, cached under
+  `config/cubewheel-cache/skyblock/`. Each mode has its own service and rate budget; the tooltip
+  fetches the catalog lazily on first need.
+
 ## SVA catalog
 
 Press **Open SVA catalog** (unbound by default) for a grid of every Survival SVA (season vault
-item) from ManaCube's public API: the item's own model when ManaCube's resource pack is loaded,
+item) from ManaCube's public API (Skyblock has its own list, see [Skyblock](#skyblock)): the item's own model when ManaCube's resource pack is loaded,
 otherwise its vanilla item.
 
 - **Search** matches the name and the lore (every word must occur: `souls monsters`).
@@ -897,6 +926,9 @@ Captures contain chat text, including other players' messages; review the file b
 - Isles warp names other than `tangleroots` are unverified guesses (`/warp <name>`); edit the JSON
   if the server says unknown warp.
 - The `/homes` reply format (see above).
+- Skyblock's menu wording (`/jobs`, `/prestige`, `/is quests`, `/challenges`) and sidebar title come
+  from the wiki and are awaiting a capture; turn capture on and open each menu on Skyblock. If
+  nothing tracks there, set `tracker.skyblockSidebarPattern` to match the captured `sidebar` title.
 - Lore formats of the progress menus; extraction is generic until real captures exist.
 - Local counting: whether ManaCube's world dimensions are named after the world, whether its Survival
   sidebar has a `World:` line, and how "Resources" is counted; `local`/`world`/`estimate` capture lines

@@ -319,6 +319,17 @@ Bind "Open SVA catalog" first. Start with `config/cubewheel-cache/` deleted.
 - [ ] Disconnect the network and open the screen: cached data still shows, the status line says "Offline: …" or "API error …" instead of hanging.
 - [ ] On a non-ManaCube server: no tooltip line and no requests.
 
+## Skyblock
+
+- [ ] Capture first: turn capture on, join Skyblock, then open `/jobs`, `/prestige`, `/is quests` and `/challenges`. `"kind":"sidebar"` lines show the title (check it matches `tracker.skyblockSidebarPattern`) and one `"kind":"container"` line per menu. Use them to tune the rules.
+- [ ] Detection: on Skyblock the tracker HUD works; in the hub or Parkour nothing is scanned, refreshed or counted (only capture lines appear). Blank `tracker.skyblockSidebarPattern`: Skyblock is treated as other.
+- [ ] Open each of the four menus: entries are listed in the picker under `tasks`, `prestige`, `isquests` and `sbchallenges`, and are saved to `config/cubewheel-tracker-skyblock.json`. Skyblock tasks show in the Tracker HUD, not the Jobs panel.
+- [ ] `config/cubewheel-tracker.json` (Survival) is not modified by any Skyblock menu (check its modification time before and after).
+- [ ] Refresh key on Skyblock sends `/jobs`, `/prestige`, `/is quests`, `/challenges` in turn. Switching gamemode mid-run stops it.
+- [ ] Wheel: on Skyblock the wheel shows `wheelSkyblock`; on Survival the Survival wheel. The editor and "reset wheel" change only the current gamemode's wheel.
+- [ ] SVA: on Skyblock the catalog and tooltip use Skyblock's list (cache under `config/cubewheel-cache/skyblock/`); hover an SVA item for the tooltip line.
+- [ ] Survival is unaffected: events, /cow, boss slice, fishing log, mcMMO skills, boosters, command cooldowns and homes work as before on Survival and are inactive on Skyblock. Survival's catalog cache is unchanged.
+
 ## Live slices
 
 - [ ] Fly: `/fly` on and off: the slice shows `Fly: on` (green) / `Fly: off` (red).

@@ -3,7 +3,7 @@
   "id": "cubewheel",
   "version": "${version}",
   "name": "CubeWheel (unofficial ManaCube helper)",
-  "description": "Unofficial client-side helper for ManaCube Survival: a radial command wheel for vaults, shops, warps and homes, plus a passive quest/job progress tracker. Not affiliated with ManaCube.",
+  "description": "Unofficial client-side helper for ManaCube Survival and Skyblock: a radial command wheel for vaults, shops, warps and homes, plus a passive quest/job progress tracker. Not affiliated with ManaCube.",
   "authors": ["Mage Realism"],
   "license": "MIT",
   "environment": "client",
