@@ -5,6 +5,7 @@ import net.mage.cubewheel.ServerGate;
 import net.mage.cubewheel.capture.CaptureLog;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.live.LiveWatcher;
+import net.mage.cubewheel.sidebar.Gamemode;
 import net.mage.cubewheel.tracker.ContainerScanner.ItemView;
 import java.util.ArrayList;
 import java.util.List;
@@ -117,19 +118,23 @@ public final class ContainerHook {
 					capture.container(title, items, now);
 					lastCaptured = items;
 				}
-				// Other ManaCube gamemodes (SkyBlock, Parkour, hub) have look-alike menus: Survival only.
-				if (!ServerGate.survival(cfg)) return;
-				net.mage.cubewheel.skills.SkillsWatcher.onMenu(title, items, now); // the /mcmmo menu's skill levels
-				LiveWatcher.onMenu(title, items, now); // the /cow menu's reward cooldowns; catches its own failures
-				// The Fishing Log (/fish) says where every species is caught; the Jobs panel uses it for fishing jobs.
-				FishLog fishLog = CubeWheelClient.fishLog();
-				if (fishLog != null && fishLog.scan(items) > 0) fishLog.saveInBackground();
+				// Parkour, hub and the rest have look-alike menus: Survival and Skyblock only.
+				if (!ServerGate.tracks(cfg)) return;
+				Gamemode mode = ServerGate.gamemode(cfg);
+				if (mode == Gamemode.SURVIVAL) {
+					// These watchers read Survival-only menus (/mcmmo, /cow, /fish).
+					net.mage.cubewheel.skills.SkillsWatcher.onMenu(title, items, now); // the /mcmmo menu's skill levels
+					LiveWatcher.onMenu(title, items, now); // the /cow menu's reward cooldowns; catches its own failures
+					// The Fishing Log (/fish) says where every species is caught; the Jobs panel uses it for fishing jobs.
+					FishLog fishLog = CubeWheelClient.fishLog();
+					if (fishLog != null && fishLog.scan(items) > 0) fishLog.saveInBackground();
+				}
 				TrackerStore store = CubeWheelClient.tracker();
 				if (store == null) return;
 				// Facts any menu states about you ("Current Level: 55" on /party) update matching objectives.
 				boolean factsChanged = MenuFacts.apply(MenuFacts.of(items), store, now) > 0;
 				if (factsChanged) store.saveInBackground();
-				Optional<String> source = MenuClassifier.classify(title, items, cfg.tracker.sources);
+				Optional<String> source = MenuClassifier.classify(mode, title, items, cfg.tracker.sources);
 				if (source.isEmpty()) {
 					announceCompletions(store);
 					return;

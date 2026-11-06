@@ -50,6 +50,20 @@ class ContainerScannerTest {
 		assertEquals(1, ContainerScanner.scan("jobs", progressed, store, 1_500));
 	}
 
+	// wiki wording, replace with capture
+	@Test void islandQuestItemWithoutProgressLineIsScanned() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		List<ItemView> items = List.of(
+			new ItemView(0, "minecraft:paper", "Miner", List.of("Island Quest", "Mine 300 cobblestone", "120/300")),
+			new ItemView(1, "minecraft:gray_stained_glass_pane", "", List.of()));
+		assertEquals(1, ContainerScanner.scan("isquests", items, store, 5));
+		assertEquals(1, store.all().size());
+		Trackable t = store.all().get(0);
+		assertEquals("isquests:Miner", t.id());
+		assertEquals(120, t.current());
+		assertEquals(300, t.max());
+	}
+
 	@Test void everyReadEntryIsReportedEvenWhenUnchanged() {
 		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
 		List<ItemView> items = List.of(

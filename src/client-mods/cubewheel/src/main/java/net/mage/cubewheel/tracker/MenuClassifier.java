@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+import net.mage.cubewheel.sidebar.Gamemode;
 import net.mage.cubewheel.tracker.ContainerScanner.ItemView;
 
 /**
@@ -25,6 +26,29 @@ public final class MenuClassifier {
 	private static final int GENERIC_MIN_ITEMS = 2;
 
 	private MenuClassifier() {}
+
+	/**
+	 * Classifies for {@code mode}: Survival is the three-argument logic, Skyblock reads {@link SkyblockMenus}
+	 * then the generic progress rule (no title patterns), any other gamemode is never tracked.
+	 */
+	public static Optional<String> classify(Gamemode mode, String title, List<ItemView> items,
+			Map<String, String> titleSources) {
+		return switch (mode) {
+			case SURVIVAL -> classify(title, items, titleSources);
+			case SKYBLOCK -> {
+				// Michael 2026-11-06: the title patterns are Survival's, so Skyblock reads items only.
+				if (items == null) yield Optional.empty();
+				Optional<String> bySkyblock = SkyblockMenus.classify(items);
+				if (bySkyblock.isPresent()) yield bySkyblock;
+				int progressItems = 0;
+				for (ItemView item : items) {
+					if (item != null && item.lore() != null && anyLineStarts(item.lore(), "progress:")) progressItems++;
+				}
+				yield progressItems >= GENERIC_MIN_ITEMS ? Optional.of("menu") : Optional.empty();
+			}
+			case OTHER -> Optional.empty();
+		};
+	}
 
 	public static Optional<String> classify(String title, List<ItemView> items, Map<String, String> titleSources) {
 		Optional<String> byTitle = TrackerSources.match(title, titleSources);

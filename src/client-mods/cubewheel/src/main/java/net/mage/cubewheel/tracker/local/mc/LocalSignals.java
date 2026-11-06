@@ -87,7 +87,7 @@ import net.minecraft.world.level.block.state.BlockState;
  * Minecraft adapter for local counting: the static facade that Fabric callbacks and the optional mixins
  * call. Purely passive: it only observes (own block breaks, damage/death/removal packets, action-bar
  * loot lines, reeling in a biting bobber, ManaCube's catch and quest-completed chat lines) and never sends, opens or clicks anything; its only write is the local tracker file. Active
- * only in ManaCube Survival (host gate plus sidebar title, see {@link ServerGate#survival}), in
+ * only in ManaCube Survival or Skyblock (host gate plus sidebar title, see {@link ServerGate#tracks}), in
  * survival/adventure game mode, with {@code tracker.local.enabled}. Every entry point is guarded: a failing hook is
  * logged once and switched off for the session after {@link #MAX_FAILURES} failures.
  */
@@ -1035,7 +1035,7 @@ public final class LocalSignals {
 			tick++;
 			CubeWheelConfig cfg = CubeWheelClient.config().current();
 			TrackerStore store = CubeWheelClient.tracker();
-			active = cfg.tracker.local.enabled && store != null && mc.player != null && mc.level != null && ServerGate.survival(cfg);
+			active = cfg.tracker.local.enabled && store != null && mc.player != null && mc.level != null && ServerGate.tracks(cfg);
 			pending.expire(tick);
 			areas.expire(tick);
 			if (active) captureAreaSummary();
