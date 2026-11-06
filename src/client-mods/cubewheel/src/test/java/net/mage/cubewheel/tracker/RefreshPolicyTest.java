@@ -298,15 +298,23 @@ class RefreshPolicyTest {
 	@Test void onlyRecognisedMenusCountAsTheRunsMenu() {
 		String glyph = ManaCubeMenusTest.GLYPH_TITLE;
 		java.util.Map<String, String> sources = ManaCubeMenusTest.TITLE_SOURCES;
-		assertEquals(View.MENU_LOADING, RefreshPolicy.menuView(glyph, List.of(), sources));
-		assertEquals(View.MENU_READY, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.JOBS_MAIN, sources));
-		assertEquals(View.MENU_READY, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.PRESTIGE_RANKS, sources));
-		assertEquals(View.MENU_READY, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.PARTY_QUESTS, sources));
+		assertEquals(View.MENU_LOADING, RefreshPolicy.menuView(net.mage.cubewheel.sidebar.Gamemode.SURVIVAL, glyph, List.of(), sources));
+		assertEquals(View.MENU_READY, RefreshPolicy.menuView(net.mage.cubewheel.sidebar.Gamemode.SURVIVAL, glyph, ManaCubeMenusTest.JOBS_MAIN, sources));
+		assertEquals(View.MENU_READY, RefreshPolicy.menuView(net.mage.cubewheel.sidebar.Gamemode.SURVIVAL, glyph, ManaCubeMenusTest.PRESTIGE_RANKS, sources));
+		assertEquals(View.MENU_READY, RefreshPolicy.menuView(net.mage.cubewheel.sidebar.Gamemode.SURVIVAL, glyph, ManaCubeMenusTest.PARTY_QUESTS, sources));
 		// Any other menu (warps, a chest) is MENU_UNKNOWN: outside the run's own command it aborts the run
 		// and stays visible and usable.
-		assertEquals(View.MENU_UNKNOWN, RefreshPolicy.menuView(glyph, ManaCubeMenusTest.WARPS, sources));
-		assertEquals(View.MENU_UNKNOWN, RefreshPolicy.menuView("Chest",
+		assertEquals(View.MENU_UNKNOWN, RefreshPolicy.menuView(net.mage.cubewheel.sidebar.Gamemode.SURVIVAL, glyph, ManaCubeMenusTest.WARPS, sources));
+		assertEquals(View.MENU_UNKNOWN, RefreshPolicy.menuView(net.mage.cubewheel.sidebar.Gamemode.SURVIVAL, "Chest",
 				List.of(ManaCubeMenusTest.item(0, "Diamond", "A shiny gem")), sources));
+	}
+
+	@Test void skyblockMenusAreReadyInSkyblockMode() {
+		var challenges = List.of(ManaCubeMenusTest.item(0, "Mob Challenge", "120,000 / 3,500,000"));
+		assertEquals(View.MENU_READY, RefreshPolicy.menuView(net.mage.cubewheel.sidebar.Gamemode.SKYBLOCK, "Challenges",
+				challenges, java.util.Map.of()));
+		assertEquals(View.MENU_UNKNOWN, RefreshPolicy.menuView(net.mage.cubewheel.sidebar.Gamemode.SURVIVAL, "Challenges",
+				challenges, java.util.Map.of()));
 	}
 
 	@Test void finishedMessage() {

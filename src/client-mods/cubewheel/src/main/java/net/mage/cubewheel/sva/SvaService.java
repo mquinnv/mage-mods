@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Fetches and holds the SVA catalog, the player's own owned SVAs and one "compare with" player. Every request
- * is asynchronous, passes the gate (on ManaCube) and a shared budget of {@link #MAX_REQUESTS_PER_MINUTE};
+ * is asynchronous, passes the gate (on ManaCube) and this service's own budget of {@link #MAX_REQUESTS_PER_MINUTE} (each gamemode has its own service);
  * the catalog is re-fetched at most every {@link #CATALOG_MAX_AGE_MS}, owned SVAs every
  * {@link #OWNED_MAX_AGE_MS} or on a manual refresh. Results are published through volatile fields, so the
  * render thread only ever reads. Nothing here talks to the game server. Pure: no Minecraft imports.

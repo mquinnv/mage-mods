@@ -6,7 +6,7 @@ import net.mage.cubewheel.capture.CaptureLog;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.mixin.FishingHookAccessor;
 import net.mage.cubewheel.mixin.HudAccessor;
-import net.mage.cubewheel.sidebar.SidebarLinker;
+import net.mage.cubewheel.sidebar.StoreSaveThrottle;
 import net.mage.cubewheel.tracker.TrackerStore;
 import net.mage.cubewheel.cooldown.McmmoParser;
 import net.mage.cubewheel.cooldown.McmmoWatcher;
@@ -100,7 +100,7 @@ public final class LocalSignals {
 	private static final int DEATH_EVENT = 3; // EntityEvent.DEATH
 
 	private static final Map<Hook, Integer> failures = new EnumMap<>(Hook.class);
-	private static final SidebarLinker.SaveThrottle saveThrottle = new SidebarLinker.SaveThrottle(SAVE_INTERVAL_MS);
+	private static final StoreSaveThrottle saveThrottle = new StoreSaveThrottle(SAVE_INTERVAL_MS);
 	private static final PendingBreaks pending = new PendingBreaks();
 	private static final PlacedBlocks placed = new PlacedBlocks(PlacedBlocks.DEFAULT_CAPACITY);
 	private static final KillAttribution kills = new KillAttribution();
@@ -240,7 +240,7 @@ public final class LocalSignals {
 					// A refusal (claim, anti-cheat), or a mana world's fake-break: the block is back, the count goes back.
 					TrackerStore store = CubeWheelClient.tracker();
 					LocalCounter.reverse(settled.contributions(), store);
-					saveThrottle.markDirty();
+					markDirty(store);
 					WorldInfo at = world();
 					capture("reject", id, null, at.special() ? "restored by the server: a fake-break, taken back" : null, at,
 							settled.contributions());
@@ -634,7 +634,7 @@ public final class LocalSignals {
 		}
 		List<LocalCounter.Contribution> added = LocalCounter.lootKill(credit.get().ruleIds(), r.modelHitbox(), r.world(),
 				store, local().worlds, System.currentTimeMillis());
-		if (!added.isEmpty()) saveThrottle.markDirty();
+		if (!added.isEmpty()) markDirty(store);
 		removalCounted(r);
 		capture("kill", r.typeId(), credit.get().target(), "removal, method c (" + from + " " + loot + " -> " + credit.get().target() + "), local hit",
 				r.world(), added);
@@ -875,17 +875,19 @@ public final class LocalSignals {
 
 	/** You finished {@code quest}: its "Complete the …" objectives are estimated done until the next menu read. */
 	private static void onQuestCompleted(String quest) {
+		TrackerStore store = CubeWheelClient.tracker();
 		List<LocalCounter.Contribution> added =
-				LocalCounter.questCompleted(quest, CubeWheelClient.tracker(), System.currentTimeMillis());
-		if (!added.isEmpty()) saveThrottle.markDirty();
+				LocalCounter.questCompleted(quest, store, System.currentTimeMillis());
+		if (!added.isEmpty()) markDirty(store);
 		capture("quest", null, quest, "chat: you completed it", world(), added);
 	}
 
 	private static void onChatCatch(FishCatchParser.Catch c) {
 		List<LocalCounter.Contribution> undo = fishDedup.chatCatch(System.currentTimeMillis());
 		if (!undo.isEmpty()) {
-			LocalCounter.reverse(undo, CubeWheelClient.tracker());
-			saveThrottle.markDirty();
+			TrackerStore store = CubeWheelClient.tracker();
+			LocalCounter.reverse(undo, store);
+			markDirty(store);
 		}
 		Signal.FishCaught signal = new Signal.FishCaught(c.species(), c.rarity(), world());
 		capture("fish", null, c.species(), "chat; rarity=" + c.rarity() + " size=" + c.sizeCm() + "cm"
@@ -1067,7 +1069,7 @@ public final class LocalSignals {
 				}
 			}
 			expireLootKills(mc); // after the removals: a kill counted this tick still claims its line
-			if (store != null && saveThrottle.shouldSave(System.currentTimeMillis())) store.saveInBackground();
+			saveThrottle.tick(System.currentTimeMillis());
 		} catch (Throwable t) {
 			fail(Hook.TICK, t);
 		}
@@ -1075,8 +1077,7 @@ public final class LocalSignals {
 
 	private static void flush() {
 		try {
-			TrackerStore store = CubeWheelClient.tracker();
-			if (store != null && saveThrottle.consumeDirty()) store.save();
+			saveThrottle.flush();
 		} catch (VirtualMachineError e) {
 			throw e;
 		} catch (Throwable e) {
@@ -1153,8 +1154,9 @@ public final class LocalSignals {
 			long now = System.currentTimeMillis();
 			for (LootKills.Kill k : lootKills.expire(now)) {
 				if (!survivalMode(mc.player)) continue;
-				LootKills.Credited c = LootKills.credit(k, CubeWheelClient.tracker(), local().worlds, now);
-				if (!c.added().isEmpty()) saveThrottle.markDirty();
+				TrackerStore store = CubeWheelClient.tracker();
+				LootKills.Credited c = LootKills.credit(k, store, local().worlds, now);
+				if (!c.added().isEmpty()) markDirty(store);
 				capture("kill", null, c.target().orElse(null), "loot line only (ability kill): " + k.loot()
 						+ c.target().map(t -> " -> " + t).orElse(" names no kill objective; generic"), k.world(), c.added());
 			}
@@ -1169,15 +1171,20 @@ public final class LocalSignals {
 		if (!r.modelHitbox() || store == null) return List.of();
 		List<LocalCounter.Contribution> added = LocalCounter.genericKill(r.world(), store, local().worlds,
 				System.currentTimeMillis(), Set.of());
-		if (!added.isEmpty()) saveThrottle.markDirty();
+		if (!added.isEmpty()) markDirty(store);
 		return added;
 	}
 
 	private static List<LocalCounter.Contribution> count(Signal signal) {
 		TrackerStore store = CubeWheelClient.tracker();
 		List<LocalCounter.Contribution> added = LocalCounter.onSignal(signal, store, local().worlds, System.currentTimeMillis());
-		if (!added.isEmpty()) saveThrottle.markDirty();
+		if (!added.isEmpty()) markDirty(store);
 		return added;
+	}
+
+	/** {@code store} is the one a count just changed; it is saved even if the gamemode switches before the save. */
+	private static void markDirty(TrackerStore store) {
+		if (store != null) saveThrottle.markDirty(store);
 	}
 
 	private static WorldInfo world() {

@@ -23,7 +23,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 /**
- * Grid of every Survival SVA with search (name + lore), owned / not-owned filter, sort, and "compare with
+ * Grid of every SVA of the current gamemode (Survival or Skyblock) with search (name + lore), owned / not-owned filter, sort, and "compare with
  * player". Hover shows the SVA's name, lore and circulation; left-click runs {@code /ah search <name>} (one
  * command, a direct click). Everything else here is read-only and talks only to ManaCube's web API.
  */

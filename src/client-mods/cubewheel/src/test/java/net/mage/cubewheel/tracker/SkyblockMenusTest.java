@@ -23,10 +23,15 @@ class SkyblockMenusTest {
 				classify(item(1, "Rank 1", "Harvest 25,000 crops", "Progress: 1,200/25,000")));
 	}
 
+	@Test void aListingNamedLikeARankIsNotPrestige() {
+		assertEquals(Optional.empty(), classify(item(1, "Rank 1 Voucher", "50%")));
+		assertEquals(Optional.of("prestige"), classify(item(1, "Rank 1", "50%")));
+	}
+
 	// wiki wording, replace with capture
 	@Test void bracketedRankAndPrestigeLevelArePrestige() {
-		assertEquals(Optional.of("prestige"), classify(item(1, "Rank [✪3]", "x")));
-		assertEquals(Optional.of("prestige"), classify(item(1, "Prestige 2", "x")));
+		assertEquals(Optional.of("prestige"), classify(item(1, "Rank [✪3]", "Reach 5 / 10")));
+		assertEquals(Optional.of("prestige"), classify(item(1, "Prestige 2", "Reach 5 / 10")));
 	}
 
 	// wiki wording, replace with capture

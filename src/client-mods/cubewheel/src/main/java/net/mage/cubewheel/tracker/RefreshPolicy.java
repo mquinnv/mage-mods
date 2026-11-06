@@ -1,5 +1,6 @@
 package net.mage.cubewheel.tracker;
 
+import net.mage.cubewheel.sidebar.Gamemode;
 import net.mage.cubewheel.tracker.ContainerScanner.ItemView;
 import java.util.ArrayList;
 import java.util.List;
@@ -97,9 +98,9 @@ public final class RefreshPolicy {
 	 * What a server container menu counts as for the run: MENU_LOADING while it has no items, MENU_READY
 	 * when its items are recognised as a tracker menu, otherwise OTHER (so the run leaves it alone).
 	 */
-	public static View menuView(String title, List<ItemView> items, Map<String, String> titleSources) {
+	public static View menuView(Gamemode mode, String title, List<ItemView> items, Map<String, String> titleSources) {
 		if (items == null || items.isEmpty()) return View.MENU_LOADING;
-		return MenuClassifier.classify(title, items, titleSources).isPresent() ? View.MENU_READY : View.MENU_UNKNOWN;
+		return MenuClassifier.classify(mode, title, items, titleSources).isPresent() ? View.MENU_READY : View.MENU_UNKNOWN;
 	}
 
 	/** "Refreshed N trackers", plus how many menus did not load. */

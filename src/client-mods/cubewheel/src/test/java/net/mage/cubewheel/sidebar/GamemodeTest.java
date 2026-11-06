@@ -39,6 +39,11 @@ class GamemodeTest {
 		assertEquals(SURVIVAL, Gamemode.detect("anything", "", SB));
 	}
 
+	@Test void blankSurvivalPatternStillDetectsSkyblock() {
+		assertEquals(SKYBLOCK, Gamemode.detect("SKYBLOCK", "", "(?i)skyblock"));
+		assertEquals(SURVIVAL, Gamemode.detect("anything", "", "(?i)skyblock"));
+	}
+
 	/** The memo remembers one entry; alternating titles must still each get their own right answer. */
 	@Test void alternatingTitlesStayCorrectThroughTheMemo() {
 		for (int i = 0; i < 3; i++) {

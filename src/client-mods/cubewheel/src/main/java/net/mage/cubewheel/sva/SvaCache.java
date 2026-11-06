@@ -15,7 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Raw API bodies on disk in {@code config/cubewheel-cache/}: {@code svas-survival.json}, {@code owned-<uuid>.json}
+ * Raw API bodies on disk in {@code config/cubewheel-cache/}: {@code svas-survival.json} (Survival; Skyblock keeps its own copy in a
+ * {@code skyblock/} folder), {@code owned-<uuid>.json}
  * (the player's own only) and {@code index.json} with the fetch times. Missing or unreadable files read as empty;
  * write failures are logged, never thrown. Pure: no Minecraft imports.
  */

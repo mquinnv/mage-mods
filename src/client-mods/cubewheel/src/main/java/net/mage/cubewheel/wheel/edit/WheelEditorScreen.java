@@ -50,8 +50,13 @@ public final class WheelEditorScreen extends Screen {
 	private int scroll;
 	private Button addCommand, addRing, addToArc, edit, delete, up, down, out;
 
+	/** Skyblock has its own wheel; every other gamemode uses Survival's. */
+	private static String wheelName(Gamemode m) {
+		return m == Gamemode.SKYBLOCK ? "Skyblock" : "Survival";
+	}
+
 	public WheelEditorScreen(Screen parent) {
-		super(Component.literal("Edit wheel"));
+		super(Component.literal("Edit wheel (" + wheelName(ServerGate.gamemode(CubeWheelClient.config().current())) + ")"));
 		this.parent = parent;
 		this.store = CubeWheelClient.config();
 		CubeWheelConfig current = store.current();
@@ -250,7 +255,7 @@ public final class WheelEditorScreen extends Screen {
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partial) {
 		super.extractRenderState(g, mouseX, mouseY, partial);
-		g.centeredText(font, dirty ? "Edit wheel (unsaved changes)" : "Edit wheel", width / 2, 6, WHITE);
+		g.centeredText(font, dirty ? "Edit wheel (" + wheelName(mode) + ", unsaved changes)" : "Edit wheel (" + wheelName(mode) + ")", width / 2, 6, WHITE);
 		if (!store.lastLoadOk()) {
 			g.centeredText(font, "cubewheel.json has an error and was not loaded. Saving here replaces it.", width / 2, 17, RED);
 		} else {

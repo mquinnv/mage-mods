@@ -171,7 +171,10 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `tracker.position` | Tracker panel corner and offset; in the Jobs panel's corner it stacks under it (see [Tracker panel](#tracker-panel)) | `{"corner": "top_left", "x": 4, "y": 4}` |
 | `tracker.sources` | Source id -> regex matched against the menu title | see below |
 | `tracker.refreshCommands` | Commands the "Refresh trackers" key sends, one at a time (max 8) | `["/pquests", "/prestige", "/jobs"]` |
-| `tracker.survivalSidebarPattern` | Regex on the sidebar title; menu reading, refresh runs and live estimates only run while it matches (see [Server gate](#server-gate)). `""` switches the check off | `"(?i)survival"` |
+| `tracker.survivalSidebarPattern` | Regex on the sidebar title that marks ManaCube Survival (see [Server gate](#server-gate)). `""` switches the Survival check off: any title that is not Skyblock then counts as Survival | `"(?i)survival"` |
+| `tracker.skyblockSidebarPattern` | Regex on the sidebar title that marks ManaCube Skyblock. `""` means Skyblock is never detected | `"(?i)skyblock"` |
+| `tracker.skyblockRefreshCommands` | Commands the "Refresh trackers" key sends on Skyblock, one at a time (max 8) | `["/jobs", "/prestige", "/is quests", "/challenges"]` |
+| `wheelSkyblock` | The wheel used on Skyblock (same format as `wheel`); the wheel editor edits the current gamemode's wheel | built-in Skyblock wheel |
 | `tracker.worldFilter` | HUD order for the world you are in: `"sort"` lists entries naming the current world first (after pinned) and other worlds' last, `"hide"` drops other worlds' unpinned entries, `"off"` (see [World filter](#world-filter)) | `"sort"` |
 | `tracker.sidebarLinks` | Sidebar key -> regex on tracked names that follow that live value | `{"Skills": "(?i)reach [\\d,]+ skill level"}` |
 | `tracker.local.enabled` | Live `~` estimates between menu reads (see [Live estimates](#live-estimates-local-counting)) | `true` |
@@ -299,7 +302,8 @@ tracker picker still work there, on locally stored data.
 ManaCube runs Survival, Skyblock, Parkour, the hub and more on the same address. The mod reads the
 sidebar title to tell the gamemode:
 
-- **Survival**: the title matches `tracker.survivalSidebarPattern` (default `(?i)survival`).
+- **Survival**: the title matches `tracker.survivalSidebarPattern` (default `(?i)survival`). With a blank
+  Survival pattern, any title is Survival unless it matches the Skyblock pattern.
 - **Skyblock**: the title matches `tracker.skyblockSidebarPattern` (default `(?i)skyblock`). A blank
   pattern means Skyblock is never detected.
 - **Other** (hub, Parkour, no sidebar): only capture runs. Nothing is scanned, refreshed or counted.

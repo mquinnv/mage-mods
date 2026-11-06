@@ -67,7 +67,8 @@ public final class RefreshController {
 	 */
 	public static boolean shouldHide(Screen screen) {
 		if (!hidingMenus() || !(screen instanceof AbstractContainerScreen<?>)) return false;
-		RefreshPolicy.View v = view(Minecraft.getInstance(), screen);
+		RefreshPolicy.View v = view(Minecraft.getInstance(), screen,
+				ServerGate.gamemode(CubeWheelClient.config().current()));
 		return v == RefreshPolicy.View.MENU_LOADING || v == RefreshPolicy.View.MENU_READY;
 	}
 
@@ -112,7 +113,8 @@ public final class RefreshController {
 		switch (start.outcome()) {
 			case COOLDOWN -> report(mc, fromPicker, "refresh skipped: wait " + start.waitSeconds() + "s");
 			case RUNNING -> report(mc, fromPicker, "refresh already running");
-			case NO_COMMANDS -> report(mc, fromPicker, "refresh skipped: no refresh commands for " + mode);
+			case NO_COMMANDS -> report(mc, fromPicker, "refresh skipped: no refresh commands for " + mode.displayName()
+					+ " (fill tracker." + mode.id() + "RefreshCommands)");
 			case STARTED -> {
 				runMode = mode;
 				seenThisRun.clear();
@@ -149,7 +151,7 @@ public final class RefreshController {
 			Screen screen = mc.gui.screen();
 			boolean input = inputSampled || userInput(mc);
 			inputSampled = false;
-			RefreshPolicy.Action action = POLICY.step(Util.getMillis(), view(mc, screen), input);
+			RefreshPolicy.Action action = POLICY.step(Util.getMillis(), view(mc, screen, runMode), input);
 			switch (action.kind()) {
 				case NONE -> { }
 				case SEND -> {
@@ -184,14 +186,14 @@ public final class RefreshController {
 		if (reopenPicker && mc.gui.screen() == null) mc.gui.setScreen(new TrackerScreen());
 	}
 
-	private static RefreshPolicy.View view(Minecraft mc, Screen screen) {
+	private static RefreshPolicy.View view(Minecraft mc, Screen screen, Gamemode mode) {
 		if (screen == null) return RefreshPolicy.View.NONE;
 		if (screen instanceof TrackerScreen) return RefreshPolicy.View.OWN; // the picker a run starts from
 		if (!(screen instanceof AbstractContainerScreen<?> cs) || (mc.player != null && cs.getMenu() == mc.player.inventoryMenu)) {
 			return RefreshPolicy.View.OTHER;
 		}
 		if (screen == viewScreen && viewTick == tickNo && viewCached != null) return viewCached;
-		RefreshPolicy.View v = RefreshPolicy.menuView(screen.getTitle().getString(), ContainerHook.views(cs),
+		RefreshPolicy.View v = RefreshPolicy.menuView(mode, screen.getTitle().getString(), ContainerHook.views(cs),
 				CubeWheelClient.config().current().tracker.sources);
 		viewScreen = screen;
 		viewTick = tickNo;

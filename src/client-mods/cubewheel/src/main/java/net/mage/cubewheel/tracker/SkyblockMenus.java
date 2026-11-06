@@ -16,10 +16,11 @@ import net.mage.cubewheel.tracker.ContainerScanner.ItemView;
  */
 public final class SkyblockMenus {
 	/**
-	 * Prestige ranks ("Rank 1", "Rank [✪3]", "Prestige 2").
+	 * Prestige ranks ("Rank 1", "Rank [✪3]", "Prestige 2"). The whole name must match, so a listing such as
+	 * "Rank 1 Voucher" is not a rank.
 	 * Wiki: https://wiki.manacube.com/skyblock/prestige
 	 */
-	static final Pattern PRESTIGE_NAME = Pattern.compile("^(Rank \\d+\\b|Rank \\[✪\\d+]|Prestige \\d+\\b)");
+	static final Pattern PRESTIGE_NAME = Pattern.compile("^(Rank \\d+|Rank \\[✪\\d+]|Prestige \\d+)$");
 
 	/**
 	 * The challenge categories ("Mob Challenge", "Mini Boss Challenge").
@@ -51,12 +52,12 @@ public final class SkyblockMenus {
 			if (item == null) continue;
 			String name = ContainerScanner.strip(item.name()).trim();
 			List<String> lore = item.lore() == null ? List.of() : item.lore();
-			if (PRESTIGE_NAME.matcher(name).find()) return Optional.of("prestige");
+			boolean counted = ProgressExtractor.extract(lore).isPresent();
+			if (counted && PRESTIGE_NAME.matcher(name).matches()) return Optional.of("prestige");
 			if (CHALLENGE_NAME.matcher(name).matches()) return Optional.of("sbchallenges");
 			if (ISLAND_QUEST_NAME.matcher(name).matches()) return Optional.of("isquests");
 			// Michael 2026-11-06: lore rules need a counter, or a hub button ("Click to view your Island Quests")
 			// would classify the whole menu and its neighbours' counters would become entries.
-			boolean counted = ProgressExtractor.extract(lore).isPresent();
 			if (counted && anyLineContains(lore, ISLAND_QUEST_LORE)) return Optional.of("isquests");
 			if (counted && anyLineMatches(lore, TASK_LORE)) return Optional.of("tasks");
 		}
