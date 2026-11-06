@@ -811,11 +811,26 @@ On Skyblock the mod keeps a separate tracker, wheel and SVA catalog. Survival's 
 - **Tracker file**: `config/cubewheel-tracker-skyblock.json`. The HUD, tracker picker and local
   counting follow the current gamemode's store. Skyblock tasks appear in the Tracker HUD, not the
   Jobs panel.
-- **Sources**: menus are classified as `tasks` (`/jobs`, the wiki's `/tasks`), `prestige`,
-  `isquests` (`/is quests`) and `sbchallenges` (`/challenges`), plus the generic `menu` for any other
-  menu with two or more `Progress:` items. Title patterns (`tracker.sources`) are not used on
-  Skyblock. The rules use the wiki's wording and need a capture to tune; island-quest and task rules
-  need a counter.
+- **Sources**: the rules follow the first Skyblock capture (2026-11-06). Every menu below opens
+  from the `/jobs` hub. Title patterns (`tracker.sources`) are not used on Skyblock.
+  - `isquests`, Island Team Quests: read like `/pquests`. A quest needs a `Progress:` line, and
+    `QUEST COMPLETED` marks it done. The weekly challenge in the bottom row ("Wart Grind", "Weekly
+    Farm Challenge") is filed under `challenges`, and last week's is forgotten. Tier headers
+    ("Beginner Quests") and locked quests are not entries.
+  - `tasks`, the Task Board: one entry per task ("SLAYER TASK", "ADVENTURE TASK"), named after its
+    objective ("Slay 76 Mana Slimes in Wolfhaven"). Progress comes from the `(0/76)` counter and the
+    deadline from `Time Left:`. A task the board no longer shows has expired, so it is forgotten
+    (pinned tasks are kept). Stats, Streak and Points Shop are not entries.
+  - `prestige`: the rank page ("Rank [✪1]", "Harvest 25,000 crops [0/25,000]") is read exactly as
+    on Survival. The prestige list has no counters and gives no entries.
+  - `sbchallenges`, Season Challenges: one entry per category ("Mob Challenge"). Its progress comes
+    from that category's "Current Level (n)" pane ("Kill 164 / 3,500,000 Mobs"). The name has no
+    level in it, so the entry stays the same when the level goes up. "Next Level" panes are not
+    entries.
+  - The hub and Boss Challenges have no counters and are not tracker menus. Any other menu with two
+    or more `Progress:` items is tracked as the generic `menu`.
+- **Sidebar**: Skyblock writes its sidebar labels in small caps (`⚒ ꜱᴋɪʟʟꜱ: Lvl 50`). They are
+  read as plain words (`Skills`), so `tracker.sidebarLinks` works the same as on Survival.
 - **Refresh key**: `tracker.skyblockRefreshCommands`, default `/jobs`, `/prestige`, `/is quests`,
   `/challenges`. A run stops if the gamemode changes.
 - **Wheel**: `wheelSkyblock` is a separate wheel used on Skyblock. The wheel editor and "reset wheel"
@@ -930,9 +945,12 @@ Captures contain chat text, including other players' messages; review the file b
 - Isles warp names other than `tangleroots` are unverified guesses (`/warp <name>`); edit the JSON
   if the server says unknown warp.
 - The `/homes` reply format (see above).
-- Skyblock's menu wording (`/jobs`, `/prestige`, `/is quests`, `/challenges`) and sidebar title come
-  from the wiki and are awaiting a capture; turn capture on and open each menu on Skyblock. If
-  nothing tracks there, set `tracker.skyblockSidebarPattern` to match the captured `sidebar` title.
+- Skyblock's Boss Challenges sub-menus ("Click to see quests") have not been captured, so nothing is
+  read from them yet.
+- Whether Skyblock's `/tasks`, `/quests` and `/challenges` open their menus directly. The capture
+  reached every menu through the `/jobs` hub. The hub itself is not a tracker menu, so a refresh run's
+  `/jobs` waits for it and then times out.
+- Island Team Quests page 2 ("Next Page: 2/2") has not been captured.
 - Lore formats of the progress menus; extraction is generic until real captures exist.
 - Local counting: whether ManaCube's world dimensions are named after the world, whether its Survival
   sidebar has a `World:` line, and how "Resources" is counted; `local`/`world`/`estimate` capture lines

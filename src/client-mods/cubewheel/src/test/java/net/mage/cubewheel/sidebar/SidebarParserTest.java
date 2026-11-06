@@ -31,6 +31,32 @@ class SidebarParserTest {
 		assertEquals(5, v.size());
 	}
 
+	/**
+	 * ManaCube Skyblock's sidebar (Michael 2026-11-06 capture): labels in small-caps letters ("ꜱᴋɪʟʟꜱ"), read as
+	 * the plain words Survival shows, so "Skills" links on Skyblock too.
+	 */
+	static final List<String> SKYBLOCK = List.of(
+			"§r§0§1§r",
+			"§7⛃ §fᴍᴏɴᴇʏ: §a$21.39k§0§2§r",
+			"§7✺ §fᴍᴀɴᴀ: §b2,704§0§3§r",
+			"❖ ᴄᴜʙɪᴛꜱ: 3.49§0§4§r",
+			"☠ ꜱᴏᴜʟꜱ: 50§0§5§r",
+			"§0§6§r",
+			"⌖ ᴡᴏʀʟᴅ: Qualan§0§7§r",
+			"⚒ ꜱᴋɪʟʟꜱ: Lvl 50§0§8§r",
+			"🗡 ꜱʟᴀʏᴇʀ: 903 XP§0§9§r",
+			"§r§1§0§r",
+			"§711/6, 26 12:26 PM§1§1§r",
+			"§7ᴘʟᴀʏ.ᴍᴀɴᴀᴄᴜʙᴇ.ᴄᴏᴍ§1§2§r");
+
+	@Test void readsSkyblockSmallCapsLabels() {
+		Map<String, Double> v = SidebarParser.parse(SKYBLOCK);
+		assertEquals(List.of("Money", "Mana", "Cubits", "Souls", "Skills", "Slayer"), List.copyOf(v.keySet()));
+		assertEquals(21_390, v.get("Money"), 1e-6);
+		assertEquals(50, v.get("Skills"), 1e-9);
+		assertEquals(903, v.get("Slayer"), 1e-9);
+	}
+
 	@Test void keepsLineOrder() {
 		assertEquals(List.of("Money", "Souls", "Mana", "Cubits", "Skills"),
 				List.copyOf(SidebarParser.parse(MANACUBE).keySet()));

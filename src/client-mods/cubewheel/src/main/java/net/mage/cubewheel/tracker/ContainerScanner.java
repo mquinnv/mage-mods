@@ -32,7 +32,25 @@ public final class ContainerScanner {
 	 * counters inside the objective text and are not gated.
 	 */
 	static final String CHALLENGES = "challenges";
-	private static final Set<String> PROGRESS_LINE_SOURCES = Set.of("pquests", "menu", CHALLENGES);
+	private static final Set<String> PROGRESS_LINE_SOURCES = Set.of("pquests", "isquests", "menu", CHALLENGES);
+
+	/**
+	 * Quest menus with a weekly challenge in the bottom row: /pquests on Survival, and Skyblock's Island Team Quests
+	 * (Michael 2026-11-06 capture: "Wart Grind", lore "Weekly Farm Challenge", "Progress: 0%"), read the same way.
+	 */
+	private static final Set<String> QUEST_SOURCES = Set.of("pquests", "isquests");
+
+	/**
+	 * Skyblock's Task Board (Michael 2026-11-06 capture): "SLAYER TASK" with lore "Slay 76 Mana Slimes in Wolfhaven",
+	 * "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/76)", "Time Left: 23h 59m 36s". Read by {@link #scanTasks}.
+	 */
+	static final String TASKS = "tasks";
+
+	/**
+	 * Skyblock's Season Challenges (Michael 2026-11-06 capture): a category head ("Mob Challenge") then its
+	 * "Current Level (1)" pane ("Kill 164 / 3,500,000 Mobs") and "Next Level (2)" pane. Read by {@link #scanSeasonChallenges}.
+	 */
+	static final String SEASON_CHALLENGES = "sbchallenges";
 
 	/**
 	 * The weekly challenge in the quests menu's bottom row: its first lore line names the kind ("Monster Slaying
@@ -75,6 +93,8 @@ public final class ContainerScanner {
 	public static int scan(String source, List<ItemView> items, TrackerStore store, long now, Consumer<String> seen) {
 		if (source == null || items == null || store == null) return 0;
 		if (CALENDAR.equals(source)) return scanCalendar(items, store, now, seen);
+		if (TASKS.equals(source)) return scanTasks(items, store, now, seen);
+		if (SEASON_CHALLENGES.equals(source)) return scanSeasonChallenges(items, store, now, seen);
 		String industry = industry(items);
 		boolean listingsPage = false;
 		Set<String> listed = new HashSet<>();
@@ -88,7 +108,7 @@ public final class ContainerScanner {
 			List<String> lore = new ArrayList<>(item.lore().size());
 			for (String line : item.lore()) lore.add(strip(line));
 			String itemSource = source;
-			if ("pquests".equals(source) && isWeeklyChallenge(lore)) {
+			if (QUEST_SOURCES.contains(source) && isWeeklyChallenge(lore)) {
 				itemSource = CHALLENGES;
 				if (challenges == null) challenges = new HashSet<>();
 				challenges.add(name);
@@ -125,7 +145,7 @@ public final class ContainerScanner {
 			if (isMarkedComplete(lore)) progress = new ProgressExtractor.Progress(progress.max(), progress.max());
 			if (display == null) display = displayName(name, lore);
 			if (itemSource != source) {
-				// Read as a party quest before this build: the same name under "pquests" is that stale copy.
+				// Read as a quest before this build: the same name under the quest source is that stale copy.
 				final String stale = display;
 				updated += store.forgetUnpinned(t -> source.equals(t.source()) && stale.equals(t.name()));
 			}
@@ -214,6 +234,93 @@ public final class ContainerScanner {
 			if (changed) updated++;
 		}
 		updated += store.forgetUnpinned(t -> CALENDAR.equals(t.source()) && !shown.contains(t.name()));
+		return updated;
+	}
+
+	/**
+	 * Skyblock's Task Board (Michael 2026-11-06 capture): each task ("SLAYER TASK", "ADVENTURE TASK") becomes one
+	 * entry named after its objective ("tasks:Slay 76 Mana Slimes in Wolfhaven"), with the bracketed counter
+	 * "(0/76)" as progress, the objective for local counting, and "Time Left" as its deadline, as the calendar's.
+	 * A task fills a 2x2 block, so the same item shows 4 times and its copies are one entry. Stats, Streak and Points
+	 * Shop are no tasks. Tasks expire and rotate ("Your task has expired."), so a stored task this board no longer
+	 * shows is forgotten.
+	 */
+	static int scanTasks(List<ItemView> items, TrackerStore store, long now, Consumer<String> seen) {
+		Set<String> shown = new HashSet<>();
+		int updated = 0;
+		for (ItemView item : items) {
+			if (item == null || item.lore() == null) continue;
+			String name = strip(item.name()).trim();
+			if (!SkyblockMenus.TASK_NAME.matcher(name).matches()) continue;
+			String objective = null;
+			String counter = null;
+			long left = 0;
+			List<String> lore = new ArrayList<>(item.lore().size());
+			for (String raw : item.lore()) {
+				String line = strip(raw).trim();
+				lore.add(line);
+				if (line.isEmpty()) continue;
+				Matcher m = TIME_LEFT.matcher(line);
+				if (m.matches()) {
+					left = timeLeftMs(m.group(1));
+					continue;
+				}
+				if (counter == null && BRACKET_COUNTER.matcher(line).find()) {
+					counter = line;
+					// The counter's own line may carry the objective ("Mine 50 Stone (8/50)"); the bar glyphs do not.
+					String rest = BRACKET_COUNTER.matcher(line).replaceFirst("").trim();
+					if (objective == null && rest.chars().anyMatch(Character::isLetter)) objective = rest;
+					continue;
+				}
+				if (objective == null) objective = line;
+			}
+			if (objective == null || counter == null) continue;
+			// "Catch an  Anchovy while fishing": the item-icon glyph (private use) is no part of the name.
+			String display = objective.replaceAll("\\p{Co}", "").replaceAll("\\s+", " ").trim();
+			if (!shown.add(display)) continue; // another copy of a task already read
+			Optional<ProgressExtractor.Progress> p = ProgressExtractor.extract(List.of(counter));
+			if (p.isEmpty()) continue;
+			ProgressExtractor.Progress progress = p.get();
+			if (isMarkedComplete(lore)) progress = new ProgressExtractor.Progress(progress.max(), progress.max());
+			String id = Trackable.idOf(TASKS, display);
+			boolean changed = store.update(TASKS, display, progress, now);
+			changed |= store.setObjective(id, ObjectiveExtractor.extract(name, List.of(), display));
+			if (left > 0) changed |= store.setDue(id, now + left);
+			if (seen != null) seen.accept(id);
+			if (changed) updated++;
+		}
+		updated += store.forgetUnpinned(t -> TASKS.equals(t.source()) && !shown.contains(t.name()));
+		return updated;
+	}
+
+	/**
+	 * Skyblock's Season Challenges (Michael 2026-11-06 capture): each category head ("Mob Challenge") followed by its
+	 * "Current Level (1)" pane becomes one entry named after the category, with the pane's "Kill 164 / 3,500,000
+	 * Mobs" as progress and objective. The name leaves the level out, so the entry keeps its id when the level goes
+	 * up. "Next Level" panes are no entries.
+	 */
+	static int scanSeasonChallenges(List<ItemView> items, TrackerStore store, long now, Consumer<String> seen) {
+		int updated = 0;
+		for (int i = 0; i + 1 < items.size(); i++) {
+			ItemView head = items.get(i);
+			ItemView current = items.get(i + 1);
+			if (head == null || !SkyblockMenus.isChallengeHead(strip(head.name()).trim())) continue;
+			if (!SkyblockMenus.isCurrentLevel(current) || current.lore() == null) continue;
+			List<String> lore = new ArrayList<>(current.lore().size());
+			for (String raw : current.lore()) lore.add(strip(raw).trim());
+			String objective = firstNonBlank(lore);
+			if (objective == null) continue;
+			Optional<ProgressExtractor.Progress> p = ProgressExtractor.extract(List.of(objective));
+			if (p.isEmpty()) continue;
+			ProgressExtractor.Progress progress = p.get();
+			if (isMarkedComplete(lore)) progress = new ProgressExtractor.Progress(progress.max(), progress.max());
+			String display = strip(head.name()).trim();
+			String id = Trackable.idOf(SEASON_CHALLENGES, display);
+			boolean changed = store.update(SEASON_CHALLENGES, display, progress, now);
+			changed |= store.setObjective(id, ObjectiveExtractor.extract(display, List.of(), objective));
+			if (seen != null) seen.accept(id);
+			if (changed) updated++;
+		}
 		return updated;
 	}
 

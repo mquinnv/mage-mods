@@ -32,7 +32,7 @@ public final class SidebarParser {
 		if (lines == null) return out;
 		for (String raw : lines) {
 			if (raw == null) continue;
-			String line = FORMATTING.matcher(raw).replaceAll("");
+			String line = foldSmallCaps(FORMATTING.matcher(raw).replaceAll(""));
 			Matcher m = KEY_VALUE.matcher(line);
 			if (!m.find()) continue;
 			String key = m.group(1).trim();
@@ -41,6 +41,32 @@ public final class SidebarParser {
 			if (v.isPresent()) out.put(key, v.getAsDouble());
 		}
 		return out;
+	}
+
+	/** ManaCube's small-caps letters, a to z (there is no small-caps x; a plain one stands in). */
+	private static final String SMALL_CAPS = "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ";
+
+	/**
+	 * Michael 2026-11-06 capture: Skyblock's sidebar labels are small caps ("⚒ ꜱᴋɪʟʟꜱ: Lvl 50") where Survival's are
+	 * plain ("Skills: Lvl 4102"). A run of small-caps letters becomes a capitalised word ("Skills"), so both read the
+	 * same and {@code tracker.sidebarLinks} works on either. Plain letters are left alone.
+	 */
+	static String foldSmallCaps(String s) {
+		StringBuilder b = null;
+		boolean inWord = false;
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			int k = c == 'x' ? -1 : SMALL_CAPS.indexOf(c);
+			if (k < 0) {
+				inWord = Character.isLetter(c);
+				continue;
+			}
+			if (b == null) b = new StringBuilder(s);
+			char plain = (char) ('a' + k);
+			b.setCharAt(i, inWord ? plain : Character.toUpperCase(plain));
+			inWord = true;
+		}
+		return b == null ? s : b.toString();
 	}
 
 	/** "$2.89M" -> 2890000, "Lvl 1851" -> 1851, "18,975" -> 18975; empty when there is no number. */

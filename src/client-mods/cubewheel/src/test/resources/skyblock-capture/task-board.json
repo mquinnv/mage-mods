@@ -1,0 +1,210 @@
+[
+ {
+  "slot": 4,
+  "id": "minecraft:player_head",
+  "name": "Stats",
+  "lore": [
+   "",
+   "Level: 1",
+   "Total XP: 0",
+   "",
+   "Tasks Received: 6",
+   "Tasks Completed: 0",
+   "Tasks Failed: 4",
+   "",
+   "Highest Streak: 0"
+  ]
+ },
+ {
+  "slot": 10,
+  "id": "minecraft:ender_pearl",
+  "name": "SLAYER TASK",
+  "lore": [
+   "",
+   "Slay 76 Mana Slimes in Wolfhaven",
+   "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/76)",
+   "",
+   "Time Left: 23h 59m 36s"
+  ]
+ },
+ {
+  "slot": 11,
+  "id": "minecraft:ender_pearl",
+  "name": "SLAYER TASK",
+  "lore": [
+   "",
+   "Slay 76 Mana Slimes in Wolfhaven",
+   "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/76)",
+   "",
+   "Time Left: 23h 59m 36s"
+  ]
+ },
+ {
+  "slot": 15,
+  "id": "minecraft:ender_pearl",
+  "name": "ADVENTURE TASK",
+  "lore": [
+   "",
+   "Catch an  Anchovy while fishing (Found in Wolfhaven)",
+   "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/1)",
+   "",
+   "Time Left: 23h 59m 36s"
+  ]
+ },
+ {
+  "slot": 16,
+  "id": "minecraft:ender_pearl",
+  "name": "ADVENTURE TASK",
+  "lore": [
+   "",
+   "Catch an  Anchovy while fishing (Found in Wolfhaven)",
+   "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/1)",
+   "",
+   "Time Left: 23h 59m 36s"
+  ]
+ },
+ {
+  "slot": 19,
+  "id": "minecraft:ender_pearl",
+  "name": "SLAYER TASK",
+  "lore": [
+   "",
+   "Slay 76 Mana Slimes in Wolfhaven",
+   "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/76)",
+   "",
+   "Time Left: 23h 59m 36s"
+  ]
+ },
+ {
+  "slot": 20,
+  "id": "minecraft:ender_pearl",
+  "name": "SLAYER TASK",
+  "lore": [
+   "",
+   "Slay 76 Mana Slimes in Wolfhaven",
+   "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/76)",
+   "",
+   "Time Left: 23h 59m 36s"
+  ]
+ },
+ {
+  "slot": 24,
+  "id": "minecraft:ender_pearl",
+  "name": "ADVENTURE TASK",
+  "lore": [
+   "",
+   "Catch an  Anchovy while fishing (Found in Wolfhaven)",
+   "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/1)",
+   "",
+   "Time Left: 23h 59m 36s"
+  ]
+ },
+ {
+  "slot": 25,
+  "id": "minecraft:ender_pearl",
+  "name": "ADVENTURE TASK",
+  "lore": [
+   "",
+   "Catch an  Anchovy while fishing (Found in Wolfhaven)",
+   "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/1)",
+   "",
+   "Time Left: 23h 59m 36s"
+  ]
+ },
+ {
+  "slot": 28,
+  "id": "minecraft:ender_pearl",
+  "name": "SLAYER TASK",
+  "lore": [
+   "",
+   "Slay 76 Mana Slimes in Wolfhaven",
+   "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/76)",
+   "",
+   "Time Left: 23h 59m 36s"
+  ]
+ },
+ {
+  "slot": 29,
+  "id": "minecraft:ender_pearl",
+  "name": "SLAYER TASK",
+  "lore": [
+   "",
+   "Slay 76 Mana Slimes in Wolfhaven",
+   "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/76)",
+   "",
+   "Time Left: 23h 59m 36s"
+  ]
+ },
+ {
+  "slot": 31,
+  "id": "minecraft:clock",
+  "name": "Streak",
+  "lore": [
+   "",
+   "Streak: 0",
+   "Highest Streak: 0",
+   "",
+   "Leaderboard",
+   " - #1 - Deeepu - 4,166 tasks completed",
+   "",
+   " - #2 - ohnoHuskai - 2,805 tasks completed",
+   "",
+   " - #3 - littlebluesam - 2,455 tasks completed",
+   "",
+   " - #4 - Pinette - 2,385 tasks completed",
+   "",
+   " - #5 - qkoo - 2,265 tasks completed"
+  ]
+ },
+ {
+  "slot": 33,
+  "id": "minecraft:ender_pearl",
+  "name": "ADVENTURE TASK",
+  "lore": [
+   "",
+   "Catch an  Anchovy while fishing (Found in Wolfhaven)",
+   "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/1)",
+   "",
+   "Time Left: 23h 59m 36s"
+  ]
+ },
+ {
+  "slot": 34,
+  "id": "minecraft:ender_pearl",
+  "name": "ADVENTURE TASK",
+  "lore": [
+   "",
+   "Catch an  Anchovy while fishing (Found in Wolfhaven)",
+   "⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ (0/1)",
+   "",
+   "Time Left: 23h 59m 36s"
+  ]
+ },
+ {
+  "slot": 48,
+  "id": "minecraft:ender_pearl",
+  "name": "Points Shop",
+  "lore": [
+   "",
+   "Click to spend your task points"
+  ]
+ },
+ {
+  "slot": 49,
+  "id": "minecraft:ender_pearl",
+  "name": "Points Shop",
+  "lore": [
+   "",
+   "Click to spend your task points"
+  ]
+ },
+ {
+  "slot": 50,
+  "id": "minecraft:ender_pearl",
+  "name": "Points Shop",
+  "lore": [
+   "",
+   "Click to spend your task points"
+  ]
+ }
+]

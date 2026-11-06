@@ -50,18 +50,172 @@ class ContainerScannerTest {
 		assertEquals(1, ContainerScanner.scan("jobs", progressed, store, 1_500));
 	}
 
-	// wiki wording, replace with capture
-	@Test void islandQuestItemWithoutProgressLineIsScanned() {
+	// --- Skyblock, from Michael's first Skyblock capture (2026-11-06, see SkyblockCapture) ---
+
+	/** Classifies a captured Skyblock menu as the mod does and scans it when it is a tracker menu; the source. */
+	private static Optional<String> readSkyblock(String capture, TrackerStore store, long now) {
+		List<ItemView> items = SkyblockCapture.load(capture);
+		Optional<String> source = MenuClassifier.classify(net.mage.cubewheel.sidebar.Gamemode.SKYBLOCK, "x", items,
+				java.util.Map.of());
+		source.ifPresent(s -> ContainerScanner.scan(s, items, store, now));
+		return source;
+	}
+
+	private static Trackable entry(TrackerStore store, String id) {
+		return store.all().stream().filter(t -> t.id().equals(id)).findFirst()
+				.orElseThrow(() -> new AssertionError(id + " not in " + store.all()));
+	}
+
+	private static java.util.Set<String> ids(TrackerStore store) {
+		java.util.Set<String> out = new java.util.TreeSet<>();
+		for (Trackable t : store.all()) out.add(t.id());
+		return out;
+	}
+
+	/**
+	 * Island Team Quests read as party quests do: quests with a Progress line, "QUEST COMPLETED" wins, and the
+	 * bottom row's "Weekly Farm Challenge" is a challenge. Tier headers and locked iron-bar quests are no entries.
+	 */
+	@Test void skyblockIslandTeamQuests() {
 		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
-		List<ItemView> items = List.of(
-			new ItemView(0, "minecraft:paper", "Miner", List.of("Island Quest", "Mine 300 cobblestone", "120/300")),
-			new ItemView(1, "minecraft:gray_stained_glass_pane", "", List.of()));
-		assertEquals(1, ContainerScanner.scan("isquests", items, store, 5));
+		assertEquals(Optional.of("isquests"), readSkyblock(SkyblockCapture.ISLAND_QUESTS, store, 0));
+		assertEquals(java.util.Set.of("isquests:Discoverer", "isquests:Learning Spawners", "isquests:Miner",
+				"isquests:Fisherman", "isquests:Honest Work", "challenges:Wart Grind"), ids(store));
+		assertTrue(entry(store, "isquests:Miner").complete());
+		assertTrue(entry(store, "isquests:Discoverer").complete());
+		Trackable fisherman = entry(store, "isquests:Fisherman");
+		assertEquals(12, fisherman.current());
+		assertEquals(100, fisherman.max());
+		Trackable wart = entry(store, "challenges:Wart Grind");
+		assertEquals(0, wart.current());
+		assertEquals(100, wart.max());
+	}
+
+	/** The weekly challenge rotates: last week's is forgotten on the read that shows the new one, as on /pquests. */
+	@Test void skyblockIslandQuestsWeeklyChallengeRotates() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		store.update("challenges", "Carrot Grind", new ProgressExtractor.Progress(40, 100), 0);
+		store.update("isquests", "Wart Grind", new ProgressExtractor.Progress(0, 100), 0); // a stale copy as a quest
+		readSkyblock(SkyblockCapture.ISLAND_QUESTS, store, 10);
+		java.util.Set<String> ids = ids(store);
+		assertTrue(ids.contains("challenges:Wart Grind"), ids.toString());
+		assertTrue(!ids.contains("challenges:Carrot Grind"), ids.toString());
+		assertTrue(!ids.contains("isquests:Wart Grind"), ids.toString());
+	}
+
+	/** An island quest without a Progress line (a hub-style button) is skipped, as on /pquests. */
+	@Test void skyblockIslandQuestsNeedAProgressLine() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		List<ItemView> items = List.of(new ItemView(0, "minecraft:book", "Beginner Quests",
+				List.of("", "Complete all beginner quests", "to receive these rewards", "", "Rewards:", "● 250x250 Island Expansion")),
+				new ItemView(1, "minecraft:paper", "Upgrade", List.of("Island size 3/5")));
+		assertEquals(0, ContainerScanner.scan("isquests", items, store, 0));
+		assertEquals(0, store.all().size());
+	}
+
+	/**
+	 * The Task Board: one entry per task, named after its objective (each task fills a 2x2 block, so 4 copies), its
+	 * "(0/76)" counter and its "Time Left" as the deadline. Stats, Streak and Points Shop are no entries.
+	 */
+	@Test void skyblockTaskBoard() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		long now = 1_000_000;
+		assertEquals(Optional.of("tasks"), readSkyblock(SkyblockCapture.TASK_BOARD, store, now));
+		String slay = "tasks:Slay 76 Mana Slimes in Wolfhaven";
+		String anchovy = "tasks:Catch an Anchovy while fishing (Found in Wolfhaven)";
+		assertEquals(java.util.Set.of(slay, anchovy), ids(store));
+		Trackable t = entry(store, slay);
+		assertEquals(0, t.current());
+		assertEquals(76, t.max());
+		assertEquals(1, entry(store, anchovy).max());
+		long left = (23 * 3600 + 59 * 60 + 36) * 1000L;
+		assertEquals(now + left, store.due(slay).getAsLong());
+		assertEquals(now + left, store.due(anchovy).getAsLong());
+		assertTrue(store.objective(slay).isPresent());
+		assertEquals("Slay 76 Mana Slimes in Wolfhaven", store.objective(slay).get().subs().get(0).text());
+	}
+
+	/** Tasks expire and rotate ("Your task has expired."): a stored task the board no longer shows is forgotten. */
+	@Test void skyblockTaskBoardForgetsTasksItNoLongerShows() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		store.update("tasks", "Slay 40 Mana Wolves in Wolfhaven", new ProgressExtractor.Progress(12, 40), 0);
+		store.update("tasks", "Mine 200 Ores in Tangleroot", new ProgressExtractor.Progress(5, 200), 0);
+		store.togglePin("tasks:Mine 200 Ores in Tangleroot");
+		readSkyblock(SkyblockCapture.TASK_BOARD, store, 10);
+		java.util.Set<String> ids = ids(store);
+		assertTrue(!ids.contains("tasks:Slay 40 Mana Wolves in Wolfhaven"), ids.toString());
+		assertTrue(ids.contains("tasks:Mine 200 Ores in Tangleroot"), ids.toString()); // pinned
+		assertTrue(ids.contains("tasks:Slay 76 Mana Slimes in Wolfhaven"), ids.toString());
+		// A second read of the same board changes nothing.
+		assertEquals(0, ContainerScanner.scan("tasks", SkyblockCapture.load(SkyblockCapture.TASK_BOARD), store, 10));
+	}
+
+	/** Skyblock's rank page is Survival's: one entry per rank with a counter, named after its objective. */
+	@Test void skyblockPrestigeRanks() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		assertEquals(Optional.of("prestige"), readSkyblock(SkyblockCapture.PRESTIGE_RANKS, store, 0));
+		assertEquals(java.util.Set.of(
+				"prestige:Rank [✪1] · Harvest 25,000 crops",
+				"prestige:Rank [✪2] · Kill 10,000 mobs",
+				"prestige:Rank [✪3] · Harvest 5,000 resources",
+				"prestige:Rank [✪4] · Reach 2,500 Skill Level",
+				"prestige:Rank [✪5] · Complete 25 tasks",
+				"prestige:Rank [✪6] · Earn 250,000 Slayer XP",
+				"prestige:Rank [✪7] · Get 20 Boss Kills",
+				"prestige:Rank [✪8] · Play for 10 hours",
+				"prestige:Rank [✪9] · Reach Island Level 78"), ids(store)); // Rank [✪10]'s "[$25.14k balance]" is no counter
+		Trackable skills = entry(store, "prestige:Rank [✪4] · Reach 2,500 Skill Level");
+		assertEquals(50, skills.current());
+		assertEquals(2500, skills.max());
+		assertEquals(164, entry(store, "prestige:Rank [✪2] · Kill 10,000 mobs").current());
+	}
+
+	@Test void skyblockPrestigeListGivesNoEntries() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		assertEquals(Optional.of("prestige"), readSkyblock(SkyblockCapture.PRESTIGE_LIST, store, 0));
+		assertEquals(0, store.all().size());
+	}
+
+	/** Season Challenges: one entry per category with its Current Level's counter; Next Level panes are no entries. */
+	@Test void skyblockSeasonChallenges() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		assertEquals(Optional.of("sbchallenges"), readSkyblock(SkyblockCapture.SEASON_CHALLENGES, store, 0));
+		assertEquals(java.util.Set.of("sbchallenges:Mob Challenge", "sbchallenges:Resource Challenge",
+				"sbchallenges:Monster Challenge", "sbchallenges:Crop Challenge", "sbchallenges:Dungeon Challenge",
+				"sbchallenges:Fishing Challenge", "sbchallenges:Task Challenge", "sbchallenges:Mini Boss Challenge",
+				"sbchallenges:Mining Challenge", "sbchallenges:Boss Challenge"), ids(store));
+		Trackable mob = entry(store, "sbchallenges:Mob Challenge");
+		assertEquals(164, mob.current());
+		assertEquals(3_500_000, mob.max());
+		Trackable mining = entry(store, "sbchallenges:Mining Challenge");
+		assertEquals(1015, mining.current());
+		assertEquals(5_000_000, mining.max());
+	}
+
+	/** The next level keeps the entry: same id, the new level's counter. */
+	@Test void skyblockSeasonChallengeKeepsItsIdAcrossLevels() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		ItemView head = new ItemView(0, "minecraft:zombie_head", "Mob Challenge", List.of("", "Total Completions: 0.0"));
+		ContainerScanner.scan("sbchallenges", List.of(head,
+				new ItemView(2, "minecraft:yellow_stained_glass_pane", "Current Level (1)", List.of("Kill 164 / 3,500,000 Mobs")),
+				new ItemView(3, "minecraft:lime_stained_glass_pane", "Next Level (2)", List.of("Kill 164 / 4,000,000 Mobs"))),
+				store, 0);
+		ContainerScanner.scan("sbchallenges", List.of(head,
+				new ItemView(2, "minecraft:yellow_stained_glass_pane", "Current Level (2)", List.of("Kill 3,500,010 / 4,000,000 Mobs"))),
+				store, 10);
 		assertEquals(1, store.all().size());
-		Trackable t = store.all().get(0);
-		assertEquals("isquests:Miner", t.id());
-		assertEquals(120, t.current());
-		assertEquals(300, t.max());
+		Trackable mob = entry(store, "sbchallenges:Mob Challenge");
+		assertEquals(3_500_010, mob.current());
+		assertEquals(4_000_000, mob.max());
+	}
+
+	/** The /jobs hub and Boss Challenges (no counters) are not tracker menus and give no entries. */
+	@Test void skyblockHubAndBossChallengesGiveNoEntries() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		assertEquals(Optional.empty(), readSkyblock(SkyblockCapture.HUB, store, 0));
+		assertEquals(Optional.empty(), readSkyblock(SkyblockCapture.HUB_WITHOUT_QUESTS, store, 0));
+		assertEquals(Optional.empty(), readSkyblock(SkyblockCapture.BOSS_CHALLENGES, store, 0));
+		assertEquals(0, store.all().size());
 	}
 
 	@Test void everyReadEntryIsReportedEvenWhenUnchanged() {

@@ -1,7 +1,6 @@
 package net.mage.cubewheel.tracker;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -10,71 +9,75 @@ import net.mage.cubewheel.tracker.ContainerScanner.ItemView;
 /**
  * Recognises ManaCube Skyblock's progress menus by what their items say. Pure: no Minecraft/Fabric imports.
  *
- * <p>Michael 2026-11-06: no real Skyblock menu capture exists yet, so every rule here follows the wiki's
- * wording (https://wiki.manacube.com/skyblock/). Each rule is a named constant so it is easy to tune once a
- * capture says what the menus really read.
+ * <p>Michael 2026-11-06 capture: every menu here opens from the /jobs hub (Island Team Quests, Task Board,
+ * Prestige, Boss Challenges, Season Challenges). The hub and Boss Challenges show no counters and are no
+ * tracker menus. Each rule is a named constant, tuned to that capture.
  */
 public final class SkyblockMenus {
-	/**
-	 * Prestige ranks ("Rank 1", "Rank [✪3]", "Prestige 2"). The whole name must match, so a listing such as
-	 * "Rank 1 Voucher" is not a rank.
-	 * Wiki: https://wiki.manacube.com/skyblock/prestige
-	 */
-	static final Pattern PRESTIGE_NAME = Pattern.compile("^(Rank \\d+|Rank \\[✪\\d+]|Prestige \\d+)$");
+	/** A Task Board task: "SLAYER TASK", "ADVENTURE TASK". Its lore holds the objective and a "(0/76)" counter. */
+	static final Pattern TASK_NAME = Pattern.compile("(?i)^[A-Z]+ TASK$");
 
-	/**
-	 * The challenge categories ("Mob Challenge", "Mini Boss Challenge").
-	 * Wiki: https://wiki.manacube.com/skyblock/challenges
-	 */
-	static final Pattern CHALLENGE_NAME = Pattern.compile(
-			"(?i)^(mob|monster|dungeon|task|mining|resource|crop|fish|mini ?boss|boss) challenge$");
+	/** A Season Challenges category head: "Mob Challenge", "Mini Boss Challenge" (the hub's "Season Challenges" is not). */
+	static final Pattern CHALLENGE_NAME = Pattern.compile("(?i)^\\w[\\w ]* Challenge$");
 
-	/**
-	 * Island quest tiers ("Beginner Island Quests", "Master Quests").
-	 * Wiki: https://wiki.manacube.com/skyblock/island-quests
-	 */
-	static final Pattern ISLAND_QUEST_NAME = Pattern.compile(
-			"(?i)^(beginner|intermediate|experienced|master|grand master|insane|epic|prestigious|legendary|godly)"
-					+ "( island)? quests?$");
+	/** The pane after a category head with its counter: "Current Level (1)", lore "Kill 164 / 3,500,000 Mobs". */
+	static final Pattern CURRENT_LEVEL = Pattern.compile("(?i)^Current Level \\((\\d+)\\)$");
 
-	/** A single island quest item says so in its lore ("Island Quest") and shows a counter. */
-	private static final String ISLAND_QUEST_LORE = "island quest";
+	/** The tiers of Island Team Quests, as tier headers ("Beginner Quests") and quest lore ("Beginner Quest"). */
+	private static final String TIERS = "(beginner|intermediate|experienced|master|grand master|insane|epic|prestigious"
+			+ "|legendary|godly)";
 
-	/** A task item says "task" as a word in its lore (e.g. "Task: Kill 50 Zombies") and shows a counter. */
-	private static final Pattern TASK_LORE = Pattern.compile("(?i)\\btasks?\\b");
+	/** Island Team Quests' tier headers: "Beginner Quests", "Grand Master Quests" (a book, no counter). */
+	static final Pattern ISLAND_QUEST_NAME = Pattern.compile("(?i)^" + TIERS + "( island)? quests?$");
+
+	/** An island quest's first lore line names its tier: "Beginner Quest". */
+	private static final Pattern ISLAND_QUEST_LORE = Pattern.compile("(?i)^" + TIERS + " quest$");
 
 	private SkyblockMenus() {}
 
 	/** One of "tasks", "prestige", "isquests", "sbchallenges"; the first item that matches decides. */
 	public static Optional<String> classify(List<ItemView> items) {
 		if (items == null) return Optional.empty();
-		for (ItemView item : items) {
+		for (int i = 0; i < items.size(); i++) {
+			ItemView item = items.get(i);
 			if (item == null) continue;
 			String name = ContainerScanner.strip(item.name()).trim();
 			List<String> lore = item.lore() == null ? List.of() : item.lore();
-			boolean counted = ProgressExtractor.extract(lore).isPresent();
-			if (counted && PRESTIGE_NAME.matcher(name).matches()) return Optional.of("prestige");
-			if (CHALLENGE_NAME.matcher(name).matches()) return Optional.of("sbchallenges");
+			// Michael 2026-11-06 capture: Skyblock's prestige pages ("Prestige 1 - Not Completed", "Rank [✪1]" with
+			// "Harvest 25,000 crops [0/25,000]") are Survival's, so Survival's rule reads them.
+			if (MenuClassifier.isPrestige(name)) return Optional.of("prestige");
 			if (ISLAND_QUEST_NAME.matcher(name).matches()) return Optional.of("isquests");
-			// Michael 2026-11-06: lore rules need a counter, or a hub button ("Click to view your Island Quests")
-			// would classify the whole menu and its neighbours' counters would become entries.
-			if (counted && anyLineContains(lore, ISLAND_QUEST_LORE)) return Optional.of("isquests");
-			if (counted && anyLineMatches(lore, TASK_LORE)) return Optional.of("tasks");
+			if (isChallengeHead(name) && i + 1 < items.size() && isCurrentLevel(items.get(i + 1))) {
+				return Optional.of("sbchallenges");
+			}
+			// Michael 2026-11-06: lore rules need a counter, or a hub button would classify the whole menu and its
+			// neighbours' counters would become entries (Boss Challenges' "Damage Resistance: 85%" beside "Complete
+			// 5 Dragon Tasks" did, under the wiki's guess).
+			boolean counted = ProgressExtractor.extract(lore).isPresent();
+			if (counted && TASK_NAME.matcher(name).matches()) return Optional.of("tasks");
+			if (counted && isIslandQuest(lore)) return Optional.of("isquests");
 		}
 		return Optional.empty();
 	}
 
-	private static boolean anyLineMatches(List<String> lore, Pattern p) {
-		for (String line : lore) {
-			if (line != null && p.matcher(ContainerScanner.strip(line)).find()) return true;
-		}
-		return false;
+	static boolean isChallengeHead(String name) {
+		return CHALLENGE_NAME.matcher(name).matches();
 	}
 
-	private static boolean anyLineContains(List<String> lore, String needle) {
+	static boolean isCurrentLevel(ItemView item) {
+		return item != null && CURRENT_LEVEL.matcher(ContainerScanner.strip(item.name()).trim()).matches();
+	}
+
+	/** "Beginner Quest" first, then a "Progress:" line. */
+	private static boolean isIslandQuest(List<String> lore) {
+		String first = null;
 		for (String line : lore) {
-			if (line != null && ContainerScanner.strip(line).toLowerCase(Locale.ROOT).contains(needle)) return true;
+			String t = ContainerScanner.strip(line).trim();
+			if (!t.isEmpty()) {
+				first = t;
+				break;
+			}
 		}
-		return false;
+		return first != null && ISLAND_QUEST_LORE.matcher(first).matches() && MenuClassifier.anyLineStarts(lore, "progress:");
 	}
 }

@@ -53,6 +53,16 @@ class SidebarLinkerTest {
 		assertEquals(1, find(store, "Skill level bonus").current(), 1e-9);
 	}
 
+	/** Michael 2026-11-06 capture: Skyblock's "⚒ ꜱᴋɪʟʟꜱ: Lvl 50" feeds the same Rank [✪4] objective with the default link. */
+	@Test void skyblockSmallCapsSkillsLineFeedsThePrestigeObjective() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		ContainerScanner.scan("prestige", List.of(new ItemView(14, "minecraft:paper", "Rank [✪4]",
+				List.of("", "OBJECTIVE", "Reach 2,500 Skill Level [Lvl 50/2,500]", "", "➟ Click to rankup"))), store, 0);
+		Map<String, Double> values = SidebarParser.parse(List.of("⌖ ᴡᴏʀʟᴅ: Qualan§0§7§r", "⚒ ꜱᴋɪʟʟꜱ: Lvl 61§0§8§r"));
+		assertEquals(1, SidebarLinker.apply(values, net.mage.cubewheel.config.DefaultConfig.sidebarLinks(), store, 10));
+		assertEquals(61, find(store, "Rank [✪4] · Reach 2,500 Skill Level").current(), 1e-9);
+	}
+
 	@Test void keepsMaxAndStillMarksFresh() {
 		TrackerStore store = storeWithPrestigeRank(0);
 		assertEquals(1, SidebarLinker.apply(Map.of("Skills", 1700.0), LINKS, store, 5_000));

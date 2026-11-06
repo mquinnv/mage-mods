@@ -1,0 +1,57 @@
+[
+ {
+  "slot": 2,
+  "id": "minecraft:leather_horse_armor",
+  "name": "Task Board",
+  "lore": [
+   "",
+   "Complete Adventure/Slayer tasks",
+   "for task points & rewards",
+   "",
+   "㎋ Click to Open"
+  ]
+ },
+ {
+  "slot": 4,
+  "id": "minecraft:nether_star",
+  "name": "Prestige",
+  "lore": [
+   "",
+   "Complete progresive milestones",
+   "to prestige and receive Cubits!",
+   "",
+   "㎋ Click to Open"
+  ]
+ },
+ {
+  "slot": 6,
+  "id": "minecraft:diamond_hoe",
+  "name": "Boss Challenges",
+  "lore": [
+   "",
+   "Boss kill count challenges",
+   "",
+   "㎋ Click to Open"
+  ]
+ },
+ {
+  "slot": 7,
+  "id": "minecraft:totem_of_undying",
+  "name": "Season Challenges",
+  "lore": [
+   "",
+   "Complete season-long challenges",
+   "to unlock perks and SVA items",
+   "",
+   "㎋ Click to Open"
+  ]
+ },
+ {
+  "slot": 22,
+  "id": "minecraft:arrow",
+  "name": "Go Back",
+  "lore": [
+   "Keystone"
+  ]
+ }
+]

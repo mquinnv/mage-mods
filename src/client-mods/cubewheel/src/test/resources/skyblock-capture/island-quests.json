@@ -1,0 +1,385 @@
+[
+ {
+  "slot": 0,
+  "id": "minecraft:book",
+  "name": "Beginner Quests",
+  "lore": [
+   "",
+   "Complete all beginner quests",
+   "to receive these rewards",
+   "",
+   "Rewards:",
+   "● 250x250 Island Expansion"
+  ]
+ },
+ {
+  "slot": 2,
+  "id": "minecraft:spyglass",
+  "name": "Discoverer",
+  "lore": [
+   "Beginner Quest",
+   "",
+   "100% → Discover Wolfhaven",
+   "100% → Discover Kilton",
+   "100% → Discover The Tutorial Area",
+   "",
+   "Progress: 100%",
+   "",
+   "Rewards:",
+   "● $10,000",
+   "",
+   "QUEST COMPLETED"
+  ]
+ },
+ {
+  "slot": 3,
+  "id": "minecraft:spawner",
+  "name": "Learning Spawners",
+  "lore": [
+   "Beginner Quest",
+   "",
+   "→ Place a Spawner",
+   "",
+   "Progress: 100%",
+   "",
+   "Rewards:",
+   "● 5 Common Custom Enchant Books",
+   "",
+   "QUEST COMPLETED"
+  ]
+ },
+ {
+  "slot": 4,
+  "id": "minecraft:stone",
+  "name": "Miner",
+  "lore": [
+   "Beginner Quest",
+   "",
+   "→ Mine 300 Cobblestone",
+   "",
+   "Progress: 100%",
+   "",
+   "Rewards:",
+   "● 1,000 Mana",
+   "",
+   "QUEST COMPLETED"
+  ]
+ },
+ {
+  "slot": 5,
+  "id": "minecraft:salmon",
+  "name": "Fisherman",
+  "lore": [
+   "Beginner Quest",
+   "",
+   "→ Catch 25 Fish",
+   "",
+   "Progress: 12%",
+   "",
+   "Rewards:",
+   "● Lucky Fishing Rod"
+  ]
+ },
+ {
+  "slot": 6,
+  "id": "minecraft:wheat",
+  "name": "Honest Work",
+  "lore": [
+   "Beginner Quest",
+   "",
+   "→ Harvest 64 Wheat",
+   "",
+   "Progress: 0%",
+   "",
+   "Rewards:",
+   "● 3x3 Harvester Hoe [1,000 Uses]"
+  ]
+ },
+ {
+  "slot": 9,
+  "id": "minecraft:book",
+  "name": "Intermediate Quests",
+  "lore": [
+   "",
+   "Complete all intermediate quests",
+   "to receive these rewards",
+   "",
+   "Rewards:",
+   "● 300x300 Island Expansion"
+  ]
+ },
+ {
+  "slot": 11,
+  "id": "minecraft:iron_bars",
+  "name": "Haven Harvester",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock intermediate quests!"
+  ]
+ },
+ {
+  "slot": 12,
+  "id": "minecraft:iron_bars",
+  "name": "Haven Slayer",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock intermediate quests!"
+  ]
+ },
+ {
+  "slot": 13,
+  "id": "minecraft:iron_bars",
+  "name": "Boss Battle",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock intermediate quests!"
+  ]
+ },
+ {
+  "slot": 14,
+  "id": "minecraft:iron_bars",
+  "name": "Haven Bosses",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock intermediate quests!"
+  ]
+ },
+ {
+  "slot": 15,
+  "id": "minecraft:iron_bars",
+  "name": "Mob Experience",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock intermediate quests!"
+  ]
+ },
+ {
+  "slot": 18,
+  "id": "minecraft:book",
+  "name": "Experienced Quests",
+  "lore": [
+   "",
+   "Complete all experienced quests",
+   "to receive these rewards",
+   "",
+   "Rewards:",
+   "● 350x350 Island Expansion"
+  ]
+ },
+ {
+  "slot": 20,
+  "id": "minecraft:iron_bars",
+  "name": "Jungle Pursuit",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock experienced quests!"
+  ]
+ },
+ {
+  "slot": 21,
+  "id": "minecraft:iron_bars",
+  "name": "King of the Jungle",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock experienced quests!"
+  ]
+ },
+ {
+  "slot": 22,
+  "id": "minecraft:iron_bars",
+  "name": "Volcano Enthusiast",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock experienced quests!"
+  ]
+ },
+ {
+  "slot": 23,
+  "id": "minecraft:iron_bars",
+  "name": "Ancient Mysteries",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock experienced quests!"
+  ]
+ },
+ {
+  "slot": 24,
+  "id": "minecraft:iron_bars",
+  "name": "Experienced Island",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock experienced quests!"
+  ]
+ },
+ {
+  "slot": 27,
+  "id": "minecraft:book",
+  "name": "Master Quests",
+  "lore": [
+   "",
+   "Complete all master quests",
+   "to receive these rewards",
+   "",
+   "Rewards:",
+   "● 400x400 Island Expansion",
+   "● Mana Minion"
+  ]
+ },
+ {
+  "slot": 29,
+  "id": "minecraft:iron_bars",
+  "name": "Dusty Situation",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock master quests!"
+  ]
+ },
+ {
+  "slot": 30,
+  "id": "minecraft:iron_bars",
+  "name": "Desert Hunter",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock master quests!"
+  ]
+ },
+ {
+  "slot": 31,
+  "id": "minecraft:iron_bars",
+  "name": "Catacombs Hunter",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock master quests!"
+  ]
+ },
+ {
+  "slot": 32,
+  "id": "minecraft:iron_bars",
+  "name": "Golemy Situation",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock master quests!"
+  ]
+ },
+ {
+  "slot": 33,
+  "id": "minecraft:iron_bars",
+  "name": "Master Island",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock master quests!"
+  ]
+ },
+ {
+  "slot": 36,
+  "id": "minecraft:book",
+  "name": "Grand Master Quests",
+  "lore": [
+   "",
+   "Complete all grand master quests",
+   "to receive these rewards",
+   "",
+   "Rewards:",
+   "● 450x450 Island Expansion"
+  ]
+ },
+ {
+  "slot": 38,
+  "id": "minecraft:iron_bars",
+  "name": "Purple Dream",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock grand master quests!"
+  ]
+ },
+ {
+  "slot": 39,
+  "id": "minecraft:iron_bars",
+  "name": "Alien Hunter",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock grand master quests!"
+  ]
+ },
+ {
+  "slot": 40,
+  "id": "minecraft:iron_bars",
+  "name": "Elytra Racer",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock grand master quests!"
+  ]
+ },
+ {
+  "slot": 41,
+  "id": "minecraft:iron_bars",
+  "name": "A Challenger Approaches",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock grand master quests!"
+  ]
+ },
+ {
+  "slot": 42,
+  "id": "minecraft:iron_bars",
+  "name": "Grand Master Island",
+  "lore": [
+   "",
+   "Complete previous tier to",
+   "unlock grand master quests!"
+  ]
+ },
+ {
+  "slot": 47,
+  "id": "minecraft:ender_pearl",
+  "name": "Close",
+  "lore": []
+ },
+ {
+  "slot": 49,
+  "id": "minecraft:nether_wart",
+  "name": "Wart Grind",
+  "lore": [
+   "Weekly Farm Challenge",
+   "",
+   "→ Harvest 10,000 Nether Warts",
+   "",
+   "Progress: 0%",
+   "",
+   "Rewards:",
+   "● 3,000 Mana",
+   "● $50,000"
+  ]
+ },
+ {
+  "slot": 51,
+  "id": "minecraft:ender_pearl",
+  "name": "Go Back",
+  "lore": []
+ },
+ {
+  "slot": 53,
+  "id": "minecraft:ender_pearl",
+  "name": "Next Page: 2/2",
+  "lore": []
+ }
+]

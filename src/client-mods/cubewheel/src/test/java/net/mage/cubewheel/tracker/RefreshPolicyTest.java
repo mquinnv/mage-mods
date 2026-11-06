@@ -310,7 +310,7 @@ class RefreshPolicyTest {
 	}
 
 	@Test void skyblockMenusAreReadyInSkyblockMode() {
-		var challenges = List.of(ManaCubeMenusTest.item(0, "Mob Challenge", "120,000 / 3,500,000"));
+		var challenges = SkyblockCapture.load(SkyblockCapture.SEASON_CHALLENGES); // Michael 2026-11-06 capture
 		assertEquals(View.MENU_READY, RefreshPolicy.menuView(net.mage.cubewheel.sidebar.Gamemode.SKYBLOCK, "Challenges",
 				challenges, java.util.Map.of()));
 		assertEquals(View.MENU_UNKNOWN, RefreshPolicy.menuView(net.mage.cubewheel.sidebar.Gamemode.SURVIVAL, "Challenges",

@@ -1,0 +1,400 @@
+[
+ {
+  "slot": 0,
+  "id": "minecraft:zombie_head",
+  "name": "Mob Challenge",
+  "lore": [
+   "",
+   "Total Completions: 0.0"
+  ]
+ },
+ {
+  "slot": 2,
+  "id": "minecraft:yellow_stained_glass_pane",
+  "name": "Current Level (1)",
+  "lore": [
+   "Kill 164 / 3,500,000 Mobs",
+   "",
+   "Rewards: ",
+   "- 1 Challenge Token",
+   "- [Ravager] Title",
+   "",
+   "You cannot claim this right now"
+  ]
+ },
+ {
+  "slot": 3,
+  "id": "minecraft:lime_stained_glass_pane",
+  "name": "Next Level (2)",
+  "lore": [
+   "Kill 164 / 4,000,000 Mobs",
+   "",
+   "Rewards: ",
+   "- 1 Cubits",
+   "- 1 Challenge Crates"
+  ]
+ },
+ {
+  "slot": 5,
+  "id": "minecraft:paper",
+  "name": "Resource Challenge",
+  "lore": [
+   "",
+   "Total Completions: 0.0"
+  ]
+ },
+ {
+  "slot": 7,
+  "id": "minecraft:yellow_stained_glass_pane",
+  "name": "Current Level (1)",
+  "lore": [
+   "Harvest 546 / 500,000 Resources",
+   "",
+   "Rewards: ",
+   "- 1 Challenge Token",
+   "- [Collector] Title",
+   "",
+   "You cannot claim this right now"
+  ]
+ },
+ {
+  "slot": 8,
+  "id": "minecraft:lime_stained_glass_pane",
+  "name": "Next Level (2)",
+  "lore": [
+   "Harvest 546 / 750,000 Resources",
+   "",
+   "Rewards: ",
+   "- 1 Cubits",
+   "- 1 Challenge Crates"
+  ]
+ },
+ {
+  "slot": 9,
+  "id": "minecraft:skeleton_skull",
+  "name": "Monster Challenge",
+  "lore": [
+   "",
+   "Total Completions: 0.0"
+  ]
+ },
+ {
+  "slot": 11,
+  "id": "minecraft:yellow_stained_glass_pane",
+  "name": "Current Level (1)",
+  "lore": [
+   "Earn 903 / 1,500,000 Slayer XP",
+   "",
+   "Rewards: ",
+   "- 1 Challenge Token",
+   "- [NightKiller] Title",
+   "",
+   "You cannot claim this right now"
+  ]
+ },
+ {
+  "slot": 12,
+  "id": "minecraft:lime_stained_glass_pane",
+  "name": "Next Level (2)",
+  "lore": [
+   "Earn 903 / 1,900,000 Slayer XP",
+   "",
+   "Rewards: ",
+   "- 1 Cubits",
+   "- 1 Challenge Crates"
+  ]
+ },
+ {
+  "slot": 14,
+  "id": "minecraft:wheat",
+  "name": "Crop Challenge",
+  "lore": [
+   "",
+   "Total Completions: 0.0"
+  ]
+ },
+ {
+  "slot": 16,
+  "id": "minecraft:yellow_stained_glass_pane",
+  "name": "Current Level (1)",
+  "lore": [
+   "Harvest 0 / 75,000,000 Crops",
+   "",
+   "Rewards: ",
+   "- 1 Challenge Token",
+   "- [Agronomist] Title",
+   "",
+   "You cannot claim this right now"
+  ]
+ },
+ {
+  "slot": 17,
+  "id": "minecraft:lime_stained_glass_pane",
+  "name": "Next Level (2)",
+  "lore": [
+   "Harvest 0 / 125,000,000 Crops",
+   "",
+   "Rewards: ",
+   "- 1 Cubits",
+   "- 1 Challenge Crates"
+  ]
+ },
+ {
+  "slot": 18,
+  "id": "minecraft:trial_key",
+  "name": "Dungeon Challenge",
+  "lore": [
+   "",
+   "Total Completions: 0.0"
+  ]
+ },
+ {
+  "slot": 20,
+  "id": "minecraft:yellow_stained_glass_pane",
+  "name": "Current Level (1)",
+  "lore": [
+   "Complete 0 / 400 Dungeons",
+   "",
+   "Rewards: ",
+   "- 1 Challenge Token",
+   "- [⚔Raider⚔] Title",
+   "",
+   "You cannot claim this right now"
+  ]
+ },
+ {
+  "slot": 21,
+  "id": "minecraft:lime_stained_glass_pane",
+  "name": "Next Level (2)",
+  "lore": [
+   "Complete 0 / 500 Dungeons",
+   "",
+   "Rewards: ",
+   "- 1 Cubits",
+   "- 1 Challenge Crates"
+  ]
+ },
+ {
+  "slot": 23,
+  "id": "minecraft:salmon",
+  "name": "Fishing Challenge",
+  "lore": [
+   "",
+   "Total Completions: 0.0"
+  ]
+ },
+ {
+  "slot": 25,
+  "id": "minecraft:yellow_stained_glass_pane",
+  "name": "Current Level (1)",
+  "lore": [
+   "Catch 3 / 35,000 Fish",
+   "",
+   "Rewards: ",
+   "- 1 Challenge Token",
+   "- [Angler] Title",
+   "",
+   "You cannot claim this right now"
+  ]
+ },
+ {
+  "slot": 26,
+  "id": "minecraft:lime_stained_glass_pane",
+  "name": "Next Level (2)",
+  "lore": [
+   "Catch 3 / 42,500 Fish",
+   "",
+   "Rewards: ",
+   "- 1 Cubits",
+   "- 1 Challenge Crates"
+  ]
+ },
+ {
+  "slot": 27,
+  "id": "minecraft:chest",
+  "name": "Task Challenge",
+  "lore": [
+   "",
+   "Total Completions: 0.0"
+  ]
+ },
+ {
+  "slot": 29,
+  "id": "minecraft:yellow_stained_glass_pane",
+  "name": "Current Level (1)",
+  "lore": [
+   "Complete 0 / 1,000 Tasks",
+   "",
+   "Rewards: ",
+   "- 1 Challenge Token",
+   "- [●Specialist●] Title",
+   "",
+   "You cannot claim this right now"
+  ]
+ },
+ {
+  "slot": 30,
+  "id": "minecraft:lime_stained_glass_pane",
+  "name": "Next Level (2)",
+  "lore": [
+   "Complete 0 / 1,500 Tasks",
+   "",
+   "Rewards: ",
+   "- 1 Cubits",
+   "- 1 Challenge Crates"
+  ]
+ },
+ {
+  "slot": 32,
+  "id": "minecraft:wither_skeleton_skull",
+  "name": "Mini Boss Challenge",
+  "lore": [
+   "",
+   "Total Completions: 0.0"
+  ]
+ },
+ {
+  "slot": 34,
+  "id": "minecraft:yellow_stained_glass_pane",
+  "name": "Current Level (1)",
+  "lore": [
+   "Kill 0 / 850 Mini Bosses",
+   "",
+   "Rewards: ",
+   "- 1 Challenge Token",
+   "- [Vanguard] Title",
+   "",
+   "You cannot claim this right now"
+  ]
+ },
+ {
+  "slot": 35,
+  "id": "minecraft:lime_stained_glass_pane",
+  "name": "Next Level (2)",
+  "lore": [
+   "Kill 0 / 1,050 Mini Bosses",
+   "",
+   "Rewards: ",
+   "- 1 Cubits",
+   "- 1 Challenge Crates"
+  ]
+ },
+ {
+  "slot": 36,
+  "id": "minecraft:nether_star",
+  "name": "Mining Challenge",
+  "lore": [
+   "",
+   "Total Completions: 0.0"
+  ]
+ },
+ {
+  "slot": 38,
+  "id": "minecraft:yellow_stained_glass_pane",
+  "name": "Current Level (1)",
+  "lore": [
+   "Mine 1,015 / 5,000,000 Ores",
+   "",
+   "Rewards: ",
+   "- 1 Challenge Token",
+   "- [PROSPECTOR] Title",
+   "",
+   "You cannot claim this right now"
+  ]
+ },
+ {
+  "slot": 39,
+  "id": "minecraft:lime_stained_glass_pane",
+  "name": "Next Level (2)",
+  "lore": [
+   "Mine 1,015 / 7,500,000 Ores",
+   "",
+   "Rewards: ",
+   "- 1 Cubits",
+   "- 1 Challenge Crates"
+  ]
+ },
+ {
+  "slot": 41,
+  "id": "minecraft:skeleton_skull",
+  "name": "Boss Challenge",
+  "lore": [
+   "",
+   "Total Completions: 0.0"
+  ]
+ },
+ {
+  "slot": 43,
+  "id": "minecraft:yellow_stained_glass_pane",
+  "name": "Current Level (1)",
+  "lore": [
+   "Kill 1 / 1,000 Bosses",
+   "",
+   "Rewards: ",
+   "- 1 Challenge Token",
+   "- [Overlord] Title",
+   "",
+   "You cannot claim this right now"
+  ]
+ },
+ {
+  "slot": 44,
+  "id": "minecraft:lime_stained_glass_pane",
+  "name": "Next Level (2)",
+  "lore": [
+   "Kill 1 / 1,150 Bosses",
+   "",
+   "Rewards: ",
+   "- 1 Cubits",
+   "- 1 Challenge Crates"
+  ]
+ },
+ {
+  "slot": 45,
+  "id": "minecraft:arrow",
+  "name": "Close Menu",
+  "lore": []
+ },
+ {
+  "slot": 46,
+  "id": "minecraft:chest",
+  "name": "Preview Challenge Crate",
+  "lore": []
+ },
+ {
+  "slot": 47,
+  "id": "minecraft:chest",
+  "name": "Preview Challenge Crate",
+  "lore": []
+ },
+ {
+  "slot": 49,
+  "id": "minecraft:ender_chest",
+  "name": "Spend Challenge Tokens",
+  "lore": []
+ },
+ {
+  "slot": 50,
+  "id": "minecraft:ender_chest",
+  "name": "Spend Challenge Tokens",
+  "lore": []
+ },
+ {
+  "slot": 51,
+  "id": "minecraft:ender_chest",
+  "name": "Open Prestige",
+  "lore": []
+ },
+ {
+  "slot": 52,
+  "id": "minecraft:ender_chest",
+  "name": "Open Prestige",
+  "lore": []
+ },
+ {
+  "slot": 53,
+  "id": "minecraft:ender_chest",
+  "name": "Open Prestige",
+  "lore": []
+ }
+]

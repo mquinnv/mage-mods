@@ -1,0 +1,199 @@
+[
+ {
+  "slot": 11,
+  "id": "minecraft:paper",
+  "name": "Rank [✪1]",
+  "lore": [
+   "",
+   "OBJECTIVE",
+   "Harvest 25,000 crops [0/25,000]",
+   "",
+   "➟ Click to rankup"
+  ]
+ },
+ {
+  "slot": 12,
+  "id": "minecraft:paper",
+  "name": "Rank [✪2]",
+  "lore": [
+   "",
+   "OBJECTIVE",
+   "Kill 10,000 mobs [164/10,000]",
+   "",
+   "➟ Click to rankup"
+  ]
+ },
+ {
+  "slot": 13,
+  "id": "minecraft:paper",
+  "name": "Rank [✪3]",
+  "lore": [
+   "",
+   "OBJECTIVE",
+   "Harvest 5,000 resources [546/5,000]",
+   "",
+   "Harvest resources in one of the",
+   "special worlds (/worlds)",
+   "",
+   "➟ Click to rankup"
+  ]
+ },
+ {
+  "slot": 14,
+  "id": "minecraft:paper",
+  "name": "Rank [✪4]",
+  "lore": [
+   "",
+   "OBJECTIVE",
+   "Reach 2,500 Skill Level [Lvl 50/2,500]",
+   "",
+   "➟ Click to rankup"
+  ]
+ },
+ {
+  "slot": 15,
+  "id": "minecraft:paper",
+  "name": "Rank [✪5]",
+  "lore": [
+   "",
+   "OBJECTIVE",
+   "Complete 25 tasks [0/25]",
+   "",
+   "You can complete Tasks from",
+   "the task board @ spawn or /tasks",
+   "",
+   "➟ Click to rankup"
+  ]
+ },
+ {
+  "slot": 20,
+  "id": "minecraft:paper",
+  "name": "Rank [✪6]",
+  "lore": [
+   "",
+   "OBJECTIVE",
+   "Earn 250,000 Slayer XP [903/250,000]",
+   "",
+   "Slay monsters in one of the",
+   "special worlds (/worlds)",
+   "",
+   "➟ Click to rankup"
+  ]
+ },
+ {
+  "slot": 21,
+  "id": "minecraft:paper",
+  "name": "Rank [✪7]",
+  "lore": [
+   "",
+   "OBJECTIVE",
+   "Get 20 Boss Kills [1/20]",
+   "",
+   "Help take down Arena Bosses ",
+   "or World Bosses",
+   "",
+   "➟ Click to rankup"
+  ]
+ },
+ {
+  "slot": 22,
+  "id": "minecraft:paper",
+  "name": "Rank [✪8]",
+  "lore": [
+   "",
+   "OBJECTIVE",
+   "Play for 10 hours [1/10]",
+   "",
+   "➟ Click to rankup"
+  ]
+ },
+ {
+  "slot": 23,
+  "id": "minecraft:paper",
+  "name": "Rank [✪9]",
+  "lore": [
+   "",
+   "OBJECTIVE",
+   "Reach Island Level 78 [4/78]",
+   "",
+   "➟ Click to rankup"
+  ]
+ },
+ {
+  "slot": 24,
+  "id": "minecraft:paper",
+  "name": "Rank [✪10]",
+  "lore": [
+   "",
+   "OBJECTIVE",
+   "Pay $10,000,000 [$25.14k balance]",
+   "",
+   "➟ Click to rankup"
+  ]
+ },
+ {
+  "slot": 31,
+  "id": "minecraft:paper",
+  "name": "PRESTIGE",
+  "lore": [
+   "",
+   "Complete all 10 challenges to",
+   "level up to Prestige [✦1]",
+   "",
+   "Price: ",
+   "10,000 Mana",
+   "",
+   "Reward:",
+   "● 5 Cubits",
+   "● 1 Prestige Point",
+   "",
+   "Prestiging will increase all requirements",
+   "and also increase the cubits reward"
+  ]
+ },
+ {
+  "slot": 45,
+  "id": "minecraft:ender_pearl",
+  "name": "Close",
+  "lore": []
+ },
+ {
+  "slot": 48,
+  "id": "minecraft:ender_pearl",
+  "name": "PRESTIGE LEADERBOARD",
+  "lore": [
+   "#142 Qualan - 0",
+   "",
+   "LEADERBOARD",
+   "#1 Sus_Pens - [✦5]",
+   "#2 Highway_Star_ - [✦5]",
+   "#3 Laguinski - [✦4]",
+   "#4 Lcxuna - [✦4]",
+   "#5 SaucyOreos69 - [✦4]",
+   "#6 gangstaslaya - [✦4]",
+   "#7 I__PK__I - [✦4]",
+   "#8 Deeepu - [✦4]",
+   "#9 _XxMangoPvP_ - [✦4]",
+   "#10 JaysonS - [✦4]",
+   "------------------"
+  ]
+ },
+ {
+  "slot": 49,
+  "id": "minecraft:ender_pearl",
+  "name": "Prestige Point Shop",
+  "lore": []
+ },
+ {
+  "slot": 50,
+  "id": "minecraft:ender_pearl",
+  "name": "Information",
+  "lore": [
+   "",
+   "The prestige system is made of of 10 different challenges",
+   "you must complete. To rankup to the next prestige you must",
+   "pay the mana to move on. As you go up in prestiges the",
+   "challenges you must complete become more difficult."
+  ]
+ }
+]

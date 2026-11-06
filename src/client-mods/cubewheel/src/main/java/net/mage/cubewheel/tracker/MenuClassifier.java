@@ -58,7 +58,7 @@ public final class MenuClassifier {
 			if (item == null) continue;
 			String name = ContainerScanner.strip(item.name()).trim();
 			List<String> lore = item.lore() == null ? List.of() : item.lore();
-			if (PRESTIGE_RANK.matcher(name).find() || PRESTIGE_LEVEL.matcher(name).find()) return Optional.of("prestige");
+			if (isPrestige(name)) return Optional.of("prestige");
 			if (name.equals("JOBS PROFILE") || anyLine(lore, "browse job listings")) return Optional.of("jobs");
 			if (JOB_LISTING.matcher(name).matches() || anyLine(lore, "click to complete job")) return Optional.of("jobs");
 			// The event calendar (/calendar): a day not yet revealed says "Task will be revealed October 12th".
@@ -71,6 +71,14 @@ public final class MenuClassifier {
 			if (anyLineStarts(lore, "progress:")) progressItems++;
 		}
 		return progressItems >= GENERIC_MIN_ITEMS ? Optional.of("menu") : Optional.empty();
+	}
+
+	/**
+	 * A prestige page's item: a rank ("Rank [✪4]") or a level on the prestige list ("Prestige 2 - Not Completed").
+	 * The same on Survival and Skyblock (Michael 2026-11-06 capture).
+	 */
+	static boolean isPrestige(String name) {
+		return PRESTIGE_RANK.matcher(name).find() || PRESTIGE_LEVEL.matcher(name).find();
 	}
 
 	private static boolean anyLine(List<String> lore, String needle) {
