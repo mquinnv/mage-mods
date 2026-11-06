@@ -289,7 +289,7 @@ public final class ContainerScanner {
 			if (seen != null) seen.accept(id);
 			if (changed) updated++;
 		}
-		updated += store.forgetUnpinned(t -> TASKS.equals(t.source()) && !shown.contains(t.name()));
+		if (!shown.isEmpty()) updated += store.forgetUnpinned(t -> TASKS.equals(t.source()) && !shown.contains(t.name()));
 		return updated;
 	}
 

@@ -82,6 +82,12 @@ class SkyblockMenusTest {
 		assertEquals(Optional.empty(), classify(item(1, "Focus", "multitasking", "3/5")));
 	}
 
+	/** Tasks are named in capitals; a "Reroll Task" style button with a counter must not pass for one. */
+	@Test void taskNameIsUpperCaseOnly() {
+		assertEquals(Optional.empty(), classify(item(4, "Reroll Task", "Rerolls left (2/3)")));
+		assertEquals(Optional.of("tasks"), classify(item(4, "SLAYER TASK", "", "Slay 76 Mana Slimes in Wolfhaven", "(0/76)")));
+	}
+
 	/** A challenge head alone is not the Season Challenges menu: its Current Level pane must follow. */
 	@Test void challengeHeadNeedsItsCurrentLevel() {
 		ItemView head = item(0, "Mob Challenge", "", "Total Completions: 0.0");

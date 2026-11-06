@@ -15,7 +15,7 @@ import net.mage.cubewheel.tracker.ContainerScanner.ItemView;
  */
 public final class SkyblockMenus {
 	/** A Task Board task: "SLAYER TASK", "ADVENTURE TASK". Its lore holds the objective and a "(0/76)" counter. */
-	static final Pattern TASK_NAME = Pattern.compile("(?i)^[A-Z]+ TASK$");
+	static final Pattern TASK_NAME = Pattern.compile("^[A-Z]+ TASK$");
 
 	/** A Season Challenges category head: "Mob Challenge", "Mini Boss Challenge" (the hub's "Season Challenges" is not). */
 	static final Pattern CHALLENGE_NAME = Pattern.compile("(?i)^\\w[\\w ]* Challenge$");

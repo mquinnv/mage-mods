@@ -150,6 +150,15 @@ class ContainerScannerTest {
 		assertEquals(0, ContainerScanner.scan("tasks", SkyblockCapture.load(SkyblockCapture.TASK_BOARD), store, 10));
 	}
 
+	/** A board read that shows no tasks (a page still loading, a custom source keyed "tasks") forgets nothing. */
+	@Test void taskBoardWithNoTasksForgetsNothing() {
+		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
+		store.update("tasks", "Slay 40 Mana Wolves in Wolfhaven", new ProgressExtractor.Progress(12, 40), 0);
+		assertEquals(0, ContainerScanner.scan("tasks", java.util.List.of(
+				new ContainerScanner.ItemView(0, "minecraft:gray_stained_glass_pane", "", java.util.List.of())), store, 10));
+		assertTrue(ids(store).contains("tasks:Slay 40 Mana Wolves in Wolfhaven"), ids(store).toString());
+	}
+
 	/** Skyblock's rank page is Survival's: one entry per rank with a counter, named after its objective. */
 	@Test void skyblockPrestigeRanks() {
 		TrackerStore store = new TrackerStore(dir.resolve("t.json"));
