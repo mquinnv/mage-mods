@@ -229,6 +229,57 @@ public final class WheelUpgrade {
 		return false;
 	}
 
+	/**
+	 * The version 15 upgrade (2026-11-06): /craft on both wheels and /sell on Skyblock's. Survival's Craft joins the
+	 * Heal slice's arc (Fly, Feed), or the end of the wheel without one; Skyblock's Sell and Craft become slices after
+	 * Shop. Nothing is added for a command the wheel already runs anywhere. Returns the labels added.
+	 */
+	public static List<String> craftAndSell(List<WheelNode> wheel, boolean skyblock) {
+		List<String> added = new ArrayList<>();
+		if (wheel == null) return added;
+		int at = afterShop(wheel);
+		if (skyblock && !runs(wheel, "sell")) {
+			wheel.add(at++, DefaultConfig.skyblockSellLeaf());
+			added.add("Sell");
+		} else if (skyblock && at < wheel.size() && isCommand(wheel.get(at), "sell")) {
+			at++;
+		}
+		if (!runs(wheel, "craft")) {
+			WheelNode heal = skyblock ? null : topLevel(wheel, "heal");
+			if (heal != null) {
+				if (heal.arc == null) heal.arc = new ArrayList<>();
+				heal.arc.add(DefaultConfig.craftLeaf());
+			} else {
+				wheel.add(skyblock ? at : wheel.size(), DefaultConfig.craftLeaf());
+			}
+			added.add("Craft");
+		}
+		return added;
+	}
+
+	private static boolean isCommand(WheelNode n, String command) {
+		return n != null && n.command != null && key(n.command).equals(command);
+	}
+
+	private static boolean runs(List<WheelNode> wheel, String command) {
+		for (WheelNode n : walk(wheel)) if (isCommand(n, command)) return true;
+		return false;
+	}
+
+	private static WheelNode topLevel(List<WheelNode> wheel, String command) {
+		for (WheelNode n : wheel) if (isCommand(n, command)) return n;
+		return null;
+	}
+
+	/** The index just after the top-level Shop slice, else just before More, else the end. */
+	private static int afterShop(List<WheelNode> wheel) {
+		for (int i = 0; i < wheel.size(); i++) if (isCommand(wheel.get(i), "shop")) return i + 1;
+		for (int i = 0; i < wheel.size(); i++) {
+			if (wheel.get(i) != null && DefaultConfig.MORE.equals(wheel.get(i).label)) return i;
+		}
+		return wheel.size();
+	}
+
 	/** Every node of the tree: rings' and dynamic nodes' children and slices' outer tiers included. */
 	static List<WheelNode> walk(List<WheelNode> roots) {
 		List<WheelNode> out = new ArrayList<>();

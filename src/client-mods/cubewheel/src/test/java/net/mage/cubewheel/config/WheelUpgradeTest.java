@@ -33,6 +33,57 @@ class WheelUpgradeTest {
 		assertEquals(List.of("Party", "Prestige"), List.of(w.get(1).label, w.get(1).arc.get(1).label));
 	}
 
+	/** Version 15: Survival's Craft joins the Heal arc, once. */
+	@Test void survivalCraftJoinsTheHealArc() {
+		WheelNode heal = WheelNode.leaf("Heal", null, "/heal").withArc(WheelNode.leaf("Fly", null, "/fly"));
+		List<WheelNode> w = new java.util.ArrayList<>(List.of(WheelNode.leaf("Shop", null, "/shop"), heal));
+		assertEquals(List.of("Craft"), WheelUpgrade.craftAndSell(w, false));
+		assertEquals(List.of("/fly", "/craft"), heal.arc.stream().map(n -> n.command).toList());
+		assertEquals(List.of("Shop", "Heal"), labels(w)); // Survival gets no Skyblock Sell slice
+		assertEquals(List.of(), WheelUpgrade.craftAndSell(w, false)); // once
+	}
+
+	/** Version 15: a Survival wheel without a Heal slice gets Craft at the end; one that runs /craft anywhere is left alone. */
+	@Test void survivalCraftWithoutHealOrAlreadyThere() {
+		List<WheelNode> w = new java.util.ArrayList<>(List.of(WheelNode.leaf("Jobs", null, "/jobs")));
+		assertEquals(List.of("Craft"), WheelUpgrade.craftAndSell(w, false));
+		assertEquals(List.of("Jobs", "Craft"), labels(w));
+		List<WheelNode> mine = new java.util.ArrayList<>(List.of(WheelNode.ring("Tools", null, WheelNode.leaf("Bench", null, "/Craft "))));
+		assertEquals(List.of(), WheelUpgrade.craftAndSell(mine, false));
+	}
+
+	/** Version 15: Skyblock's Sell and Craft go in as slices just after Shop. */
+	@Test void skyblockSellAndCraftGoAfterShop() {
+		List<WheelNode> w = new java.util.ArrayList<>(List.of(WheelNode.leaf("Island", null, "/is go"),
+				WheelNode.leaf("Shop", null, "/shop"), WheelNode.leaf("Vaults", null, "/pv"), WheelNode.ring(DefaultConfig.MORE, null)));
+		assertEquals(List.of("Sell", "Craft"), WheelUpgrade.craftAndSell(w, true));
+		assertEquals(List.of("Island", "Shop", "Sell", "Craft", "Vaults", DefaultConfig.MORE), labels(w));
+		assertEquals(List.of(), WheelUpgrade.craftAndSell(w, true)); // once
+	}
+
+	/** Version 15: a Skyblock wheel with its own /sell keeps it, and Craft lands after that Sell; no Shop means before More. */
+	@Test void skyblockKeepsItsSellAndFallsBackToBeforeMore() {
+		List<WheelNode> w = new java.util.ArrayList<>(List.of(WheelNode.leaf("Shop", null, "/shop"),
+				WheelNode.leaf("Sell it", null, "/sell"), WheelNode.leaf("Vaults", null, "/pv")));
+		assertEquals(List.of("Craft"), WheelUpgrade.craftAndSell(w, true));
+		assertEquals(List.of("Shop", "Sell it", "Craft", "Vaults"), labels(w));
+		List<WheelNode> noShop = new java.util.ArrayList<>(List.of(WheelNode.leaf("Island", null, "/is go"), WheelNode.ring(DefaultConfig.MORE, null)));
+		assertEquals(List.of("Sell", "Craft"), WheelUpgrade.craftAndSell(noShop, true));
+		assertEquals(List.of("Island", "Sell", "Craft", DefaultConfig.MORE), labels(noShop));
+		assertEquals(List.of(), WheelUpgrade.craftAndSell(null, true));
+	}
+
+	/** The new defaults already carry them, so the migration adds nothing to a fresh wheel. */
+	@Test void defaultsAlreadyHaveCraftAndSell() {
+		assertEquals(List.of(), WheelUpgrade.craftAndSell(DefaultConfig.wheel(), false));
+		List<WheelNode> sb = DefaultConfig.skyblockWheel();
+		assertEquals(List.of(), WheelUpgrade.craftAndSell(sb, true));
+		int shop = labels(sb).indexOf("Shop");
+		assertEquals(List.of("Sell", "Craft"), labels(sb).subList(shop + 1, shop + 3));
+		assertEquals("/sell", sb.get(shop + 1).command);
+		assertNull(sb.get(shop + 1).arc); // Skyblock's /sell has no hand/all forms
+	}
+
 	@Test void newDefaultTopLevelOrder() {
 		List<WheelNode> w = DefaultConfig.wheel();
 		assertEquals(List.of("Sushi", "Homes", "Teleporter", "Jobs", "Shop", "Sell", "Vaults", "Heal",
@@ -41,7 +92,7 @@ class WheelUpgradeTest {
 		assertEquals(List.of("Back"), labels(w.get(2).arc));
 		assertEquals("/heal", w.get(7).command);
 		assertEquals("minecraft:golden_apple", w.get(7).icon);
-		assertEquals(List.of("/fly", "/feed"), w.get(7).arc.stream().map(n -> n.command).toList());
+		assertEquals(List.of("/fly", "/feed", "/craft"), w.get(7).arc.stream().map(n -> n.command).toList());
 		assertEquals("/party", w.get(9).command);
 		assertEquals(List.of("Party quests", "Prestige", "Challenges"), labels(w.get(9).arc));
 		assertEquals("vaults", w.get(6).dynamic);
@@ -152,7 +203,7 @@ class WheelUpgradeTest {
 		  ]}""");
 		ConfigStore s = new ConfigStore(f);
 		assertNull(s.reload());
-		assertEquals(List.of("Boss", "Settings"), labels(s.current().wheel));
+		assertEquals(List.of("Boss", "Settings", "Craft"), labels(s.current().wheel));
 		assertTrue(s.current().wheel.get(0).isSlice());
 		assertNull(s.current().wheel.get(0).children);
 	}

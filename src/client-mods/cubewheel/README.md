@@ -65,7 +65,7 @@ Any key or mouse button can be used for the wheel. Each press does its action on
 Top level, in fan order (slice 0 at the top, then clockwise), each with the entries that fan out in its arc
 while it is hovered: Sushi `/warp crops` (Spawners `/warp spawners`), Homes (live, the cached homes), Teleporter
 `/teleporter` (Back), Jobs `/jobs`, Shop `/shop` (Kilton, Auction house), Sell `/sell` (hand, all), Vaults (live:
-PV 1..N, Party vault, All vaults), Heal `/heal` (Fly `/fly`, shown as `Fly: on`/`off`; the heal cooldown shows in
+PV 1..N, Party vault, All vaults), Heal `/heal` (Fly `/fly`, shown as `Fly: on`/`off`, Feed, Craft `/craft`; the heal cooldown shows in
 the Cooldowns panel, see [Command cooldowns](#command-cooldowns)), Isles `/isles` (the six Mana worlds), Party
 quests `/pquests` (Prestige, Challenges), Daily reward `/cow` (Crates; live badge, see
 [Daily reward badge](#daily-reward-badge)), Boss event (live, see [Boss event slice](#boss-event-slice)), TPA
@@ -834,7 +834,9 @@ On Skyblock the mod keeps a separate tracker, wheel and SVA catalog. Survival's 
 - **Refresh key**: `tracker.skyblockRefreshCommands`, default `/jobs`, `/prestige`, `/is quests`,
   `/challenges`. A run stops if the gamemode changes.
 - **Wheel**: `wheelSkyblock` is a separate wheel used on Skyblock. The wheel editor and "reset wheel"
-  act on the current gamemode's wheel.
+  act on the current gamemode's wheel. It has Sell `/sell` (on Skyblock it sells everything; there is
+  no hand/all form) and Craft `/craft` as slices after Shop. Config version 15 adds Craft to existing
+  wheels (under Heal on Survival) and Sell to an existing Skyblock wheel.
 - **SVA catalog**: `https://api.manacube.com/api/svas/skyblock`, cached under
   `config/cubewheel-cache/skyblock/`. Each mode has its own service and rate budget; the tooltip
   fetches the catalog lazily on first need.

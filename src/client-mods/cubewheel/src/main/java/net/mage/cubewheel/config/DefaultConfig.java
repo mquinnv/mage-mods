@@ -14,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 14;
+	public static final int CONFIG_VERSION = 15;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 	/** The progress popup's visible time and the bounds ConfigNormalizer clamps it to. */
@@ -144,7 +144,8 @@ public final class DefaultConfig {
 		// Heal on the click (its cooldown shows in the Cooldowns panel), Fly and Feed in its arc (Michael, 2026-10-07/08).
 		w.add(leaf("Heal", "minecraft:golden_apple", "/heal").withArc(
 			leaf("Fly", "minecraft:feather", "/fly"),
-			leaf("Feed", "minecraft:cooked_beef", "/feed")));
+			leaf("Feed", "minecraft:cooked_beef", "/feed"),
+			craftLeaf()));
 		w.add(isles());
 		// Party: the party menu on a click, its quests first in the arc (Michael 2026-10-30).
 		w.add(leaf("Party", "minecraft:white_banner", "/party").withArc(
@@ -215,6 +216,8 @@ public final class DefaultConfig {
 		w.add(leaf("Shop", "minecraft:emerald", "/shop").withArc(
 			leaf("Auction house", "minecraft:gold_block", "/ah"),
 			leaf("Cubit shop", "minecraft:diamond", "/cubitshop")));
+		w.add(skyblockSellLeaf());
+		w.add(craftLeaf());
 		// Vaults: hover fans PV 1...N out in an arc, then the full vault menu; click for the full ring.
 		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
 			leaf("All vaults", "minecraft:chest", "/pv")).shownAsArc());
@@ -283,6 +286,16 @@ public final class DefaultConfig {
 				leaf("Cursed Witch", "minecraft:cauldron", "/warp cursedwitch")),
 			leaf("Burninglands", "minecraft:magma_block", "/warp burninglands"),
 			leaf("Isles menu", "minecraft:filled_map", "/isles")).shownAsArc();
+	}
+
+	/** A portable crafting table (/craft), on both wheels; also added by the version 15 migration. */
+	public static WheelNode craftLeaf() {
+		return leaf("Craft", "minecraft:crafting_table", "/craft");
+	}
+
+	/** Skyblock's Sell slice: /sell there sells everything at once (no /sell hand or /sell all). */
+	public static WheelNode skyblockSellLeaf() {
+		return leaf("Sell", "minecraft:gold_ingot", "/sell");
 	}
 
 	/** The wheel's "Settings" leaf (opens CubeWheel's settings screen); shared by the default wheel and the version 8 migration. */

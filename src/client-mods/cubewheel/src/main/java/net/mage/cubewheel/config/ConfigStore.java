@@ -111,6 +111,7 @@ public final class ConfigStore {
 	 * Version 11: each isle in the Isles ring gains the default places under it that it lacks
 	 * ({@link WheelUpgrade#isleArcs}). Version 12: the Great Wolf's boss warp rule, and its place under Wolfhaven.
 	 * Version 13: the top-level Party quests slice becomes Party ({@link WheelUpgrade#partySlice}).
+	 * Version 15: Craft on both wheels, Sell on Skyblock's ({@link WheelUpgrade#craftAndSell}).
 	 */
 	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
@@ -170,6 +171,11 @@ public final class ConfigStore {
 		}
 		if (c.configVersion < 14 && c.wheel != null && WheelUpgrade.sandaraPond(c.wheel)) {
 			notes.add("wheel: the pond under Sandara now goes to /warp sandarapond (the main pond stays under More › Warps › Server warps)");
+		}
+		if (c.configVersion < 15) {
+			if (!WheelUpgrade.craftAndSell(c.wheel, false).isEmpty()) notes.add("wheel: added Craft (/craft)");
+			List<String> sb = WheelUpgrade.craftAndSell(c.wheelSkyblock, true);
+			if (!sb.isEmpty()) notes.add("Skyblock wheel: added " + String.join(" and ", sb));
 		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;

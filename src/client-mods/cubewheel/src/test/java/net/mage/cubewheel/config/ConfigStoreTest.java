@@ -160,7 +160,7 @@ class ConfigStoreTest {
 		CubeWheelConfig c = s.current();
 		assertEquals(54, c.vaultCount);
 		assertEquals(3, c.listThreshold);
-		assertEquals(List.of("ok", "ring", "Settings"), c.wheel.stream().map(n -> n.label).toList());
+		assertEquals(List.of("ok", "ring", "Settings", "Craft"), c.wheel.stream().map(n -> n.label).toList());
 		assertEquals(1, c.wheel.get(1).children.size());
 		assertEquals("/sell", c.wheel.get(1).children.get(0).command); // leading slash added
 		assertNotNull(c.serverHosts); assertFalse(c.serverHosts.isEmpty());
@@ -524,6 +524,23 @@ class ConfigStoreTest {
 		return WheelUpgrade.walk(wheel).stream().filter(n -> n.command != null && "settings".equals(ClientActions.name(n.command))).count();
 	}
 
+	/** Version 15: Craft under Survival's Heal, Sell and Craft after Skyblock's Shop, written back once. */
+	@Test void aVersion14FileGainsCraftAndSkyblockSell() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, """
+		  {"configVersion": 14,
+		   "wheel": [{"label":"Heal","command":"/heal","arc":[{"label":"Fly","command":"/fly"}]}],
+		   "wheelSkyblock": [{"label":"Shop","command":"/shop"},{"label":"Spawn","command":"/spawn"}]}""");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(List.of("/fly", "/craft"), s.current().wheel.get(0).arc.stream().map(n -> n.command).toList());
+		assertEquals(List.of("Shop", "Sell", "Craft", "Spawn"), s.current().wheelSkyblock.stream().map(n -> n.label).toList());
+		ConfigStore again = new ConfigStore(f);
+		assertNull(again.reload());
+		assertEquals(4, again.current().wheelSkyblock.size());
+		assertEquals(2, again.current().wheel.get(0).arc.size());
+	}
+
 	@Test void aVersion7FileGainsTheSettingsLeafUnderMoreOnce() throws Exception {
 		Path f = dir.resolve("cubewheel.json");
 		Files.writeString(f, """
@@ -537,7 +554,7 @@ class ConfigStoreTest {
 		assertEquals(List.of("Ender chest", "Settings"), more.stream().map(n -> n.label).toList());
 		assertEquals("cubewheel:settings", more.get(1).command);
 		assertEquals("minecraft:comparator", more.get(1).icon);
-		assertEquals(2, s.current().wheel.size());
+		assertEquals(3, s.current().wheel.size()); // plus version 15's Craft (no Heal slice to put it under)
 		assertTrue(Files.readString(f).replaceAll("\\s", "").contains("\"configVersion\":" + DefaultConfig.CONFIG_VERSION));
 		ConfigStore again = new ConfigStore(f);
 		assertNull(again.reload());
@@ -562,7 +579,7 @@ class ConfigStoreTest {
 		Files.writeString(f, "{\"configVersion\": 7, \"wheel\": [{\"label\":\"Sell\",\"command\":\"/sell\"}]}");
 		ConfigStore s = new ConfigStore(f);
 		assertNull(s.reload());
-		assertEquals(List.of("Sell", "Settings"), s.current().wheel.stream().map(n -> n.label).toList());
+		assertEquals(List.of("Sell", "Settings", "Craft"), s.current().wheel.stream().map(n -> n.label).toList());
 	}
 
 	@Test void aFullMoreRingSendsSettingsToTheTopLevel() throws Exception {
