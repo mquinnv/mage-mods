@@ -31,6 +31,21 @@ class TrackerStoresTest {
 		assertTrue(dir.resolve("cubewheel-tracker-skyblock.json").toFile().exists());
 	}
 
+	@Test void onCreateReachesStoresLoadedBeforeAndCreatedAfterTheHookIsRegistered() {
+		TrackerStores stores = new TrackerStores(dir);
+		TrackerStore sv = stores.of(Gamemode.SURVIVAL);
+		List<TrackerStore> early = new ArrayList<>();
+		List<TrackerStore> late = new ArrayList<>();
+		stores.onCreate(early::add); // registered before the Skyblock store exists
+		assertEquals(List.of(sv), early, "applied at once to the loaded Survival store");
+		TrackerStore sb = stores.of(Gamemode.SKYBLOCK);
+		stores.onCreate(late::add); // registered after
+		assertEquals(List.of(sv, sb), early);
+		assertTrue(late.contains(sb) && late.contains(sv) && late.size() == 2);
+		stores.of(Gamemode.SKYBLOCK);
+		assertEquals(2, early.size(), "not re-applied on a later of()");
+	}
+
 	@Test void forEachLoadedVisitsOnlyStoresOfHasReturned() {
 		TrackerStores stores = new TrackerStores(dir);
 		List<TrackerStore> seen = new ArrayList<>();

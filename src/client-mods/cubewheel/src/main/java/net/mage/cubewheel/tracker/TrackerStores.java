@@ -15,6 +15,8 @@ public final class TrackerStores {
 	private final Path configDir;
 	private final Map<Gamemode, TrackerStore> loaded = new EnumMap<>(Gamemode.class);
 
+	private final java.util.List<Consumer<TrackerStore>> onCreate = new java.util.ArrayList<>();
+
 	public TrackerStores(Path configDir) {
 		this.configDir = configDir;
 	}
@@ -28,8 +30,18 @@ public final class TrackerStores {
 			s = new TrackerStore(configDir.resolve(file));
 			s.load();
 			loaded.put(key, s);
+			for (Consumer<TrackerStore> f : onCreate) f.accept(s);
 		}
 		return s;
+	}
+
+	/**
+	 * Runs {@code f} on every store already loaded, now, and on each store created later, so a listener reaches
+	 * the lazily created Skyblock store as well.
+	 */
+	public synchronized void onCreate(Consumer<TrackerStore> f) {
+		onCreate.add(f);
+		loaded.values().forEach(f);
 	}
 
 	/** Visits the stores {@link #of} has created so far (a snapshot, so {@code f} may call {@link #of}). */

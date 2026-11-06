@@ -187,8 +187,8 @@ public final class LocalSignals {
 		ClientTickEvents.END_CLIENT_TICK.register(LocalSignals::onEndTick);
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, mc) -> flush());
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> flush());
-		TrackerStore store = CubeWheelClient.tracker();
-		if (store != null) store.setSnapBackListener(LocalSignals::onSnapBack);
+		var stores = CubeWheelClient.trackers();
+		if (stores != null) stores.onCreate(store -> store.setSnapBackListener(LocalSignals::onSnapBack));
 	}
 
 	// ---- entry points (Fabric callbacks and mixins) ----

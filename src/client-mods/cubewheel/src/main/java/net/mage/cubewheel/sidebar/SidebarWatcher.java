@@ -39,10 +39,12 @@ public final class SidebarWatcher {
 		static final Snapshot ABSENT = new Snapshot(null, List.of());
 	}
 
-	private final SidebarLinker.SaveThrottle saveThrottle = new SidebarLinker.SaveThrottle(SAVE_INTERVAL_MS);
+	private final StoreSaveThrottle saveThrottle = new StoreSaveThrottle(SAVE_INTERVAL_MS);
 	private int ticks;
 	private Snapshot last = Snapshot.ABSENT;
 	private Map<String, Double> lastValues = Map.of();
+	/** The store {@link #lastValues} were diffed against; a different one means the gamemode changed. */
+	private TrackerStore lastStore;
 	private boolean failureLogged;
 
 	/** Latest parsed sidebar values ("Skills" -> 1851.0); empty when no sidebar is shown or off ManaCube. */
@@ -73,7 +75,7 @@ public final class SidebarWatcher {
 			TrackerStore store = CubeWheelClient.tracker();
 			if (store == null || lastValues.isEmpty()) return;
 			if (SidebarLinker.apply(lastValues, CubeWheelClient.config().current().tracker.sidebarLinks, store, now) > 0) {
-				saveThrottle.markDirty();
+				saveThrottle.markDirty(store);
 			}
 		} catch (RuntimeException e) {
 			CubeWheelClient.LOG.error("[cubewheel] sidebar re-apply failed", e);
@@ -86,8 +88,7 @@ public final class SidebarWatcher {
 	 */
 	public void flush() {
 		try {
-			TrackerStore store = CubeWheelClient.tracker();
-			if (store != null && saveThrottle.consumeDirty()) store.save();
+			saveThrottle.flush();
 		} catch (RuntimeException e) {
 			CubeWheelClient.LOG.error("[cubewheel] sidebar flush failed", e);
 		}
@@ -97,8 +98,7 @@ public final class SidebarWatcher {
 	public void tick(Minecraft mc) {
 		try {
 			long now = System.currentTimeMillis();
-			TrackerStore store = CubeWheelClient.tracker();
-			if (store != null && saveThrottle.shouldSave(now)) store.saveInBackground();
+			saveThrottle.tick(now);
 			if (++ticks < INTERVAL_TICKS) return;
 			ticks = 0;
 			CubeWheelConfig cfg = CubeWheelClient.config().current();
@@ -106,6 +106,7 @@ public final class SidebarWatcher {
 				// Left the server: forget, so values seen on the next join count as changes again.
 				last = Snapshot.ABSENT;
 				lastValues = Map.of();
+				lastStore = null;
 				return;
 			}
 			Snapshot snap = read(mc);
@@ -113,11 +114,18 @@ public final class SidebarWatcher {
 			last = snap;
 			CaptureLog capture = CubeWheelClient.capture();
 			if (capture != null && capture.enabled()) capture.sidebar(snap.title(), snap.lines(), now);
+			// After `last = snap`: the store follows the sidebar title, so asking earlier would still see the
+			// previous gamemode on the tick it changes and write Skyblock values into the Survival store.
+			TrackerStore store = CubeWheelClient.tracker();
+			if (store != lastStore) {
+				lastStore = store;
+				lastValues = Map.of(); // the other gamemode's values are not this gamemode's baseline
+			}
 			Map<String, Double> values = SidebarParser.parse(snap.lines());
 			Map<String, Double> changed = SidebarLinker.changed(lastValues, values);
 			lastValues = values;
 			if (changed.isEmpty() || store == null) return;
-			if (SidebarLinker.apply(changed, cfg.tracker.sidebarLinks, store, now) > 0) saveThrottle.markDirty();
+			if (SidebarLinker.apply(changed, cfg.tracker.sidebarLinks, store, now) > 0) saveThrottle.markDirty(store);
 		} catch (RuntimeException e) {
 			if (!failureLogged) CubeWheelClient.LOG.error("[cubewheel] sidebar watcher failed", e);
 			failureLogged = true;

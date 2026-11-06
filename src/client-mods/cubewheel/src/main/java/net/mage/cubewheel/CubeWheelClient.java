@@ -78,6 +78,9 @@ public final class CubeWheelClient implements ClientModInitializer {
 	/** Per-server homes cache; null only before onInitializeClient (callers treat null as "no homes"). */
 	public static HomesCache homes() { return homes; }
 
+	/** All gamemodes' tracker stores; null only before onInitializeClient. */
+	public static TrackerStores trackers() { return trackers; }
+
 	/**
 	 * Tracked progress of the gamemode the sidebar says we are in (Skyblock has its own store; Survival and
 	 * everything else share the original); null only before onInitializeClient.

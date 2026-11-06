@@ -38,8 +38,8 @@ public final class ProgressToastHud implements HudElement {
 	public static void register() {
 		HudElementRegistry.attachElementAfter(Identifier.fromNamespaceAndPath(CubeWheelClient.MOD_ID, "panels"), ID,
 				new ProgressToastHud());
-		TrackerStore store = CubeWheelClient.tracker();
-		if (store != null) store.setProgressListener(ProgressToastHud::onProgress);
+		var stores = CubeWheelClient.trackers();
+		if (stores != null) stores.onCreate(store -> store.setProgressListener(ProgressToastHud::onProgress));
 	}
 
 	/** A one-off notice for the popup ("Inventory full"), in {@code color}; ignored while {@code toast.enabled} is off. */
