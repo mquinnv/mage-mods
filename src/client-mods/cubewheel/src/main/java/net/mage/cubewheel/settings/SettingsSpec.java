@@ -244,6 +244,12 @@ public final class SettingsSpec {
 												+ " menu. A missing \"/\" is added and at most "
 												+ ConfigStore.MAX_REFRESH_COMMANDS + " are kept.",
 										c -> c.tracker.refreshCommands, (c, v) -> c.tracker.refreshCommands = v),
+								textList(d, "tracker.skyblockRefreshCommands", "Skyblock refresh commands",
+										"Sent by the \"Refresh trackers\" key while you are in Skyblock; each should open a"
+												+ " progress menu. A missing \"/\" is added and at most "
+												+ ConfigStore.MAX_REFRESH_COMMANDS + " are kept.",
+										c -> c.tracker.skyblockRefreshCommands,
+										(c, v) -> c.tracker.skyblockRefreshCommands = v),
 								mapLines(d, "tracker.sidebarLinks", "Sidebar links", "sidebar key -> regex",
 										"Follows a sidebar value live. One line per link: \"sidebar key -> regex\", e.g."
 												+ " \"Skills -> (?i)reach [\\d,]+ skill level\". The entry whose name matches the"

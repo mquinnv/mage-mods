@@ -39,6 +39,10 @@ public final class DefaultConfig {
 		return new ArrayList<>(List.of("/pquests", "/prestige", "/jobs"));
 	}
 
+	public static List<String> skyblockRefreshCommands() {
+		return new ArrayList<>(List.of("/jobs", "/prestige", "/is quests", "/challenges"));
+	}
+
 	/** The pre-2026-09-30 default for "Skills"; it also matched unrelated entries, so loading upgrades it. */
 	public static final String OLD_SKILLS_LINK = "(?i)skill level";
 	/** Only prestige objectives such as "Rank [✪4] · Reach 2,500 Skill Level". */
@@ -365,6 +369,7 @@ public final class DefaultConfig {
 		c.serverHosts = serverHosts();
 		c.tracker.sources = trackerSources();
 		c.tracker.refreshCommands = refreshCommands();
+		c.tracker.skyblockRefreshCommands = skyblockRefreshCommands();
 		c.tracker.sidebarLinks = sidebarLinks();
 		c.tracker.local = local();
 		c.events.schedule = events();

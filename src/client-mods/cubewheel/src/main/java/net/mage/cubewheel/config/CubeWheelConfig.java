@@ -211,6 +211,8 @@ public final class CubeWheelConfig {
 		public Map<String, String> sources;
 		/** Sent one at a time by the "Refresh trackers" key; each should open a progress menu. */
 		public List<String> refreshCommands;
+		/** The same for Skyblock: the commands the refresh key sends while the sidebar says Skyblock. */
+		public List<String> skyblockRefreshCommands;
 		/** Sidebar key ("Skills") -> regex on trackable names whose current value follows it live. */
 		public Map<String, String> sidebarLinks;
 		/**
@@ -220,6 +222,11 @@ public final class CubeWheelConfig {
 		public String survivalSidebarPattern = DefaultConfig.SURVIVAL_SIDEBAR;
 		/** Regex on the sidebar title that says the player is in Skyblock. "" means Skyblock is never detected. */
 		public String skyblockSidebarPattern = DefaultConfig.SKYBLOCK_SIDEBAR;
+
+		/** The refresh commands for {@code m}: Skyblock has its own list, every other mode uses {@code refreshCommands}. */
+		public List<String> refreshCommandsFor(net.mage.cubewheel.sidebar.Gamemode m) {
+			return m == net.mage.cubewheel.sidebar.Gamemode.SKYBLOCK ? skyblockRefreshCommands : refreshCommands;
+		}
 		/**
 		 * HUD entries for the world you are in: "sort" (default) lists entries naming the current world first
 		 * (after pinned ones) and other worlds' last, "hide" drops other worlds' unpinned entries, "off".

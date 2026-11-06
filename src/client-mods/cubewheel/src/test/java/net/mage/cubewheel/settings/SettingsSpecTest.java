@@ -272,6 +272,7 @@ class SettingsSpecTest {
 		c.tracker.sources = null;
 		c.tracker.sidebarLinks = null;
 		c.tracker.refreshCommands = null;
+		c.tracker.skyblockRefreshCommands = null;
 		c.tracker.local.worlds = null;
 		c.tracker.local.specialWorlds = null;
 		c.events.schedule = null;
@@ -293,8 +294,8 @@ class SettingsSpecTest {
 		Category t = SettingsSpec.categories().get(2);
 		assertEquals("Tracker", t.name());
 		assertEquals(List.of("Sources & refresh", "Local counting"), t.groups().stream().map(Group::name).toList());
-		assertEquals(List.of("tracker.sources", "tracker.refreshCommands", "tracker.sidebarLinks",
-				"tracker.survivalSidebarPattern", "tracker.skyblockSidebarPattern"), ids(t.groups().get(0)));
+		assertEquals(List.of("tracker.sources", "tracker.refreshCommands", "tracker.skyblockRefreshCommands",
+				"tracker.sidebarLinks", "tracker.survivalSidebarPattern", "tracker.skyblockSidebarPattern"), ids(t.groups().get(0)));
 		assertEquals(List.of("tracker.local.enabled", "tracker.local.blocks", "tracker.local.kills", "tracker.local.fish",
 				"tracker.local.shear", "tracker.local.milk", "tracker.local.areaBreaks", "tracker.local.worlds",
 				"tracker.local.specialWorlds"), ids(t.groups().get(1)));
@@ -304,7 +305,7 @@ class SettingsSpecTest {
 
 	@Test
 	void nullMapsAndListsShowTheDefaultsAndSavingThemUnchangedKeepsBehaviour() {
-		for (String id : List.of("tracker.sources", "tracker.sidebarLinks", "tracker.refreshCommands",
+		for (String id : List.of("tracker.sources", "tracker.sidebarLinks", "tracker.refreshCommands", "tracker.skyblockRefreshCommands",
 				"tracker.local.worlds", "tracker.local.specialWorlds", "serverHosts", "events.bossWarps",
 				"events.schedule", "cooldowns.commands")) {
 			Setting s = byId(id);

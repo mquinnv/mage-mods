@@ -245,6 +245,26 @@ class ConfigStoreTest {
 		assertTrue(s.current().tracker.sidebarLinks.isEmpty()); // an explicit empty map switches linking off
 	}
 
+	@Test void skyblockRefreshCommandsDefaultWhenAbsentAndAreNormalised() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{\"tracker\": {\"refreshCommands\": [\"/jobs\"]}}");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(List.of("/jobs", "/prestige", "/is quests", "/challenges"), s.current().tracker.skyblockRefreshCommands);
+
+		Files.writeString(f, "{\"tracker\": {\"skyblockRefreshCommands\": [\" is top \", \"\"]}}");
+		assertNull(s.reload());
+		assertEquals(List.of("/is top"), s.current().tracker.skyblockRefreshCommands);
+	}
+
+	@Test void refreshCommandsForPicksTheGamemodesList() {
+		CubeWheelConfig.Tracker t = new CubeWheelConfig.Tracker();
+		t.refreshCommands = List.of("/a");
+		t.skyblockRefreshCommands = List.of("/b");
+		assertEquals(List.of("/b"), t.refreshCommandsFor(net.mage.cubewheel.sidebar.Gamemode.SKYBLOCK));
+		assertEquals(List.of("/a"), t.refreshCommandsFor(net.mage.cubewheel.sidebar.Gamemode.SURVIVAL));
+	}
+
 	@Test void refreshCommandsAreCapped() throws Exception {
 		Path f = dir.resolve("cubewheel.json");
 		StringBuilder sb = new StringBuilder("{\"tracker\": {\"refreshCommands\": [");

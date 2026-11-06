@@ -25,6 +25,8 @@ public final class ConfigNormalizer {
 		if (c.tracker.sources == null) c.tracker.sources = DefaultConfig.trackerSources();
 		c.tracker.refreshCommands = c.tracker.refreshCommands == null
 				? DefaultConfig.refreshCommands() : normalizeCommands(c.tracker.refreshCommands);
+		c.tracker.skyblockRefreshCommands = c.tracker.skyblockRefreshCommands == null
+				? DefaultConfig.skyblockRefreshCommands() : normalizeCommands(c.tracker.skyblockRefreshCommands);
 		if (c.tracker.sidebarLinks == null) c.tracker.sidebarLinks = DefaultConfig.sidebarLinks();
 		else if (DefaultConfig.OLD_SKILLS_LINK.equals(c.tracker.sidebarLinks.get("Skills"))) {
 			c.tracker.sidebarLinks.put("Skills", DefaultConfig.SKILLS_LINK);

@@ -4,7 +4,9 @@ import net.mage.cubewheel.CommandSender;
 import net.mage.cubewheel.CubeWheelClient;
 import net.mage.cubewheel.ServerGate;
 import net.mage.cubewheel.config.CubeWheelConfig;
+import net.mage.cubewheel.sidebar.Gamemode;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -30,6 +32,8 @@ public final class RefreshController {
 	/** Ids of the entries the run's menus showed (changed or just confirmed). */
 	private static final Set<String> seenThisRun = new HashSet<>();
 	private static boolean reopenPicker;
+	/** The gamemode the running refresh started in; the run stops if the sidebar says otherwise. */
+	private static Gamemode runMode;
 	/** Use/attack seen down at START_CLIENT_TICK; OR-ed with the END_CLIENT_TICK sample. */
 	private static boolean inputSampled;
 	/** Set once if hiding a menu ever throws (e.g. a Minecraft update); menus then flash visibly instead. */
@@ -95,24 +99,27 @@ public final class RefreshController {
 			if (fromPicker) setStatus("Refresh only works on ManaCube");
 			return;
 		}
-		if (!ServerGate.survival(cfg)) {
-			mc.player.sendOverlayMessage(Component.literal("Tracker refresh only works in ManaCube Survival"));
-			if (fromPicker) setStatus("Refresh only works in ManaCube Survival");
+		if (!ServerGate.tracks(cfg)) {
+			mc.player.sendOverlayMessage(Component.literal("Tracker refresh only works in ManaCube Survival or Skyblock"));
+			if (fromPicker) setStatus("Refresh only works in ManaCube Survival or Skyblock");
 			return;
 		}
+		Gamemode mode = ServerGate.gamemode(cfg);
+		List<String> commands = cfg.tracker.refreshCommandsFor(mode);
 		if (mc.gui.screen() != null && !fromPicker) return;
 		long now = Util.getMillis();
-		RefreshPolicy.Start start = POLICY.start(now, cfg.tracker.refreshCommands);
+		RefreshPolicy.Start start = POLICY.start(now, commands);
 		switch (start.outcome()) {
 			case COOLDOWN -> report(mc, fromPicker, "refresh skipped: wait " + start.waitSeconds() + "s");
 			case RUNNING -> report(mc, fromPicker, "refresh already running");
-			case NO_COMMANDS -> report(mc, fromPicker, "refresh skipped: tracker.refreshCommands is empty");
+			case NO_COMMANDS -> report(mc, fromPicker, "refresh skipped: no refresh commands for " + mode);
 			case STARTED -> {
+				runMode = mode;
 				seenThisRun.clear();
 				inputSampled = false;
 				reopenPicker = fromPicker;
 				if (fromPicker) mc.gui.setScreen(null); // the run needs a clear screen; the picker comes back after
-				CubeWheelClient.LOG.info("[cubewheel] tracker refresh: {}", cfg.tracker.refreshCommands);
+				CubeWheelClient.LOG.info("[cubewheel] tracker refresh ({}): {}", mode, commands);
 				tick(mc); // the first command goes out with the keypress itself
 			}
 		}
@@ -133,9 +140,10 @@ public final class RefreshController {
 		tickNo++;
 		if (!POLICY.running()) return;
 		try {
-			if (mc.player == null || !ServerGate.survival(CubeWheelClient.config().current())) {
+			CubeWheelConfig cfg = CubeWheelClient.config().current();
+			if (mc.player == null || !ServerGate.tracks(cfg) || ServerGate.gamemode(cfg) != runMode) {
 				POLICY.abort();
-				CubeWheelClient.LOG.info("[cubewheel] tracker refresh stopped: left the server or Survival");
+				CubeWheelClient.LOG.info("[cubewheel] tracker refresh stopped: left the server or changed gamemode");
 				return;
 			}
 			Screen screen = mc.gui.screen();
