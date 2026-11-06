@@ -39,6 +39,18 @@ class GamemodeTest {
 		assertEquals(SURVIVAL, Gamemode.detect("anything", "", SB));
 	}
 
+	/** The memo remembers one entry; alternating titles must still each get their own right answer. */
+	@Test void alternatingTitlesStayCorrectThroughTheMemo() {
+		for (int i = 0; i < 3; i++) {
+			assertEquals(SURVIVAL, Gamemode.detect("SURVIVAL", SV, SB));
+			assertEquals(SKYBLOCK, Gamemode.detect("SKYBLOCK", SV, SB));
+			assertEquals(OTHER, Gamemode.detect("PARKOUR", SV, SB));
+			assertEquals(OTHER, Gamemode.detect(null, SV, SB));
+		}
+		assertEquals(SKYBLOCK, Gamemode.detect("SKYBLOCK", SV, SB));
+		assertEquals(OTHER, Gamemode.detect("SKYBLOCK", SV, ""), "different pattern, different answer");
+	}
+
 	@Test void ids() {
 		assertEquals("survival", SURVIVAL.id());
 		assertEquals("skyblock", SKYBLOCK.id());

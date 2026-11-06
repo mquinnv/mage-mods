@@ -21,6 +21,7 @@ import net.mage.cubewheel.mixin.BossHealthOverlayAccessor;
 import net.mage.cubewheel.mixin.HudAccessor;
 import net.mage.cubewheel.mixin.LerpingBossEventAccessor;
 import net.mage.cubewheel.settings.SettingsScreens;
+import net.mage.cubewheel.sidebar.Gamemode;
 import net.mage.cubewheel.sidebar.SidebarWatcher;
 import net.mage.cubewheel.sva.mc.SvaClient;
 import net.mage.cubewheel.tracker.ContainerHook;
@@ -30,6 +31,7 @@ import net.mage.cubewheel.tracker.TrackerHud;
 import net.mage.cubewheel.tracker.TrackerPanel;
 import net.mage.cubewheel.tracker.TrackerScreen;
 import net.mage.cubewheel.tracker.TrackerStore;
+import net.mage.cubewheel.tracker.TrackerStores;
 import net.mage.cubewheel.tracker.local.mc.LocalSignals;
 import net.mage.cubewheel.wheel.RadialScreen;
 import com.mojang.serialization.DynamicOps;
@@ -63,7 +65,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 	private static ConfigStore config;
 	private static HomesCache homes;
 	private static HomesFetcher homesFetcher;
-	private static TrackerStore tracker;
+	private static TrackerStores trackers;
 	private static net.mage.cubewheel.tracker.FishLog fishLog;
 	private static CaptureLog capture;
 	private static final SidebarWatcher sidebar = new SidebarWatcher();
@@ -76,8 +78,14 @@ public final class CubeWheelClient implements ClientModInitializer {
 	/** Per-server homes cache; null only before onInitializeClient (callers treat null as "no homes"). */
 	public static HomesCache homes() { return homes; }
 
-	/** Tracked progress; null only before onInitializeClient. */
-	public static TrackerStore tracker() { return tracker; }
+	/**
+	 * Tracked progress of the gamemode the sidebar says we are in (Skyblock has its own store; Survival and
+	 * everything else share the original); null only before onInitializeClient.
+	 */
+	public static TrackerStore tracker() {
+		TrackerStores t = trackers;
+		return t == null ? null : t.of(ServerGate.gamemode(config.current()));
+	}
 
 	/** Where each custom fish is caught, as the Fishing Log said; null only before onInitializeClient. */
 	public static net.mage.cubewheel.tracker.FishLog fishLog() { return fishLog; }
@@ -100,8 +108,8 @@ public final class CubeWheelClient implements ClientModInitializer {
 		homesFetcher = new HomesFetcher(homes);
 		RadialScreen.childrenProvider = homesFetcher::childrenFor; // (node, userInitiated)
 		RadialScreen.placeholderPending = () -> homesFetcher.isLoading(System.currentTimeMillis());
-		tracker = new TrackerStore(configDir.resolve("cubewheel-tracker.json"));
-		tracker.load();
+		trackers = new TrackerStores(configDir);
+		trackers.of(Gamemode.SURVIVAL); // eager, as before: the Survival store loads at startup
 		fishLog = new net.mage.cubewheel.tracker.FishLog(configDir.resolve("cubewheel-fishlog.json"));
 		fishLog.load();
 		// Written on CubeWheel's IO thread: chat capture never waits for the disk.
@@ -199,11 +207,13 @@ public final class CubeWheelClient implements ClientModInitializer {
 	}
 
 	private static void flushTrackerSaves() {
-		try {
-			tracker.flushSaves();
-		} catch (RuntimeException e) {
-			LOG.error("[cubewheel] tracker save flush failed", e);
-		}
+		trackers.forEachLoaded(store -> {
+			try {
+				store.flushSaves();
+			} catch (RuntimeException e) {
+				LOG.error("[cubewheel] tracker save flush failed", e);
+			}
+		});
 	}
 
 	private static void onEndTick(Minecraft mc) {
