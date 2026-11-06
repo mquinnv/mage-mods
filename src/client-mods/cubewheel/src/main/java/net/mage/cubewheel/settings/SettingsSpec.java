@@ -254,7 +254,12 @@ public final class SettingsSpec {
 												+ " while it matches (ManaCube hosts other gamemodes on the same address)."
 												+ " Empty switches this check off.",
 										c -> c.tracker.survivalSidebarPattern,
-										(c, v) -> c.tracker.survivalSidebarPattern = v))),
+										(c, v) -> c.tracker.survivalSidebarPattern = v),
+								text(d, "tracker.skyblockSidebarPattern", "Skyblock sidebar pattern",
+										"Regex on the sidebar title that says you are in Skyblock. Empty means Skyblock is"
+												+ " never detected.",
+										c -> c.tracker.skyblockSidebarPattern,
+										(c, v) -> c.tracker.skyblockSidebarPattern = v))),
 						new Group("Local counting", List.of(
 								toggle(d, "tracker.local.enabled", "Enabled",
 										"Master switch: when off nothing is counted and stored estimates are not shown"

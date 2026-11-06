@@ -218,6 +218,8 @@ public final class CubeWheelConfig {
 		 * matches (ManaCube hosts other gamemodes on the same address). "" switches this check off.
 		 */
 		public String survivalSidebarPattern = DefaultConfig.SURVIVAL_SIDEBAR;
+		/** Regex on the sidebar title that says the player is in Skyblock. "" means Skyblock is never detected. */
+		public String skyblockSidebarPattern = DefaultConfig.SKYBLOCK_SIDEBAR;
 		/**
 		 * HUD entries for the world you are in: "sort" (default) lists entries naming the current world first
 		 * (after pinned ones) and other worlds' last, "hide" drops other worlds' unpinned entries, "off".

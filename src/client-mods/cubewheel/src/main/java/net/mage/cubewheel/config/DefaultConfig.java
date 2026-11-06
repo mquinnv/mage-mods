@@ -47,6 +47,9 @@ public final class DefaultConfig {
 	/** ManaCube Survival's sidebar title is "SURVIVAL"; the hub and other gamemodes show other titles. */
 	public static final String SURVIVAL_SIDEBAR = "(?i)survival";
 
+	/** ManaCube Skyblock's sidebar title says "SKYBLOCK". */
+	public static final String SKYBLOCK_SIDEBAR = "(?i)skyblock";
+
 	public static Map<String, String> sidebarLinks() {
 		Map<String, String> m = new LinkedHashMap<>();
 		m.put("Skills", SKILLS_LINK);

@@ -294,7 +294,7 @@ class SettingsSpecTest {
 		assertEquals("Tracker", t.name());
 		assertEquals(List.of("Sources & refresh", "Local counting"), t.groups().stream().map(Group::name).toList());
 		assertEquals(List.of("tracker.sources", "tracker.refreshCommands", "tracker.sidebarLinks",
-				"tracker.survivalSidebarPattern"), ids(t.groups().get(0)));
+				"tracker.survivalSidebarPattern", "tracker.skyblockSidebarPattern"), ids(t.groups().get(0)));
 		assertEquals(List.of("tracker.local.enabled", "tracker.local.blocks", "tracker.local.kills", "tracker.local.fish",
 				"tracker.local.shear", "tracker.local.milk", "tracker.local.areaBreaks", "tracker.local.worlds",
 				"tracker.local.specialWorlds"), ids(t.groups().get(1)));

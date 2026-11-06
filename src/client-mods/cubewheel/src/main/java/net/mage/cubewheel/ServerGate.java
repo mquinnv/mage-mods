@@ -1,7 +1,7 @@
 package net.mage.cubewheel;
 
 import net.mage.cubewheel.config.CubeWheelConfig;
-import net.mage.cubewheel.sidebar.SidebarGate;
+import net.mage.cubewheel.sidebar.Gamemode;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -61,13 +61,25 @@ public final class ServerGate {
 
 	private static volatile HostMatch lastMatch;
 
+	/** The gamemode the live sidebar title says; {@link Gamemode#OTHER} unless {@link #active}. */
+	public static Gamemode gamemode(CubeWheelConfig cfg) {
+		if (!active(cfg) || cfg.tracker == null) return Gamemode.OTHER;
+		return Gamemode.detect(CubeWheelClient.sidebar().title(), cfg.tracker.survivalSidebarPattern,
+				cfg.tracker.skyblockSidebarPattern);
+	}
+
+	/** {@link #gamemode} is Survival or Skyblock: the two gamemodes whose trackers CubeWheel feeds. */
+	public static boolean tracks(CubeWheelConfig cfg) {
+		Gamemode g = gamemode(cfg);
+		return g == Gamemode.SURVIVAL || g == Gamemode.SKYBLOCK;
+	}
+
 	/**
 	 * {@link #active} and in ManaCube Survival: the live sidebar title matches
 	 * {@code tracker.survivalSidebarPattern}. Menu scanning, refresh runs and local counting use this, so
-	 * SkyBlock, Parkour or the hub on the same host never feed the trackers.
+	 * Parkour or the hub on the same host never feed the trackers. Skyblock is {@link #gamemode}.
 	 */
 	public static boolean survival(CubeWheelConfig cfg) {
-		if (!active(cfg) || cfg.tracker == null) return false;
-		return SidebarGate.matches(CubeWheelClient.sidebar().title(), cfg.tracker.survivalSidebarPattern);
+		return gamemode(cfg) == Gamemode.SURVIVAL;
 	}
 }
