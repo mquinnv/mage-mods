@@ -36,11 +36,11 @@ public final class SkyblockMenus {
 			"(?i)^(beginner|intermediate|experienced|master|grand master|insane|epic|prestigious|legendary|godly)"
 					+ "( island)? quests?$");
 
-	/** A single island quest item says so in its lore ("Island Quest"). */
+	/** A single island quest item says so in its lore ("Island Quest") and shows a counter. */
 	private static final String ISLAND_QUEST_LORE = "island quest";
 
-	/** A task item says "task" in its lore (e.g. "Task: Kill 50 Zombies") and shows a counter. */
-	private static final String TASK_LORE = "task";
+	/** A task item says "task" as a word in its lore (e.g. "Task: Kill 50 Zombies") and shows a counter. */
+	private static final Pattern TASK_LORE = Pattern.compile("(?i)\\btasks?\\b");
 
 	private SkyblockMenus() {}
 
@@ -53,14 +53,21 @@ public final class SkyblockMenus {
 			List<String> lore = item.lore() == null ? List.of() : item.lore();
 			if (PRESTIGE_NAME.matcher(name).find()) return Optional.of("prestige");
 			if (CHALLENGE_NAME.matcher(name).matches()) return Optional.of("sbchallenges");
-			if (ISLAND_QUEST_NAME.matcher(name).matches() || anyLineContains(lore, ISLAND_QUEST_LORE)) {
-				return Optional.of("isquests");
-			}
-			if (anyLineContains(lore, TASK_LORE) && ProgressExtractor.extract(lore).isPresent()) {
-				return Optional.of("tasks");
-			}
+			if (ISLAND_QUEST_NAME.matcher(name).matches()) return Optional.of("isquests");
+			// Michael 2026-11-06: lore rules need a counter, or a hub button ("Click to view your Island Quests")
+			// would classify the whole menu and its neighbours' counters would become entries.
+			boolean counted = ProgressExtractor.extract(lore).isPresent();
+			if (counted && anyLineContains(lore, ISLAND_QUEST_LORE)) return Optional.of("isquests");
+			if (counted && anyLineMatches(lore, TASK_LORE)) return Optional.of("tasks");
 		}
 		return Optional.empty();
+	}
+
+	private static boolean anyLineMatches(List<String> lore, Pattern p) {
+		for (String line : lore) {
+			if (line != null && p.matcher(ContainerScanner.strip(line)).find()) return true;
+		}
+		return false;
 	}
 
 	private static boolean anyLineContains(List<String> lore, String needle) {

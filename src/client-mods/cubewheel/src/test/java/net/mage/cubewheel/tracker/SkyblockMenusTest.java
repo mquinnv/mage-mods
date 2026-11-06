@@ -52,6 +52,16 @@ class SkyblockMenusTest {
 		assertEquals(Optional.empty(), classify(item(1, "Daily Task", "Task: Kill 50 Zombies")));
 	}
 
+	@Test void islandQuestsHubButtonDoesNotClassifyTheMenu() {
+		assertEquals(Optional.empty(), classify(
+				item(1, "Island Quests", "Click to view your Island Quests"),
+				item(2, "Island Level", "Level: 12/50")));
+	}
+
+	@Test void taskIsAWordNotASubstring() {
+		assertEquals(Optional.empty(), classify(item(1, "Focus", "multitasking", "3/5")));
+	}
+
 	@Test void onlyFillerIsEmpty() {
 		assertEquals(Optional.empty(), classify(
 				new ItemView(0, "minecraft:gray_stained_glass_pane", "", List.of()),

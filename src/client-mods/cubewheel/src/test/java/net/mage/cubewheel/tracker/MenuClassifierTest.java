@@ -33,4 +33,11 @@ class MenuClassifierTest {
 				SkyblockMenusTest.item(1, "A", "Progress: 1/2"), SkyblockMenusTest.item(2, "B", "Progress: 3/4")),
 				Map.of()));
 	}
+
+	@Test void skyblockIgnoresSurvivalTitlePatterns() {
+		Map<String, String> sources = Map.of("jobs", "(?i)jobs");
+		List<ContainerScanner.ItemView> items = List.of(SkyblockMenusTest.item(1, "Deco", "nothing"));
+		assertEquals(Optional.of("jobs"), MenuClassifier.classify(Gamemode.SURVIVAL, "Jobs", items, sources));
+		assertEquals(Optional.empty(), MenuClassifier.classify(Gamemode.SKYBLOCK, "Jobs", items, sources));
+	}
 }
