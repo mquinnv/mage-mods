@@ -3,6 +3,7 @@ package net.mage.cubewheel.sva;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import net.mage.cubewheel.sidebar.Gamemode;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -24,12 +25,23 @@ import java.util.regex.Pattern;
 public final class SvaApi {
 	private SvaApi() {}
 
-	public static final String BASE = "https://api.manacube.com/api/svas/survival";
+	public static final String ROOT = "https://api.manacube.com/api/svas";
+	/** Survival's catalog URL; see {@link #catalogUrl(Gamemode)} for the others. */
+	public static final String BASE = ROOT + "/survival";
 	private static final Pattern NAME = Pattern.compile("[A-Za-z0-9_]{3,16}");
 	private static final Pattern HEX32 = Pattern.compile("[0-9a-f]{32}");
 
 	public static String catalogUrl() {
 		return BASE;
+	}
+
+	public static String catalogUrl(Gamemode m) {
+		return ROOT + "/" + m.id();
+	}
+
+	/** Owned-SVAs URL in a gamemode's list; same UUID rules as {@link #ownedUrl(String)}. */
+	public static String ownedUrl(Gamemode m, String uuid) {
+		return catalogUrl(m) + "/" + dashed(uuid);
 	}
 
 	/** Owned-SVAs URL for a UUID with or without dashes; throws IllegalArgumentException if it is not one. */

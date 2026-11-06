@@ -367,14 +367,14 @@ public final class SvaCatalogScreen extends Screen {
 
 	/**
 	 * A direct user click: close the screen and send exactly one "/ah search <name>" -- only in ManaCube
-	 * Survival, the only place these SVAs are on the auction house.
+	 * Survival or Skyblock, where these SVAs are on the auction house.
 	 */
 	private void searchAuctionHouse(Sva s) {
 		String q = s.ahQuery();
 		if (q.isEmpty()) return;
-		if (!ServerGate.survival(CubeWheelClient.config().current())) {
+		if (!ServerGate.tracks(CubeWheelClient.config().current())) {
 			if (minecraft.player != null) {
-				minecraft.player.sendOverlayMessage(Component.literal("CubeWheel: /ah search only works in ManaCube Survival"));
+				minecraft.player.sendOverlayMessage(Component.literal("CubeWheel: /ah search only works in ManaCube Survival or Skyblock"));
 			}
 			return;
 		}

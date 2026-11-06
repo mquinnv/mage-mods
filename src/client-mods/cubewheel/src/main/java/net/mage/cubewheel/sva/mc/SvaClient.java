@@ -3,13 +3,16 @@ package net.mage.cubewheel.sva.mc;
 import net.mage.cubewheel.CubeWheelClient;
 import net.mage.cubewheel.ServerGate;
 import net.mage.cubewheel.config.CubeWheelConfig;
+import net.mage.cubewheel.sidebar.Gamemode;
 import net.mage.cubewheel.sva.SvaCache;
 import net.mage.cubewheel.sva.SvaCatalog;
 import net.mage.cubewheel.sva.SvaFormat;
 import net.mage.cubewheel.sva.SvaHttp;
 import net.mage.cubewheel.sva.SvaService;
 import java.nio.file.Path;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,28 +35,35 @@ import net.minecraft.world.item.ItemStack;
 public final class SvaClient {
 	private static final int MAX_FAILURES = 10;
 
-	private static SvaService service;
+	/** One service per tracked gamemode; filled in init, read-only afterwards. */
+	private static final Map<Gamemode, SvaService> services = new EnumMap<>(Gamemode.class);
 	private static final AtomicInteger tooltipFailures = new AtomicInteger();
 
 	private SvaClient() {}
 
+	/** The current gamemode's service; Survival's when the mode is neither tracked one (or not detected yet). */
 	public static SvaService service() {
-		return service;
+		SvaService s = services.get(ServerGate.gamemode(CubeWheelClient.config().current()));
+		return s != null ? s : services.get(Gamemode.SURVIVAL);
 	}
 
 	public static void init(Path configDir) {
 		String version = FabricLoader.getInstance().getModContainer(CubeWheelClient.MOD_ID)
 				.map(c -> c.getMetadata().getVersion().getFriendlyString()).orElse("dev");
-		service = new SvaService(new SvaHttp(version), new SvaCache(configDir.resolve("cubewheel-cache")),
-				SvaClient::gateOpen, System::currentTimeMillis);
-		// ~700 KB of JSON: parse off the client thread; the tooltip simply stays off until it is there.
-		CompletableFuture.runAsync(() -> {
-			try {
-				service.loadCached();
-			} catch (RuntimeException e) {
-				CubeWheelClient.LOG.warn("[cubewheel] SVA cache load failed", e);
-			}
-		});
+		SvaHttp http = new SvaHttp(version);
+		for (Gamemode mode : new Gamemode[] {Gamemode.SURVIVAL, Gamemode.SKYBLOCK}) {
+			SvaService svc = new SvaService(mode, http, new SvaCache(configDir.resolve("cubewheel-cache"), mode),
+					SvaClient::gateOpen, System::currentTimeMillis);
+			services.put(mode, svc);
+			// ~700 KB of JSON each: parse off the client thread; the tooltip stays off until it is there.
+			CompletableFuture.runAsync(() -> {
+				try {
+					svc.loadCached();
+				} catch (RuntimeException e) {
+					CubeWheelClient.LOG.warn("[cubewheel] SVA cache load failed ({})", mode, e);
+				}
+			});
+		}
 		ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> appendTooltip(stack, lines));
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, mc) -> mc.execute(() -> onJoin(mc)));
 	}
@@ -68,7 +78,9 @@ public final class SvaClient {
 		try {
 			if (!gateOpen()) return;
 			setSelf(mc);
-			service.refresh(false); // stale-only: at most the catalog every 6 h, owned every 10 min
+			// stale-only: at most the catalog every 6 h, owned every 10 min. The sidebar may still be empty here,
+			// making this Survival's service on Skyblock; the tooltip and the screen refresh the right one.
+			service().refresh(false);
 		} catch (RuntimeException e) {
 			CubeWheelClient.LOG.error("[cubewheel] SVA refresh on join failed", e);
 		}
@@ -76,7 +88,7 @@ public final class SvaClient {
 
 	static void setSelf(Minecraft mc) {
 		UUID id = mc.getUser() == null ? null : mc.getUser().getProfileId();
-		if (id != null) service.setSelf(id.toString());
+		if (id != null) services.values().forEach(s -> s.setSelf(id.toString()));
 	}
 
 	/** Key handler: opens the catalog screen (works offline with the cached catalog). */
@@ -91,12 +103,17 @@ public final class SvaClient {
 	}
 
 	private static void appendTooltip(ItemStack stack, List<Component> lines) {
-		if (tooltipFailures.get() >= MAX_FAILURES || service == null || stack == null || stack.isEmpty()) return;
+		if (tooltipFailures.get() >= MAX_FAILURES || services.isEmpty() || stack == null || stack.isEmpty()) return;
 		try {
-			SvaCatalog catalog = service.catalog();
-			if (catalog == null) return;
 			CubeWheelConfig cfg = CubeWheelClient.config().current();
-			if (!cfg.svas.enabled || !cfg.svas.tooltip || !ServerGate.survival(cfg)) return;
+			if (!cfg.svas.enabled || !cfg.svas.tooltip || !ServerGate.tracks(cfg)) return;
+			SvaService service = service();
+			SvaCatalog catalog = service.catalog();
+			if (catalog == null) {
+				// e.g. Skyblock's list when the sidebar was empty at JOIN: fetch it now (backoff and in-flight guarded)
+				service.refresh(false);
+				return;
+			}
 			if (Minecraft.getInstance().gui.screen() instanceof SvaCatalogScreen) return; // it has its own
 			// the registry key and item model are only looked up once the name is an SVA name
 			SvaCatalog.Match match = catalog.match(stack.getHoverName().getString(),

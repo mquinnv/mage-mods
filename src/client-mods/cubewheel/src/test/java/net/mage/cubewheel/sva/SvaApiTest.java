@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import net.mage.cubewheel.sidebar.Gamemode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -94,6 +95,15 @@ class SvaApiTest {
 		assertEquals(20, b.used(2_000));
 		assertTrue(b.tryAcquire(61_000)); // the first slot has aged out
 		assertFalse(b.tryAcquire(61_000));
+	}
+
+	@Test void urlsFollowTheGamemode() {
+		assertEquals("https://api.manacube.com/api/svas/skyblock", SvaApi.catalogUrl(Gamemode.SKYBLOCK));
+		assertEquals(SvaApi.catalogUrl(), SvaApi.catalogUrl(Gamemode.SURVIVAL));
+		assertTrue(SvaApi.ownedUrl(Gamemode.SKYBLOCK, "7f0e9af04a314e69837714bfd7ed5a90")
+				.endsWith("/skyblock/7f0e9af0-4a31-4e69-8377-14bfd7ed5a90"));
+		assertEquals(SvaApi.ownedUrl("7f0e9af04a314e69837714bfd7ed5a90"),
+				SvaApi.ownedUrl(Gamemode.SURVIVAL, "7f0e9af04a314e69837714bfd7ed5a90"));
 	}
 
 	@Test void cacheRoundTripsAndSurvivesCorruption() throws IOException {

@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import net.mage.cubewheel.sidebar.Gamemode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -58,6 +59,21 @@ class SvaServiceTest {
 			if (clockBroken) throw new IllegalStateException("clock broke");
 			return now;
 		});
+	}
+
+	@Test void skyblockServiceUsesSkyblockUrlsAndItsOwnCache() throws IOException {
+		replies.put(SvaApi.catalogUrl(Gamemode.SKYBLOCK), new SvaService.Response(200, SvaCatalogTest.resource("catalog-sample.json")));
+		replies.put(SvaApi.ownedUrl(Gamemode.SKYBLOCK, SELF), new SvaService.Response(200, "[]"));
+		SvaService sky = new SvaService(Gamemode.SKYBLOCK, url -> {
+			requests.add(url);
+			SvaService.Response r = replies.get(url);
+			return CompletableFuture.completedFuture(r == null ? new SvaService.Response(404, "") : r);
+		}, new SvaCache(dir.resolve("cache"), Gamemode.SKYBLOCK), () -> gate, () -> now);
+		sky.setSelf(SELF);
+		sky.refresh(false);
+		assertEquals(List.of(SvaApi.catalogUrl(Gamemode.SKYBLOCK), SvaApi.ownedUrl(Gamemode.SKYBLOCK, SELF)), requests);
+		assertNotNull(sky.catalog());
+		assertTrue(svc.catalog() == null, "Survival's service is untouched");
 	}
 
 	@Test void firstRefreshFetchesCatalogAndOwnedThenCaches() {

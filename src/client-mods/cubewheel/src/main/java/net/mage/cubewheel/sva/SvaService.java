@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
+import net.mage.cubewheel.sidebar.Gamemode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +61,7 @@ public final class SvaService {
 
 	private record Remote(String uuid, Set<String> owned, long fetchedAt) {}
 
+	private final Gamemode mode;
 	private final Http http;
 	private final SvaCache cache;
 	private final BooleanSupplier gate;
@@ -90,7 +92,17 @@ public final class SvaService {
 	};
 	private int compareSeq;
 
+	/** A Survival service. */
 	public SvaService(Http http, SvaCache cache, BooleanSupplier gate, LongSupplier clock) {
+		this(Gamemode.SURVIVAL, http, cache, gate, clock);
+	}
+
+	/**
+	 * One service per gamemode, each with its own {@link RateBudget}. A compare's Mojang look-up counts against
+	 * the budget of the service the screen is showing.
+	 */
+	public SvaService(Gamemode mode, Http http, SvaCache cache, BooleanSupplier gate, LongSupplier clock) {
+		this.mode = mode;
 		this.http = http;
 		this.cache = cache;
 		this.gate = gate;
@@ -208,7 +220,7 @@ public final class SvaService {
 		catalogAttempt = now;
 		catalogInFlight = true;
 		catalogStatus = Status.LOADING;
-		call(SvaApi.catalogUrl()).whenComplete((body, err) -> {
+		call(SvaApi.catalogUrl(mode)).whenComplete((body, err) -> {
 			try {
 				catalogDone(body, err);
 			} catch (RuntimeException e) {
@@ -254,7 +266,7 @@ public final class SvaService {
 		ownedAttempt = now;
 		ownedInFlight = true;
 		ownedStatus = Status.LOADING;
-		call(SvaApi.ownedUrl(uuid)).whenComplete((body, err) -> {
+		call(SvaApi.ownedUrl(mode, uuid)).whenComplete((body, err) -> {
 			try {
 				ownedDone(uuid, body, err);
 			} catch (RuntimeException e) {
@@ -352,7 +364,7 @@ public final class SvaService {
 			return;
 		}
 		comparison = new Comparison(name, Phase.LOADING, "Loading " + name + "'s SVAs…", null);
-		call(SvaApi.ownedUrl(uuid)).whenComplete((body, err) -> {
+		call(SvaApi.ownedUrl(mode, uuid)).whenComplete((body, err) -> {
 			try {
 				if (err != null) {
 					finishCompare(seq, new Comparison(name, Phase.FAILED, describe(err), null), null, null);

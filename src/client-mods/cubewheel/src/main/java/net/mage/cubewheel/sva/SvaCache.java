@@ -10,6 +10,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import net.mage.cubewheel.sidebar.Gamemode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,14 +31,22 @@ public final class SvaCache {
 	}
 
 	private final Path dir;
+	private final String catalogFile;
 
+	/** Survival's cache: files directly in {@code dir}. */
 	public SvaCache(Path dir) {
-		this.dir = dir;
+		this(dir, Gamemode.SURVIVAL);
+	}
+
+	/** Survival keeps {@code dir} itself; any other gamemode gets {@code dir/<id>} so no index is shared. */
+	public SvaCache(Path dir, Gamemode mode) {
+		this.dir = mode == Gamemode.SURVIVAL ? dir : dir.resolve(mode.id());
+		this.catalogFile = "svas-" + mode.id() + ".json";
 	}
 
 	public synchronized Optional<Entry> readCatalog() {
 		Index idx = index();
-		return read("svas-survival.json", idx.catalog);
+		return read(catalogFile, idx.catalog);
 	}
 
 	public synchronized Optional<Entry> readOwned(String uuid) {
@@ -48,7 +57,7 @@ public final class SvaCache {
 
 	public synchronized void writeCatalog(String body, long now) {
 		Index idx = index();
-		if (write("svas-survival.json", body)) {
+		if (write(catalogFile, body)) {
 			idx.catalog = now;
 			writeIndex(idx);
 		}
