@@ -15,6 +15,7 @@ import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import dev.isxander.yacl3.api.utils.OptionUtils;
 import net.mage.cubewheel.CubeWheelClient;
+import net.mage.cubewheel.ServerGate;
 import net.mage.cubewheel.config.ConfigStore;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.config.DefaultConfig;
@@ -31,6 +32,7 @@ import net.mage.cubewheel.settings.SettingsSpec.Setting;
 import net.mage.cubewheel.settings.SettingsSpec.Text;
 import net.mage.cubewheel.settings.SettingsSpec.TextList;
 import net.mage.cubewheel.settings.SettingsSpec.Toggle;
+import net.mage.cubewheel.sidebar.Gamemode;
 import net.mage.cubewheel.wheel.edit.WheelEditorScreen;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -247,7 +249,10 @@ public final class SettingsScreens {
 						.description(OptionDescription.of(Component.literal(
 								"Tick and save to replace your whole wheel with the default one. Your current wheel is lost.")))
 						.binding(false, () -> false, reset -> {
-							if (reset) draft.cfg.wheel = DefaultConfig.wheel();
+							if (reset) {
+								Gamemode m = ServerGate.gamemode(draft.cfg);
+								draft.cfg.setWheelFor(m, m == Gamemode.SKYBLOCK ? DefaultConfig.skyblockWheel() : DefaultConfig.wheel());
+							}
 						})
 						.controller(TickBoxControllerBuilder::create)
 						.build())

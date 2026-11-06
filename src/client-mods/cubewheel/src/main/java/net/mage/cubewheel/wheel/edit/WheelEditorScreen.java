@@ -7,10 +7,12 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import net.mage.cubewheel.CubeWheelClient;
+import net.mage.cubewheel.ServerGate;
 import net.mage.cubewheel.config.ConfigStore;
 import net.mage.cubewheel.config.CubeWheelConfig;
 import net.mage.cubewheel.config.DefaultConfig;
 import net.mage.cubewheel.config.WheelNode;
+import net.mage.cubewheel.sidebar.Gamemode;
 import net.mage.cubewheel.wheel.Icons;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -38,6 +40,8 @@ public final class WheelEditorScreen extends Screen {
 
 	private final Screen parent;
 	private final ConfigStore store;
+	/** The gamemode this editor opened in: its wheel is the one edited, reset and saved. */
+	private final Gamemode mode;
 	private List<WheelNode> wheel;
 	private List<Row> rows = List.of();
 	private Path selected;
@@ -50,7 +54,9 @@ public final class WheelEditorScreen extends Screen {
 		super(Component.literal("Edit wheel"));
 		this.parent = parent;
 		this.store = CubeWheelClient.config();
-		List<WheelNode> live = ConfigStore.copyOf(store.current()).wheel;
+		CubeWheelConfig current = store.current();
+		this.mode = ServerGate.gamemode(current);
+		List<WheelNode> live = ConfigStore.copyOf(current).wheelFor(mode);
 		this.wheel = live == null ? new ArrayList<>() : live;
 		this.rows = WheelEdits.rows(wheel);
 	}
@@ -203,7 +209,7 @@ public final class WheelEditorScreen extends Screen {
 	}
 
 	private void resetToDefault() {
-		wheel = DefaultConfig.wheel();
+		wheel = mode == Gamemode.SKYBLOCK ? DefaultConfig.skyblockWheel() : DefaultConfig.wheel();
 		rows = WheelEdits.rows(wheel);
 		selected = null;
 		scroll = 0;
@@ -215,7 +221,7 @@ public final class WheelEditorScreen extends Screen {
 	/** Writes the edited wheel into the live config (as the settings screen saves), reports in chat, and closes. */
 	private void save() {
 		CubeWheelConfig draft = ConfigStore.copyOf(store.current());
-		draft.wheel = wheel;
+		draft.setWheelFor(mode, wheel);
 		List<String> warnings;
 		try {
 			warnings = store.apply(draft);

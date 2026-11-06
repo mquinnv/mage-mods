@@ -74,6 +74,7 @@ public final class ConfigNormalizer {
 				: Math.max(DefaultConfig.TOAST_SECONDS_MIN, Math.min(DefaultConfig.TOAST_SECONDS_MAX, c.toast.seconds));
 		normalizeDailyReward(c, warnings);
 		c.wheel = c.wheel == null ? DefaultConfig.wheel() : normalizeNodes(c.wheel);
+		c.wheelSkyblock = c.wheelSkyblock == null ? DefaultConfig.skyblockWheel() : normalizeNodes(c.wheelSkyblock);
 		c.vaultCount = Math.max(0, Math.min(54, c.vaultCount));
 		c.listThreshold = Math.max(3, Math.min(16, c.listThreshold));
 		c.tracker.nearThreshold = Math.max(0.0, Math.min(1.0, c.tracker.nearThreshold));

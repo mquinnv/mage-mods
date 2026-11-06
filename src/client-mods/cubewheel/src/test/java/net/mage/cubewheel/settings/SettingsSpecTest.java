@@ -441,7 +441,7 @@ class SettingsSpecTest {
 		for (Field f : type.getFields()) {
 			if (Modifier.isStatic(f.getModifiers())) continue;
 			String path = prefix + f.getName();
-			if (path.equals("wheel") || path.equals("configVersion")) continue;
+			if (path.equals("wheel") || path.equals("wheelSkyblock") || path.equals("configVersion")) continue;
 			Class<?> t = f.getType();
 			if (t == CubeWheelConfig.Position.class) {
 				for (String part : List.of("corner", "x", "y")) out.add(path + "." + part);
@@ -460,6 +460,7 @@ class SettingsSpecTest {
 		assertTrue(fields.contains("tracker.local.blocks"), "the walk reaches nested objects: " + fields);
 		assertTrue(fields.contains("tracker.jobsPanel.position.corner"), fields.toString());
 		assertFalse(fields.contains("wheel"));
+		assertFalse(fields.contains("wheelSkyblock"));
 		assertFalse(fields.contains("configVersion"));
 
 		List<String> settingIds = all().stream().map(Setting::id).toList();

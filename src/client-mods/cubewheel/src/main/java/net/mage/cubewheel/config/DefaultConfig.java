@@ -191,6 +191,78 @@ public final class DefaultConfig {
 	}
 
 	/**
+	 * ManaCube Skyblock's wheel: the island first, then worlds, spawn warps, progress, storage and trading. Each
+	 * slice runs its first command on a click with the rest of its commands in an arc; the full lists sit in
+	 * "More". Survival-only entries (party quests, the daily reward, Sushi's warps, the Isles ring) are left out.
+	 */
+	public static List<WheelNode> skyblockWheel() {
+		List<WheelNode> w = new ArrayList<>();
+		w.add(leaf("Island", "minecraft:grass_block", "/is go").withArc(
+			leaf("Island home", "minecraft:oak_door", "/is home"),
+			leaf("Island homes", "minecraft:red_bed", "/is homes"),
+			leaf("Island vault", "minecraft:chest", "/is vault")));
+		w.add(leaf("Worlds", "minecraft:filled_map", "/worlds").withArc(
+			leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven"),
+			leaf("Tangleroots", "minecraft:vine", "/warp tangleroots"),
+			leaf("Sandara", "minecraft:sand", "/warp sandara"),
+			leaf("Morend", "minecraft:end_stone", "/warp morend"),
+			leaf("Icehaven", "minecraft:packed_ice", "/warp icehaven")));
+		w.add(leaf("Spawn", "minecraft:compass", "/spawn"));
+		w.add(leaf("Jobs", "minecraft:iron_pickaxe", "/jobs"));
+		w.add(leaf("Prestige", "minecraft:nether_star", "/prestige"));
+		w.add(leaf("Challenges", "minecraft:target", "/challenges").withArc(
+			leaf("Challenge shop", "minecraft:emerald", "/challengeshop")));
+		w.add(leaf("Shop", "minecraft:emerald", "/shop").withArc(
+			leaf("Auction house", "minecraft:gold_block", "/ah"),
+			leaf("Cubit shop", "minecraft:diamond", "/cubitshop")));
+		// Vaults: hover fans PV 1...N out in an arc, then the full vault menu; click for the full ring.
+		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
+			leaf("All vaults", "minecraft:chest", "/pv")).shownAsArc());
+		w.add(ring(MORE, "minecraft:chest",
+			ring("Island", "minecraft:grass_block",
+				leaf("Go", "minecraft:grass_block", "/is go"),
+				leaf("Home", "minecraft:oak_door", "/is home"),
+				leaf("Homes", "minecraft:red_bed", "/is homes"),
+				leaf("Vault", "minecraft:chest", "/is vault"),
+				leaf("Upgrades", "minecraft:anvil", "/is upgrades"),
+				leaf("Quests", "minecraft:writable_book", "/is quests"),
+				leaf("Team", "minecraft:player_head", "/is team")),
+			ring("Worlds", "minecraft:filled_map",
+				leaf("Worlds menu", "minecraft:filled_map", "/worlds"),
+				leaf("Wolfhaven", "minecraft:bone", "/warp wolfhaven"),
+				leaf("Tangleroots", "minecraft:vine", "/warp tangleroots"),
+				leaf("Sandara", "minecraft:sand", "/warp sandara"),
+				leaf("Morend", "minecraft:end_stone", "/warp morend"),
+				leaf("Icehaven", "minecraft:packed_ice", "/warp icehaven")),
+			ring("Warps", "minecraft:oak_sign",
+				leaf("Spawn", "minecraft:compass", "/spawn"),
+				leaf("Boss arena", "minecraft:wither_skeleton_skull", "/warp boss"),
+				leaf("Pond", "minecraft:water_bucket", "/warp pond"),
+				leaf("Quests", "minecraft:writable_book", "/warp quests"),
+				leaf("Enchanter", "minecraft:enchanting_table", "/warp enchanter"),
+				leaf("Crates", "minecraft:tripwire_hook", "/warp crates")),
+			ring("Progress", "minecraft:experience_bottle",
+				leaf("Jobs", "minecraft:iron_pickaxe", "/jobs"),
+				leaf("Task shop", "minecraft:villager_spawn_egg", "/taskshop"),
+				leaf("Prestige", "minecraft:nether_star", "/prestige"),
+				leaf("Challenges", "minecraft:target", "/challenges"),
+				leaf("Challenge shop", "minecraft:emerald", "/challengeshop"),
+				leaf("Collection", "minecraft:bookshelf", "/collection"),
+				leaf("Leaderboards", "minecraft:oak_hanging_sign", "/lb")),
+			ring("Storage", "minecraft:ender_chest",
+				leaf("Vaults", "minecraft:ender_chest", "/pv"),
+				leaf("Vault", "minecraft:chest", "/vault"),
+				leaf("Ender chest", "minecraft:ender_chest", "/ec")),
+			ring("Trade", "minecraft:gold_ingot",
+				leaf("Auction house", "minecraft:gold_block", "/ah"),
+				leaf("Shop", "minecraft:emerald", "/shop"),
+				leaf("Cubit shop", "minecraft:diamond", "/cubitshop"),
+				leaf("Trade", "minecraft:villager_spawn_egg", "/trade")),
+			settingsLeaf()));
+		return w;
+	}
+
+	/**
 	 * Isles: hovering it fans the isle warps out (take one straight away); opening it shows each isle with the known
 	 * places under it as that isle's arc (Mana Golem under Wolfhaven, outside and the Volcano Golem under Tangleroot,
 	 * the Cursed Witch under Morend), plus the server's /isles menu (Michael 2026-10-08: "subwarps on the isles for
@@ -376,6 +448,7 @@ public final class DefaultConfig {
 		c.events.bossWarps = bossWarps();
 		c.cooldowns.commands = commandCooldowns();
 		c.wheel = wheel();
+		c.wheelSkyblock = skyblockWheel();
 		return c;
 	}
 }

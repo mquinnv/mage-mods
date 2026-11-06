@@ -2,6 +2,7 @@ package net.mage.cubewheel.config;
 
 import java.util.List;
 import java.util.Map;
+import net.mage.cubewheel.sidebar.Gamemode;
 
 public final class CubeWheelConfig {
 	/**
@@ -99,6 +100,18 @@ public final class CubeWheelConfig {
 		public Position position = DefaultConfig.statusPosition();
 	}
 	public List<WheelNode> wheel;
+	/** The wheel the key opens in Skyblock; Survival and every other mode use {@link #wheel}. */
+	public List<WheelNode> wheelSkyblock;
+
+	/** The wheel of {@code m}: Skyblock has its own, every other mode uses Survival's. */
+	public List<WheelNode> wheelFor(Gamemode m) {
+		return m == Gamemode.SKYBLOCK ? wheelSkyblock : wheel;
+	}
+
+	public void setWheelFor(Gamemode m, List<WheelNode> nodes) {
+		if (m == Gamemode.SKYBLOCK) wheelSkyblock = nodes;
+		else wheel = nodes;
+	}
 
 	public static final class Svas {
 		/** Master switch: when false nothing is fetched and the catalog key does nothing. */
@@ -224,8 +237,8 @@ public final class CubeWheelConfig {
 		public String skyblockSidebarPattern = DefaultConfig.SKYBLOCK_SIDEBAR;
 
 		/** The refresh commands for {@code m}: Skyblock has its own list, every other mode uses {@code refreshCommands}. */
-		public List<String> refreshCommandsFor(net.mage.cubewheel.sidebar.Gamemode m) {
-			return m == net.mage.cubewheel.sidebar.Gamemode.SKYBLOCK ? skyblockRefreshCommands : refreshCommands;
+		public List<String> refreshCommandsFor(Gamemode m) {
+			return m == Gamemode.SKYBLOCK ? skyblockRefreshCommands : refreshCommands;
 		}
 		/**
 		 * HUD entries for the world you are in: "sort" (default) lists entries naming the current world first

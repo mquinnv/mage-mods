@@ -476,7 +476,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 			mc.player.sendOverlayMessage(Component.literal("CubeWheel is only active on ManaCube"));
 			return;
 		}
-		WheelNode root = WheelNode.ring("CubeWheel", null, cfg.wheel.toArray(WheelNode[]::new));
+		WheelNode root = WheelNode.ring("CubeWheel", null, cfg.wheelFor(ServerGate.gamemode(cfg)).toArray(WheelNode[]::new));
 		mc.gui.setScreen(new RadialScreen(root, Keybinds.wheel));
 	}
 
