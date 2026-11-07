@@ -312,7 +312,8 @@ Menu reading, refresh runs and live estimates need Survival or Skyblock, and eac
 own tracker file, so Skyblock menus never write into Survival's. The wheel, capture and sidebar-linked
 values only need the host gate. Refreshing elsewhere says "Tracker refresh only works in ManaCube
 Survival or Skyblock". Survival-only features (events, /cow, boss slice, fishing log, mcMMO skills,
-boosters, command cooldowns, homes) stay Survival-only. See [Skyblock](#skyblock).
+boosters, command and mcMMO cooldowns, homes) stay Survival-only. Item cooldowns (read from the item's
+lore) run on both. See [Skyblock](#skyblock).
 
 ## Progress tracker
 

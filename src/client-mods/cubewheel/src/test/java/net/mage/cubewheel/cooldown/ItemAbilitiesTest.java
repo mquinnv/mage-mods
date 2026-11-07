@@ -137,6 +137,16 @@ class ItemAbilitiesTest {
 				new Ability(Action.USE, false, 10_000, "Shoot a High Damage Burst of Fire")), a.abilities());
 	}
 
+	/** Skyblock's Arcane Staff (capture 2026-11-06): a bare "ITEM EFFECTS:" heading with no click is a right-click. */
+	@Test void skyblockBareItemEffectsHeadingIsARightClick() {
+		ItemAbilities a = ItemAbilities.parse(List.of("Unbreakable", "Arcane Staff", "", "ITEM EFFECTS:",
+				" ➟ Shoots magic rays that deal", "   massive damage to Monsters", "", "PVP Damage: 10", "PVE Damage: 15",
+				"Cooldown: 0.5s"));
+		assertEquals(1, a.abilities().size());
+		assertEquals(Action.USE, a.abilities().get(0).action());
+		assertEquals(500, a.abilities().get(0).cooldownMs());
+	}
+
 	@Test void ordinaryLinesWithParenthesesAreNotHeadings() {
 		ItemAbilities a = ItemAbilities.parse(List.of("Grants Haste (Level 2)", "Cooldown: 30s"));
 		assertEquals(List.of(new Ability(Action.USE, false, 30_000, "")), a.abilities());

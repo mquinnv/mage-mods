@@ -91,7 +91,7 @@ public final class CooldownWatcher {
 	private static boolean active() {
 		if (failures >= MAX_FAILURES) return false;
 		CubeWheelConfig cfg = CubeWheelClient.config().current();
-		return cfg.cooldowns.enabled && ServerGate.survival(cfg);
+		return cfg.cooldowns.enabled && ServerGate.tracks(cfg); // item lore is the same on Survival and Skyblock
 	}
 
 	private static void onUse(Player player, Level level, InteractionHand hand) {
