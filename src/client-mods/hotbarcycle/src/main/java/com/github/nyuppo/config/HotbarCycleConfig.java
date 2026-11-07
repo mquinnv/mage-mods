@@ -8,7 +8,10 @@ public abstract class HotbarCycleConfig {
      * Hermes Caduceus and Photon Barrier "kinda weirdos"). Tuned against ManaCube's whole custom-item catalog
      * (SVAS, ~1,250 items, 2026-11-04), not just Michael's items:
      * <ul>
-     *   <li>armor, shields, pendants, off-hand and one-time items: never cycled;</li>
+     *   <li>armor, shields, pendants, off-hand and one-time items, and talismans (passive: "Automatically sells
+     *       monster drops", Michael 2026-11-07): never cycled;</li>
+     *   <li>axes that drop mob heads (Decapitation, the Bone Axe's "4x mob heads"): melee, before the tool-axe rule
+     *       whose "haste" also matches a Haste enchant line (Michael 2026-11-07: "bone ax ... is a weapon");</li>
      *   <li>multitools ("Automatically changes into the best tool for the job"): tools, checked before the melee
      *       rules because ManaCube swaps their base item to a sword or axe mid-use (Michael 2026-11-05);</li>
      *   <li>swords, spears, maces, tridents, unarmed weapons: melee; bows, crossbows: ranged;</li>
@@ -21,11 +24,12 @@ public abstract class HotbarCycleConfig {
      * </ul>
      */
     public static final java.util.List<String> DEFAULT_ITEM_GROUPS = java.util.List.of(
-            "none: id:_(helmet|chestplate|leggings|boots)$ | minecraft:carved_pumpkin | minecraft:player_head | minecraft:shield | minecraft:elytra | minecraft:totem_of_undying | lore:(?i)pendant slot|\\(off hand\\)|one time use",
+            "none: id:_(helmet|chestplate|leggings|boots)$ | minecraft:carved_pumpkin | minecraft:player_head | minecraft:shield | minecraft:elytra | minecraft:totem_of_undying | lore:(?i)pendant slot|\\(off hand\\)|one time use | name:(?i)\\btalisman\\b | lore:(?i)^automatically sells",
             "tools: lore:(?i)best tool for the job|works on every block | name:(?i)multi-?tool",
             "melee: id:_sword$ | id:_spear$ | minecraft:mace | minecraft:trident | lore:(?i)unarmed weapon",
             "ranged: minecraft:bow | minecraft:crossbow",
             "tools: id:_(pickaxe|shovel)$ | minecraft:fishing_rod | minecraft:shears",
+            "melee: id:_axe$ & lore:(?i)mob heads?|decapitation",
             "tools: id:_(axe|hoe)$ & lore:(?i)woodcutting|herbalism|excavation|mining|\\bcrops?\\b|harvests|replant|\\btill|vein mine|trench|tunnel|break block|\\blogs?\\b|haste|sell mode|growth|builder|places? .*block",
             "tools: id:blaze_rod$|:stick$ & lore:(?i)\\bsells?\\b|sell wand|\\bcrops?\\b|\\bgrow",
             "utility: id:_hoe$|blaze_rod$|:stick$ & lore:(?i)teleport|glide|slow ?fall|shield|barrier|pull all | minecraft:carrot_on_a_stick",

@@ -93,6 +93,10 @@ class ItemGroupsTest {
 		assertEquals("tools", group(gear(AXE, "LASER AXE", "ITEM EFFECTS: (Break Block)", "➟ Vein Mine Logs")));
 		assertEquals("tools", group(gear(AXE, "SPIRAL AXE", "➟ Haste III", "➟ Bonus Woodcutting XP")));
 		assertEquals("tools", group(gear(AXE, "IRIDIUM AXE", "➟ Break a 5x5x10 Trench Tunnel")));
+		// "bone ax is getting called a tool. but it is a weapon": its Haste II enchant line looked like tool work
+		assertEquals("melee", group(gear("minecraft:iron_axe", "☠ BONE AXE ☠", "○ Decapitation III", "○ Haste II",
+				"○ Experience II", "○ Telepathy I", "o <1 Available>", "Bone Axe", "", "Item Effects",
+				"- 15% chance of receiving 4x mob heads!")));
 		assertEquals("ranged", group(gear(AXE, "BO STAFF", "ITEM EFFECTS: (Left Click)", "➟ Shoots Pure Kinetic Energy")));
 	}
 
@@ -113,6 +117,12 @@ class ItemGroupsTest {
 		assertEquals("none", group(gear("minecraft:paper", "GARNET RING", "ITEM EFFECTS: (Pendant Slot)", "➟ +20% extra damage to Mana Monsters")));
 		assertEquals("none", group(gear("minecraft:honey_bottle", "Power Potion", "THIS ITEM IS A ONE TIME USE", "➟ Deal 10% Extra Damage")));
 		assertEquals("none", group(gear(HOE, "KUNAI", "ITEM EFFECTS: (Off Hand)", "➟ Throw Knife", "PVP Damage: 10")));
+		// "monster talisman is counting as a tool ... it has a passive effect to sell stuff"
+		assertEquals("none", group(gear("minecraft:stick", "MONSTER TALISMAN", "Monster Talisman", "",
+				"Automatically sells monster drops", "Total items sold: 0", "Total earned: $0")));
+		assertEquals("none", group(gear("minecraft:stick", "ORE TALISMAN", "Ore Talisman", "", "Automatically sells ores")));
+		assertEquals("none", group(gear("minecraft:paper", "Fish Talisman", "", "Automatically sells fish to /fish")));
+		assertEquals("tools", group(gear("minecraft:stick", "EASTER SELL WAND", "This wand sells all of the contents of")));
 		assertEquals("none", group(item("minecraft:cobblestone", "Cobblestone")));
 		assertEquals("none", group(null));
 		assertEquals("consumables", group(gear("minecraft:honey_bottle", "GRIMACE SHAKE", "Unbreakable", "ITEM EFFECTS: (Consume)")));
