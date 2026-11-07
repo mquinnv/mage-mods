@@ -130,4 +130,20 @@ class BossTest {
 		assertFalse(s.onChat("\u2E5D Danix_005 was slain by Mana Wolf", 9 * MIN));  // another mob
 		assertEquals(BossSlice.NONE, s.view(w, 5 * MIN, 10 * MIN).label());
 	}
+
+	/** Skyblock's announcements (capture 2026-11-06) are Survival's format: parsed, warped and defeated the same way. */
+	@Test void skyblockAnnouncements() {
+		String boss = "\n---------------------\nA BOSS SPAWNED\n\nBoss Sahuagin\nLocation: Boss Arena\n\u25CF Deal 75 damage for rewards\n"
+				+ "\u25CF Top 10 damage have a increased \nchance at legendary loot\n---------------------";
+		assertEquals(java.util.Optional.of(new BossParser.Spawn("Sahuagin", "Boss Arena", false)), BossParser.parse(boss));
+		String mini = "\n---------------------\nA MINI BOSS SPAWNED\n\nBoss Cursed Witch\nLocation: Morend\n\u25CF Deal 100 damage for rewards\n"
+				+ "\u25CF Top 3 damage have a increased \nchance at legendary loot\n---------------------";
+		assertEquals(java.util.Optional.of(new BossParser.Spawn("Cursed Witch", "Morend", true)), BossParser.parse(mini));
+		Map<String, String> w = DefaultConfig.bossWarps();
+		BossSlice s = new BossSlice();
+		s.spawned(BossParser.parse(boss).get(), 0);
+		assertEquals("/warp boss", s.view(w, 5 * MIN, MIN).command());
+		assertTrue(s.onChat("\nBOSSES \u00BB 26 teamed up to take down a SAHUAGIN BOSS\n", 2 * MIN));
+		assertEquals(BossSlice.NONE, s.view(w, 5 * MIN, 2 * MIN).label());
+	}
 }

@@ -3,6 +3,7 @@ package net.mage.cubewheel.live;
 import net.mage.cubewheel.CubeWheelClient;
 import net.mage.cubewheel.ServerGate;
 import net.mage.cubewheel.config.CubeWheelConfig;
+import net.mage.cubewheel.sidebar.Gamemode;
 import net.mage.cubewheel.tracker.ContainerScanner.ItemView;
 import net.mage.cubewheel.wheel.SliceViews;
 import java.nio.file.Path;
@@ -18,7 +19,8 @@ import net.minecraft.network.chat.Component;
 /**
  * Minecraft adapter for the live wheel slices: feeds chat to {@link CowParser} / {@link BossParser}, the /cow
  * menu's lore to {@link CowStore}, and registers the Fly, Daily reward and Boss event slice providers. Purely
- * passive: never hides a message, never sends anything. Chat and menus are read only in ManaCube Survival.
+ * passive: never hides a message, never sends anything. Chat and menus are read only in ManaCube Survival,
+ * except boss announcements, which Skyblock sends too (its boss is kept in {@code cubewheel-boss-skyblock.json}).
  */
 public final class LiveWatcher {
 	/** A menu opened this soon after you sent /cow is read as the /cow menu, whatever its title. */
@@ -29,6 +31,8 @@ public final class LiveWatcher {
 	private static CowStore cow;
 	private static final BossSlice boss = new BossSlice();
 	private static Path bossFile;
+	private static final BossSlice bossSkyblock = new BossSlice();
+	private static Path bossSkyblockFile;
 	private static final TpaSlice tpa = new TpaSlice();
 	private static long cowSentAt = Long.MIN_VALUE;
 	private static VaultPages vaults;
@@ -48,6 +52,8 @@ public final class LiveWatcher {
 		// A boss outlives a client restart (2026-10-03: a restart mid-Mana Golem left the slice at "No boss").
 		bossFile = configDir.resolve("cubewheel-boss.json");
 		boss.load(bossFile);
+		bossSkyblockFile = configDir.resolve("cubewheel-boss-skyblock.json");
+		bossSkyblock.load(bossSkyblockFile);
 		SliceViews.register((node, now) -> {
 			Minecraft mc = Minecraft.getInstance();
 			return SliceViews.fly(node, mc.player != null && mc.player.getAbilities().mayfly);
@@ -60,7 +66,7 @@ public final class LiveWatcher {
 		SliceViews.register((node, now) -> {
 			if (!node.isSlice() || !"boss".equals(node.dynamic)) return null;
 			CubeWheelConfig.Events e = CubeWheelClient.config().current().events;
-			return boss.view(e.bossWarps, e.bossMinutes * 60_000L, now);
+			return currentBoss().view(e.bossWarps, e.bossMinutes * 60_000L, now);
 		});
 		SliceViews.register((node, now) -> {
 			if (!node.isSlice() || !"tpa".equals(node.dynamic)) return null;
@@ -89,27 +95,43 @@ public final class LiveWatcher {
 		return mc.getUser() == null ? null : mc.getUser().getName();
 	}
 
+	/** A boss spawn or defeat in {@code text}, recorded in {@code b} (saved to {@code file}); true if it was one. */
+	private static boolean readBoss(BossSlice b, Path file, String text, long now) {
+		if (b.onChat(text, now)) {
+			b.save(file);
+			return true;
+		}
+		Optional<BossParser.Spawn> spawn = BossParser.parse(text);
+		if (spawn.isEmpty()) return false;
+		b.spawned(spawn.get(), now);
+		b.save(file);
+		CubeWheelClient.LOG.info("[cubewheel] {}boss {} at {}", spawn.get().mini() ? "mini " : "",
+				spawn.get().boss(), spawn.get().location());
+		return true;
+	}
+
+	/** The boss of the gamemode we are in: Skyblock's own, else Survival's. */
+	private static BossSlice currentBoss() {
+		return ServerGate.gamemode(CubeWheelClient.config().current()) == Gamemode.SKYBLOCK ? bossSkyblock : boss;
+	}
+
 	/** ClientReceiveMessageEvents.ALLOW_GAME: always returns true (never hides the message). */
 	public static boolean onGameMessage(Component message, boolean overlay) {
 		try {
 			if (overlay || message == null || cow == null) return true;
 			CubeWheelConfig cfg = CubeWheelClient.config().current();
-			if (!ServerGate.survival(cfg)) return true;
+			Gamemode mode = ServerGate.gamemode(cfg);
 			String text = message.getString();
 			long now = System.currentTimeMillis();
+			// Skyblock announces bosses exactly like Survival (capture 2026-11-06: "A BOSS SPAWNED / Boss Sahuagin /
+			// Location: Boss Arena"); its own boss is kept apart. Everything else here is Survival's.
+			if (mode == Gamemode.SKYBLOCK) {
+				readBoss(bossSkyblock, bossSkyblockFile, text, now);
+				return true;
+			}
+			if (mode != Gamemode.SURVIVAL) return true;
 			if (tpa.onChat(text, now)) return true;
-			if (boss.onChat(text, now)) {
-				boss.save(bossFile);
-				return true;
-			}
-			Optional<BossParser.Spawn> spawn = BossParser.parse(text);
-			if (spawn.isPresent()) {
-				boss.spawned(spawn.get(), now);
-				boss.save(bossFile);
-				CubeWheelClient.LOG.info("[cubewheel] {}boss {} at {}", spawn.get().mini() ? "mini " : "",
-						spawn.get().boss(), spawn.get().location());
-				return true;
-			}
+			if (readBoss(boss, bossFile, text, now)) return true;
 			Optional<CowParser.Claim> claim = CowParser.claim(text);
 			String me = player();
 			if (claim.isPresent() && me != null && claim.get().player().equalsIgnoreCase(me)) {

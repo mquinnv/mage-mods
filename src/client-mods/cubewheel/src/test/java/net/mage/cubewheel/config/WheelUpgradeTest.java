@@ -98,6 +98,28 @@ class WheelUpgradeTest {
 	}
 
 	/** Version 16 with no Craft slice: Heal goes after Sell; commands the wheel runs elsewhere are not repeated. */
+	/** Version 17: /is first under the Island slice and a Boss event slice after Heal, once each. */
+	@Test void skyblockGainsTheIslandMenuAndBossSlice() {
+		WheelNode island = WheelNode.leaf("Island", null, "/is go").withArc(WheelNode.leaf("Island home", null, "/is home"));
+		List<WheelNode> w = new java.util.ArrayList<>(List.of(island, WheelNode.leaf("Heal", null, "/heal"),
+				WheelNode.leaf("Vaults", null, "/pv"), WheelNode.ring(DefaultConfig.MORE, null)));
+		assertEquals(List.of("Island menu", "Boss event"), WheelUpgrade.skyblockBossAndIsland(w));
+		assertEquals(List.of("/is", "/is home"), island.arc.stream().map(n -> n.command).toList());
+		assertEquals(List.of("Island", "Heal", "Boss event", "Vaults", DefaultConfig.MORE), labels(w));
+		assertEquals("boss", w.get(2).dynamic);
+		assertTrue(w.get(2).isSlice());
+		assertEquals(List.of(), WheelUpgrade.skyblockBossAndIsland(w)); // once
+		assertEquals(List.of(), WheelUpgrade.skyblockBossAndIsland(DefaultConfig.skyblockWheel())); // the default has both
+		assertEquals(List.of(), WheelUpgrade.skyblockBossAndIsland(null));
+	}
+
+	/** Version 17 without an Island slice or Heal: both go just before More. */
+	@Test void skyblockIslandMenuAndBossFallBackToBeforeMore() {
+		List<WheelNode> w = new java.util.ArrayList<>(List.of(WheelNode.leaf("Spawn", null, "/spawn"), WheelNode.ring(DefaultConfig.MORE, null)));
+		assertEquals(List.of("Island menu", "Boss event"), WheelUpgrade.skyblockBossAndIsland(w));
+		assertEquals(List.of("Spawn", "Island menu", "Boss event", DefaultConfig.MORE), labels(w));
+	}
+
 	@Test void skyblockHealAfterSellWithoutDuplicates() {
 		List<WheelNode> w = new java.util.ArrayList<>(List.of(WheelNode.leaf("Shop", null, "/shop"),
 				WheelNode.leaf("Sell", null, "/sell"), WheelNode.ring("Mine", null, WheelNode.leaf("Fly!", null, "/fly"))));

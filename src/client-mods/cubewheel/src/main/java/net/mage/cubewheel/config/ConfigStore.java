@@ -112,7 +112,8 @@ public final class ConfigStore {
 	 * ({@link WheelUpgrade#isleArcs}). Version 12: the Great Wolf's boss warp rule, and its place under Wolfhaven.
 	 * Version 13: the top-level Party quests slice becomes Party ({@link WheelUpgrade#partySlice}).
 	 * Version 15: Craft on both wheels, Sell on Skyblock's ({@link WheelUpgrade#craftAndSell}). Version 16: Heal
-	 * with Fly, Feed and Craft on Skyblock's ({@link WheelUpgrade#skyblockHeal}).
+	 * with Fly, Feed and Craft on Skyblock's ({@link WheelUpgrade#skyblockHeal}). Version 17: /is and the Boss event
+	 * slice on Skyblock's ({@link WheelUpgrade#skyblockBossAndIsland}).
 	 */
 	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;
@@ -180,6 +181,10 @@ public final class ConfigStore {
 		}
 		if (c.configVersion < 16 && WheelUpgrade.skyblockHeal(c.wheelSkyblock)) {
 			notes.add("Skyblock wheel: added Heal (/heal) with Fly, Feed and Craft in its arc");
+		}
+		if (c.configVersion < 17) {
+			List<String> sb = WheelUpgrade.skyblockBossAndIsland(c.wheelSkyblock);
+			if (!sb.isEmpty()) notes.add("Skyblock wheel: added " + String.join(" and ", sb));
 		}
 		c.configVersion = DefaultConfig.CONFIG_VERSION;
 		return true;

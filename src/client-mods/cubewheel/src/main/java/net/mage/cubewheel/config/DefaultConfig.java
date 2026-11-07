@@ -14,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 16;
+	public static final int CONFIG_VERSION = 17;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 	/** The progress popup's visible time and the bounds ConfigNormalizer clamps it to. */
@@ -196,6 +196,7 @@ public final class DefaultConfig {
 	public static List<WheelNode> skyblockWheel() {
 		List<WheelNode> w = new ArrayList<>();
 		w.add(leaf("Island", "minecraft:grass_block", "/is go").withArc(
+			islandMenuLeaf(),
 			leaf("Island home", "minecraft:oak_door", "/is home"),
 			leaf("Island homes", "minecraft:red_bed", "/is homes"),
 			leaf("Island vault", "minecraft:chest", "/is vault")));
@@ -215,11 +216,13 @@ public final class DefaultConfig {
 			leaf("Cubit shop", "minecraft:diamond", "/cubitshop")));
 		w.add(skyblockSellLeaf());
 		w.add(healSlice()); // Heal, with Fly, Feed and Craft in its arc, as on Survival (Michael 2026-11-06)
+		w.add(bossSlice()); // Skyblock announces bosses like Survival (capture 2026-11-06)
 		// Vaults: hover fans PV 1...N out in an arc, then the full vault menu; click for the full ring.
 		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
 			leaf("All vaults", "minecraft:chest", "/pv")).shownAsArc());
 		w.add(ring(MORE, "minecraft:chest",
 			ring("Island", "minecraft:grass_block",
+				leaf("Menu", "minecraft:grass_block", "/is"),
 				leaf("Go", "minecraft:grass_block", "/is go"),
 				leaf("Home", "minecraft:oak_door", "/is home"),
 				leaf("Homes", "minecraft:red_bed", "/is homes"),
@@ -298,6 +301,16 @@ public final class DefaultConfig {
 	/** The Heal slice's arc: Fly, Feed, Craft. */
 	public static List<WheelNode> healArc() {
 		return List.of(leaf("Fly", "minecraft:feather", "/fly"), leaf("Feed", "minecraft:cooked_beef", "/feed"), craftLeaf());
+	}
+
+	/** The island menu (/is), first in the Island slice's arc on Skyblock. */
+	public static WheelNode islandMenuLeaf() {
+		return leaf("Island menu", "minecraft:grass_block", "/is");
+	}
+
+	/** The live Boss event slice: the boss last announced, click to warp to it. */
+	public static WheelNode bossSlice() {
+		return slice("Boss event", "minecraft:wither_skeleton_skull", "boss");
 	}
 
 	/** Skyblock's Sell slice: /sell there sells everything at once (no /sell hand or /sell all). */

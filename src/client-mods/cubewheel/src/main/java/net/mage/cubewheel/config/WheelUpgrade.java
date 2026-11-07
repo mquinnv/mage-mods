@@ -286,6 +286,42 @@ public final class WheelUpgrade {
 		return true;
 	}
 
+	/**
+	 * The version 17 upgrade (2026-11-06), Skyblock's wheel: the island menu (/is) first in the Island slice's arc
+	 * (the slice that runs /is go; a top-level slice before More without one), and a Boss event slice after Heal
+	 * (else before More). Neither is added when the wheel already has it. Returns the labels added.
+	 */
+	public static List<String> skyblockBossAndIsland(List<WheelNode> wheel) {
+		List<String> added = new ArrayList<>();
+		if (wheel == null) return added;
+		if (!runs(wheel, "is")) {
+			WheelNode island = topLevel(wheel, "is go");
+			if (island != null) {
+				if (island.arc == null) island.arc = new ArrayList<>();
+				island.arc.add(0, DefaultConfig.islandMenuLeaf());
+			} else {
+				wheel.add(beforeMore(wheel), DefaultConfig.islandMenuLeaf());
+			}
+			added.add("Island menu");
+		}
+		boolean hasBoss = false;
+		for (WheelNode n : walk(wheel)) hasBoss |= n.isSlice() && "boss".equals(n.dynamic);
+		if (!hasBoss) {
+			int at = beforeMore(wheel);
+			for (int i = 0; i < wheel.size(); i++) if (isCommand(wheel.get(i), "heal")) at = i + 1;
+			wheel.add(at, DefaultConfig.bossSlice());
+			added.add("Boss event");
+		}
+		return added;
+	}
+
+	private static int beforeMore(List<WheelNode> wheel) {
+		for (int i = 0; i < wheel.size(); i++) {
+			if (wheel.get(i) != null && DefaultConfig.MORE.equals(wheel.get(i).label)) return i;
+		}
+		return wheel.size();
+	}
+
 	private static boolean isCommand(WheelNode n, String command) {
 		return n != null && n.command != null && key(n.command).equals(command);
 	}

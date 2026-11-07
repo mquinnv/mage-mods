@@ -311,9 +311,9 @@ sidebar title to tell the gamemode:
 Menu reading, refresh runs and live estimates need Survival or Skyblock, and each gamemode feeds its
 own tracker file, so Skyblock menus never write into Survival's. The wheel, capture and sidebar-linked
 values only need the host gate. Refreshing elsewhere says "Tracker refresh only works in ManaCube
-Survival or Skyblock". Survival-only features (events, /cow, boss slice, fishing log, mcMMO skills,
+Survival or Skyblock". Survival-only features (events, /cow, fishing log, mcMMO skills,
 boosters, command and mcMMO cooldowns, homes) stay Survival-only. Item cooldowns (read from the item's
-lore) run on both. See [Skyblock](#skyblock).
+lore) and the Boss event slice run on both. See [Skyblock](#skyblock).
 
 ## Progress tracker
 
@@ -840,6 +840,12 @@ On Skyblock the mod keeps a separate tracker, wheel and SVA catalog. Survival's 
   Survival. Config version 15 adds Craft to existing wheels and Sell to an existing Skyblock wheel;
   version 16 adds Heal to an existing Skyblock wheel and moves a plain Craft slice into its arc. The
   /heal cooldown countdown is still Survival-only (command cooldowns are not kept per gamemode).
+  The Island slice's arc starts with the island menu `/is`, and a Boss event slice follows Heal;
+  version 17 adds both to an existing Skyblock wheel.
+- **Bosses**: Skyblock announces bosses exactly like Survival ("A BOSS SPAWNED / Boss Sahuagin /
+  Location: Boss Arena", "A MINI BOSS SPAWNED / Boss Cursed Witch / Location: Morend"), so the Boss
+  event slice works there too. Skyblock's boss is kept apart, in `cubewheel-boss-skyblock.json`. It
+  uses the same `events.bossWarps`; Skyblock's warp names are assumed to match Survival's.
 - **SVA catalog**: `https://api.manacube.com/api/svas/skyblock`, cached under
   `config/cubewheel-cache/skyblock/`. Each mode has its own service and rate budget; the tooltip
   fetches the catalog lazily on first need.
