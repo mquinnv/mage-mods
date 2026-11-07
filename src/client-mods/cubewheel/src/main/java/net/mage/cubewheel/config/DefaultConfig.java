@@ -14,7 +14,7 @@ public final class DefaultConfig {
 	private DefaultConfig() {}
 
 	/** Current config format; see ConfigStore.migrate. */
-	public static final int CONFIG_VERSION = 15;
+	public static final int CONFIG_VERSION = 16;
 	/** Default HUD lines; files from before version 2 with an old default (6 or 8) are upgraded to it. */
 	public static final int HUD_MAX_LINES = 10;
 	/** The progress popup's visible time and the bounds ConfigNormalizer clamps it to. */
@@ -142,10 +142,7 @@ public final class DefaultConfig {
 			leaf("Party vault", "minecraft:barrel", "/p vault"),
 			leaf("All vaults", "minecraft:chest", "/pv")).shownAsArc());
 		// Heal on the click (its cooldown shows in the Cooldowns panel), Fly and Feed in its arc (Michael, 2026-10-07/08).
-		w.add(leaf("Heal", "minecraft:golden_apple", "/heal").withArc(
-			leaf("Fly", "minecraft:feather", "/fly"),
-			leaf("Feed", "minecraft:cooked_beef", "/feed"),
-			craftLeaf()));
+		w.add(healSlice());
 		w.add(isles());
 		// Party: the party menu on a click, its quests first in the arc (Michael 2026-10-30).
 		w.add(leaf("Party", "minecraft:white_banner", "/party").withArc(
@@ -217,7 +214,7 @@ public final class DefaultConfig {
 			leaf("Auction house", "minecraft:gold_block", "/ah"),
 			leaf("Cubit shop", "minecraft:diamond", "/cubitshop")));
 		w.add(skyblockSellLeaf());
-		w.add(craftLeaf());
+		w.add(healSlice()); // Heal, with Fly, Feed and Craft in its arc, as on Survival (Michael 2026-11-06)
 		// Vaults: hover fans PV 1...N out in an arc, then the full vault menu; click for the full ring.
 		w.add(dynamic("Vaults", "minecraft:ender_chest", "vaults",
 			leaf("All vaults", "minecraft:chest", "/pv")).shownAsArc());
@@ -291,6 +288,16 @@ public final class DefaultConfig {
 	/** A portable crafting table (/craft), on both wheels; also added by the version 15 migration. */
 	public static WheelNode craftLeaf() {
 		return leaf("Craft", "minecraft:crafting_table", "/craft");
+	}
+
+	/** Heal on the click, Fly, Feed and Craft in its arc; on both wheels (the version 16 migration adds it to Skyblock's). */
+	public static WheelNode healSlice() {
+		return leaf("Heal", "minecraft:golden_apple", "/heal").withArc(healArc().toArray(WheelNode[]::new));
+	}
+
+	/** The Heal slice's arc: Fly, Feed, Craft. */
+	public static List<WheelNode> healArc() {
+		return List.of(leaf("Fly", "minecraft:feather", "/fly"), leaf("Feed", "minecraft:cooked_beef", "/feed"), craftLeaf());
 	}
 
 	/** Skyblock's Sell slice: /sell there sells everything at once (no /sell hand or /sell all). */

@@ -534,10 +534,11 @@ class ConfigStoreTest {
 		ConfigStore s = new ConfigStore(f);
 		assertNull(s.reload());
 		assertEquals(List.of("/fly", "/craft"), s.current().wheel.get(0).arc.stream().map(n -> n.command).toList());
-		assertEquals(List.of("Shop", "Sell", "Craft", "Spawn"), s.current().wheelSkyblock.stream().map(n -> n.label).toList());
+		assertEquals(List.of("Shop", "Sell", "Heal", "Spawn"), s.current().wheelSkyblock.stream().map(n -> n.label).toList());
 		ConfigStore again = new ConfigStore(f);
 		assertNull(again.reload());
 		assertEquals(4, again.current().wheelSkyblock.size());
+		assertEquals(List.of("/fly", "/feed", "/craft"), again.current().wheelSkyblock.get(2).arc.stream().map(n -> n.command).toList()); // version 16: Craft moved under Heal
 		assertEquals(2, again.current().wheel.get(0).arc.size());
 	}
 

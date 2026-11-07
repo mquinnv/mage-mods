@@ -79,9 +79,33 @@ class WheelUpgradeTest {
 		List<WheelNode> sb = DefaultConfig.skyblockWheel();
 		assertEquals(List.of(), WheelUpgrade.craftAndSell(sb, true));
 		int shop = labels(sb).indexOf("Shop");
-		assertEquals(List.of("Sell", "Craft"), labels(sb).subList(shop + 1, shop + 3));
+		assertEquals(List.of("Sell", "Heal"), labels(sb).subList(shop + 1, shop + 3));
 		assertEquals("/sell", sb.get(shop + 1).command);
 		assertNull(sb.get(shop + 1).arc); // Skyblock's /sell has no hand/all forms
+		assertEquals(List.of("/fly", "/feed", "/craft"), sb.get(shop + 2).arc.stream().map(n -> n.command).toList());
+		assertFalse(WheelUpgrade.skyblockHeal(sb)); // already has Heal
+	}
+
+	/** Version 16: beta.99's top-level Craft slice becomes Heal, with Craft in its arc after Fly and Feed. */
+	@Test void skyblockHealTakesTheCraftSlicesPlace() {
+		List<WheelNode> w = new java.util.ArrayList<>(List.of(WheelNode.leaf("Shop", null, "/shop"),
+				WheelNode.leaf("Sell", null, "/sell"), DefaultConfig.craftLeaf(), WheelNode.leaf("Vaults", null, "/pv")));
+		assertTrue(WheelUpgrade.skyblockHeal(w));
+		assertEquals(List.of("Shop", "Sell", "Heal", "Vaults"), labels(w));
+		assertEquals("/heal", w.get(2).command);
+		assertEquals(List.of("/fly", "/feed", "/craft"), w.get(2).arc.stream().map(n -> n.command).toList());
+		assertFalse(WheelUpgrade.skyblockHeal(w)); // once
+	}
+
+	/** Version 16 with no Craft slice: Heal goes after Sell; commands the wheel runs elsewhere are not repeated. */
+	@Test void skyblockHealAfterSellWithoutDuplicates() {
+		List<WheelNode> w = new java.util.ArrayList<>(List.of(WheelNode.leaf("Shop", null, "/shop"),
+				WheelNode.leaf("Sell", null, "/sell"), WheelNode.ring("Mine", null, WheelNode.leaf("Fly!", null, "/fly"))));
+		assertTrue(WheelUpgrade.skyblockHeal(w));
+		assertEquals(List.of("Shop", "Sell", "Heal", "Mine"), labels(w));
+		assertEquals(List.of("/feed", "/craft"), w.get(2).arc.stream().map(n -> n.command).toList());
+		assertFalse(WheelUpgrade.skyblockHeal(new java.util.ArrayList<>(List.of(WheelNode.leaf("H", null, "/heal")))));
+		assertFalse(WheelUpgrade.skyblockHeal(null));
 	}
 
 	@Test void newDefaultTopLevelOrder() {

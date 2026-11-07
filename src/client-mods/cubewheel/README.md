@@ -835,9 +835,11 @@ On Skyblock the mod keeps a separate tracker, wheel and SVA catalog. Survival's 
 - **Refresh key**: `tracker.skyblockRefreshCommands`, default `/jobs`, `/prestige`, `/is quests`,
   `/challenges`. A run stops if the gamemode changes.
 - **Wheel**: `wheelSkyblock` is a separate wheel used on Skyblock. The wheel editor and "reset wheel"
-  act on the current gamemode's wheel. It has Sell `/sell` (on Skyblock it sells everything; there is
-  no hand/all form) and Craft `/craft` as slices after Shop. Config version 15 adds Craft to existing
-  wheels (under Heal on Survival) and Sell to an existing Skyblock wheel.
+  act on the current gamemode's wheel. After Shop it has Sell `/sell` (on Skyblock it sells everything;
+  there is no hand/all form) and Heal `/heal` with Fly, Feed and Craft `/craft` in its arc, as on
+  Survival. Config version 15 adds Craft to existing wheels and Sell to an existing Skyblock wheel;
+  version 16 adds Heal to an existing Skyblock wheel and moves a plain Craft slice into its arc. The
+  /heal cooldown countdown is still Survival-only (command cooldowns are not kept per gamemode).
 - **SVA catalog**: `https://api.manacube.com/api/svas/skyblock`, cached under
   `config/cubewheel-cache/skyblock/`. Each mode has its own service and rate budget; the tooltip
   fetches the catalog lazily on first need.

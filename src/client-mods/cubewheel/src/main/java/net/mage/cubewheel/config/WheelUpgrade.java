@@ -257,6 +257,35 @@ public final class WheelUpgrade {
 		return added;
 	}
 
+	/**
+	 * The version 16 upgrade (2026-11-06), Skyblock's wheel: a Heal slice (/heal) with Fly and Feed in its arc, as on
+	 * Survival. A plain top-level Craft slice (version 15's) moves into that arc and Heal takes its place; otherwise
+	 * Heal goes after Sell (or Shop). Fly, Feed or Craft that the wheel already runs elsewhere stay where they are.
+	 * Nothing changes when the wheel already runs /heal. Returns true if anything changed.
+	 */
+	public static boolean skyblockHeal(List<WheelNode> wheel) {
+		if (wheel == null || runs(wheel, "heal")) return false;
+		int at = -1;
+		for (int i = 0; i < wheel.size(); i++) {
+			WheelNode n = wheel.get(i);
+			if (isCommand(n, "craft") && (n.arc == null || n.arc.isEmpty()) && (n.children == null || n.children.isEmpty())
+					&& n.dynamic == null) {
+				wheel.remove(i); // Craft moves into Heal's arc
+				at = i;
+				break;
+			}
+		}
+		WheelNode heal = WheelNode.leaf("Heal", "minecraft:golden_apple", "/heal");
+		heal.arc = new ArrayList<>();
+		for (WheelNode a : DefaultConfig.healArc()) if (!runs(wheel, key(a.command))) heal.arc.add(a);
+		if (at < 0) {
+			at = afterShop(wheel);
+			if (at < wheel.size() && isCommand(wheel.get(at), "sell")) at++;
+		}
+		wheel.add(Math.min(at, wheel.size()), heal);
+		return true;
+	}
+
 	private static boolean isCommand(WheelNode n, String command) {
 		return n != null && n.command != null && key(n.command).equals(command);
 	}
