@@ -20,6 +20,7 @@ import net.mage.cubewheel.tracker.local.KeyThrottle;
 import net.mage.cubewheel.tracker.local.KillAttribution;
 import net.mage.cubewheel.tracker.local.LocalCounter;
 import net.mage.cubewheel.tracker.local.LootKills;
+import net.mage.cubewheel.tracker.local.UnclaimedDeaths;
 import net.mage.cubewheel.tracker.local.LootLine;
 import net.mage.cubewheel.tracker.local.LootMatch;
 import net.mage.cubewheel.tracker.local.ModelHitbox;
@@ -107,6 +108,8 @@ public final class LocalSignals {
 	private static final StackWatch stacks = new StackWatch();
 	private static final RemovalKills removals = new RemovalKills();
 	private static final LootKills lootKills = new LootKills();
+	/** Nearby deaths nobody hit (a magic book's kills): a loot-only line names its mob by one of them. */
+	private static final UnclaimedDeaths<Signal.MobKilled> unclaimed = new UnclaimedDeaths<>();
 	private static final PendingShears shears = new PendingShears();
 	private static final PendingMilk milkings = new PendingMilk();
 	private static final AreaBreaks areas = new AreaBreaks();
@@ -420,8 +423,13 @@ public final class LocalSignals {
 					onAssist(entity, "death, " + verdict.name().toLowerCase(java.util.Locale.ROOT) + ", hit earlier");
 					return;
 				}
+				boolean near = entity.distanceTo(mc.player) <= CAPTURE_DEATH_RANGE;
+				// Nobody's hit: perhaps our magic book's. Ours only if our own loot line follows (expireLootKills).
+				if (verdict == KillAttribution.Verdict.NO_HIT && near) {
+					unclaimed.died(EntityFacts.of(entity, world()), System.currentTimeMillis());
+				}
 				// Not provably ours: still explain it in capture if anyone hit it or it died near us.
-				if (verdict != KillAttribution.Verdict.NO_HIT || entity.distanceTo(mc.player) <= CAPTURE_DEATH_RANGE) {
+				if (verdict != KillAttribution.Verdict.NO_HIT || near) {
 					captureEntity("death", entity, verdict.name().toLowerCase(java.util.Locale.ROOT));
 				}
 				return;
@@ -1026,6 +1034,7 @@ public final class LocalSignals {
 			stacks.clear();
 			removals.clear();
 			lootKills.clear();
+			unclaimed.clear();
 			world.invalidate();
 		} catch (Throwable t) {
 			fail(Hook.LEVEL, t);
@@ -1143,23 +1152,34 @@ public final class LocalSignals {
 	/**
 	 * Loot lines no local kill claimed (see {@link LootKills}): kills by an ability weapon (Phoenix Staff,
 	 * magic book), which the client never sees as ours. Each counts for the rules its drops name plus the generic
-	 * monster rules, like method c. Held lines are dropped while kills are not counted.
+	 * monster rules, like method c. A line with a nearby death nobody hit just before it ({@link UnclaimedDeaths})
+	 * is that mob's kill instead, counted like a death we hit, so "Slay 100 Mooshrooms" counts a magic-book kill
+	 * whose loot is "Large Mushroom". Held lines are dropped while kills are not counted.
 	 */
 	private static void expireLootKills(Minecraft mc) {
 		try {
 			if (!lootOn()) { // also off outside ManaCube Survival or with tracker.local disabled (see enabled)
 				lootKills.clear();
+				unclaimed.clear();
 				return;
 			}
 			long now = System.currentTimeMillis();
 			for (LootKills.Kill k : lootKills.expire(now)) {
 				if (!survivalMode(mc.player)) continue;
+				Optional<Signal.MobKilled> mob = unclaimed.claim(k.at());
+				if (mob.isPresent()) {
+					List<LocalCounter.Contribution> added = count(mob.get());
+					capture("kill", mob.get().typeId(), mob.get().name(), "death nobody hit + our loot line (ability kill): "
+							+ k.loot(), mob.get().world(), added);
+					continue;
+				}
 				TrackerStore store = CubeWheelClient.tracker();
 				LootKills.Credited c = LootKills.credit(k, store, local().worlds, now);
 				if (!c.added().isEmpty()) markDirty(store);
 				capture("kill", null, c.target().orElse(null), "loot line only (ability kill): " + k.loot()
 						+ c.target().map(t -> " -> " + t).orElse(" names no kill objective; generic"), k.world(), c.added());
 			}
+			unclaimed.expire(now);
 		} catch (Throwable t) {
 			fail(Hook.LOOT, t);
 		}

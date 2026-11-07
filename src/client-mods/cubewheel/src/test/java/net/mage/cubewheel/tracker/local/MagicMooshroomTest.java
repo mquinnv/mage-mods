@@ -41,6 +41,19 @@ class MagicMooshroomTest {
 				LocalCounter.onSignal(mob("minecraft:mooshroom", "Mooshroom 40⺛", WOLFHAVEN), store(), WORLDS, 5));
 	}
 
+	/**
+	 * Skyblock's Task Board task (capture 2026-11-06): the objective is stored as the board shows it, with no counter
+	 * in it. A magic-book kill of "Mooshroom 40⺛" in Wolfhaven counts for it.
+	 */
+	@Test void aSkyblockTaskBoardMooshroomTaskCounts() {
+		TrackerStore s = new TrackerStore(dir.resolve("sb.json"));
+		String id = "tasks:Slay 100 Mooshrooms in Wolfhaven";
+		s.update("tasks", "Slay 100 Mooshrooms in Wolfhaven", new Progress(22, 100), 0);
+		s.setObjective(id, new ObjectiveInfo(List.of(new ObjectiveInfo.Sub("Slay 100 Mooshrooms in Wolfhaven", null)), false, false));
+		assertEquals(List.of(new LocalCounter.Contribution(id, 1)),
+				LocalCounter.onSignal(mob("minecraft:mooshroom", "Mooshroom 40⺛", WOLFHAVEN), s, WORLDS, 5));
+	}
+
 	@Test void notOutsideWolfhavenAndNotForABareJob() {
 		// Outside Wolfhaven nothing counts: the world-scoped job needs its world, and the bare "Slay Magic Mooshrooms"
 		// job never reaches a mob by the last word of its noun (only a world-scoped rule may).
