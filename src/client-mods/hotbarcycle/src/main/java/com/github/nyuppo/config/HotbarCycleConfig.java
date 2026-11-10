@@ -30,7 +30,7 @@ public abstract class HotbarCycleConfig {
             "ranged: minecraft:bow | minecraft:crossbow",
             "tools: id:_(pickaxe|shovel)$ | minecraft:fishing_rod | minecraft:shears",
             "melee: id:_axe$ & lore:(?i)mob heads?|decapitation",
-            "tools: id:_(axe|hoe)$ & lore:(?i)woodcutting|herbalism|excavation|mining|\\bcrops?\\b|harvests|replant|\\btill|vein mine|trench|tunnel|break block|\\blogs?\\b|haste|sell mode|growth|builder|places? .*block",
+            "tools: id:_(axe|hoe)$ & lore:(?i)woodcutting|herbalism|excavation|mining|\\bcrops?\\b|harvests|replant|\\btill|vein mine|trench|tunnel|break block|\\blogs?\\b|sell mode|growth|builder|places? .*block",
             "tools: id:blaze_rod$|:stick$ & lore:(?i)\\bsells?\\b|sell wand|\\bcrops?\\b|\\bgrow",
             "utility: id:_hoe$|blaze_rod$|:stick$ & lore:(?i)teleport|glide|slow ?fall|shield|barrier|pull all | minecraft:carrot_on_a_stick",
             "ranged: id:_hoe$|blaze_rod$|:stick$|:book$|:snowball$ & lore:(?i)damage|shoot|\\bfires?\\b|magic|blast|launch|throw|bounce|drown|levitation|portal|randomi",

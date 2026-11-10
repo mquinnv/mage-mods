@@ -97,6 +97,9 @@ class ItemGroupsTest {
 		assertEquals("melee", group(gear("minecraft:iron_axe", "☠ BONE AXE ☠", "○ Decapitation III", "○ Haste II",
 				"○ Experience II", "○ Telepathy I", "o <1 Available>", "Bone Axe", "", "Item Effects",
 				"- 15% chance of receiving 4x mob heads!")));
+		// "i added haste 3 to my troll glaive and now it thinks it is a tool": Haste speeds attacks too
+		assertEquals("melee", group(gear(AXE, "TROLL GLAIVE", "○ Haste III", "Unbreakable", "Troll Glaive", "ITEM EFFECTS: (When Held)",
+				"➟ 15% Extra damage to Bosses", "➟ 10% Chance to Deal 1.33x Damage")));
 		assertEquals("ranged", group(gear(AXE, "BO STAFF", "ITEM EFFECTS: (Left Click)", "➟ Shoots Pure Kinetic Energy")));
 	}
 
