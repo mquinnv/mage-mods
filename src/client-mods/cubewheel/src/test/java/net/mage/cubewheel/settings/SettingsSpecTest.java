@@ -53,7 +53,7 @@ class SettingsSpecTest {
 	void hudPanelsCategoryHasOneGroupPerPanelThenCollapsedExactPositions() {
 		Category hud = SettingsSpec.categories().get(1);
 		assertEquals(List.of("Status", "Events", "Jobs", "Quests", "Boosters", "Cooldowns", "Charms", "Focus", "mcMMO",
-				"Progress popup", "Exact positions"),
+				"Progress popup", "Mana mob names", "Exact positions"),
 				hud.groups().stream().map(Group::name).toList());
 		assertEquals(List.of("status.enabled", "status.armor"), ids(hud.groups().get(0)));
 		assertEquals(List.of("events.hudVisible"), ids(hud.groups().get(1)));
@@ -70,8 +70,9 @@ class SettingsSpecTest {
 		assertEquals(List.of("skills.enabled", "skills.show", "skills.recentMinutes", "skills.max", "skills.showChild"),
 				ids(hud.groups().get(8)));
 		assertEquals(List.of("toast.enabled", "toast.seconds"), ids(hud.groups().get(9)));
-		for (int i = 0; i < 10; i++) assertFalse(hud.groups().get(i).collapsed(), hud.groups().get(i).name());
-		Group exact = hud.groups().get(10);
+		assertEquals(List.of("manaNames.jade", "manaNames.subtitles"), ids(hud.groups().get(10)));
+		for (int i = 0; i < 11; i++) assertFalse(hud.groups().get(i).collapsed(), hud.groups().get(i).name());
+		Group exact = hud.groups().get(11);
 		assertTrue(exact.collapsed());
 		List<String> expected = new ArrayList<>();
 		for (String p : List.of("status", "events", "tracker.jobsPanel", "tracker", "boosters", "cooldowns", "charms", "focus", "skills")) {

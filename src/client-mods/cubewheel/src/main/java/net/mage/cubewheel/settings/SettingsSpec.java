@@ -230,6 +230,15 @@ public final class SettingsSpec {
 												+ " increments to the same entry add up in it and restart this time.",
 										DefaultConfig.TOAST_SECONDS_MIN, DefaultConfig.TOAST_SECONDS_MAX, 0.5,
 										c -> c.toast.seconds, (c, v) -> c.toast.seconds = v))),
+						new Group("Mana mob names", List.of(
+								toggle(d, "manaNames.jade", "Names in Jade",
+										"Show a ManaCube custom-model mob's name and health in Jade when you look at it"
+												+ " (it otherwise shows the invisible entity the model is built on).",
+										c -> c.manaNames.jade, (c, v) -> c.manaNames.jade = v),
+								toggle(d, "manaNames.subtitles", "Names in subtitles",
+										"Name a model mob's sounds in the subtitles (\"Mana Wolf growls\" rather than"
+												+ " \"Polar Bear growls\"). The first sound heard from each kind of mob stays as it was.",
+										c -> c.manaNames.subtitles, (c, v) -> c.manaNames.subtitles = v))),
 						new Group("Exact positions", positions(d), true))),
 				new Category("Tracker", List.of(
 						new Group("Sources & refresh", List.of(

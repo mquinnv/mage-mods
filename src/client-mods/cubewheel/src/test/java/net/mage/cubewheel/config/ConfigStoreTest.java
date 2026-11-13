@@ -593,4 +593,20 @@ class ConfigStoreTest {
 		assertEquals(8, s.current().wheel.get(0).children.size());
 		assertEquals("Settings", s.current().wheel.get(1).label);
 	}
+
+	/** Version 18: the mana mob name toggles. A v17 file has no section and gets both on; a stored choice is kept. */
+	@Test void manaNamesDefaultToOnWhenUpgradingFromV17() throws Exception {
+		Path f = dir.resolve("cubewheel.json");
+		Files.writeString(f, "{\"configVersion\": 17}");
+		ConfigStore s = new ConfigStore(f);
+		assertNull(s.reload());
+		assertEquals(18, DefaultConfig.CONFIG_VERSION);
+		assertEquals(18, s.current().configVersion);
+		assertTrue(s.current().manaNames.jade);
+		assertTrue(s.current().manaNames.subtitles);
+		Files.writeString(f, "{\"configVersion\": 18, \"manaNames\": {\"jade\": false}}");
+		assertNull(s.reload());
+		assertFalse(s.current().manaNames.jade);
+		assertTrue(s.current().manaNames.subtitles);
+	}
 }

@@ -69,6 +69,7 @@ public final class ConfigNormalizer {
 		c.quick.commands = quick;
 		if (c.status == null) c.status = new CubeWheelConfig.Status();
 		c.status.position = normalizePosition(c.status.position, DefaultConfig.statusPosition());
+		if (c.manaNames == null) c.manaNames = new CubeWheelConfig.ManaNames();
 		if (c.toast == null) c.toast = new CubeWheelConfig.Toast();
 		c.toast.seconds = Double.isNaN(c.toast.seconds) ? DefaultConfig.TOAST_SECONDS
 				: Math.max(DefaultConfig.TOAST_SECONDS_MIN, Math.min(DefaultConfig.TOAST_SECONDS_MAX, c.toast.seconds));

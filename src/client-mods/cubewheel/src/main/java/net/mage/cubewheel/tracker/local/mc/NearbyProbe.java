@@ -1,7 +1,6 @@
 package net.mage.cubewheel.tracker.local.mc;
 
 import net.mage.cubewheel.capture.CaptureLog;
-import net.mage.cubewheel.mixin.TextDisplayAccessor;
 import net.mage.cubewheel.tracker.local.ModelHitbox;
 import net.mage.cubewheel.tracker.local.ModelMobs;
 import net.mage.cubewheel.tracker.local.NameResolver;
@@ -11,7 +10,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.AreaEffectCloud;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
@@ -31,7 +29,6 @@ import net.minecraft.world.phys.AABB;
 final class NearbyProbe {
 	static final double CAPTURE_RANGE = 4;
 	private static final int MAX_ENTITIES = 32;
-	private static boolean textInvokerBroken;
 
 	/**
 	 * The name hint (or null), the model keys (its cloud vehicle, the nearest cloud carrying model bones; empty for an
@@ -108,7 +105,7 @@ final class NearbyProbe {
 				bonesSq = distSq;
 			}
 			String custom = e.hasCustomName() ? e.getCustomName().getString() : null;
-			String text = e instanceof Display.TextDisplay td ? text(td) : null;
+			String text = e instanceof Display.TextDisplay td ? TextDisplays.text(td) : null;
 			NameResolver.Relation rel = e.getVehicle() == target ? NameResolver.Relation.RIDER
 					: e == vehicle ? NameResolver.Relation.VEHICLE
 					: e instanceof Display || e instanceof ArmorStand ? NameResolver.Relation.TAG
@@ -142,26 +139,6 @@ final class NearbyProbe {
 	/** As {@link #describe(Entity, String, String, double)}, reading the custom name and text display text itself. */
 	static CaptureLog.Nearby describe(Entity e, double distance) {
 		return describe(e, e.hasCustomName() ? e.getCustomName().getString() : null,
-				e instanceof Display.TextDisplay td ? text(td) : null, distance);
-	}
-
-	/** A text display's text: through the optional invoker, else its render state (may be null before rendering). */
-	private static String text(Display.TextDisplay td) {
-		Component c = null;
-		if (!textInvokerBroken) {
-			try {
-				c = ((TextDisplayAccessor) td).cubewheel$getText();
-			} catch (VirtualMachineError e) {
-				throw e;
-			} catch (Throwable t) {
-				textInvokerBroken = true; // the accessor did not apply: use the render state from now on
-			}
-		}
-		if (c == null) {
-			Display.TextDisplay.TextRenderState state = td.textRenderState();
-			if (state != null) c = state.text();
-		}
-		String s = c == null ? null : c.getString();
-		return s == null || s.isBlank() ? null : s;
+				e instanceof Display.TextDisplay td ? TextDisplays.text(td) : null, distance);
 	}
 }

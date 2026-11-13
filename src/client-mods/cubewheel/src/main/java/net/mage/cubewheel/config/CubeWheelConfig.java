@@ -36,6 +36,14 @@ public final class CubeWheelConfig {
 	public Skills skills = new Skills();
 	/** The popup under the crosshair when local counting adds progress to a tracked entry. */
 	public Toast toast = new Toast();
+	/** Names for ManaCube's custom-model mobs in Jade and in sound subtitles. */
+	public ManaNames manaNames = new ManaNames();
+
+	/** Jade shows a model mob's name and health; subtitles name a model mob's sounds. */
+	public static final class ManaNames {
+		public boolean jade = true;
+		public boolean subtitles = true;
+	}
 
 	/** "+1 Mana Wolves  ~10/74" under the crosshair while a live counter goes up. */
 	public static final class Toast {

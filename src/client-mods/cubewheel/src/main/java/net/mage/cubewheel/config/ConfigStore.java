@@ -113,7 +113,8 @@ public final class ConfigStore {
 	 * Version 13: the top-level Party quests slice becomes Party ({@link WheelUpgrade#partySlice}).
 	 * Version 15: Craft on both wheels, Sell on Skyblock's ({@link WheelUpgrade#craftAndSell}). Version 16: Heal
 	 * with Fly, Feed and Craft on Skyblock's ({@link WheelUpgrade#skyblockHeal}). Version 17: /is and the Boss event
-	 * slice on Skyblock's ({@link WheelUpgrade#skyblockBossAndIsland}).
+	 * slice on Skyblock's ({@link WheelUpgrade#skyblockBossAndIsland}). Version 18: the {@code manaNames} toggles (Jade and
+	 * subtitles); a file with no section gets both on, filled by {@link ConfigNormalizer}, so nothing to migrate.
 	 */
 	private static boolean migrate(CubeWheelConfig c, List<String> notes) {
 		if (c.configVersion >= DefaultConfig.CONFIG_VERSION) return false;

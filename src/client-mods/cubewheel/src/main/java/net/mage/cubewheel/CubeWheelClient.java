@@ -138,6 +138,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ContainerHook.register();
 		LocalSignals.register(); // after tracker and capture exist
 		net.mage.cubewheel.tracker.local.mc.ModelCaptureProbe.register(); // capture only: model shapes and sounds
+		net.mage.cubewheel.manamobs.ModelMobRegistry.register(); // once a second: nearby model mobs, for Jade and subtitles
 		ClientReceiveMessageEvents.ALLOW_GAME.register(LocalSignals::onGameMessage);
 		CooldownWatcher.register();
 		net.mage.cubewheel.capture.ShotWatcher.register(); // capture only: staff shots and their projectiles
@@ -194,6 +195,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		// Sidebar-driven changes are saved at most every 10 s; write the rest when leaving or quitting, then any
 		// background save still waiting (an older one than a save just made is skipped).
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, mc) -> {
+			net.mage.cubewheel.manamobs.ModelMobRegistry.onDisconnect();
 			sidebar.flush();
 			net.mage.cubewheel.skills.SkillsWatcher.flush();
 			flushTrackerSaves();
