@@ -29,12 +29,15 @@ class JadeIsolationTest {
 					.sorted()
 					.toList();
 		}
-		assertEquals(List.of(), offenders, "Jade API referenced outside compat/jade/");
+		assertEquals(List.of(), offenders, "Jade API or compat/jade/ referenced outside compat/jade/");
 	}
 
 	private static boolean mentionsJade(Path p) {
 		try {
-			return Files.readString(p).contains("snownee.jade");
+			// The Jade API itself, or this compat package (whose classes load Jade): fabric.mod.json, not Java, is
+			// the only legitimate way in.
+			String src = Files.readString(p);
+			return src.contains("snownee.jade") || src.contains("net.mage.cubewheel.compat.jade");
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
