@@ -68,7 +68,7 @@ public final class CubeWheelJadePlugin implements IWailaPlugin {
 					.build();
 		} catch (VirtualMachineError e) {
 			throw e;
-		} catch (RuntimeException e) {
+		} catch (Throwable e) {
 			if (!loggedFailure) {
 				loggedFailure = true;
 				LOG.warn("[cubewheel] Jade mana-mob redirect failed; leaving Jade's target as is", e);

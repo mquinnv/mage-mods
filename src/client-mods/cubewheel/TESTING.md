@@ -352,7 +352,7 @@ Needs a Mana world with Mana Wolves and Vipers (Sandara). Jade installed unless 
 - [ ] Subtitles on (Options > Accessibility > Subtitles), stand near a Mana Wolf: the first sound it makes stays vanilla ("Polar Bear ..."); later sounds read "Mana Wolf hurts" etc. and repeats stack.
 - [ ] Same for a Viper: first sound vanilla, afterwards "Viper hisses" instead of "Silverfish hisses".
 - [ ] Next to a real wolf, its subtitles stay "Wolf ...".
-- [ ] Settings > CubeWheel > "Mana mob names": switch `Jade` off, the Jade tooltip is vanilla's again; switch `Subtitles` off, subtitles are vanilla. Both are on by default.
+- [ ] Settings > General > "Mana mob names": switch "Names in Jade" off, the Jade tooltip is vanilla's again; switch "Names in subtitles" off, subtitles are vanilla. Both are on by default.
 - [ ] Leave the mana world (hub or another world): within about 1 s nothing is renamed, in Jade or in subtitles.
 - [ ] Config: a pre-update file (configVersion 17) loads, is written back with `"configVersion": 18` and both `manaNames` toggles true.
 - [ ] Capture on in a mana world: `"kind":"model_shape"` lines appear when the crosshair target changes and `"kind":"sound"` lines for sounds heard.

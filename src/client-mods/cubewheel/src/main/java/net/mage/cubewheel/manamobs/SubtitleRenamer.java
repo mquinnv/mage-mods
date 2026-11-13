@@ -10,6 +10,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.phys.Vec3;
 
 /** Called by the subtitle mixin: swaps a vanilla mob subtitle for one naming the mana mob it came from. */
@@ -30,6 +31,8 @@ public final class SubtitleRenamer {
 			Optional<EntityType<?>> entityType = Optional.ofNullable(Identifier.tryParse(type.get()))
 					.flatMap(BuiltInRegistries.ENTITY_TYPE::getOptional);
 			if (entityType.isEmpty()) return vanilla;
+			// projectiles, potions, lightning and other non-mob sounds stay vanilla; nearSound would learn their "voice"
+			if (entityType.get().getCategory() == MobCategory.MISC) return vanilla;
 			Optional<ModelMob> mob = ModelMobRegistry.nearSound(type.get(), new Vec3(sound.getX(), sound.getY(), sound.getZ()));
 			if (mob.isEmpty()) return vanilla;
 			String vanillaName = entityType.get().getDescription().getString();

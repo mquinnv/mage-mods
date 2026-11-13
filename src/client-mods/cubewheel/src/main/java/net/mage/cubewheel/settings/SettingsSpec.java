@@ -129,7 +129,16 @@ public final class SettingsSpec {
 										"One command per line, sent when the matching \"Quick command 1/2/3\" key (Controls ›"
 												+ " CubeWheel) is pressed, e.g. \"/home armor\" on the first line. A blank line's key"
 												+ " does nothing; only the first three lines have keys.",
-										c -> c.quick.commands, (c, v) -> c.quick.commands = v))))),
+										c -> c.quick.commands, (c, v) -> c.quick.commands = v))),
+						new Group("Mana mob names", List.of(
+								toggle(d, "manaNames.jade", "Names in Jade",
+										"Show a ManaCube custom-model mob's name and health in Jade when you look at it"
+												+ " (Jade otherwise shows the block behind it or an Interaction).",
+										c -> c.manaNames.jade, (c, v) -> c.manaNames.jade = v),
+								toggle(d, "manaNames.subtitles", "Names in subtitles",
+										"Name a model mob's sounds in the subtitles (\"Mana Wolf growls\" rather than"
+												+ " \"Polar Bear growls\"). The first sound heard from each kind of mob stays as it was.",
+										c -> c.manaNames.subtitles, (c, v) -> c.manaNames.subtitles = v))))),
 				new Category(HUD_PANELS, List.of(
 						new Group("Status", List.of(
 								toggle(d, "status.enabled", "Enabled",
@@ -230,15 +239,6 @@ public final class SettingsSpec {
 												+ " increments to the same entry add up in it and restart this time.",
 										DefaultConfig.TOAST_SECONDS_MIN, DefaultConfig.TOAST_SECONDS_MAX, 0.5,
 										c -> c.toast.seconds, (c, v) -> c.toast.seconds = v))),
-						new Group("Mana mob names", List.of(
-								toggle(d, "manaNames.jade", "Names in Jade",
-										"Show a ManaCube custom-model mob's name and health in Jade when you look at it"
-												+ " (it otherwise shows the invisible entity the model is built on).",
-										c -> c.manaNames.jade, (c, v) -> c.manaNames.jade = v),
-								toggle(d, "manaNames.subtitles", "Names in subtitles",
-										"Name a model mob's sounds in the subtitles (\"Mana Wolf growls\" rather than"
-												+ " \"Polar Bear growls\"). The first sound heard from each kind of mob stays as it was.",
-										c -> c.manaNames.subtitles, (c, v) -> c.manaNames.subtitles = v))),
 						new Group("Exact positions", positions(d), true))),
 				new Category("Tracker", List.of(
 						new Group("Sources & refresh", List.of(

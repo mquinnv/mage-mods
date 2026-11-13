@@ -855,11 +855,11 @@ On Skyblock the mod keeps a separate tracker, wheel and SVA catalog. Survival's 
 ## Mana mob names
 
 In the Mana worlds the server builds "mobs" such as the Mana Wolf and the Viper from model parts, an
-interaction hitbox and a name tag. Vanilla and Jade show them as an `interaction` entity or a borrowed
-vanilla mob ("Polar Bear"). CubeWheel reads the tag and uses it. **Mana worlds only**; elsewhere
+interaction hitbox and a name tag. Jade normally shows the block behind the mob (or an Interaction), and
+subtitles show the borrowed vanilla sound's mob ("Polar Bear", "Silverfish"). CubeWheel reads the tag and uses it. **Mana worlds only**; elsewhere
 everything is vanilla. Names refresh once a second, so a mob that has just appeared can take up to a
 second to get its name. Leaving a mana world clears all names. Both parts can be switched off in the
-settings under "Mana mob names" (`manaNames.jade`, `manaNames.subtitles`, both on by default).
+settings under General > "Mana mob names" ("Names in Jade", "Names in subtitles"; `manaNames.jade`, `manaNames.subtitles`, both on by default).
 
 - **Jade**: looking at a mana mob shows its bare tag name ("Mana Wolf", "Viper") and a text health
   line "❤ 75" taken from the tag; Jade's own health line is hidden. This works with Jade's default

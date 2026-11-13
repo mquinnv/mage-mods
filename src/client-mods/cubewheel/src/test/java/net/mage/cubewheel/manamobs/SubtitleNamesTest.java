@@ -57,7 +57,8 @@ class SubtitleNamesTest {
 	void nonMobTypesAreExcluded() {
 		for (String k : new String[] {"subtitles.entity.player.hurt", "subtitles.entity.experience_orb.pickup",
 				"subtitles.entity.item.pickup", "subtitles.entity.generic.big_fall", "subtitles.entity.generic.hurt",
-				"subtitles.entity.armor_stand.hit"}) {
+				"subtitles.entity.armor_stand.hit", "subtitles.entity.arrow.hit",
+				"subtitles.entity.firework_rocket.blast"}) {
 			assertEquals(Optional.empty(), SubtitleNames.entityType(k), k);
 		}
 	}

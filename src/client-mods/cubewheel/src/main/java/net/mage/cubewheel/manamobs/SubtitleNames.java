@@ -9,7 +9,9 @@ import java.util.regex.Pattern;
 public final class SubtitleNames {
 	private static final String PREFIX = "subtitles.entity.";
 	/** Entity subtitle groups that are never a mob standing in a model. */
-	private static final Set<String> NOT_MOBS = Set.of("player", "experience_orb", "item", "generic", "armor_stand");
+	private static final Set<String> NOT_MOBS = Set.of(
+			"player", "experience_orb", "item", "generic", "armor_stand", "arrow", "spectral_arrow", "trident", "potion",
+			"splash_potion", "lingering_potion", "firework_rocket", "lightning_bolt", "fishing_bobber", "evoker_fangs", "tnt");
 	private static final Pattern TYPE = Pattern.compile("[a-z0-9_]+");
 
 	private SubtitleNames() {}
