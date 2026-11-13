@@ -341,3 +341,19 @@ Bind "Open SVA catalog" first. Start with `config/cubewheel-cache/` deleted.
 - [ ] When chat announces `A BOSS SPAWNED … Boss Mana Golem / Location: Wolfhaven Mines`: the slice shows `Mana Golem · <1m` (gold), counting up. Nothing is sent by itself. Click it: the wheel closes and `/warp wolfhaven` is sent once. Also check a mini boss (Cursed Witch at Morend → `/warp morend`) and the Boss Arena (`/warp boss`).
 - [ ] 15 minutes after the announcement the slice is back to `No boss event`.
 - [ ] Off Survival (hub, other gamemodes): boss and `/cow` messages there change nothing.
+
+## Mana mob names
+
+Needs a Mana world with Mana Wolves and Vipers (Sandara). Jade installed unless a step says otherwise; do not edit Jade's config (default hide list).
+
+- [ ] Jade: look at a Mana Wolf and at a Viper: the name is bare ("Mana Wolf", "Viper") and a health line like "❤ 75" matches the tag; Jade's own health line is not shown.
+- [ ] The same name and health show whether the crosshair is on the mob's body or on its hitbox.
+- [ ] Wait a second after a mob appears: it gets its name (up to 1 s delay is expected).
+- [ ] Subtitles on (Options > Accessibility > Subtitles), stand near a Mana Wolf: the first sound it makes stays vanilla ("Polar Bear ..."); later sounds read "Mana Wolf hurts" etc. and repeats stack.
+- [ ] Same for a Viper: first sound vanilla, afterwards "Viper hisses" instead of "Silverfish hisses".
+- [ ] Next to a real wolf, its subtitles stay "Wolf ...".
+- [ ] Settings > CubeWheel > "Mana mob names": switch `Jade` off, the Jade tooltip is vanilla's again; switch `Subtitles` off, subtitles are vanilla. Both are on by default.
+- [ ] Leave the mana world (hub or another world): within about 1 s nothing is renamed, in Jade or in subtitles.
+- [ ] Config: a pre-update file (configVersion 17) loads, is written back with `"configVersion": 18` and both `manaNames` toggles true.
+- [ ] Capture on in a mana world: `"kind":"model_shape"` lines appear when the crosshair target changes and `"kind":"sound"` lines for sounds heard.
+- [ ] Remove the Jade jar and start: the game loads, CubeWheel works, subtitles still rename.

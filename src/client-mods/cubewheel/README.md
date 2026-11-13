@@ -212,6 +212,8 @@ the previous config keeps working. Numbers outside their range are clamped.
 | `skills.max` | Most rows in `"recent"` mode, 1-17 | `6` |
 | `skills.showChild` | List Smelting, a child skill, in `"all"` mode | `false` |
 | `skills.position` | Panel corner and offset | `{"corner": "top_left", "x": 4, "y": 4}` |
+| `manaNames.jade` | Jade names mana mobs and shows their health from the tag (see [Mana mob names](#mana-mob-names)) | `true` |
+| `manaNames.subtitles` | Subtitles name mana mobs (see [Mana mob names](#mana-mob-names)); config version 18 adds both toggles | `true` |
 | `wheel` | The root ring: a list of nodes | see `DefaultConfig.java` |
 
 `tracker.sources` defaults: `jobs` = `(?i)jobs`, `pquests` = `(?i)quest`, `prestige` = `(?i)prestige`,
@@ -850,6 +852,29 @@ On Skyblock the mod keeps a separate tracker, wheel and SVA catalog. Survival's 
   `config/cubewheel-cache/skyblock/`. Each mode has its own service and rate budget; the tooltip
   fetches the catalog lazily on first need.
 
+## Mana mob names
+
+In the Mana worlds the server builds "mobs" such as the Mana Wolf and the Viper from model parts, an
+interaction hitbox and a name tag. Vanilla and Jade show them as an `interaction` entity or a borrowed
+vanilla mob ("Polar Bear"). CubeWheel reads the tag and uses it. **Mana worlds only**; elsewhere
+everything is vanilla. Names refresh once a second, so a mob that has just appeared can take up to a
+second to get its name. Leaving a mana world clears all names. Both parts can be switched off in the
+settings under "Mana mob names" (`manaNames.jade`, `manaNames.subtitles`, both on by default).
+
+- **Jade**: looking at a mana mob shows its bare tag name ("Mana Wolf", "Viper") and a text health
+  line "❤ 75" taken from the tag; Jade's own health line is hidden. This works with Jade's default
+  hide list (which hides `interaction`) by falling back to vanilla's crosshair target. Jade is
+  optional: CubeWheel works without it.
+- **Subtitles**: a vanilla mob sound that comes from a mana mob's hitbox (within 1 block
+  horizontally, from 0.5 below to 1.5 above; the closest mob wins; a tie stays vanilla) is renamed:
+  "Polar Bear hurts" becomes "Mana Wolf hurts", "Silverfish hisses" becomes "Viper hisses". Each mob
+  name learns its "voice" from its first sound, which stays vanilla; afterwards only that voice is
+  renamed. Known limitation: if a different mob's sound happens to be the first heard at that spot,
+  the wrong voice sticks until you disconnect.
+
+Capture mode also logs `model_shape` (when the crosshair target changes) and `sound` lines in mana
+worlds, see [Capture mode](#capture-mode).
+
 ## SVA catalog
 
 Press **Open SVA catalog** (unbound by default) for a grid of every Survival SVA (season vault
@@ -942,6 +967,8 @@ reel-in` when it took a reel-in's count back); a bobber reel-in has `detail` `bo
   `triggers break=… attack=… ability=…; counted <id>=n …; no rule <id>=n; skipped out_of_range=n
   duplicate=n not_break=n not_log=n cascade=n placed=n cap=n`. A job that rises while `counted` stays
   empty means the server's changes did not reach the window (too far, too late, or not to air).
+- `model_shape`, `sound`: in mana worlds only: the shape of the mob model under the crosshair (on target
+  change) and each sound heard, used to tune [Mana mob names](#mana-mob-names).
 - `estimate`: an estimate replaced by a real read: `counted` (local) vs `actual` (from the menu).
 
 Container lines also carry `afterCommand` (the last command you or CubeWheel sent before the menu was
