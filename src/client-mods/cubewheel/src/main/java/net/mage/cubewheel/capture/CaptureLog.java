@@ -278,6 +278,25 @@ public final class CaptureLog {
 		append(o, now);
 	}
 
+	/**
+	 * What the mana-mob subtitle rename decided for an entity subtitle ({@code key}): {@code decision} (toggle_off,
+	 * inactive, not_entity, misc, no_candidate, ambiguous, learned_voice, other_voice, renamed), the mob it was about
+	 * (null if none) and the sound's offset from that mob's hitbox (null if none).
+	 */
+	public void subtitle(String key, String decision, String mob, Double dx, Double dy, Double dz, long now) {
+		if (!enabled) return;
+		JsonObject o = new JsonObject();
+		o.addProperty("t", now);
+		o.addProperty("kind", "subtitle");
+		o.addProperty("key", key);
+		o.addProperty("decision", decision);
+		o.addProperty("mob", mob);
+		o.addProperty("dx", dx);
+		o.addProperty("dy", dy);
+		o.addProperty("dz", dz);
+		append(o, now);
+	}
+
 	/** A snap-back: {@code counted} units estimated locally vs {@code actual} per the next authoritative read. */
 	public void estimate(String id, long counted, double actual, long now) {
 		if (!enabled) return;

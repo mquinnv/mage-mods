@@ -5,14 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.IntFunction;
 import org.junit.jupiter.api.Test;
 
 class RegistryStateTest {
 	private static final String BEAR = "minecraft:polar_bear";
 
 	private static ModelMob mob(String name, int hitbox, double x, double y, double z) {
-		return new ModelMob(name, hitbox + 1, hitbox, x, y, z, Set.of(hitbox, hitbox + 1, hitbox + 2));
+		return new ModelMob(name, hitbox + 1, hitbox, x, y, z, Set.of(hitbox, hitbox + 1, hitbox + 2), ModelBounds.point(0, 0, 0));
 	}
 
 	private static RegistryState with(ModelMob... mobs) {
@@ -95,5 +97,54 @@ class RegistryStateTest {
 		s.clearAll();
 		s.replace(List.of(wolf));
 		assertEquals(Optional.empty(), s.nearSound(BEAR, 0, 64, 0)); // learning again
+	}
+
+	private static IntFunction<double[]> live(Map<Integer, double[]> positions) {
+		return positions::get;
+	}
+
+	@Test void liveHitboxPositionBeatsTheStaleSnapshot() {
+		// the snapshot (once a second) left the wolf 3 blocks back; it has since run to where the sound is
+		ModelMob wolf = mob("Mana Wolf", 10, -3, 64, 0);
+		RegistryState s = with(wolf);
+		IntFunction<double[]> now = live(Map.of(10, new double[] {0, 64, 0}));
+		assertEquals(Optional.empty(), s.nearSound(BEAR, 0.1, 64, 0, now)); // learns the voice
+		assertEquals(Optional.of(wolf), s.nearSound(BEAR, 0.1, 64, 0, now));
+		assertEquals(Optional.empty(), s.nearSound(BEAR, 0.1, 64, 0)); // the snapshot alone is 3.1 away
+	}
+
+	@Test void absentLivePositionFallsBackToTheSnapshot() {
+		ModelMob wolf = mob("Mana Wolf", 10, 0, 64, 0);
+		RegistryState s = with(wolf);
+		IntFunction<double[]> none = live(Map.of());
+		s.nearSound(BEAR, 0.2, 64, 0, none);
+		assertEquals(Optional.of(wolf), s.nearSound(BEAR, 0.2, 64, 0, none));
+	}
+
+	@Test void matchSoundExplainsEachDecision() {
+		ModelMob wolf = mob("Mana Wolf", 10, 0, 64, 0);
+		RegistryState s = with(wolf, mob("Mana Wolf", 20, 0.1, 64, 0.05));
+		IntFunction<double[]> none = live(Map.of());
+		RegistryState.SoundMatch far = s.matchSound(BEAR, 5, 64, 0, none);
+		assertEquals(RegistryState.SoundDecision.NO_CANDIDATE, far.decision());
+		assertEquals(20, far.mob().hitbox()); // the nearest mob anyway, for the capture line
+		assertEquals(4.9, far.dx(), 1e-9);
+		assertEquals(RegistryState.SoundDecision.AMBIGUOUS, s.matchSound(BEAR, 0, 64, 0, none).decision());
+		RegistryState t = with(wolf);
+		RegistryState.SoundMatch first = t.matchSound(BEAR, 0.2, 64.5, 0, none);
+		assertEquals(RegistryState.SoundDecision.LEARNED_VOICE, first.decision());
+		assertEquals(0.5, first.dy(), 1e-9);
+		assertEquals(RegistryState.SoundDecision.RENAMED, t.matchSound(BEAR, 0.2, 64, 0, none).decision());
+		assertEquals(RegistryState.SoundDecision.OTHER_VOICE, t.matchSound("minecraft:wolf", 0.2, 64, 0, none).decision());
+		assertEquals(RegistryState.SoundDecision.NO_CANDIDATE, new RegistryState().matchSound(BEAR, 0, 0, 0, none).decision());
+		assertEquals(null, new RegistryState().matchSound(BEAR, 0, 0, 0, none).mob());
+	}
+
+	@Test void mobsListsTheCurrentMobs() {
+		ModelMob wolf = mob("Mana Wolf", 10, 0, 64, 0);
+		RegistryState s = with(wolf);
+		assertEquals(List.of(wolf), s.mobs());
+		s.clear();
+		assertEquals(List.of(), s.mobs());
 	}
 }

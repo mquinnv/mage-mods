@@ -347,10 +347,13 @@ Bind "Open SVA catalog" first. Start with `config/cubewheel-cache/` deleted.
 Needs a Mana world with Mana Wolves and Vipers (Sandara). Jade installed unless a step says otherwise; do not edit Jade's config (default hide list).
 
 - [ ] Jade: look at a Mana Wolf and at a Viper: the name is bare ("Mana Wolf", "Viper") and a health line like "❤ 75" matches the tag; Jade's own health line is not shown.
-- [ ] The same name and health show whether the crosshair is on the mob's body or on its hitbox.
+- [ ] The same name and health show whether the crosshair is on the mob's body or on its hitbox, anywhere on the drawn model (head, tail, legs), not only a small spot (beta.105).
+- [ ] A block between you and a mana mob: Jade shows the block, never the mob through it.
 - [ ] Wait a second after a mob appears: it gets its name (up to 1 s delay is expected).
 - [ ] Subtitles on (Options > Accessibility > Subtitles), stand near a Mana Wolf: the first sound it makes stays vanilla ("Polar Bear ..."); later sounds read "Mana Wolf hurts" etc. and repeats stack.
 - [ ] Same for a Viper: first sound vanilla, afterwards "Viper hisses" instead of "Silverfish hisses".
+- [ ] Let a Mana Wolf chase you while it growls/hurts: its subtitles still rename (beta.105 matches the hitbox's live position). latest.log has `[cubewheel] subtitle hook active` once.
+- [ ] Capture on, near a Mana Wolf: `"kind":"subtitle"` lines with a `decision` for each polar bear subtitle; if subtitles stay vanilla, the decisions and `dx`/`dy`/`dz` say why.
 - [ ] Next to a real wolf, its subtitles stay "Wolf ...".
 - [ ] Settings > General > "Mana mob names": switch "Names in Jade" off, the Jade tooltip is vanilla's again; switch "Names in subtitles" off, subtitles are vanilla. Both are on by default.
 - [ ] Leave the mana world (hub or another world): within about 1 s nothing is renamed, in Jade or in subtitles.

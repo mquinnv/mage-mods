@@ -3,6 +3,7 @@ package net.mage.cubewheel.manamobs;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.mage.cubewheel.CubeWheelClient;
 import net.mage.cubewheel.config.CubeWheelConfig;
+import net.mage.cubewheel.tracker.local.ModelBounds;
 import net.mage.cubewheel.tracker.local.ModelMob;
 import net.mage.cubewheel.tracker.local.ModelMobs;
 import net.mage.cubewheel.tracker.local.NameResolver;
@@ -18,6 +19,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Interaction;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.player.Player;
@@ -97,9 +99,29 @@ public final class ModelMobRegistry {
 			String text = e instanceof Display.TextDisplay td ? TextDisplays.text(td) : null;
 			boolean owned = e instanceof OwnableEntity o && o.getOwnerReference() != null;
 			out.add(new ModelMobs.Snap(e.getId(), e.typeHolder().getRegisteredName(), v == null ? null : v.getId(), passengers,
-					e.isInvisible(), e instanceof Mob, owned, custom, text, e.getX(), e.getY(), e.getZ()));
+					e.isInvisible(), e instanceof Mob, owned, custom, text, e.getX(), e.getY(), e.getZ(), extent(e)));
 		}
 		return out;
+	}
+
+	/**
+	 * What {@code e} covers relative to its position: an interaction's box, or where an item_display bone's
+	 * translation can put it at any yaw (every bone entity sits at its cloud's position; the model is drawn by
+	 * the translations). Null (a point) for anything else, or a display not yet given a render state.
+	 */
+	private static ModelBounds extent(Entity e) {
+		if (e instanceof Interaction) {
+			AABB b = e.getBoundingBox();
+			return new ModelBounds(b.minX - e.getX(), b.minY - e.getY(), b.minZ - e.getZ(),
+					b.maxX - e.getX(), b.maxY - e.getY(), b.maxZ - e.getZ());
+		}
+		if (e instanceof Display.ItemDisplay d) {
+			Display.RenderState state = d.renderState();
+			if (state == null) return null;
+			var t = state.transformation().get(1.0f).translation();
+			return ModelBounds.aroundAxis(t.x(), t.y(), t.z());
+		}
+		return null;
 	}
 
 	/** The model mob entity {@code id} is a part of (hitbox, recycled slime, bone, tag); empty when not {@link #active}. */
@@ -107,9 +129,22 @@ public final class ModelMobRegistry {
 		return active() ? STATE.byEntity(id) : Optional.empty();
 	}
 
-	/** The model mob a sound of entity type {@code soundType} ("minecraft:polar_bear") at {@code pos} belongs to. */
-	public static Optional<ModelMob> nearSound(String soundType, Vec3 pos) {
-		return active() ? STATE.nearSound(soundType, pos.x, pos.y, pos.z) : Optional.empty();
+	/**
+	 * Which model mob a sound of entity type {@code soundType} ("minecraft:polar_bear") at {@code pos} belongs to,
+	 * and why, matched against each hitbox's live position (a map lookup per mob, falling back to the snapshot when
+	 * the hitbox is not loaded). Call only while {@link #active}.
+	 */
+	public static RegistryState.SoundMatch matchSound(String soundType, Vec3 pos) {
+		ClientLevel level = Minecraft.getInstance().level;
+		return STATE.matchSound(soundType, pos.x, pos.y, pos.z, id -> {
+			Entity e = level == null ? null : level.getEntity(id);
+			return e == null ? null : new double[] {e.getX(), e.getY(), e.getZ()};
+		});
+	}
+
+	/** The model mobs near the player, as last grouped; empty when not {@link #active}. */
+	public static List<ModelMob> mobs() {
+		return active() ? STATE.mobs() : List.of();
 	}
 
 	/** The health on {@code m}'s name tag right now (its text display changes as the mob is hurt), else empty. */

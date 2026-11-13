@@ -163,4 +163,36 @@ class ModelMobsTest {
 		assertEquals("Viper", mobs.get(0).name());
 		assertEquals(VIPER_TAG, mobs.get(0).tagEntity());
 	}
+
+	@Test void manaWolfBoundsCoverTheBonesNotJustTheInteraction() {
+		for (List<ModelMobs.Snap> snaps : ManaMobFixtures.load(WOLF)) {
+			ModelMob wolf = ModelMobs.group(snaps).get(0);
+			ModelBounds b = wolf.bounds();
+			ModelBounds interaction = ModelBounds.point(0, 0, 0); // capture has no interaction size: a point
+			assertTrue(b.contains(interaction), b.toString());
+			assertTrue(b.volume() > interaction.volume(), b.toString());
+			// bones sit 0.6875 above the interaction, at its x/z; inflated by 0.5
+			assertEquals(0.6875 + ModelMobs.BONE_MARGIN, b.maxY(), 1e-9);
+			assertEquals(-ModelMobs.BONE_MARGIN, b.minX(), 1e-9);
+			assertEquals(ModelMobs.BONE_MARGIN, b.maxZ(), 1e-9);
+		}
+	}
+
+	@Test void boundsUseBoneTranslationsAndTheInteractionBox() {
+		List<ModelMobs.Snap> snaps = ManaMobFixtures.load(WOLF).get(0);
+		ModelMobs.Snap hitbox = ManaMobFixtures.byId(snaps, WOLF_HITBOX);
+		List<Integer> bones = bones(snaps, WOLF_BONES_CLOUD);
+		ModelBounds interactionBox = new ModelBounds(-0.4, 0, -0.4, 0.4, 0.9, 0.4);
+		List<ModelMobs.Snap> edited = snaps.stream().map(s -> {
+			if (s.id() == WOLF_HITBOX) return s.withExtent(interactionBox);
+			if (s.id() == bones.get(0)) return s.withExtent(ModelBounds.aroundAxis(1.2, 0.3, 0)); // a head bone
+			if (s.id() == bones.get(1)) return s.withExtent(ModelBounds.aroundAxis(0, -0.6, 0)); // a foot bone
+			return s;
+		}).toList();
+		ModelBounds b = ModelMobs.group(edited).get(0).bounds();
+		double boneDy = ManaMobFixtures.byId(snaps, bones.get(0)).y() - hitbox.y(); // 0.6875
+		double m = ModelMobs.BONE_MARGIN; // the hitbox cloud's extra item_display (dy 0) counts as a bone too
+		assertEquals(new ModelBounds(-1.2 - m, Math.min(-m, boneDy - 0.6 - m), -1.2 - m, 1.2 + m, Math.max(0.9, boneDy + 0.3 + m), 1.2 + m), b);
+		assertTrue(b.contains(interactionBox));
+	}
 }

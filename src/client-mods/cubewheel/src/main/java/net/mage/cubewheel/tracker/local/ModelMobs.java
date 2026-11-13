@@ -33,15 +33,34 @@ public final class ModelMobs {
 	static final double CO_LOCATED = 0.01;
 	/** A recycled slime this much nearer one model than the next attaches; closer to a tie, it attaches to neither. */
 	static final double SLIME_TIE = 0.25;
+	/** How far a model's box reaches past its bones (each bone's item model has a size of its own). */
+	public static final double BONE_MARGIN = 0.5;
 
 	/**
-	 * One entity as the grouping sees it: the fields of {@link CaptureLog.Part}, plus {@code owned} (a tamed pet),
-	 * which capture does not record.
+	 * One entity as the grouping sees it: the fields of {@link CaptureLog.Part}, plus {@code owned} (a tamed pet) and
+	 * {@code extent}, which capture does not record. {@code extent} is what the entity covers relative to its own
+	 * position: an interaction's box, or where an item_display's translation can put its bone
+	 * ({@link ModelBounds#aroundAxis}); null for a point.
 	 */
 	public record Snap(int id, String type, Integer vehicle, List<Integer> passengers, boolean invisible, boolean mob,
-			boolean owned, String customName, String text, double x, double y, double z) {
+			boolean owned, String customName, String text, double x, double y, double z, ModelBounds extent) {
 		public Snap {
 			passengers = passengers == null ? List.of() : List.copyOf(passengers);
+		}
+
+		/** A snap with no extent (a point). */
+		public Snap(int id, String type, Integer vehicle, List<Integer> passengers, boolean invisible, boolean mob,
+				boolean owned, String customName, String text, double x, double y, double z) {
+			this(id, type, vehicle, passengers, invisible, mob, owned, customName, text, x, y, z, null);
+		}
+
+		public Snap withExtent(ModelBounds e) {
+			return new Snap(id, type, vehicle, passengers, invisible, mob, owned, customName, text, x, y, z, e);
+		}
+
+		/** {@link #extent}, or the point at the entity's own position. */
+		ModelBounds local() {
+			return extent == null ? ModelBounds.point(0, 0, 0) : extent;
 		}
 
 		/** A captured part; {@code owned} is false. */
@@ -66,8 +85,10 @@ public final class ModelMobs {
 	/**
 	 * The named model mobs among {@code snaps}, in the order of their hitboxes. A model is anchored only on an
 	 * interaction riding a cloud whose co-located clouds include a bones cloud. Its parts are the interaction, every
-	 * co-located cloud and their passengers, and an attached recycled slime with its cloud. A model whose tag gives
-	 * no name (blank, or a "1.3x" multiplier) is left out.
+	 * co-located cloud and their passengers, and an attached recycled slime with its cloud. Its bounds are the
+	 * interaction's box joined with its bones' box (every item_display riding a co-located cloud, inflated by
+	 * {@link #BONE_MARGIN}), relative to the interaction. A model whose tag gives no name (blank, or a "1.3x"
+	 * multiplier) is left out.
 	 */
 	public static List<ModelMob> group(List<Snap> snaps) {
 		Map<Integer, Snap> byId = new LinkedHashMap<>();
@@ -82,7 +103,7 @@ public final class ModelMobs {
 		for (Draft d : drafts) {
 			if (d.name == null) continue;
 			Snap h = d.hitbox;
-			mobs.add(new ModelMob(d.name, d.tagEntity, h.id(), h.x(), h.y(), h.z(), d.parts));
+			mobs.add(new ModelMob(d.name, d.tagEntity, h.id(), h.x(), h.y(), h.z(), d.parts, d.bounds));
 		}
 		return List.copyOf(mobs);
 	}
@@ -93,6 +114,7 @@ public final class ModelMobs {
 		final Set<Integer> parts = new LinkedHashSet<>();
 		Integer tagEntity;
 		String name;
+		ModelBounds bounds;
 
 		Draft(Snap hitbox) {
 			this.hitbox = hitbox;
@@ -112,11 +134,19 @@ public final class ModelMobs {
 		Draft d = new Draft(s);
 		d.parts.add(s.id());
 		Set<Integer> cloudIds = new LinkedHashSet<>();
+		ModelBounds bones = null;
 		for (Snap c : clouds) {
 			cloudIds.add(c.id());
 			d.parts.add(c.id());
 			d.parts.addAll(c.passengers());
+			for (int p : c.passengers()) {
+				Snap b = byId.get(p);
+				if (b == null || !ITEM_DISPLAY.equals(b.type())) continue;
+				ModelBounds rel = b.local().move(b.x() - s.x(), b.y() - s.y(), b.z() - s.z());
+				bones = bones == null ? rel : bones.union(rel);
+			}
 		}
+		d.bounds = bones == null ? s.local() : bones.inflate(BONE_MARGIN).union(s.local());
 		Optional<Snap> tag = byId.values().stream()
 				.filter(t -> TEXT_DISPLAY.equals(t.type()) && t.vehicle() != null && cloudIds.contains(t.vehicle()))
 				.min(Comparator.comparingDouble(t -> t.distanceSq(s)));

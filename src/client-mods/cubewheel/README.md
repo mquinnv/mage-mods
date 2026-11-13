@@ -863,17 +863,20 @@ settings under General > "Mana mob names" ("Names in Jade", "Names in subtitles"
 
 - **Jade**: looking at a mana mob shows its bare tag name ("Mana Wolf", "Viper") and a text health
   line "❤ 75" taken from the tag; Jade's own health line is hidden. This works with Jade's default
-  hide list (which hides `interaction`) by falling back to vanilla's crosshair target. Jade is
-  optional: CubeWheel works without it.
-- **Subtitles**: a vanilla mob sound that comes from a mana mob's hitbox (within 1 block
+  hide list (which hides `interaction`) by falling back to vanilla's crosshair target. The server's
+  hitbox is small next to the drawn model, so the look is also tested against a box around the whole
+  model (its bones, plus 0.5 block) within your entity reach; a block or another entity in front of the
+  model wins. Jade is optional: CubeWheel works without it.
+- **Subtitles**: a vanilla mob sound that comes from a mana mob's hitbox where it is now (within 1 block
   horizontally, from 0.5 below to 1.5 above; the closest mob wins; a tie stays vanilla) is renamed:
   "Polar Bear hurts" becomes "Mana Wolf hurts", "Silverfish hisses" becomes "Viper hisses". Each mob
   name learns its "voice" from its first sound, which stays vanilla; afterwards only that voice is
   renamed. Known limitation: if a different mob's sound happens to be the first heard at that spot,
   the wrong voice sticks until you disconnect.
 
-Capture mode also logs `model_shape` (when the crosshair target changes) and `sound` lines in mana
-worlds, see [Capture mode](#capture-mode).
+Capture mode also logs `model_shape` (when the crosshair target changes), `sound` and `subtitle` lines
+in mana worlds, see [Capture mode](#capture-mode). The log says `[cubewheel] subtitle hook active` once,
+at the first subtitle, when the subtitle hook is in place.
 
 ## SVA catalog
 
@@ -969,6 +972,10 @@ reel-in` when it took a reel-in's count back); a bobber reel-in has `detail` `bo
   empty means the server's changes did not reach the window (too far, too late, or not to air).
 - `model_shape`, `sound`: in mana worlds only: the shape of the mob model under the crosshair (on target
   change) and each sound heard, used to tune [Mana mob names](#mana-mob-names).
+- `subtitle`: in mana worlds only: for each `subtitles.entity.*` subtitle, `key`, the rename `decision`
+  (`toggle_off`, `inactive`, `not_entity`, `misc`, `no_candidate`, `ambiguous`, `learned_voice`,
+  `other_voice`, `renamed`), the `mob` it was about and the sound's offset `dx`/`dy`/`dz` from that mob's
+  hitbox (for `no_candidate`, the nearest mob anywhere).
 - `estimate`: an estimate replaced by a real read: `counted` (local) vs `actual` (from the menu).
 
 Container lines also carry `afterCommand` (the last command you or CubeWheel sent before the menu was

@@ -76,4 +76,34 @@ class CaptureLogModelTest {
 		log.sound("minecraft:block.stone.step", null, "block", 0, 0, 0, List.of(), 0);
 		assertTrue(onlyLine().get("subtitleKey").isJsonNull());
 	}
+
+	@Test void subtitleLineHasDecisionMobAndOffsets() throws Exception {
+		CaptureLog log = new CaptureLog(dir);
+		log.toggle();
+		log.subtitle("subtitles.entity.polar_bear.hurt", "renamed", "Mana Wolf", 0.25, 0.0, -0.125, 0);
+		JsonObject line = onlyLine();
+		assertEquals("subtitle", line.get("kind").getAsString());
+		assertEquals("subtitles.entity.polar_bear.hurt", line.get("key").getAsString());
+		assertEquals("renamed", line.get("decision").getAsString());
+		assertEquals("Mana Wolf", line.get("mob").getAsString());
+		assertEquals(0.25, line.get("dx").getAsDouble());
+		assertEquals(0.0, line.get("dy").getAsDouble());
+		assertEquals(-0.125, line.get("dz").getAsDouble());
+	}
+
+	@Test void subtitleLineWithoutMobHasNulls() throws Exception {
+		CaptureLog log = new CaptureLog(dir);
+		log.toggle();
+		log.subtitle("subtitles.entity.polar_bear.ambient", "no_candidate", null, null, null, null, 0);
+		JsonObject line = onlyLine();
+		assertTrue(line.get("mob").isJsonNull());
+		assertTrue(line.get("dx").isJsonNull());
+	}
+
+	@Test void subtitleLineIsNotWrittenWhileCaptureIsOff() throws Exception {
+		CaptureLog log = new CaptureLog(dir);
+		log.subtitle("subtitles.entity.polar_bear.hurt", "renamed", "Mana Wolf", 0.0, 0.0, 0.0, 0);
+		log.flush();
+		assertFalse(Files.exists(dir.resolve("1970-01-01.jsonl")));
+	}
 }
