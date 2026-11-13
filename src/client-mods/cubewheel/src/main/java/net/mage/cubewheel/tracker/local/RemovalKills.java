@@ -125,6 +125,11 @@ public final class RemovalKills {
 	private final Set<Integer> attacked = new LinkedHashSet<>();
 	/** Entities swept by a staff shot's cone and when (ms). */
 	private final Map<Integer, Long> aimed = new LinkedHashMap<>();
+	/**
+	 * Siblings settled with a claimed model, by sibling id: the hitbox whose removal settled them (see {@link #release}).
+	 * A sibling settled for any other reason since is no longer in it.
+	 */
+	private final Map<Integer, Integer> settledWith = new LinkedHashMap<>();
 	/** Name tags that named a counted kill, by tag id: the entity that counted with it (see {@link #tagUsedByOther}). */
 	private final Map<Integer, Integer> tagUsers = new LinkedHashMap<>();
 	/** Recycled-hitbox ids removed and not hit since (see {@link #left}). */
@@ -153,11 +158,7 @@ public final class RemovalKills {
 			Hint was = p.removed().hint();
 			if (p.removed().entityId() != id || was == null || was.sourceId() != hint.sourceId()) continue;
 			it.remove();
-			Integer user = tagUsers.get(hint.sourceId());
-			if (user != null && user == id) {
-				tagUsers.remove(hint.sourceId());
-				settled.remove(hint.sourceId());
-			}
+			release(p.removed());
 			return Optional.of(p.removed());
 		}
 		return Optional.empty();
@@ -341,9 +342,44 @@ public final class RemovalKills {
 		return recycled.contains(id);
 	}
 
-	/** Does the removal of {@code id} need a loot line to be a kill (a staff sweep, a recycled hitbox)? */
+	/**
+	 * May the removal of {@code id} be the hitbox moving to another mob rather than a death? Yes once it has served
+	 * another mob ({@link #recycled}), and also on its first removal: an invisible Mob hitbox the adapter marked
+	 * {@link #left} before deciding. ManaCube's per-player slime moves off a live mob before it is ever known as
+	 * recycled; counting that first removal off its tag alone counted one Mana Wolf twice (#82124 removed while the
+	 * wolf lived on, then its real death, capture 2026-11-13).
+	 */
+	public boolean mayHaveMoved(int id) {
+		return recycled(id) || hasLeft(id);
+	}
+
+	/** Does the removal of {@code id} need a loot line to be a kill (a staff sweep, a hitbox that may have moved)? */
 	public boolean lootConfirms(int id) {
-		return aimedOnly(id) || recycled(id);
+		return aimedOnly(id) || mayHaveMoved(id);
+	}
+
+	/**
+	 * Removal {@code r} waited for a loot line and was no kill (none came, or the hitbox came back on the mob it left):
+	 * what its model settled while it waited, its name tag and its sibling hitboxes, is free again, so the mob's real
+	 * death can still count through another hitbox (its interaction). Settling them stays right while it waits: the
+	 * interaction often goes in the same moment as the slime.
+	 */
+	private void release(Removed r) {
+		int id = r.entityId();
+		Hint h = r.hint();
+		if (h != null && h.sourceId() >= 0) {
+			Integer user = tagUsers.get(h.sourceId());
+			if (user != null && user == id) {
+				tagUsers.remove(h.sourceId());
+				settled.remove(h.sourceId());
+			}
+		}
+		for (Iterator<Map.Entry<Integer, Integer>> it = settledWith.entrySet().iterator(); it.hasNext(); ) {
+			Map.Entry<Integer, Integer> e = it.next();
+			if (e.getValue() != id) continue;
+			settled.remove(e.getKey());
+			it.remove();
+		}
 	}
 
 	/** The id came back after {@link #left}: it is another mob now, and nothing known about the last one holds. */
@@ -406,6 +442,7 @@ public final class RemovalKills {
 
 	/** {@code id} was counted (or refused) by a death or stack path: a removal within {@link #STALE_MS} never counts. */
 	public void settle(int id) {
+		settledWith.remove(id);
 		settled.remove(id);
 		settled.put(id, clock);
 		trim(settled.keySet(), MAX_SETTLED);
@@ -442,7 +479,15 @@ public final class RemovalKills {
 	 * with the same tag, 2026-10-01). Call again after the hint changed (a re-probe on removal).
 	 */
 	public void settleModel(int id, IntPredicate inWindow) {
-		for (int sibling : siblings(id)) if (inWindow == null || inWindow.test(sibling)) settle(sibling);
+		for (int sibling : siblings(id)) {
+			if (inWindow != null && !inWindow.test(sibling)) continue;
+			// Settled by something else (its own death or claim, another removal): never released by this one.
+			boolean already = settled(sibling) && !Integer.valueOf(id).equals(settledWith.get(sibling));
+			settle(sibling);
+			if (already) continue;
+			settledWith.put(sibling, id);
+			trim(settledWith.keySet(), MAX_SETTLED);
+		}
 		hint(id).filter(h -> h.sourceId() >= 0).ifPresent(h -> {
 			boolean other = tagUsedByOther(id, h); // another entity counted with this tag first: it keeps it
 			settle(h.sourceId());
@@ -515,6 +560,7 @@ public final class RemovalKills {
 			if (now - p.at() > LOOT_WAIT_MS) {
 				out.add(p.removed());
 				it.remove();
+				if (lootConfirms(p.removed().entityId())) release(p.removed()); // no line: not our kill
 			}
 		}
 		return out;
@@ -538,6 +584,7 @@ public final class RemovalKills {
 		attacked.clear();
 		aimed.clear();
 		tagUsers.clear();
+		settledWith.clear();
 		left.clear();
 		recycled.clear();
 		settled.clear();

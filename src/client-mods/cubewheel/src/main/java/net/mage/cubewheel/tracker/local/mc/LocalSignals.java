@@ -505,6 +505,10 @@ public final class LocalSignals {
 				} else if (entity != null && !(entity instanceof Player)) {
 					// Model hitboxes go 2-4.6 s after the last hit on them (an interaction, an invisible slime).
 					int window = hitboxShape(entity) ? RemovalKills.HITBOX_WINDOW_TICKS : RemovalKills.WINDOW_TICKS;
+					// ManaCube's invisible slime hitbox goes when it moves to another mob too, even the first time we see it
+					// go: marked before deciding, so this removal already needs a loot line (issue #5: one Mana Wolf counted
+					// twice, the slime's move-off and the real death).
+					if (entity instanceof Mob && entity.isInvisible()) removals.left(id);
 					boolean recent = kills.hitByWithin(id, mc.player.getId(), tick, window);
 					boolean near = entity.distanceTo(mc.player) <= REMOVAL_KILL_RANGE;
 					String why = !recent ? (kills.hitBy(id, mc.player.getId(), tick) ? "local hit, too long ago" : "no recent local hit")
@@ -512,7 +516,7 @@ public final class LocalSignals {
 							: removals.awaitingLoot(id) ? "local hit, pending: waiting for loot line"
 							: removals.settled(id) ? "local hit, already counted or refused (settled " + removals.settledAgeMs(id) + " ms ago)"
 							: !survivalMode(mc.player) ? "local hit, not in survival mode" : null;
-					if (why == null && removals.recycled(id)) {
+					if (why == null && removals.mayHaveMoved(id)) {
 						onStaffKill(entity, nowMs);
 					} else if (why == null && removals.claim(id, true, true, inHitboxWindow(mc.player.getId()))) {
 						onRemovalKill(entity);
@@ -527,7 +531,6 @@ public final class LocalSignals {
 					} else {
 						captureEntity("removed", entity, why == null ? "local hit" : why);
 					}
-					if (entity instanceof Mob && entity.isInvisible()) removals.left(id);
 				}
 				stacks.forget(id);
 			}
@@ -762,7 +765,8 @@ public final class LocalSignals {
 	 * A mob swept by a staff shot went within the window, near us, with no local hit: a kill if a loot line follows
 	 * ({@link RemovalKills#awaitLoot}, resolved in {@link #creditLoot}), named by the hint found at aim time (probed
 	 * again now if there was none). Someone else's kill in our cone shows us no loot line and is dropped on expiry.
-	 * A recycled hitbox ({@link RemovalKills#recycled}) goes the same way, hit or not: no line, it only moved on.
+	 * A hitbox that may have moved on ({@link RemovalKills#mayHaveMoved}) goes the same way, hit or not: no line, it only
+	 * moved on.
 	 */
 	private static void onStaffKill(Entity entity, long now) {
 		WorldInfo at = world();
