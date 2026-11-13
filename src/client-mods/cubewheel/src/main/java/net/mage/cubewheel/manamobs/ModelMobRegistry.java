@@ -102,13 +102,14 @@ public final class ModelMobRegistry {
 		return out;
 	}
 
+	/** The model mob entity {@code id} is a part of (hitbox, recycled slime, bone, tag); empty when not {@link #active}. */
 	public static Optional<ModelMob> byEntity(int id) {
-		return STATE.byEntity(id);
+		return active() ? STATE.byEntity(id) : Optional.empty();
 	}
 
 	/** The model mob a sound of entity type {@code soundType} ("minecraft:polar_bear") at {@code pos} belongs to. */
 	public static Optional<ModelMob> nearSound(String soundType, Vec3 pos) {
-		return STATE.nearSound(soundType, pos.x, pos.y, pos.z);
+		return active() ? STATE.nearSound(soundType, pos.x, pos.y, pos.z) : Optional.empty();
 	}
 
 	/** The health on {@code m}'s name tag right now (its text display changes as the mob is hurt), else empty. */
@@ -126,8 +127,11 @@ public final class ModelMobRegistry {
 		}
 	}
 
-	/** True in a mana world while the registry holds at least one model mob. */
+	/**
+	 * True in a mana world while the registry holds at least one model mob. The world check covers the up-to-a-second
+	 * gap after leaving a mana world before the next tick clears the state ({@code currentWorld} is cached per second).
+	 */
 	public static boolean active() {
-		return !STATE.isEmpty();
+		return !STATE.isEmpty() && LocalSignals.currentWorld().special();
 	}
 }

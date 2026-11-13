@@ -9,7 +9,8 @@
   "environment": "client",
   "entrypoints": {
     "client": ["net.mage.cubewheel.CubeWheelClient"],
-    "modmenu": ["net.mage.cubewheel.settings.ModMenuEntry"]
+    "modmenu": ["net.mage.cubewheel.settings.ModMenuEntry"],
+    "jade": ["net.mage.cubewheel.compat.jade.CubeWheelJadePlugin"]
   },
   "mixins": [{ "config": "cubewheel.mixins.json", "environment": "client" }],
   "depends": {
@@ -20,6 +21,7 @@
     "yet_another_config_lib_v3": ">=3.9.7"
   },
   "suggests": {
-    "modmenu": "*"
+    "modmenu": "*",
+    "jade": "*"
   }
 }

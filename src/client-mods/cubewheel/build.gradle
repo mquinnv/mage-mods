@@ -14,6 +14,10 @@ repositories {
 	mavenCentral()
 	maven { url = "https://maven.isxander.dev/releases" } // YACL
 	maven { url = "https://maven.terraformersmc.com/releases" } // Mod Menu
+	maven { // Jade, from Modrinth's maven; scoped so nothing else is resolved here
+		url = "https://api.modrinth.com/maven"
+		content { includeGroup "maven.modrinth" }
+	}
 }
 
 dependencies {
@@ -31,6 +35,10 @@ dependencies {
 
 	// Mod Menu: compile against its API only; optional at runtime, never bundled.
 	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+
+	// Jade: compile against it only; optional at runtime, never bundled. Only cw/compat/jade/ may reference it
+	// (JadeIsolationTest). jade_version is Modrinth's version id for Jade 26.2.11+fabric.
+	compileOnly "maven.modrinth:jade:${project.jade_version}"
 
 	testImplementation platform("org.junit:junit-bom:5.11.4")
 	testImplementation "org.junit.jupiter:junit-jupiter"

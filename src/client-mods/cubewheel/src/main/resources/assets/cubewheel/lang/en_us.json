@@ -14,5 +14,6 @@
   "key.cubewheel.mcmmo_skills": "Open mcMMO skills (/mcmmo)",
   "key.cubewheel.quick_1": "Quick command 1",
   "key.cubewheel.quick_2": "Quick command 2",
-  "key.cubewheel.quick_3": "Quick command 3"
+  "key.cubewheel.quick_3": "Quick command 3",
+  "config.jade.plugin_cubewheel.mana_mob_name": "Mana mob names (CubeWheel)"
 }
