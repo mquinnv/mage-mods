@@ -3,6 +3,7 @@ package net.mage.cubewheel.tracker.local.mc;
 import net.mage.cubewheel.capture.CaptureLog;
 import net.mage.cubewheel.mixin.TextDisplayAccessor;
 import net.mage.cubewheel.tracker.local.ModelHitbox;
+import net.mage.cubewheel.tracker.local.ModelMobs;
 import net.mage.cubewheel.tracker.local.NameResolver;
 import net.mage.cubewheel.tracker.local.RemovalKills;
 import java.util.ArrayList;
@@ -102,7 +103,7 @@ final class NearbyProbe {
 		for (Entity e : seen) {
 			if (e == target || e instanceof Player) continue;
 			double distSq = box.distanceToSqr(e.position());
-			if (e instanceof AreaEffectCloud && distSq <= bonesSq && boneCount(e) >= MIN_BONES) {
+			if (e instanceof AreaEffectCloud && distSq <= bonesSq && ModelMobs.carriesBones(boneCount(e))) {
 				bones = e;
 				bonesSq = distSq;
 			}
@@ -122,12 +123,6 @@ final class NearbyProbe {
 		if (bones != null && !modelKeys.contains(bones.getId())) modelKeys.add(bones.getId());
 		return near;
 	}
-
-	/**
-	 * A cloud carrying at least this many item_displays carries a model's bones (a Viper's carries 15; the cloud an
-	 * interaction hitbox rides carries one).
-	 */
-	private static final int MIN_BONES = 2;
 
 	private static int boneCount(Entity cloud) {
 		int n = 0;

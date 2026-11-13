@@ -12,18 +12,20 @@ import java.util.regex.Pattern;
 public final class StackName {
 	public record Parsed(int count, String name) {}
 
-	private static final Pattern FORMATTING = Pattern.compile("§.");
+	static final Pattern FORMATTING = Pattern.compile("§.");
 	/** "12x Zombie", "12 x Zombie", "x12 Zombie". */
-	private static final Pattern STACK_PREFIX = Pattern.compile("^(?:(\\d{1,6})\\s*[xX×]|[xX×]\\s*(\\d{1,6}))\\s+(.*)$");
+	static final Pattern STACK_PREFIX = Pattern.compile("^(?:(\\d{1,6})\\s*[xX×]|[xX×]\\s*(\\d{1,6}))\\s+(.*)$");
 	/** "Zombie x12", "Zombie x 12", "Zombie 12x", "Zombie (x12)", "Zombie (12)". */
 	private static final Pattern STACK_SUFFIX = Pattern.compile(
 			"^(.*?)\\s*(?:\\s[xX×]\\s*(\\d{1,6})|\\s(\\d{1,6})\\s*[xX×]|\\(\\s*[xX×]?\\s*(\\d{1,6})\\s*[xX×]?\\s*\\))$");
 	/**
 	 * A trailing health display: a heart glyph and what follows, "[a/b]" / "a/b" numbers, or a number with
-	 * a glyph ("20⺛", ManaCube's mob health).
+	 * a glyph ("20⺛", ManaCube's mob health). The current health is group 1 (after a heart, if a number follows
+	 * it), group 2 (the "a" of "a/b") or group 3 (before a glyph); {@link TagHealth} reads it.
 	 */
-	private static final Pattern HEALTH = Pattern.compile("\\s*(?:[❤♥].*|\\[?\\d+(?:\\.\\d+)?\\s*/\\s*\\d+(?:\\.\\d+)?]?"
-			+ "|\\s\\d[\\d,]*(?:\\.\\d+)?\\s*[^\\p{L}\\p{N}\\s\\[\\]()]{1,3})\\s*$");
+	static final Pattern HEALTH = Pattern.compile("\\s*(?:[❤♥]\\s*(\\d[\\d,]*(?:\\.\\d+)?)?.*"
+			+ "|\\[?(\\d+(?:\\.\\d+)?)\\s*/\\s*\\d+(?:\\.\\d+)?]?"
+			+ "|\\s(\\d[\\d,]*(?:\\.\\d+)?)\\s*[^\\p{L}\\p{N}\\s\\[\\]()]{1,3})\\s*$");
 
 	private StackName() {}
 
