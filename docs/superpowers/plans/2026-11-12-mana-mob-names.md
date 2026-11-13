@@ -27,7 +27,9 @@ Build/test command (from `src/client-mods/cubewheel`): `./gradlew test` (JDK 25 
 
 ## Review Focus
 
-1. **Two mana mobs of the same base type side by side**: a sound between them must go to the closer one only if it is within 2 blocks. If both are equally close (within 0.25 blocks of each other's distance), leave it vanilla. Test in Task 5 (`ambiguousSoundStaysVanilla`).
+1. **Two mana mobs side by side**: a sound between them goes to the closer one only if it falls inside that mob's sound window (see Task 3). If both are equally close (within 0.25 blocks of each other's distance), leave it vanilla. Test in Task 3 (`ambiguousSoundStaysVanilla`).
+
+> **Amended 2026-11-12 after the capture** (`docs/superpowers/specs/2026-11-12-mana-mob-capture-findings.md`). Mana mobs have **no invisible base mob**. The only invisible mob nearby is a per-player recycled hitbox slime that ManaCube moves between mobs. Sounds are vanilla but borrowed (Mana Wolf = `polar_bear`, Viper = `silverfish`), and they come from the interaction hitbox's position. Michael approved this subtitle rule: **match by position to the hitbox, plus a learned voice per mob name**. Tasks 2, 3 and 5 below are rewritten to match. Wherever older text in this plan conflicts with the findings note, the note wins.
 2. **A mob whose tag has not loaded yet** (no text yet, or a blank text display): the mob is not registered, so Jade and subtitles stay vanilla rather than showing "" or a multiplier like "2.5x". Test in Task 2 (`blankOrMultiplierTagIsNotAName`).
 3. **A tag with a stack count** ("3x Tiger"): the name is "Tiger", and health parsing doesn't read the count as health. Test in Task 2 (`stackCountIsNotHealth`).
 4. **Leaving a mana world mid-session** (warp to spawn): the registry clears on the first tick that `special` is false, so no stale names. Test in Task 3 (`clearsWhenLeavingManaWorld`, against the pure `RegistryState`).
@@ -74,20 +76,25 @@ The output of this task is a capture file and a short findings note. Michael pla
 
 **Interfaces:**
 - Produces: `record ModelMobs.Snap(int id, String type, Integer vehicle, List<Integer> passengers, boolean invisible, boolean mob, boolean owned, String customName, String text, double x, double y, double z)`. It has the same fields as `CaptureLog.Part` plus `owned`. Add a `static Snap from(CaptureLog.Part p)` so tests load fixtures directly.
-- Produces: `record ModelMob(String name, Integer tagEntity, String baseType, int hitbox, double x, double y, double z, Set<Integer> parts)`, a top-level class in `cw/tracker/local/ModelMob.java`. `baseType` is nullable. `hitbox` is the stable Jade target: the interaction if there is one, else the invisible mob.
+- Produces: `record ModelMob(String name, Integer tagEntity, int hitbox, double x, double y, double z, Set<Integer> parts)`, a top-level class in `cw/tracker/local/ModelMob.java`. `hitbox` is the interaction's id (the stable Jade target). x/y/z is the interaction's position. There is no base type.
 - Produces: `static List<ModelMob> ModelMobs.group(List<Snap> snaps)`.
 - Produces: `static OptionalDouble TagHealth.parse(String rawTagLine)`.
 
-Grouping rules, which the tests pin:
-- A mob is anchored on each snap that `ModelHitbox.isModelHitbox` accepts. To do that, build `ModelHitbox.Facts` from the snap: the vehicle type comes from the snap map, and `modelPartsNear` means an `item_display` riding an `area_effect_cloud` within `NameResolver.RANGE`.
-- Anchors that share a vehicle chain, or that sit within `NameResolver.RANGE` of the same bones cloud (a cloud with ≥ 2 `item_display` passengers), are one mob. This covers Sandara's sibling hitboxes.
-- Parts: the anchors, their vehicles, the nearest bones cloud and its passengers, and the chosen tag.
-- Name: build `NameResolver.Candidate`s the way `NearbyProbe.around` does, then use `NameResolver.pick`, then take `StackName.parse(firstLine).name()`. A mob with no name is dropped.
-- `baseType`: the type of an invisible `mob` part (not an interaction). If there are several, use the most common type; ties go to the lowest id.
+Grouping rules (from the findings note's "Implications for Task 2"), which the tests pin:
+- **Anchor only on a `minecraft:interaction` riding a `minecraft:area_effect_cloud`.** Never anchor on an invisible mob, and never call `ModelHitbox.isModelHitbox` here: it accepts the recycled slime. `ModelHitbox` and the kill tracker stay unchanged.
+- **Co-located clouds form the model.** These are every `area_effect_cloud` whose x/z equal the anchor cloud's (|dx| and |dz| < 0.01).
+  - The bones cloud is the co-located cloud with ≥ `MIN_BONES` (2) `item_display` passengers.
+  - The tag is a `text_display` riding a co-located cloud. Only when there is none, fall back to `NameResolver.pick` over tag candidates within `NameResolver.RANGE`, built the way `NearbyProbe.around` does.
+- **The recycled slime.** An invisible, unowned `mob` snap that rides a cloud carrying nothing else attaches, together with its cloud, to the nearest anchor within `NameResolver.RANGE`. If a second anchor is within 0.25 blocks of the same distance, it attaches to neither. It never anchors a mob of its own.
+- **Parts:** the interaction and its cloud, plus that cloud's passengers; every co-located cloud and its passengers (bones, tag); and the attached slime and its cloud. A loose armor stand (such as the `1.3x` multiplier) is not a part.
+- **Name:** `StackName.parse(firstLine(tagText)).name()`. A blank name, or one `NameResolver.isMultiplier` accepts, means there is no name. A mob with no name is dropped.
 
 - [ ] **Step 1: Write failing tests** in `ModelMobsTest`:
-  - `manaWolfFromCaptureIsOneMob`: the fixture gives exactly 1 mob, named `"Mana Wolf"`; `parts` contains every bone id; `hitbox` is the id the findings say Jade hits.
-  - `sandaraViperSiblingHitboxesAreOneMob`: 1 mob named `"Viper"`, with `baseType` set to the findings' type.
+  - `manaWolfFromCaptureIsOneMob`, for each of the 2 lines in `mana_wolf.json`: exactly 1 mob, named `"Mana Wolf"`; `hitbox == 143133269`; `parts` contains all 32 bone ids and the tag; on line 2 it also contains slime `82124`, and the `1.3x` armor stand `143229705` is not a part.
+  - `viperFromCaptureIsOneMob`, for each line in `viper.json`: exactly 1 mob named `"Viper"`; `hitbox == 143289204`; 15 bones in `parts`.
+  - `recycledSlimeAttachesButNeverAnchors`: from the viper fixture line where the slime is in range, slime `82124` is in the Viper's `parts`. Deleting the interaction and its cloud from the snaps gives 0 mobs.
+  - `slimeEquidistantFromTwoModelsAttachesToNeither`.
+  - `loaderMapsCaptureKeys`: the fixture loader maps `entity` → `id`, treats missing keys as null, and sets `owned = false`.
   - `blankOrMultiplierTagIsNotAName`: when the only nearby text is `""` or `"2.5x"`, the result is empty.
   - `visibleVanillaMobNearbyIsNotAPart`: add a visible, non-invisible `minecraft:wolf` snap 1 block away to the wolf fixture; its id is in no mob's `parts`.
   - `twoModelsTwoMobs`: two fixture copies, ids offset and moved 10 blocks apart, give 2 mobs.
@@ -97,10 +104,10 @@ Grouping rules, which the tests pin:
   - `"Mana Wolf [12.5/40]"` → 12.5.
   - `"Mana Wolf"` → empty.
   - `stackCountIsNotHealth`: `"3x Tiger"` → empty and `"Tiger (x3)"` → empty.
-  - The real tag line from the findings → the expected value.
+  - The real tag lines `"Mana Wolf 60⺛"` → 60 and `"Viper 30⺛"` → 30.
 - [ ] **Step 3: Run** `./gradlew test --tests '*ModelMobsTest' --tests '*TagHealthTest'`. Expected: FAIL.
 - [ ] **Step 4: Implement** `TagHealth.parse`. Match the same trailing-health forms as `StackName.HEALTH`. Lift that pattern to package-private in `StackName` and add capture groups rather than duplicating it. Strip the stack count first.
-- [ ] **Step 5: Implement** `ModelMobs.group` per the rules above. Where it reuses `NearbyProbe` logic (bones count, `MIN_BONES`), move that logic into `ModelMobs` and have `NearbyProbe` call it.
+- [ ] **Step 5: Implement** `ModelMobs.group` per the rules above. Where it reuses `NearbyProbe` logic (bones count, `MIN_BONES`), move that logic into `ModelMobs` and have `NearbyProbe` call it. Put the fixture loader in test code (`cwt/tracker/local/ManaMobFixtures.java`) using Gson, which is already on the classpath.
 - [ ] **Step 6: Run** `./gradlew test`. Expected: every test passes, including all existing kill-tracker tests.
 - [ ] **Step 7: Commit** with `git commit -m "feat(cubewheel): group mana-model parts into named mobs"`.
 
@@ -120,24 +127,29 @@ Grouping rules, which the tests pin:
   - `void replace(List<ModelMob> mobs)`
   - `void clear()`
   - `Optional<ModelMob> byEntity(int id)`
-  - `Optional<ModelMob> nearSound(String baseType, double x, double y, double z)`: the closest mob with that `baseType` within 2.0 blocks of its position. Empty if the second-closest is within 0.25 blocks of the same distance.
+  - `Optional<ModelMob> nearSound(String soundType, double x, double y, double z)`. `soundType` is the entity type from the subtitle key, such as `"minecraft:polar_bear"`.
+    - **Window:** a mob is a candidate when the sound is within **1.0 block horizontally** of the mob's x/z and between **−0.5 and +1.5** of its y. That is 1.0 rather than the findings' 0.5 because a later sample came in at 0.56; the ruling is in the ledger.
+    - **Closest wins.** If the second-closest candidate is within 0.25 blocks of the same horizontal distance, the result is empty.
+    - **Learned voice,** keyed by mob name and kept until `clearAll()`. If the winner's name has no voice yet, record `soundType` as its voice and return empty, so the first sound stays vanilla. If it has a voice that differs from `soundType`, return empty. Otherwise return the mob.
+  - `void clearAll()`: clears the mobs and the learned voices (on disconnect). `clear()` clears only the mobs (on leaving a mana world), so voices survive a warp.
 - Produces: `ModelMobRegistry`:
   - `static Optional<ModelMob> byEntity(int id)`
-  - `static Optional<ModelMob> nearSound(String baseType, Vec3 pos)`
+  - `static Optional<ModelMob> nearSound(String soundType, Vec3 pos)`
   - `static OptionalDouble liveHealth(ModelMob m)`: reads the tag entity's current text through the same text path `NearbyProbe.text` uses (make that helper package-shared), then `TagHealth.parse`. It falls back to empty.
   - `static boolean active()`: true when in a mana world and the registry is non-empty.
 
 - [ ] **Step 1: Write failing tests** in `RegistryStateTest`:
   - `byEntityFindsMobFromAnyPart`
-  - `nearSoundPicksClosestWithinTwoBlocks`
-  - `nearSoundIgnoresOtherBaseType`
-  - `nearSoundBeyondTwoBlocksIsEmpty`
-  - `ambiguousSoundStaysVanilla`: 2 mobs at 1.0 and 1.1 blocks → empty
-  - `clearsWhenLeavingManaWorld`: after `clear()`, every lookup is empty
+  - `firstSoundLearnsVoiceAndStaysVanilla`: the first `polar_bear` sound at a "Mana Wolf" → empty; the second → the mob.
+  - `otherVoiceAfterLearningIsEmpty`: after the wolf learns `polar_bear`, a `minecraft:wolf` sound at the same spot → empty.
+  - `voiceIsPerNameNotPerEntity`: a second "Mana Wolf" mob (a different hitbox id) matches on its first `polar_bear` sound.
+  - `windowEdges`: horizontal 0.99 matches and 1.01 doesn't; dy −0.5 and +1.5 match, −0.51 and +1.51 don't. The 0.56 sample from the findings (horizontal 0.56, dy 0) matches.
+  - `ambiguousSoundStaysVanilla`: 2 mobs at horizontal 0.5 and 0.6 → empty.
+  - `clearsWhenLeavingManaWorld`: after `clear()`, every lookup is empty but voices are kept. After `clearAll()`, voices are gone too.
 - [ ] **Step 2: Add a failing config test.** A v17 config upgrades to v18 with both `manaNames` flags `true`.
 - [ ] **Step 3: Run** `./gradlew test`. Expected: the new tests FAIL.
 - [ ] **Step 4: Implement** `RegistryState`, the config fields, the upgrade, and the settings toggles.
-- [ ] **Step 5: Implement** `ModelMobRegistry.tick`. Every 20 ticks: if `WorldProbe` says special and either toggle is on, snapshot entities within 48 blocks of the player (`level.getEntities(player, box.inflate(48), e -> !(e instanceof Player))`) into `Snap`s, then call `state.replace(ModelMobs.group(snaps))`. Otherwise call `state.clear()`. Also clear on disconnect and level change.
+- [ ] **Step 5: Implement** `ModelMobRegistry.tick`. Every 20 ticks: if `WorldProbe` says special and either toggle is on, snapshot entities within 48 blocks of the player (`level.getEntities(player, box.inflate(48), e -> !(e instanceof Player))`) into `Snap`s, then call `state.replace(ModelMobs.group(snaps))`. Otherwise call `state.clear()`. Call `clear()` on a level change and `clearAll()` on disconnect.
 - [ ] **Step 6: Run** `./gradlew test build`. Expected: all tests pass and the build succeeds.
 - [ ] **Step 7: Commit** with `git commit -m "feat(cubewheel): rolling registry of nearby mana mobs"`.
 
@@ -160,7 +172,7 @@ Grouping rules, which the tests pin:
 - [ ] **Step 4: Run** `./gradlew test build`. Expected: all tests pass and the build succeeds. Then check the jar with `unzip -l build/libs/*.jar | grep -i jade`: no Jade classes are bundled.
 - [ ] **Step 5: Commit** with `git commit -m "feat(cubewheel): Jade names mana mobs by their tag"`.
 
-### Task 5: Subtitles (skip if Task 1 marked it BLOCKED)
+### Task 5: Subtitles (unblocked: Michael approved position plus learned voice, 2026-11-12)
 
 **Files:**
 - Create: `cw/manamobs/SubtitleNames.java` (pure)
@@ -180,13 +192,15 @@ Grouping rules, which the tests pin:
   - `entityType("subtitles.entity.wolf.growl")` → `minecraft:wolf`.
   - `entityType("subtitles.block.chest.open")` → empty.
   - Underscored types: `entityType("subtitles.entity.cave_spider.hurt")` → `minecraft:cave_spider`.
+  - Non-mob types are excluded: `entityType` returns empty for `subtitles.entity.player.hurt`, `subtitles.entity.experience_orb.pickup`, `subtitles.entity.item.pickup`, `subtitles.entity.generic.*` and `subtitles.entity.armor_stand.*`.
+  - The captured voices: `rename("Polar Bear hurts","Polar Bear","Mana Wolf")` → `"Mana Wolf hurts"`, and `rename("Silverfish hisses","Silverfish","Viper")` → `"Viper hisses"`.
 - [ ] **Step 2: Run** `./gradlew test --tests '*SubtitleNamesTest'`. Expected: FAIL.
 - [ ] **Step 3: Implement** both functions.
 - [ ] **Step 4: Run** the same command. Expected: PASS.
 - [ ] **Step 5: Implement the mixin** on `SubtitleOverlay.onPlaySound(SoundInstance, WeighedSoundEvents, float)` (check the 26.2 signature).
   - Use `@ModifyVariable`/`@Redirect` on the subtitle component it reads from `WeighedSoundEvents.getSubtitle()`.
   - Act only when the toggle is on, `ModelMobRegistry.active()`, the component is translatable, and `entityType(key)` is present.
-  - Then call `nearSound(type, instance position)`. On a match, replace the component with `Component.literal(rename(component.getString(), EntityType.byString(type).get().getDescription().getString(), mob.name()))`.
+  - Then call `nearSound(type, instance position)`. On a match, replace the component with `Component.literal(rename(component.getString(), EntityType.byString(type).get().getDescription().getString(), mob.name()))`. The vanilla name is the sound's own type, such as "Polar Bear". Don't filter on sound source: captured model sounds arrive as both `master` and `hostile`.
   - Otherwise leave the component unchanged.
 - [ ] **Step 6: Run** `./gradlew test build`. Expected: all tests pass and the build succeeds.
 - [ ] **Step 7: Commit** with `git commit -m "feat(cubewheel): subtitles name mana mobs"`.

@@ -136,3 +136,13 @@ Then:
 - Unit tests for the subtitle rewrite as a pure function: (translated text, vanilla name, mob name) → text.
 - Manual in-game check on ManaCube via TESTING.md; Michael runs it. Never hot-swap the jar while the game is
   running.
+
+## Amendment (2026-11-12, after the capture)
+
+The capture (`2026-11-12-mana-mob-capture-findings.md`) showed that mana mobs have no invisible base mob, and that
+their sounds are borrowed vanilla sounds (Mana Wolf = polar bear, Viper = silverfish) coming from the interaction
+hitbox. Michael approved this subtitle rule: match a `subtitles.entity.*` sound to the mob whose hitbox it comes
+from (within 1.0 block horizontally, −0.5 to +1.5 vertically, closest wins, ties stay vanilla). Each mob name
+learns its "voice" from its first sound, which stays vanilla, and afterwards only that voice is renamed. The
+vanilla name replaced in the subtitle is the sound's own entity type ("Polar Bear hurts" → "Mana Wolf hurts").
+The per-player recycled hitbox slime is a part of whichever mob it sits on, for Jade, but never a base type.
