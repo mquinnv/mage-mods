@@ -175,6 +175,8 @@ class ModelMobsTest {
 			assertEquals(0.6875 + ModelMobs.BONE_MARGIN, b.maxY(), 1e-9);
 			assertEquals(-ModelMobs.BONE_MARGIN, b.minX(), 1e-9);
 			assertEquals(ModelMobs.BONE_MARGIN, b.maxZ(), 1e-9);
+			assertEquals(0, b.minY(), 1e-9); // never below the interaction's own bottom (its feet)
+			assertEquals(new ModelBounds(0, 0, 0, 0, 0.6875, 0), wolf.core()); // interaction point + raw bones
 		}
 	}
 
@@ -192,7 +194,9 @@ class ModelMobsTest {
 		ModelBounds b = ModelMobs.group(edited).get(0).bounds();
 		double boneDy = ManaMobFixtures.byId(snaps, bones.get(0)).y() - hitbox.y(); // 0.6875
 		double m = ModelMobs.BONE_MARGIN; // the hitbox cloud's extra item_display (dy 0) counts as a bone too
-		assertEquals(new ModelBounds(-1.2 - m, Math.min(-m, boneDy - 0.6 - m), -1.2 - m, 1.2 + m, Math.max(0.9, boneDy + 0.3 + m), 1.2 + m), b);
+		assertEquals(new ModelBounds(-1.2 - m, 0, -1.2 - m, 1.2 + m, Math.max(0.9, boneDy + 0.3 + m), 1.2 + m), b);
 		assertTrue(b.contains(interactionBox));
+		assertEquals(interactionBox.minY(), b.minY(), 1e-9); // the inflation stops at the feet
+		assertEquals(new ModelBounds(-1.2, 0, -1.2, 1.2, Math.max(0.9, boneDy + 0.3), 1.2), ModelMobs.group(edited).get(0).core());
 	}
 }

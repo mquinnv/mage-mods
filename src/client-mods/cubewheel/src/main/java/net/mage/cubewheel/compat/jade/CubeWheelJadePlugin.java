@@ -80,7 +80,8 @@ public final class CubeWheelJadePlugin implements IWailaPlugin {
 					Entity e = mc.level.getEntity(m.hitbox());
 					if (e == null) continue;
 					// a map lookup per registry mob (a few dozen at most); rayPick drops boxes beyond reach
-					candidates.add(new Retarget.Candidate(m.hitbox(), m.bounds().move(e.getX(), e.getY(), e.getZ())));
+					candidates.add(new Retarget.Candidate(m.hitbox(), m.bounds().move(e.getX(), e.getY(), e.getZ()),
+							m.core().move(e.getX(), e.getY(), e.getZ())));
 				}
 				if (candidates.isEmpty()) return accessor;
 				Optional<Retarget.Pick> pick = Retarget.rayPick(eye.x, eye.y, eye.z, look.x, look.y, look.z, range, occluder,

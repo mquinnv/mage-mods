@@ -38,6 +38,14 @@ public record ModelBounds(double minX, double minY, double minZ, double maxX, do
 		return minX <= o.minX && minY <= o.minY && minZ <= o.minZ && maxX >= o.maxX && maxY >= o.maxY && maxZ >= o.maxZ;
 	}
 
+	public boolean contains(double x, double y, double z) {
+		return x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
+	}
+
+	public ModelBounds withMinY(double y) {
+		return new ModelBounds(minX, y, minZ, maxX, maxY, maxZ);
+	}
+
 	public double volume() {
 		return (maxX - minX) * (maxY - minY) * (maxZ - minZ);
 	}

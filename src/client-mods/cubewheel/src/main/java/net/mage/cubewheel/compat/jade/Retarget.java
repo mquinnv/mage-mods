@@ -38,8 +38,8 @@ final class Retarget {
 		return Optional.empty();
 	}
 
-	/** A model mob's hitbox id and its model box at the hitbox's live position. */
-	record Candidate(int hitbox, ModelBounds box) {}
+	/** A model mob's hitbox id, its model box and that box's core (no margin), at the hitbox's live position. */
+	record Candidate(int hitbox, ModelBounds box, ModelBounds core) {}
 
 	/** The model a look lands on and how far along the look. */
 	record Pick(int hitbox, double distance) {}
@@ -47,13 +47,15 @@ final class Retarget {
 	/**
 	 * The nearest model box the ray from (ox, oy, oz) along (dx, dy, dz) enters within {@code range}, if it is nearer
 	 * than {@code occluder} (the distance to what vanilla's crosshair hit, a block or another entity; infinity for
-	 * nothing), so a model behind a wall is never picked.
+	 * nothing), so a model behind a wall is never picked. When the eye is inside a box (standing close to the mob),
+	 * the box would catch every look, so only a ray that also enters its core counts, at the core's distance.
 	 */
 	static Optional<Pick> rayPick(double ox, double oy, double oz, double dx, double dy, double dz, double range,
 			double occluder, List<Candidate> candidates) {
 		Pick best = null;
 		for (Candidate c : candidates) {
-			OptionalDouble t = c.box().clip(ox, oy, oz, dx, dy, dz, range);
+			OptionalDouble t = c.box().contains(ox, oy, oz) ? c.core().clip(ox, oy, oz, dx, dy, dz, range)
+					: c.box().clip(ox, oy, oz, dx, dy, dz, range);
 			if (t.isEmpty() || t.getAsDouble() >= occluder) continue;
 			if (best == null || t.getAsDouble() < best.distance()) best = new Pick(c.hitbox(), t.getAsDouble());
 		}

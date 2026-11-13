@@ -14,7 +14,8 @@ class RegistryStateTest {
 	private static final String BEAR = "minecraft:polar_bear";
 
 	private static ModelMob mob(String name, int hitbox, double x, double y, double z) {
-		return new ModelMob(name, hitbox + 1, hitbox, x, y, z, Set.of(hitbox, hitbox + 1, hitbox + 2), ModelBounds.point(0, 0, 0));
+		return new ModelMob(name, hitbox + 1, hitbox, x, y, z, Set.of(hitbox, hitbox + 1, hitbox + 2),
+				ModelBounds.point(0, 0, 0), ModelBounds.point(0, 0, 0));
 	}
 
 	private static RegistryState with(ModelMob... mobs) {

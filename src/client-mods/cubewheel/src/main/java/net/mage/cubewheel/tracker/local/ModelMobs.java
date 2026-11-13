@@ -87,7 +87,8 @@ public final class ModelMobs {
 	 * interaction riding a cloud whose co-located clouds include a bones cloud. Its parts are the interaction, every
 	 * co-located cloud and their passengers, and an attached recycled slime with its cloud. Its bounds are the
 	 * interaction's box joined with its bones' box (every item_display riding a co-located cloud, inflated by
-	 * {@link #BONE_MARGIN}), relative to the interaction. A model whose tag gives no name (blank, or a "1.3x"
+	 * {@link #BONE_MARGIN} but not below the interaction's bottom), relative to the interaction; its core is the
+	 * same without the margin. A model whose tag gives no name (blank, or a "1.3x"
 	 * multiplier) is left out.
 	 */
 	public static List<ModelMob> group(List<Snap> snaps) {
@@ -103,7 +104,7 @@ public final class ModelMobs {
 		for (Draft d : drafts) {
 			if (d.name == null) continue;
 			Snap h = d.hitbox;
-			mobs.add(new ModelMob(d.name, d.tagEntity, h.id(), h.x(), h.y(), h.z(), d.parts, d.bounds));
+			mobs.add(new ModelMob(d.name, d.tagEntity, h.id(), h.x(), h.y(), h.z(), d.parts, d.bounds, d.core));
 		}
 		return List.copyOf(mobs);
 	}
@@ -115,6 +116,7 @@ public final class ModelMobs {
 		Integer tagEntity;
 		String name;
 		ModelBounds bounds;
+		ModelBounds core;
 
 		Draft(Snap hitbox) {
 			this.hitbox = hitbox;
@@ -146,7 +148,15 @@ public final class ModelMobs {
 				bones = bones == null ? rel : bones.union(rel);
 			}
 		}
-		d.bounds = bones == null ? s.local() : bones.inflate(BONE_MARGIN).union(s.local());
+		ModelBounds hit = s.local();
+		d.core = bones == null ? hit : bones.union(hit);
+		if (bones == null) {
+			d.bounds = hit;
+		} else {
+			// the margin never reaches below the interaction's bottom: a look at the ground beside a mob is not the mob
+			ModelBounds wide = bones.inflate(BONE_MARGIN);
+			d.bounds = wide.withMinY(Math.max(wide.minY(), hit.minY())).union(hit);
+		}
 		Optional<Snap> tag = byId.values().stream()
 				.filter(t -> TEXT_DISPLAY.equals(t.type()) && t.vehicle() != null && cloudIds.contains(t.vehicle()))
 				.min(Comparator.comparingDouble(t -> t.distanceSq(s)));

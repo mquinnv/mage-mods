@@ -132,9 +132,11 @@ public final class ModelMobRegistry {
 	/**
 	 * Which model mob a sound of entity type {@code soundType} ("minecraft:polar_bear") at {@code pos} belongs to,
 	 * and why, matched against each hitbox's live position (a map lookup per mob, falling back to the snapshot when
-	 * the hitbox is not loaded). Call only while {@link #active}.
+	 * the hitbox is not loaded). No candidate when not {@link #active}.
 	 */
 	public static RegistryState.SoundMatch matchSound(String soundType, Vec3 pos) {
+		if (!active()) return new RegistryState.SoundMatch(RegistryState.SoundDecision.NO_CANDIDATE, null, Double.NaN,
+				Double.NaN, Double.NaN);
 		ClientLevel level = Minecraft.getInstance().level;
 		return STATE.matchSound(soundType, pos.x, pos.y, pos.z, id -> {
 			Entity e = level == null ? null : level.getEntity(id);
