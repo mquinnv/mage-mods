@@ -11,8 +11,6 @@ import java.util.function.IntFunction;
 import org.junit.jupiter.api.Test;
 
 class RegistryStateTest {
-	private static final String BEAR = "minecraft:polar_bear";
-
 	private static ModelMob mob(String name, int hitbox, double x, double y, double z) {
 		return new ModelMob(name, hitbox + 1, hitbox, x, y, z, Set.of(hitbox, hitbox + 1, hitbox + 2),
 				ModelBounds.point(0, 0, 0), ModelBounds.point(0, 0, 0));
@@ -33,71 +31,47 @@ class RegistryStateTest {
 		assertEquals(Optional.empty(), s.byEntity(99));
 	}
 
-	@Test void firstSoundLearnsVoiceAndStaysVanilla() {
+	@Test void theFirstSoundIsRenamedAtOnce() {
 		ModelMob wolf = mob("Mana Wolf", 10, 0, 64, 0);
 		RegistryState s = with(wolf);
-		assertEquals(Optional.empty(), s.nearSound(BEAR, 0.2, 64, 0.2));
-		assertEquals(Optional.of(wolf), s.nearSound(BEAR, 0.2, 64, 0.2));
+		assertEquals(Optional.of(wolf), s.nearSound(0.2, 64, 0.2));
 	}
 
-	@Test void otherVoiceAfterLearningIsEmpty() {
-		RegistryState s = with(mob("Mana Wolf", 10, 0, 64, 0));
-		s.nearSound(BEAR, 0, 64, 0);
-		assertTrue(s.nearSound(BEAR, 0, 64, 0).isPresent());
-		assertEquals(Optional.empty(), s.nearSound("minecraft:wolf", 0, 64, 0));
-	}
-
-	@Test void voiceIsPerNameNotPerEntity() {
-		ModelMob a = mob("Mana Wolf", 10, 0, 64, 0);
-		ModelMob b = mob("Mana Wolf", 20, 50, 64, 50);
-		RegistryState s = with(a, b);
-		assertEquals(Optional.empty(), s.nearSound(BEAR, 0, 64, 0)); // the first sound at a learns the name's voice
-		assertEquals(Optional.of(b), s.nearSound(BEAR, 50, 64, 50)); // b is another entity of the same name: matches at once
-	}
-
-	@Test void aDifferentNameLearnsItsOwnVoice() {
-		ModelMob wolf = mob("Mana Wolf", 10, 0, 64, 0);
-		ModelMob viper = mob("Viper", 30, 90, 64, 90);
-		RegistryState s = with(wolf, viper);
-		s.nearSound(BEAR, 0, 64, 0);
-		assertEquals(Optional.empty(), s.nearSound(BEAR, 90, 64, 90));
-		assertEquals(Optional.of(viper), s.nearSound(BEAR, 90, 64, 90));
+	@Test void everySoundAtTheMobIsItsOwn() {
+		// a Mana Slime dies with slime.death and strider.death at once (capture 2026-11-13): both are the slime's
+		ModelMob slime = mob("Mana Slime", 10, 0, 64, 0);
+		RegistryState s = with(slime);
+		assertEquals(Optional.of(slime), s.nearSound(0, 64, 0));
+		assertEquals(Optional.of(slime), s.nearSound(0, 64, 0));
 	}
 
 	@Test void windowEdges() {
 		RegistryState s = with(mob("Mana Wolf", 10, 0, 64, 0));
-		s.nearSound(BEAR, 0, 64, 0); // learn
-		assertTrue(s.nearSound(BEAR, 0.99, 64, 0).isPresent());
-		assertTrue(s.nearSound(BEAR, 0.7, 64, 0.7).isPresent()); // sqrt(dx^2+dz^2) = 0.99
-		assertEquals(Optional.empty(), s.nearSound(BEAR, 1.01, 64, 0));
-		assertTrue(s.nearSound(BEAR, 0, 63.5, 0).isPresent());
-		assertTrue(s.nearSound(BEAR, 0, 65.5, 0).isPresent());
-		assertEquals(Optional.empty(), s.nearSound(BEAR, 0, 63.49, 0));
-		assertEquals(Optional.empty(), s.nearSound(BEAR, 0, 65.51, 0));
-		assertTrue(s.nearSound(BEAR, 0.56, 64, 0).isPresent()); // the capture's later sample
+		assertTrue(s.nearSound(0.99, 64, 0).isPresent());
+		assertTrue(s.nearSound(0.7, 64, 0.7).isPresent()); // sqrt(dx^2+dz^2) = 0.99
+		assertEquals(Optional.empty(), s.nearSound(1.01, 64, 0));
+		assertTrue(s.nearSound(0, 63.5, 0).isPresent());
+		assertTrue(s.nearSound(0, 65.5, 0).isPresent());
+		assertEquals(Optional.empty(), s.nearSound(0, 63.49, 0));
+		assertEquals(Optional.empty(), s.nearSound(0, 65.51, 0));
+		assertTrue(s.nearSound(0.56, 64, 0).isPresent()); // the capture's later sample
 	}
 
 	@Test void ambiguousSoundStaysVanilla() {
 		RegistryState s = with(mob("Mana Wolf", 10, 0.5, 64, 0), mob("Mana Wolf", 20, 0, 64, 0.6));
-		s.nearSound(BEAR, 0, 64, 0); // learns
-		assertEquals(Optional.empty(), s.nearSound(BEAR, 0, 64, 0)); // 0.5 and 0.6: too close to call
+		assertEquals(Optional.empty(), s.nearSound(0, 64, 0)); // 0.5 and 0.6: too close to call
 		RegistryState t = with(mob("Mana Wolf", 10, 0.2, 64, 0), mob("Mana Wolf", 20, -0.9, 64, 0));
-		t.nearSound(BEAR, 0, 64, 0);
-		assertTrue(t.nearSound(BEAR, 0, 64, 0).isPresent()); // clearly the nearer one
+		assertTrue(t.nearSound(0, 64, 0).isPresent()); // clearly the nearer one
 	}
 
 	@Test void clearsWhenLeavingManaWorld() {
 		ModelMob wolf = mob("Mana Wolf", 10, 0, 64, 0);
 		RegistryState s = with(wolf);
-		s.nearSound(BEAR, 0, 64, 0);
 		s.clear();
 		assertEquals(Optional.empty(), s.byEntity(10));
-		assertEquals(Optional.empty(), s.nearSound(BEAR, 0, 64, 0));
+		assertEquals(Optional.empty(), s.nearSound(0, 64, 0));
 		s.replace(List.of(wolf));
-		assertEquals(Optional.of(wolf), s.nearSound(BEAR, 0, 64, 0)); // voice kept across the warp
-		s.clearAll();
-		s.replace(List.of(wolf));
-		assertEquals(Optional.empty(), s.nearSound(BEAR, 0, 64, 0)); // learning again
+		assertEquals(Optional.of(wolf), s.nearSound(0, 64, 0));
 	}
 
 	private static IntFunction<double[]> live(Map<Integer, double[]> positions) {
@@ -109,36 +83,30 @@ class RegistryStateTest {
 		ModelMob wolf = mob("Mana Wolf", 10, -3, 64, 0);
 		RegistryState s = with(wolf);
 		IntFunction<double[]> now = live(Map.of(10, new double[] {0, 64, 0}));
-		assertEquals(Optional.empty(), s.nearSound(BEAR, 0.1, 64, 0, now)); // learns the voice
-		assertEquals(Optional.of(wolf), s.nearSound(BEAR, 0.1, 64, 0, now));
-		assertEquals(Optional.empty(), s.nearSound(BEAR, 0.1, 64, 0)); // the snapshot alone is 3.1 away
+		assertEquals(Optional.of(wolf), s.nearSound(0.1, 64, 0, now));
+		assertEquals(Optional.empty(), s.nearSound(0.1, 64, 0)); // the snapshot alone is 3.1 away
 	}
 
 	@Test void absentLivePositionFallsBackToTheSnapshot() {
 		ModelMob wolf = mob("Mana Wolf", 10, 0, 64, 0);
 		RegistryState s = with(wolf);
-		IntFunction<double[]> none = live(Map.of());
-		s.nearSound(BEAR, 0.2, 64, 0, none);
-		assertEquals(Optional.of(wolf), s.nearSound(BEAR, 0.2, 64, 0, none));
+		assertEquals(Optional.of(wolf), s.nearSound(0.2, 64, 0, live(Map.of())));
 	}
 
 	@Test void matchSoundExplainsEachDecision() {
 		ModelMob wolf = mob("Mana Wolf", 10, 0, 64, 0);
 		RegistryState s = with(wolf, mob("Mana Wolf", 20, 0.1, 64, 0.05));
 		IntFunction<double[]> none = live(Map.of());
-		RegistryState.SoundMatch far = s.matchSound(BEAR, 5, 64, 0, none);
+		RegistryState.SoundMatch far = s.matchSound(5, 64, 0, none);
 		assertEquals(RegistryState.SoundDecision.NO_CANDIDATE, far.decision());
 		assertEquals(20, far.mob().hitbox()); // the nearest mob anyway, for the capture line
 		assertEquals(4.9, far.dx(), 1e-9);
-		assertEquals(RegistryState.SoundDecision.AMBIGUOUS, s.matchSound(BEAR, 0, 64, 0, none).decision());
-		RegistryState t = with(wolf);
-		RegistryState.SoundMatch first = t.matchSound(BEAR, 0.2, 64.5, 0, none);
-		assertEquals(RegistryState.SoundDecision.LEARNED_VOICE, first.decision());
-		assertEquals(0.5, first.dy(), 1e-9);
-		assertEquals(RegistryState.SoundDecision.RENAMED, t.matchSound(BEAR, 0.2, 64, 0, none).decision());
-		assertEquals(RegistryState.SoundDecision.OTHER_VOICE, t.matchSound("minecraft:wolf", 0.2, 64, 0, none).decision());
-		assertEquals(RegistryState.SoundDecision.NO_CANDIDATE, new RegistryState().matchSound(BEAR, 0, 0, 0, none).decision());
-		assertEquals(null, new RegistryState().matchSound(BEAR, 0, 0, 0, none).mob());
+		assertEquals(RegistryState.SoundDecision.AMBIGUOUS, s.matchSound(0, 64, 0, none).decision());
+		RegistryState.SoundMatch hit = with(wolf).matchSound(0.2, 64.5, 0, none);
+		assertEquals(RegistryState.SoundDecision.RENAMED, hit.decision());
+		assertEquals(0.5, hit.dy(), 1e-9);
+		assertEquals(RegistryState.SoundDecision.NO_CANDIDATE, new RegistryState().matchSound(0, 0, 0, none).decision());
+		assertEquals(null, new RegistryState().matchSound(0, 0, 0, none).mob());
 	}
 
 	@Test void mobsListsTheCurrentMobs() {

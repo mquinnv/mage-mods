@@ -50,9 +50,9 @@ public final class ModelMobRegistry {
 		ClientTickEvents.END_CLIENT_TICK.register(ModelMobRegistry::tick);
 	}
 
-	/** The disconnect: forgets the mobs and the learned voices. */
+	/** The disconnect: forgets the mobs. */
 	public static void onDisconnect() {
-		STATE.clearAll();
+		STATE.clear();
 		lastLevel = null;
 		ticks = 0;
 	}
@@ -60,7 +60,7 @@ public final class ModelMobRegistry {
 	private static void tick(Minecraft mc) {
 		if (broken) return;
 		try {
-			if (mc.level != lastLevel) { // a level change (warp, dimension) drops the mobs; voices are kept
+			if (mc.level != lastLevel) { // a level change (warp, dimension) drops the mobs
 				lastLevel = mc.level;
 				STATE.clear();
 				ticks = 0;
@@ -130,15 +130,15 @@ public final class ModelMobRegistry {
 	}
 
 	/**
-	 * Which model mob a sound of entity type {@code soundType} ("minecraft:polar_bear") at {@code pos} belongs to,
-	 * and why, matched against each hitbox's live position (a map lookup per mob, falling back to the snapshot when
-	 * the hitbox is not loaded). No candidate when not {@link #active}.
+	 * Which model mob a mob sound at {@code pos} belongs to, and why, matched against each hitbox's live position (a
+	 * map lookup per mob, falling back to the snapshot when the hitbox is not loaded). No candidate when not
+	 * {@link #active}.
 	 */
-	public static RegistryState.SoundMatch matchSound(String soundType, Vec3 pos) {
+	public static RegistryState.SoundMatch matchSound(Vec3 pos) {
 		if (!active()) return new RegistryState.SoundMatch(RegistryState.SoundDecision.NO_CANDIDATE, null, Double.NaN,
 				Double.NaN, Double.NaN);
 		ClientLevel level = Minecraft.getInstance().level;
-		return STATE.matchSound(soundType, pos.x, pos.y, pos.z, id -> {
+		return STATE.matchSound(pos.x, pos.y, pos.z, id -> {
 			Entity e = level == null ? null : level.getEntity(id);
 			return e == null ? null : new double[] {e.getX(), e.getY(), e.getZ()};
 		});

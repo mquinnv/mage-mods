@@ -869,10 +869,11 @@ settings under General > "Mana mob names" ("Names in Jade", "Names in subtitles"
   model wins. Jade is optional: CubeWheel works without it.
 - **Subtitles**: a vanilla mob sound that comes from a mana mob's hitbox where it is now (within 1 block
   horizontally, from 0.5 below to 1.5 above; the closest mob wins; a tie stays vanilla) is renamed:
-  "Polar Bear hurts" becomes "Mana Wolf hurts", "Silverfish hisses" becomes "Viper hisses". Each mob
-  name learns its "voice" from its first sound, which stays vanilla; afterwards only that voice is
-  renamed. Known limitation: if a different mob's sound happens to be the first heard at that spot,
-  the wrong voice sticks until you disconnect.
+  "Polar Bear hurts" becomes "Mana Wolf hurts", "Silverfish hisses" becomes "Viper hisses", and a Mana
+  Slime's "Slime squishes" and "Strider dies" both become "Mana Slime ...". Any mob sound from that spot
+  counts, whatever its vanilla type, since mana worlds hold only mana mobs; non-mob sounds (arrows,
+  potions) stay vanilla. Small models with one bone per cloud (Mana Slime) are recognised by their name
+  tag.
 
 Capture mode also logs `model_shape` (when the crosshair target changes), `sound` and `subtitle` lines
 in mana worlds, see [Capture mode](#capture-mode). The log says `[cubewheel] subtitle hook active` once,
@@ -973,8 +974,8 @@ reel-in` when it took a reel-in's count back); a bobber reel-in has `detail` `bo
 - `model_shape`, `sound`: in mana worlds only: the shape of the mob model under the crosshair (on target
   change) and each sound heard, used to tune [Mana mob names](#mana-mob-names).
 - `subtitle`: in mana worlds only: for each `subtitles.entity.*` subtitle, `key`, the rename `decision`
-  (`toggle_off`, `inactive`, `not_entity`, `misc`, `no_candidate`, `ambiguous`, `learned_voice`,
-  `other_voice`, `renamed`), the `mob` it was about and the sound's offset `dx`/`dy`/`dz` from that mob's
+  (`toggle_off`, `inactive`, `not_entity`, `misc`, `no_candidate`, `ambiguous`,
+  `renamed`), the `mob` it was about and the sound's offset `dx`/`dy`/`dz` from that mob's
   hitbox (for `no_candidate`, the nearest mob anywhere).
 - `estimate`: an estimate replaced by a real read: `counted` (local) vs `actual` (from the menu).
 

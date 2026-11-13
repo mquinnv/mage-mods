@@ -84,7 +84,8 @@ public final class ModelMobs {
 
 	/**
 	 * The named model mobs among {@code snaps}, in the order of their hitboxes. A model is anchored only on an
-	 * interaction riding a cloud whose co-located clouds include a bones cloud. Its parts are the interaction, every
+	 * interaction riding a cloud whose co-located clouds include a bones cloud or a name-tag cloud (a small model
+	 * such as a Mana Slime carries one bone per cloud). Its parts are the interaction, every
 	 * co-located cloud and their passengers, and an attached recycled slime with its cloud. Its bounds are the
 	 * interaction's box joined with its bones' box (every item_display riding a co-located cloud, inflated by
 	 * {@link #BONE_MARGIN} but not below the interaction's bottom), relative to the interaction; its core is the
@@ -132,7 +133,8 @@ public final class ModelMobs {
 			if (CLOUD.equals(c.type()) && Math.abs(c.x() - cloud.x()) < CO_LOCATED
 					&& Math.abs(c.z() - cloud.z()) < CO_LOCATED) clouds.add(c);
 		}
-		if (clouds.stream().noneMatch(c -> carriesBones(itemDisplays(c, byId)))) return null;
+		// a big model has a bones cloud; a small one (a Mana Slime: one bone per cloud) has its name tag beside it
+		if (clouds.stream().noneMatch(c -> carriesBones(itemDisplays(c, byId)) || carriesTag(c, byId))) return null;
 		Draft d = new Draft(s);
 		d.parts.add(s.id());
 		Set<Integer> cloudIds = new LinkedHashSet<>();
@@ -170,6 +172,15 @@ public final class ModelMobs {
 			});
 		}
 		return d;
+	}
+
+	/** Does {@code cloud} carry a text_display (a model's name tag)? */
+	private static boolean carriesTag(Snap cloud, Map<Integer, Snap> byId) {
+		for (int p : cloud.passengers()) {
+			Snap s = byId.get(p);
+			if (s != null && TEXT_DISPLAY.equals(s.type())) return true;
+		}
+		return false;
 	}
 
 	private static int itemDisplays(Snap cloud, Map<Integer, Snap> byId) {

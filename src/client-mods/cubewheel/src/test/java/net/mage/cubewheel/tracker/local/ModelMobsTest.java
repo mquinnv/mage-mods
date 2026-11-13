@@ -1,5 +1,6 @@
 package net.mage.cubewheel.tracker.local;
 
+import static net.mage.cubewheel.tracker.local.ManaMobFixtures.MANA_SLIME;
 import static net.mage.cubewheel.tracker.local.ManaMobFixtures.VIPER;
 import static net.mage.cubewheel.tracker.local.ManaMobFixtures.WOLF;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,6 +58,26 @@ class ModelMobsTest {
 		ModelMob afterHits = ModelMobs.group(lines.get(1)).get(0);
 		assertTrue(afterHits.parts().containsAll(List.of(SLIME, SLIME_CLOUD)), "the recycled slime attaches");
 		assertFalse(afterHits.parts().contains(MULTIPLIER_STAND), "the 1.3x armor stand is not a part");
+	}
+
+	@Test void manaSlimesWithOneBonePerCloudAreMobs() {
+		List<List<ModelMobs.Snap>> lines = ManaMobFixtures.load(MANA_SLIME);
+		List<ModelMob> one = ModelMobs.group(lines.get(0));
+		assertEquals(1, one.size(), one.toString());
+		assertEquals("Mana Slime", one.get(0).name());
+		assertEquals(33795520, one.get(0).hitbox());
+		assertEquals(33796611, one.get(0).tagEntity()); // the text_display riding the cloud at dy 1.2
+		assertTrue(one.get(0).parts().containsAll(List.of(33795519, 33795521, 33795515, 33796609, 33796610)));
+		List<ModelMob> two = ModelMobs.group(lines.get(1));
+		assertEquals(java.util.Set.of(33782015, 33781802), two.stream().map(ModelMob::hitbox).collect(java.util.stream.Collectors.toSet()));
+		for (ModelMob m : two) assertEquals("Mana Slime", m.name());
+	}
+
+	@Test void aSingleBoneWithoutATagIsNoMob() {
+		List<ModelMobs.Snap> snaps = ManaMobFixtures.load(MANA_SLIME).get(0).stream()
+				.filter(s -> s.id() != 33796610 && s.id() != 33796611) // drop the name tag and its cloud
+				.toList();
+		assertEquals(List.of(), ModelMobs.group(snaps));
 	}
 
 	@Test void viperFromCaptureIsOneMob() {

@@ -22,6 +22,8 @@ import net.mage.cubewheel.capture.CaptureLog;
 final class ManaMobFixtures {
 	static final String WOLF = "mana_wolf";
 	static final String VIPER = "viper";
+	/** Capture 2026-11-13, Wolfhaven: one bone per cloud; line 1 has the recycled slime, line 2 two Mana Slimes. */
+	static final String MANA_SLIME = "mana_slime";
 
 	private ManaMobFixtures() {}
 

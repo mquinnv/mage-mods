@@ -41,9 +41,9 @@ public final class SubtitleRenamer {
 			Optional<String> type = SubtitleNames.entityType(key);
 			Optional<EntityType<?>> entityType = type.map(Identifier::tryParse).flatMap(BuiltInRegistries.ENTITY_TYPE::getOptional);
 			if (entityType.isEmpty()) return note(capture, key, "not_entity", vanilla);
-			// projectiles, potions, lightning and other non-mob sounds stay vanilla; nearSound would learn their "voice"
+			// projectiles, potions, lightning and other non-mob sounds stay vanilla: an arrow hitting a mana mob is not the mob
 			if (entityType.get().getCategory() == MobCategory.MISC) return note(capture, key, "misc", vanilla);
-			RegistryState.SoundMatch match = ModelMobRegistry.matchSound(type.get(), new Vec3(sound.getX(), sound.getY(), sound.getZ()));
+			RegistryState.SoundMatch match = ModelMobRegistry.matchSound(new Vec3(sound.getX(), sound.getY(), sound.getZ()));
 			if (capture != null) {
 				boolean has = match.mob() != null;
 				capture.subtitle(key, match.decision().name().toLowerCase(java.util.Locale.ROOT), has ? match.mob().name() : null,

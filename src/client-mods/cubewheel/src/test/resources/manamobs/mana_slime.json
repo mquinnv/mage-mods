@@ -1,0 +1,309 @@
+[
+  {
+    "t": 1794580637540,
+    "kind": "model_shape",
+    "hit": 20788,
+    "hitType": "minecraft:slime",
+    "parts": [
+      {
+        "entity": 20788,
+        "type": "minecraft:slime",
+        "vehicle": 20787,
+        "passengers": [],
+        "invisible": true,
+        "mob": true,
+        "x": -184.98495483398438,
+        "y": -23.270200729370117,
+        "z": -109.0616683959961
+      },
+      {
+        "entity": 33795515,
+        "type": "minecraft:area_effect_cloud",
+        "passengers": [
+          33796609
+        ],
+        "invisible": true,
+        "mob": false,
+        "x": -184.5,
+        "y": -23.875,
+        "z": -109.5
+      },
+      {
+        "entity": 33796609,
+        "type": "minecraft:item_display",
+        "vehicle": 33795515,
+        "passengers": [],
+        "invisible": true,
+        "mob": false,
+        "x": -184.5,
+        "y": -23.375,
+        "z": -109.5
+      },
+      {
+        "entity": 33795519,
+        "type": "minecraft:area_effect_cloud",
+        "passengers": [
+          33795520,
+          33795521
+        ],
+        "invisible": true,
+        "mob": false,
+        "x": -184.5,
+        "y": -24.5,
+        "z": -109.5
+      },
+      {
+        "entity": 33795520,
+        "type": "minecraft:interaction",
+        "vehicle": 33795519,
+        "passengers": [],
+        "invisible": false,
+        "mob": false,
+        "x": -184.5,
+        "y": -24.0,
+        "z": -109.5
+      },
+      {
+        "entity": 33795521,
+        "type": "minecraft:item_display",
+        "vehicle": 33795519,
+        "passengers": [],
+        "invisible": false,
+        "mob": false,
+        "x": -184.5,
+        "y": -24.0,
+        "z": -109.5
+      },
+      {
+        "entity": 33796610,
+        "type": "minecraft:area_effect_cloud",
+        "passengers": [
+          33796611
+        ],
+        "invisible": true,
+        "mob": false,
+        "x": -184.5,
+        "y": -23.299999237060547,
+        "z": -109.5
+      },
+      {
+        "entity": 33796611,
+        "type": "minecraft:text_display",
+        "vehicle": 33796610,
+        "passengers": [],
+        "invisible": true,
+        "mob": false,
+        "text": "Mana Slime 30⺛",
+        "x": -184.5,
+        "y": -22.799999237060547,
+        "z": -109.5
+      },
+      {
+        "entity": 33451291,
+        "type": "minecraft:armor_stand",
+        "vehicle": 32964792,
+        "passengers": [],
+        "invisible": true,
+        "mob": false,
+        "x": -185.50827530218376,
+        "y": -22.200000047683716,
+        "z": -108.74052236421022
+      },
+      {
+        "entity": 20787,
+        "type": "minecraft:area_effect_cloud",
+        "passengers": [
+          20788
+        ],
+        "invisible": true,
+        "mob": false,
+        "x": -184.98495483398438,
+        "y": -23.770200729370117,
+        "z": -109.0616683959961
+      }
+    ]
+  },
+  {
+    "t": 1794580644993,
+    "kind": "model_shape",
+    "hit": 33782015,
+    "hitType": "minecraft:interaction",
+    "parts": [
+      {
+        "entity": 33782015,
+        "type": "minecraft:interaction",
+        "vehicle": 33782014,
+        "passengers": [],
+        "invisible": false,
+        "mob": false,
+        "x": -182.5,
+        "y": -24.0,
+        "z": -103.5
+      },
+      {
+        "entity": 33781797,
+        "type": "minecraft:area_effect_cloud",
+        "passengers": [
+          33783370
+        ],
+        "invisible": true,
+        "mob": false,
+        "x": -180.5,
+        "y": -21.875,
+        "z": -102.5
+      },
+      {
+        "entity": 33783370,
+        "type": "minecraft:item_display",
+        "vehicle": 33781797,
+        "passengers": [],
+        "invisible": true,
+        "mob": false,
+        "x": -180.5,
+        "y": -21.375,
+        "z": -102.5
+      },
+      {
+        "entity": 33781801,
+        "type": "minecraft:area_effect_cloud",
+        "passengers": [
+          33781802,
+          33781803
+        ],
+        "invisible": true,
+        "mob": false,
+        "x": -180.5,
+        "y": -22.5,
+        "z": -102.5
+      },
+      {
+        "entity": 33781802,
+        "type": "minecraft:interaction",
+        "vehicle": 33781801,
+        "passengers": [],
+        "invisible": false,
+        "mob": false,
+        "x": -180.5,
+        "y": -22.0,
+        "z": -102.5
+      },
+      {
+        "entity": 33781803,
+        "type": "minecraft:item_display",
+        "vehicle": 33781801,
+        "passengers": [],
+        "invisible": false,
+        "mob": false,
+        "x": -180.5,
+        "y": -22.0,
+        "z": -102.5
+      },
+      {
+        "entity": 33783371,
+        "type": "minecraft:area_effect_cloud",
+        "passengers": [
+          33783372
+        ],
+        "invisible": true,
+        "mob": false,
+        "x": -180.5,
+        "y": -21.299999237060547,
+        "z": -102.5
+      },
+      {
+        "entity": 33783372,
+        "type": "minecraft:text_display",
+        "vehicle": 33783371,
+        "passengers": [],
+        "invisible": true,
+        "mob": false,
+        "text": "Mana Slime 13⺛",
+        "x": -180.5,
+        "y": -20.799999237060547,
+        "z": -102.5
+      },
+      {
+        "entity": 33782010,
+        "type": "minecraft:area_effect_cloud",
+        "passengers": [
+          33783825
+        ],
+        "invisible": true,
+        "mob": false,
+        "x": -182.5,
+        "y": -23.875,
+        "z": -103.5
+      },
+      {
+        "entity": 33783825,
+        "type": "minecraft:item_display",
+        "vehicle": 33782010,
+        "passengers": [],
+        "invisible": true,
+        "mob": false,
+        "x": -182.5,
+        "y": -23.375,
+        "z": -103.5
+      },
+      {
+        "entity": 33782014,
+        "type": "minecraft:area_effect_cloud",
+        "passengers": [
+          33782015,
+          33782016
+        ],
+        "invisible": true,
+        "mob": false,
+        "x": -182.5,
+        "y": -24.5,
+        "z": -103.5
+      },
+      {
+        "entity": 33782016,
+        "type": "minecraft:item_display",
+        "vehicle": 33782014,
+        "passengers": [],
+        "invisible": false,
+        "mob": false,
+        "x": -182.5,
+        "y": -24.0,
+        "z": -103.5
+      },
+      {
+        "entity": 33783826,
+        "type": "minecraft:area_effect_cloud",
+        "passengers": [
+          33783827
+        ],
+        "invisible": true,
+        "mob": false,
+        "x": -182.5,
+        "y": -23.299999237060547,
+        "z": -103.5
+      },
+      {
+        "entity": 33783827,
+        "type": "minecraft:text_display",
+        "vehicle": 33783826,
+        "passengers": [],
+        "invisible": true,
+        "mob": false,
+        "text": "Mana Slime 30⺛",
+        "x": -182.5,
+        "y": -22.799999237060547,
+        "z": -103.5
+      },
+      {
+        "entity": 33451291,
+        "type": "minecraft:armor_stand",
+        "vehicle": 32964792,
+        "passengers": [],
+        "invisible": true,
+        "mob": false,
+        "x": -183.5615657746642,
+        "y": -22.700000047683716,
+        "z": -105.96118781666365
+      }
+    ]
+  }
+]

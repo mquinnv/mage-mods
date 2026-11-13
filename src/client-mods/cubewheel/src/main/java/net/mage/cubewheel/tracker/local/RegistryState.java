@@ -7,13 +7,13 @@ import java.util.Optional;
 import java.util.function.IntFunction;
 
 /**
- * The model mobs near the player, as last grouped ({@link ModelMobs#group}), plus the voice each mob name has been
- * heard with. Pure state: no Minecraft/Fabric imports; the adapter that fills it is {@code ModelMobRegistry}.
+ * The model mobs near the player, as last grouped ({@link ModelMobs#group}). Pure state: no Minecraft/Fabric imports;
+ * the adapter that fills it is {@code ModelMobRegistry}.
  *
- * <p>A model mob makes its sound from a vanilla entity type ("minecraft:polar_bear" for a Mana Wolf) at its hitbox's
- * position, so {@link #nearSound} matches a sound to the mob standing there. The first sound at a mob is not
- * trusted: it only teaches that name's voice, and stays vanilla. Later sounds match only that voice, so a sound
- * of some other kind near the mob (a player's wolf, an arrow) is not renamed.
+ * <p>A model mob makes its sounds from vanilla entity types ("minecraft:polar_bear" for a Mana Wolf; a Mana Slime
+ * dies with both slime.death and strider.death) at its hitbox's position, so {@link #nearSound} matches a sound to
+ * the mob standing there by position alone, whatever its type. A mana world holds only mana mobs, so a mob sound
+ * there is a mana mob's; non-mob sounds (arrows) are filtered out before they get here.
  */
 public final class RegistryState {
 	/** A sound within this many blocks of a mob's x/z (horizontally) can be its own. */
@@ -26,7 +26,6 @@ public final class RegistryState {
 
 	private List<ModelMob> mobs = List.of();
 	private final Map<Integer, ModelMob> byPart = new HashMap<>();
-	private final Map<String, String> voices = new HashMap<>();
 
 	public void replace(List<ModelMob> next) {
 		mobs = List.copyOf(next);
@@ -36,16 +35,10 @@ public final class RegistryState {
 		}
 	}
 
-	/** Forgets the mobs (leaving a mana world); learned voices stay, so a warp does not make them relearn. */
+	/** Forgets the mobs (leaving a mana world, disconnect). */
 	public void clear() {
 		mobs = List.of();
 		byPart.clear();
-	}
-
-	/** Forgets the mobs and the learned voices (disconnect). */
-	public void clearAll() {
-		clear();
-		voices.clear();
 	}
 
 	public boolean isEmpty() {
@@ -68,10 +61,6 @@ public final class RegistryState {
 		NO_CANDIDATE,
 		/** Two mobs about equally close. */
 		AMBIGUOUS,
-		/** The name's first sound: it taught the voice and stays vanilla. */
-		LEARNED_VOICE,
-		/** The name's learned voice is another type. */
-		OTHER_VOICE,
 		/** Matched: rename it. */
 		RENAMED
 	}
@@ -87,25 +76,24 @@ public final class RegistryState {
 		}
 	}
 
-	/** {@link #nearSound(String, double, double, double, IntFunction)} with the snapshot positions only. */
-	public Optional<ModelMob> nearSound(String soundType, double x, double y, double z) {
-		return nearSound(soundType, x, y, z, id -> null);
+	/** {@link #nearSound(double, double, double, IntFunction)} with the snapshot positions only. */
+	public Optional<ModelMob> nearSound(double x, double y, double z) {
+		return nearSound(x, y, z, id -> null);
 	}
 
 	/**
-	 * The mob a sound of entity type {@code soundType} ("minecraft:polar_bear") at x/y/z belongs to: the closest mob
-	 * in the window, unless another is nearly as close (ambiguous), unless this is the name's first sound (taught,
-	 * not matched), unless the name's learned voice is a different type. {@code livePosition} gives a hitbox's
+	 * The mob a sound at x/y/z belongs to: the closest mob in the window, unless another is nearly as close
+	 * (ambiguous). {@code livePosition} gives a hitbox's
 	 * current x/y/z by its entity id (null when it is not loaded, then the once-a-second snapshot is used): a
 	 * chasing mob moves several blocks between snapshots.
 	 */
-	public Optional<ModelMob> nearSound(String soundType, double x, double y, double z, IntFunction<double[]> livePosition) {
-		SoundMatch m = matchSound(soundType, x, y, z, livePosition);
+	public Optional<ModelMob> nearSound(double x, double y, double z, IntFunction<double[]> livePosition) {
+		SoundMatch m = matchSound(x, y, z, livePosition);
 		return m.renamed() ? Optional.of(m.mob()) : Optional.empty();
 	}
 
-	/** As {@link #nearSound(String, double, double, double, IntFunction)}, saying why. */
-	public SoundMatch matchSound(String soundType, double x, double y, double z, IntFunction<double[]> livePosition) {
+	/** As {@link #nearSound(double, double, double, IntFunction)}, saying why. */
+	public SoundMatch matchSound(double x, double y, double z, IntFunction<double[]> livePosition) {
 		ModelMob best = null, nearest = null;
 		double bestD = Double.MAX_VALUE, secondD = Double.MAX_VALUE, nearestD = Double.MAX_VALUE;
 		double[] bestPos = null, nearestPos = null;
@@ -134,12 +122,7 @@ public final class RegistryState {
 		}
 		if (best == null) return match(SoundDecision.NO_CANDIDATE, nearest, nearestPos, x, y, z);
 		if (secondD - bestD <= TIE) return match(SoundDecision.AMBIGUOUS, best, bestPos, x, y, z);
-		String voice = voices.get(best.name());
-		if (voice == null) {
-			voices.put(best.name(), soundType);
-			return match(SoundDecision.LEARNED_VOICE, best, bestPos, x, y, z);
-		}
-		return match(voice.equals(soundType) ? SoundDecision.RENAMED : SoundDecision.OTHER_VOICE, best, bestPos, x, y, z);
+		return match(SoundDecision.RENAMED, best, bestPos, x, y, z);
 	}
 
 	private static SoundMatch match(SoundDecision decision, ModelMob mob, double[] pos, double x, double y, double z) {
