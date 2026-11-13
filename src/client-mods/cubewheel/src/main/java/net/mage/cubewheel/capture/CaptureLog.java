@@ -55,6 +55,13 @@ public final class CaptureLog {
 	public record Nearby(int entity, String type, String customName, String text, Integer vehicle, List<Integer> passengers,
 			double distance) {}
 
+	/**
+	 * One entity of a model's shape: id, type id, what it rides and carries, whether it is invisible and a Mob,
+	 * custom name and text-display text (null if none), and its position.
+	 */
+	public record Part(int entity, String type, Integer vehicle, List<Integer> passengers, boolean invisible, boolean mob,
+			String customName, String text, double x, double y, double z) {}
+
 	private final Path dir;
 	/** Where lines are written; null = on the calling thread, flushed per line. */
 	private final Executor executor;
@@ -188,26 +195,86 @@ public final class CaptureLog {
 		o.addProperty("id", id);
 		o.addProperty("name", name);
 		o.add("world", array(world));
+		JsonArray arr = nearbyArray(near);
+		o.add("nearby", arr);
+		append(o, now);
+	}
+
+	private static JsonArray nearbyArray(List<Nearby> near) {
 		JsonArray arr = new JsonArray();
-		if (near != null) {
-			for (Nearby n : near) {
-				if (n == null) continue;
+		if (near == null) return arr;
+		for (Nearby n : near) {
+			if (n == null) continue;
+			JsonObject j = new JsonObject();
+			j.addProperty("entity", n.entity());
+			j.addProperty("type", n.type());
+			if (n.customName() != null) j.addProperty("customName", n.customName());
+			if (n.text() != null) j.addProperty("text", n.text());
+			if (n.vehicle() != null) j.addProperty("vehicle", n.vehicle());
+			if (n.passengers() != null && !n.passengers().isEmpty()) {
+				JsonArray p = new JsonArray();
+				n.passengers().forEach(p::add);
+				j.add("passengers", p);
+			}
+			j.addProperty("distance", Math.round(n.distance() * 100) / 100.0);
+			arr.add(j);
+		}
+		return arr;
+	}
+
+	/**
+	 * The entities that make up a custom-model mob as the client sees them, around the entity the crosshair hit
+	 * (what a tooltip mod such as Jade would name): {@code hit} is its id and {@code hitType} its type.
+	 */
+	public void modelShape(int hitEntity, String hitType, List<Part> parts, long now) {
+		if (!enabled) return;
+		JsonObject o = new JsonObject();
+		o.addProperty("t", now);
+		o.addProperty("kind", "model_shape");
+		o.addProperty("hit", hitEntity);
+		o.addProperty("hitType", hitType);
+		JsonArray arr = new JsonArray();
+		if (parts != null) {
+			for (Part p : parts) {
+				if (p == null) continue;
 				JsonObject j = new JsonObject();
-				j.addProperty("entity", n.entity());
-				j.addProperty("type", n.type());
-				if (n.customName() != null) j.addProperty("customName", n.customName());
-				if (n.text() != null) j.addProperty("text", n.text());
-				if (n.vehicle() != null) j.addProperty("vehicle", n.vehicle());
-				if (n.passengers() != null && !n.passengers().isEmpty()) {
-					JsonArray p = new JsonArray();
-					n.passengers().forEach(p::add);
-					j.add("passengers", p);
-				}
-				j.addProperty("distance", Math.round(n.distance() * 100) / 100.0);
+				j.addProperty("entity", p.entity());
+				j.addProperty("type", p.type());
+				if (p.vehicle() != null) j.addProperty("vehicle", p.vehicle());
+				JsonArray riders = new JsonArray();
+				if (p.passengers() != null) p.passengers().forEach(riders::add);
+				j.add("passengers", riders);
+				j.addProperty("invisible", p.invisible());
+				j.addProperty("mob", p.mob());
+				if (p.customName() != null) j.addProperty("customName", p.customName());
+				if (p.text() != null) j.addProperty("text", p.text());
+				j.addProperty("x", p.x());
+				j.addProperty("y", p.y());
+				j.addProperty("z", p.z());
 				arr.add(j);
 			}
 		}
-		o.add("nearby", arr);
+		o.add("parts", arr);
+		append(o, now);
+	}
+
+	/**
+	 * A sound the client is about to play: its id, its subtitle translation key (null when it has none), source
+	 * category, position, and the entities near that position.
+	 */
+	public void sound(String soundId, String subtitleKey, String source, double x, double y, double z, List<Nearby> near,
+			long now) {
+		if (!enabled) return;
+		JsonObject o = new JsonObject();
+		o.addProperty("t", now);
+		o.addProperty("kind", "sound");
+		o.addProperty("id", soundId);
+		o.addProperty("subtitleKey", subtitleKey);
+		o.addProperty("source", source);
+		o.addProperty("x", x);
+		o.addProperty("y", y);
+		o.addProperty("z", z);
+		o.add("nearby", nearbyArray(near));
 		append(o, now);
 	}
 

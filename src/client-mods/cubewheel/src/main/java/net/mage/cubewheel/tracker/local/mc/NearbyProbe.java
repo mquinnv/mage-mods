@@ -117,11 +117,7 @@ final class NearbyProbe {
 			if (name != null) candidates.add(new NameResolver.Candidate(rel, name, distSq, source, e.getId()));
 			// Capture keeps the named ones whatever the cap, so a capture always shows the tag that was used.
 			if (near.size() >= MAX_ENTITIES && name == null) continue;
-			List<Integer> passengers = new ArrayList<>();
-			for (Entity p : e.getPassengers()) passengers.add(p.getId());
-			Entity v = e.getVehicle();
-			near.add(new CaptureLog.Nearby(e.getId(), e.typeHolder().getRegisteredName(), custom, text,
-					v == null ? null : v.getId(), passengers, Math.sqrt(distSq)));
+			near.add(describe(e, custom, text, Math.sqrt(distSq)));
 		}
 		if (bones != null && !modelKeys.contains(bones.getId())) modelKeys.add(bones.getId());
 		return near;
@@ -137,6 +133,21 @@ final class NearbyProbe {
 		int n = 0;
 		for (Entity p : cloud.getPassengers()) if (p instanceof Display.ItemDisplay) n++;
 		return n;
+	}
+
+	/** One entity as capture records it. */
+	static CaptureLog.Nearby describe(Entity e, String custom, String text, double distance) {
+		List<Integer> passengers = new ArrayList<>();
+		for (Entity p : e.getPassengers()) passengers.add(p.getId());
+		Entity v = e.getVehicle();
+		return new CaptureLog.Nearby(e.getId(), e.typeHolder().getRegisteredName(), custom, text,
+				v == null ? null : v.getId(), passengers, distance);
+	}
+
+	/** As {@link #describe(Entity, String, String, double)}, reading the custom name and text display text itself. */
+	static CaptureLog.Nearby describe(Entity e, double distance) {
+		return describe(e, e.hasCustomName() ? e.getCustomName().getString() : null,
+				e instanceof Display.TextDisplay td ? text(td) : null, distance);
 	}
 
 	/** A text display's text: through the optional invoker, else its render state (may be null before rendering). */

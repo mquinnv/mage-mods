@@ -137,6 +137,7 @@ public final class CubeWheelClient implements ClientModInitializer {
 		ClientSendMessageEvents.COMMAND.register(CubeWheelClient::noteCommand);
 		ContainerHook.register();
 		LocalSignals.register(); // after tracker and capture exist
+		net.mage.cubewheel.tracker.local.mc.ModelCaptureProbe.register(); // capture only: model shapes and sounds
 		ClientReceiveMessageEvents.ALLOW_GAME.register(LocalSignals::onGameMessage);
 		CooldownWatcher.register();
 		net.mage.cubewheel.capture.ShotWatcher.register(); // capture only: staff shots and their projectiles
